@@ -12,6 +12,7 @@ import com.bane23.iptvplayer.data.m3u.M3uItem
 import com.bane23.iptvplayer.data.m3u.M3uParser
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.xtream.XtreamApi
+import com.bane23.iptvplayer.work.EpgScheduler
 import com.bane23.iptvplayer.data.xtream.XtreamJson
 import com.bane23.iptvplayer.data.xtream.XtreamLiveStream
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
@@ -59,6 +60,7 @@ class PlaylistRepository @Inject constructor(
     private val httpClient: OkHttpClient,
     private val xtreamApi: XtreamApi,
     private val cipher: PasswordCipher,
+    private val epgScheduler: EpgScheduler,
 ) {
     private val playlistDao = db.playlistDao()
     private val categoryDao = db.categoryDao()
@@ -75,6 +77,8 @@ class PlaylistRepository @Inject constructor(
                     source = p.source,
                     username = p.username,
                     userAgent = p.userAgent,
+                    epgUrl = p.epgUrlOverride,
+                    epgShiftHours = p.epgShiftHours,
                     channelCount = row.channelCount,
                     lastRefreshedAt = p.lastRefreshedAt,
                     isActive = p.id == activeId,
@@ -90,7 +94,9 @@ class PlaylistRepository @Inject constructor(
             type = p.type,
             source = p.source,
             username = p.username,
-                    userAgent = p.userAgent,
+            userAgent = p.userAgent,
+            epgUrl = p.epgUrlOverride,
+            epgShiftHours = p.epgShiftHours,
             channelCount = channelDao.countByPlaylist(id),
             lastRefreshedAt = p.lastRefreshedAt,
             isActive = settings.activePlaylistId.first() == id,
@@ -106,6 +112,7 @@ class PlaylistRepository @Inject constructor(
             newId
         }
         if (settings.activePlaylistId.first() == null) settings.setActivePlaylistId(id)
+        epgScheduler.refreshNow(id)
         id
     }
 
@@ -118,12 +125,14 @@ class PlaylistRepository @Inject constructor(
             playlistDao.update(updated)
             importContent(updated)
         }
+        epgScheduler.refreshNow(id)
     }
 
     /** Ponovo preuzima sadržaj liste. Ako preuzimanje ne uspe, stari sadržaj ostaje netaknut. */
     suspend fun refreshPlaylist(id: Long) = guarded {
         val entity = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
         db.withTransaction { importContent(entity) }
+        epgScheduler.refreshNow(id)
     }
 
     suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
@@ -180,7 +189,13 @@ class PlaylistRepository @Inject constructor(
                 )
             }
         }
-        return entity.copy(userAgent = userAgent.trim().takeIf { it.isNotEmpty() })
+        val epg = epgUrl.trim()
+        if (epg.isNotEmpty() && epg.toHttpUrlOrNull() == null) throw PlaylistException(Kind.INVALID_URL)
+        return entity.copy(
+            userAgent = userAgent.trim().takeIf { it.isNotEmpty() },
+            epgUrlOverride = epg.takeIf { it.isNotEmpty() },
+            epgShiftHours = epgShiftHours.coerceIn(-MAX_EPG_SHIFT_HOURS, MAX_EPG_SHIFT_HOURS),
+        )
     }
 
     /** Podešavanja kategorija liste koja se upravo osvežava (naziv -> stara kategorija). */
@@ -289,6 +304,7 @@ class PlaylistRepository @Inject constructor(
                                 streamUrl = item.url,
                                 stableKey = item.url,
                                 tvgId = item.tvgId,
+                                epgKey = item.tvgId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() },
                                 tvgName = item.tvgName,
                                 number = item.number,
                                 catchupType = item.catchupType,
@@ -385,6 +401,7 @@ class PlaylistRepository @Inject constructor(
                         xtreamStreamId = streamId,
                         stableKey = "xtream:$streamId",
                         tvgId = stream.epgChannelId?.takeIf { e -> e.isNotBlank() },
+                        epgKey = stream.epgChannelId?.trim()?.lowercase()?.takeIf { e -> e.isNotEmpty() },
                         number = stream.num?.toIntOrNull(),
                         catchupType = if (hasArchive) "xtream" else null,
                         catchupDays = if (hasArchive) archiveDays else null,
@@ -477,5 +494,6 @@ class PlaylistRepository @Inject constructor(
 
     private companion object {
         const val BATCH_SIZE = 500
+        const val MAX_EPG_SHIFT_HOURS = 14
     }
 }

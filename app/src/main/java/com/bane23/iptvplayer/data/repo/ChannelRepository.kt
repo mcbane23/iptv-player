@@ -88,9 +88,9 @@ class ChannelRepository @Inject constructor(
             initialKey = (startIndex - PAGE_SIZE / 2).coerceAtLeast(0),
             pagingSourceFactory = {
                 when (categoryId) {
-                    ChannelGroups.FAVORITES -> channelDao.favoritesPagingSource(playlistId)
-                    ChannelGroups.RECENT -> channelDao.recentPagingSource(playlistId)
-                    else -> channelDao.pagingSource(playlistId, categoryId)
+                    ChannelGroups.FAVORITES -> channelDao.favoritesPagingSource(playlistId, System.currentTimeMillis())
+                    ChannelGroups.RECENT -> channelDao.recentPagingSource(playlistId, System.currentTimeMillis())
+                    else -> channelDao.pagingSource(playlistId, categoryId, System.currentTimeMillis())
                 }
             },
         ).flow.map { page -> page.map { it.toDomain() } }
@@ -102,7 +102,7 @@ class ChannelRepository @Inject constructor(
         val escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         return Pager(
             config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = true),
-            pagingSourceFactory = { channelDao.searchPagingSource(playlistId, "%$escaped%") },
+            pagingSourceFactory = { channelDao.searchPagingSource(playlistId, "%$escaped%", System.currentTimeMillis()) },
         ).flow.map { page -> page.map { it.toDomain() } }
     }
 
@@ -193,7 +193,7 @@ class ChannelRepository @Inject constructor(
         if (urls.isEmpty()) null else StreamSource(urls, userAgent, channel.referrer)
     }
 
-    private fun ChannelWithFavorite.toDomain() = channel.toDomain().copy(favorite = favorite)
+    private fun ChannelWithFavorite.toDomain() = channel.toDomain().copy(favorite = favorite, nowTitle = nowTitle)
 
     private fun ChannelEntity.toDomain() = Channel(
         id = id,

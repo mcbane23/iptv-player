@@ -39,6 +39,7 @@ fun MobileChannelsScreen(
     title: String,
     onPlay: (Long) -> Unit,
     onBack: () -> Unit,
+    onGuide: () -> Unit,
     viewModel: ChannelListViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(playlistId, categoryId) { viewModel.select(playlistId, categoryId) }
@@ -62,8 +63,11 @@ fun MobileChannelsScreen(
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
                 )
+                TextButton(onClick = onGuide) { Text(stringResource(R.string.guide_title)) }
             }
             if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
                 Text(
@@ -105,16 +109,28 @@ fun MobileChannelRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ChannelLogo(url = channel?.logo)
-        Text(
-            text = channel?.name.orEmpty(),
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Column(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 16.dp),
-        )
+        ) {
+            Text(
+                text = channel?.name.orEmpty(),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            channel?.nowTitle?.let { nowTitle ->
+                Text(
+                    text = nowTitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
         if (onToggleFavorite != null && channel != null) {
             FavoriteButton(favorite = channel.favorite, onClick = { onToggleFavorite(channel.id) })
         }

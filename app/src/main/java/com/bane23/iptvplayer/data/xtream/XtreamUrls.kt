@@ -45,6 +45,14 @@ object XtreamUrls {
         return builder.build().toString()
     }
 
+    /** Link ka TV vodiču (XMLTV) Xtream naloga. */
+    fun xmltv(server: HttpUrl, username: String, password: String): String = server.newBuilder()
+        .addPathSegment("xmltv.php")
+        .addQueryParameter("username", username)
+        .addQueryParameter("password", password)
+        .build()
+        .toString()
+
     /** Link za gledanje kanala uživo. */
     fun liveStream(
         server: HttpUrl,
