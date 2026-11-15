@@ -148,4 +148,27 @@
     <string name="field_epg_url_hint">Leave empty to use the guide that comes with the playlist</string>
     <string name="field_epg_shift">Guide time shift in hours (optional)</string>
     <string name="field_epg_shift_hint">For example 1 or -2, if programme times in the guide are off</string>
+
+    <!-- Filmovi i serije -->
+    <string name="vod_movies">Movies</string>
+    <string name="vod_series">Series</string>
+    <string name="vod_loading">Loading…</string>
+    <string name="vod_empty">Nothing here</string>
+    <string name="vod_load_failed">Could not load. Check your internet connection.</string>
+    <string name="vod_pick_category">Pick a category on the left</string>
+    <string name="vod_play">Play</string>
+    <string name="vod_resume_from">Continue from %1$s</string>
+    <string name="vod_start_over">Start over</string>
+    <string name="vod_director">Director: %1$s</string>
+    <string name="vod_cast">Cast: %1$s</string>
+    <string name="vod_no_episodes">This series has no episodes</string>
+    <string name="vod_continue_episode">Continue: %1$s</string>
+    <string name="vod_season">Season %1$d</string>
+    <string name="vod_episode_label">S%1$d E%2$d</string>
+    <string name="vod_watched">Watched</string>
+    <string name="vod_progress">%1$s of %2$s</string>
+    <string name="vod_seek_back">−10 s</string>
+    <string name="vod_seek_forward">+10 s</string>
+    <string name="vod_next_episode">Next episode</string>
+    <string name="vod_tv_hint">Left and right: skip 10 s · OK: pause · Up: options</string>
 </resources>

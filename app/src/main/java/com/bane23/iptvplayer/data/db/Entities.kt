@@ -128,6 +128,33 @@ data class EpgProgramEntity(
     val generation: Long,
 )
 
+/** Dokle je korisnik stigao sa filmom ili epizodom, za nastavak gledanja. */
+@Entity(
+    tableName = "watch_progress",
+    primaryKeys = ["playlistId", "kind", "itemId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "seriesId", "updatedAt")],
+)
+data class WatchProgressEntity(
+    val playlistId: Long,
+    /** "movie" ili "episode". */
+    val kind: String,
+    /** Xtream ID filma, odnosno epizode. */
+    val itemId: Long,
+    /** Serija kojoj epizoda pripada; 0 za film. */
+    val seriesId: Long,
+    val positionMs: Long,
+    val durationMs: Long,
+    val updatedAt: Long,
+)
+
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
 data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?)
 

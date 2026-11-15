@@ -44,6 +44,8 @@ data class PlaybackState(
     val audioTracks: List<TrackOption> = emptyList(),
     val textTracks: List<TrackOption> = emptyList(),
     val textEnabled: Boolean = false,
+    /** Sadržaj je odgledan do kraja (samo za filmove i epizode). */
+    val ended: Boolean = false,
 )
 
 /**
@@ -75,6 +77,17 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
     private var playedCurrentUrl = false
     private var retryJob: Job? = null
 
+    /** Film ili epizoda (može da se premotava), za razliku od kanala uživo. */
+    private var seekable = false
+
+    /** Pozicija od koje sledeća priprema plejera treba da krene (samo kad je [seekable]). */
+    private var resumePositionMs = 0L
+
+    val positionMs: Long get() = player.currentPosition.coerceAtLeast(0)
+
+    /** Trajanje sadržaja, ili 0 dok nije poznato (i za kanale uživo). */
+    val durationMs: Long get() = player.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0
+
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) = publishStatus()
 
@@ -97,8 +110,14 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
         player.addListener(listener)
     }
 
-    fun play(source: StreamSource) {
+    /**
+     * Pušta strim. Kad je zadato [startPositionMs], sadržaj je film ili epizoda: kreće od te
+     * pozicije, a posle prekida se nastavlja tamo gde je stao.
+     */
+    fun play(source: StreamSource, startPositionMs: Long? = null) {
         retryJob?.cancel()
+        seekable = startPositionMs != null
+        resumePositionMs = startPositionMs ?: 0
         this.source = source
         urlIndex = 0
         attempts = 0
@@ -110,8 +129,18 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
     /** Ručni ponovni pokušaj posle greške. */
     fun retry() {
         val current = source ?: return
-        play(current)
+        play(current, if (seekable) resumePositionMs else null)
     }
+
+    fun seekTo(positionMs: Long) {
+        if (!seekable) return
+        val duration = durationMs
+        val target = if (duration > 0) positionMs.coerceIn(0, duration) else positionMs.coerceAtLeast(0)
+        resumePositionMs = target
+        player.seekTo(target)
+    }
+
+    fun seekBy(deltaMs: Long) = seekTo(positionMs + deltaMs)
 
     fun togglePlayPause() {
         if (_state.value.status == PlaybackStatus.FAILED) {
@@ -141,6 +170,7 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
     /** Zaustavlja puštanje i oslobađa vezu sa serverom (npr. kad aplikacija ode u pozadinu). */
     fun stop() {
         retryJob?.cancel()
+        rememberPosition()
         player.stop()
     }
 
@@ -178,7 +208,11 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
         }
         httpFactory.setUserAgent(current.userAgent)
         httpFactory.setDefaultRequestProperties(headers)
-        player.setMediaItem(MediaItem.fromUri(url))
+        if (seekable) {
+            player.setMediaItem(MediaItem.fromUri(url), resumePositionMs)
+        } else {
+            player.setMediaItem(MediaItem.fromUri(url))
+        }
         player.prepare()
         player.playWhenReady = true
     }
@@ -191,6 +225,7 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
             player.prepare()
             return
         }
+        rememberPosition()
         attempts++
         val hasAnotherUrl = urlIndex + 1 < current.urls.size
         when {
@@ -210,6 +245,13 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
                     failureDetail = describe(error),
                 )
             }
+        }
+    }
+
+    /** Pamti dokle se stiglo, da se posle prekida ili povratka u aplikaciju nastavi odatle. */
+    private fun rememberPosition() {
+        if (seekable && player.currentPosition > 0) {
+            resumePositionMs = player.currentPosition
         }
     }
 
@@ -234,7 +276,8 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
             player.playbackState == Player.STATE_ENDED -> PlaybackStatus.PAUSED
             else -> PlaybackStatus.IDLE
         }
-        _state.update { it.copy(status = status, failure = null, failureDetail = null) }
+        val ended = seekable && player.playbackState == Player.STATE_ENDED
+        _state.update { it.copy(status = status, failure = null, failureDetail = null, ended = ended) }
     }
 
     private fun publishTracks(tracks: Tracks) {

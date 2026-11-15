@@ -50,7 +50,6 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
 
@@ -293,7 +292,7 @@ private fun ChannelListPanel(
     }
 }
 
-/** Opcije: zvuk, titlovi i odnos stranica. */
+/** Opcije: favorit, zvuk, titlovi i odnos stranica. */
 @Composable
 private fun OptionsPanel(
     viewModel: PlayerViewModel,
@@ -301,84 +300,17 @@ private fun OptionsPanel(
     playback: PlaybackState,
     modifier: Modifier = Modifier,
 ) {
-    val firstFocus = remember { FocusRequester() }
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = modifier
-            .fillMaxHeight()
-            .fillMaxWidth(0.35f)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
-    ) {
-        item {
-            TvTextRow(
-                text = stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add),
-                trailing = if (isFavorite) "★" else "☆",
-                onClick = viewModel::toggleFavorite,
-                modifier = Modifier.focusRequester(firstFocus),
-            )
-        }
-        item {
-            TvTextRow(
-                text = stringResource(R.string.player_aspect, ui.aspectMode.label()),
-                onClick = viewModel::cycleAspectMode,
-            )
-        }
-
-        item { PanelHeader(stringResource(R.string.player_audio)) }
-        if (playback.audioTracks.isEmpty()) {
-            item { PanelNote(stringResource(R.string.player_no_tracks)) }
-        }
-        items(playback.audioTracks.size) { index ->
-            val track = playback.audioTracks[index]
-            TvTextRow(
-                text = track.label,
-                selected = track.selected,
-                trailing = if (track.selected) "✓" else null,
-                onClick = { viewModel.selectAudio(track) },
-            )
-        }
-
-        item { PanelHeader(stringResource(R.string.player_subtitles)) }
-        item {
-            TvTextRow(
-                text = stringResource(R.string.player_subtitles_off),
-                selected = !playback.textEnabled,
-                trailing = if (!playback.textEnabled) "✓" else null,
-                onClick = { viewModel.selectText(null) },
-            )
-        }
-        items(playback.textTracks.size) { index ->
-            val track = playback.textTracks[index]
-            TvTextRow(
-                text = track.label,
-                selected = track.selected,
-                trailing = if (track.selected) "✓" else null,
-                onClick = { viewModel.selectText(track) },
-            )
-        }
-    }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-}
-
-@Composable
-private fun PanelHeader(text: String) {
-    Text(
-        text = text,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
-    )
-}
-
-@Composable
-private fun PanelNote(text: String) {
-    Text(
-        text = text,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
+    TvPlayerOptionsPanel(
+        playback = playback,
+        aspectMode = ui.aspectMode,
+        onCycleAspect = viewModel::cycleAspectMode,
+        onSelectAudio = viewModel::selectAudio,
+        onSelectText = viewModel::selectText,
+        modifier = modifier,
+        firstRowText = stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add),
+        firstRowTrailing = if (isFavorite) "★" else "☆",
+        onFirstRow = viewModel::toggleFavorite,
     )
 }
 

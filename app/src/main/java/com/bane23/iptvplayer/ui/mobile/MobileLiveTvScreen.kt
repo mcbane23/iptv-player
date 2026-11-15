@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -44,6 +45,8 @@ fun MobileLiveTvScreen(
     onSearch: () -> Unit,
     onManageCategories: () -> Unit,
     onSettings: () -> Unit,
+    onMovies: () -> Unit,
+    onSeries: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -125,6 +128,23 @@ fun MobileLiveTvScreen(
                 }
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+                    if (state.hasVod) {
+                        item(key = "vod") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                FilledTonalButton(onClick = onMovies, modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.vod_movies))
+                                }
+                                FilledTonalButton(onClick = onSeries, modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.vod_series))
+                                }
+                            }
+                        }
+                    }
                     item(key = "favorites") {
                         CategoryRow(
                             name = favoritesTitle,

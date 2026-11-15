@@ -32,6 +32,8 @@ data class LiveTvUiState(
     val totalChannels: Int = 0,
     val favoriteCount: Int = 0,
     val recentCount: Int = 0,
+    /** Lista je Xtream nalog, pa ima i filmove i serije. */
+    val hasVod: Boolean = false,
 )
 
 /** Kategorije aktivne liste. */
@@ -51,7 +53,8 @@ class LiveTvViewModel @Inject constructor(
                     repository.observeChannelCount(playlistId),
                     repository.observeFavoriteCount(playlistId),
                     repository.observeRecentCount(playlistId),
-                ) { categories, total, favorites, recent ->
+                    repository.observeIsXtream(playlistId),
+                ) { categories, total, favorites, recent, xtream ->
                     LiveTvUiState(
                         loading = false,
                         playlistId = playlistId,
@@ -59,6 +62,7 @@ class LiveTvViewModel @Inject constructor(
                         totalChannels = total,
                         favoriteCount = favorites,
                         recentCount = recent,
+                        hasVod = xtream,
                     )
                 }
             }
