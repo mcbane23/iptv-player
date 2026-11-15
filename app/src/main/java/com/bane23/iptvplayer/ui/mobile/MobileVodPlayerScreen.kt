@@ -1,25 +1,18 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,21 +22,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PlayerChip
+import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
+import com.bane23.iptvplayer.ui.common.player.PlayerTime
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
-import com.bane23.iptvplayer.ui.common.vod.VodPlayerUiState
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
@@ -51,8 +45,9 @@ import kotlinx.coroutines.delay
 private enum class VodPanel { NONE, AUDIO, SUBTITLES }
 
 /**
- * Plejer za film ili epizodu na telefonu. [start] pokreće puštanje (poziva se jednom);
- * dodir prikazuje i sklanja kontrole.
+ * Plejer za film ili epizodu na telefonu, sa istim kontrolama kao na TV-u. Dodir prikazuje i
+ * sklanja kontrole, dupli dodir levo ili desno premotava 10 s, prevlačenje gore-dole menja
+ * osvetljenje (levo) i jačinu zvuka (desno). [start] pokreće puštanje (poziva se jednom).
  */
 @Composable
 fun MobileVodPlayerScreen(
@@ -65,6 +60,13 @@ fun MobileVodPlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(VodPanel.NONE) }
     var gestureHint by remember { mutableStateOf<String?>(null) }
+    var locked by remember { mutableStateOf(false) }
+    var unlockVisible by remember { mutableStateOf(false) }
+    // Svaki dodir na kontrolama odlaže njihovo sklanjanje.
+    var activity by remember { mutableIntStateOf(0) }
+    // Pozicija pod prstom dok se prevlači traka.
+    var preview by remember { mutableStateOf<Long?>(null) }
+    val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
 
     LaunchedEffect(Unit) { start(viewModel) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -73,15 +75,21 @@ fun MobileVodPlayerScreen(
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
     AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
+    // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
+    BackHandler(enabled = locked) { unlockVisible = true }
 
-    // Kontrole se same sklanjaju posle nekoliko sekundi gledanja; svaka promena pozicije odlaže to.
-    LaunchedEffect(controlsVisible, panel, playback.status, ui.positionMs / SEEK_STEP_MS) {
-        if (controlsVisible && panel == VodPanel.NONE && playback.status == PlaybackStatus.PLAYING) {
+    LaunchedEffect(controlsVisible, panel, playback.status, activity, preview) {
+        if (controlsVisible && panel == VodPanel.NONE && preview == null && playback.status == PlaybackStatus.PLAYING) {
             delay(VOD_CONTROLS_TIMEOUT_MS)
             controlsVisible = false
         }
     }
-
+    LaunchedEffect(unlockVisible) {
+        if (unlockVisible) {
+            delay(VOD_CONTROLS_TIMEOUT_MS)
+            unlockVisible = false
+        }
+    }
     LaunchedEffect(gestureHint) {
         if (gestureHint != null) {
             delay(VOD_GESTURE_HINT_MS)
@@ -93,8 +101,20 @@ fun MobileVodPlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible }) }
-            .volumeBrightnessDrag { gestureHint = it },
+            .pointerInput(locked) {
+                detectTapGestures(
+                    onTap = {
+                        if (locked) unlockVisible = !unlockVisible else controlsVisible = !controlsVisible
+                    },
+                    onDoubleTap = { offset ->
+                        if (!locked) {
+                            viewModel.seekBy(if (offset.x < size.width / 2) -SEEK_STEP_MS else SEEK_STEP_MS)
+                            activity++
+                        }
+                    },
+                )
+            }
+            .then(if (locked) Modifier else Modifier.volumeBrightnessDrag { gestureHint = it }),
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
@@ -114,21 +134,112 @@ fun MobileVodPlayerScreen(
         }
 
         gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
+        FirstLaunchGestureHint()
+
+        if (locked) {
+            LockedOverlay(visible = unlockVisible) {
+                locked = false
+                unlockVisible = false
+                controlsVisible = true
+            }
+            return@Box
+        }
 
         if (controlsVisible) {
-            VodControls(
-                ui = ui,
-                playback = playback,
+            val season = ui.season
+            val episode = ui.episode
+            MobilePlayerControls(
+                title = ui.title,
+                subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
                 onClose = onClose,
-                onPlayPause = viewModel::togglePlayPause,
-                onRetry = viewModel::retry,
-                onSeekBy = viewModel::seekBy,
-                onSeekTo = viewModel::seekTo,
-                onAudio = { panel = VodPanel.AUDIO },
-                onSubtitles = { panel = VodPanel.SUBTITLES },
-                onAspect = viewModel::cycleAspectMode,
-                onNext = viewModel::next,
+                onLock = {
+                    locked = true
+                    controlsVisible = false
+                },
                 onPip = rememberEnterPictureInPicture(),
+                center = {
+                    PlayerIconButton(
+                        icon = AppIcons.Rewind,
+                        description = stringResource(R.string.vod_seek_back),
+                        onClick = {
+                            viewModel.seekBy(-SEEK_STEP_MS)
+                            activity++
+                        },
+                        size = 52.dp,
+                    )
+                    val paused = playback.status == PlaybackStatus.PAUSED
+                    PlayerIconButton(
+                        icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                        description = stringResource(
+                            when {
+                                failed -> R.string.player_retry
+                                paused -> R.string.player_play
+                                else -> R.string.player_pause
+                            },
+                        ),
+                        onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                        primary = true,
+                        size = 68.dp,
+                    )
+                    PlayerIconButton(
+                        icon = AppIcons.Forward,
+                        description = stringResource(R.string.vod_seek_forward),
+                        onClick = {
+                            viewModel.seekBy(SEEK_STEP_MS)
+                            activity++
+                        },
+                        size = 52.dp,
+                    )
+                },
+                bottom = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PlayerTime(preview ?: ui.positionMs)
+                        PlayerSeekBar(
+                            positionMs = ui.positionMs,
+                            durationMs = ui.durationMs,
+                            onSeekTo = viewModel::seekTo,
+                            onSeekBy = viewModel::seekBy,
+                            onPreview = { preview = it },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                        )
+                        PlayerTime(ui.durationMs)
+                    }
+                },
+                chips = {
+                    PlayerChip(
+                        label = stringResource(R.string.player_subtitles),
+                        icon = AppIcons.Subtitles,
+                        active = playback.textEnabled,
+                        onClick = { panel = VodPanel.SUBTITLES },
+                    )
+                    PlayerChip(
+                        label = stringResource(R.string.player_audio),
+                        icon = AppIcons.Audio,
+                        onClick = { panel = VodPanel.AUDIO },
+                    )
+                    PlayerChip(
+                        label = ui.aspectMode.label(),
+                        icon = AppIcons.AspectRatio,
+                        onClick = {
+                            viewModel.cycleAspectMode()
+                            activity++
+                        },
+                    )
+                    PlayerChip(
+                        label = stringResource(R.string.vod_start_over),
+                        icon = AppIcons.Previous,
+                        onClick = { viewModel.seekTo(0) },
+                    )
+                    if (ui.hasNext) {
+                        PlayerChip(
+                            label = stringResource(R.string.vod_next_episode),
+                            icon = AppIcons.Next,
+                            onClick = viewModel::next,
+                        )
+                    }
+                },
             )
         }
     }
@@ -154,115 +265,6 @@ fun MobileVodPlayerScreen(
         )
 
         VodPanel.NONE -> Unit
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun VodControls(
-    ui: VodPlayerUiState,
-    playback: PlaybackState,
-    onClose: () -> Unit,
-    onPlayPause: () -> Unit,
-    onRetry: () -> Unit,
-    onSeekBy: (Long) -> Unit,
-    onSeekTo: (Long) -> Unit,
-    onAudio: () -> Unit,
-    onSubtitles: () -> Unit,
-    onAspect: () -> Unit,
-    onNext: () -> Unit,
-    onPip: (() -> Unit)?,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
-            .safeDrawingPadding()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onClose) { Text(stringResource(R.string.action_back)) }
-            Column(modifier = Modifier.padding(start = 8.dp)) {
-                Text(
-                    text = ui.title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val season = ui.season
-                val episode = ui.episode
-                if (season != null && episode != null) {
-                    Text(
-                        text = episodeLabel(season, episode),
-                        color = Color.White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            FilledTonalButton(onClick = { onSeekBy(-SEEK_STEP_MS) }) { Text(stringResource(R.string.vod_seek_back)) }
-            if (playback.status == PlaybackStatus.FAILED || ui.sourceMissing) {
-                FilledTonalButton(onClick = onRetry) { Text(stringResource(R.string.player_retry)) }
-            } else {
-                FilledTonalButton(onClick = onPlayPause) {
-                    Text(
-                        stringResource(
-                            if (playback.status == PlaybackStatus.PAUSED) R.string.player_play else R.string.player_pause,
-                        ),
-                    )
-                }
-            }
-            FilledTonalButton(onClick = { onSeekBy(SEEK_STEP_MS) }) { Text(stringResource(R.string.vod_seek_forward)) }
-        }
-
-        Column {
-            // Dok korisnik vuče klizač prikazuje se pozicija pod prstom, a premotava se kad ga pusti.
-            var dragged by remember { mutableStateOf<Float?>(null) }
-            val duration = ui.durationMs.coerceAtLeast(1)
-            val shown = dragged?.let { (it * duration).toLong() } ?: ui.positionMs
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = formatDuration(shown), color = Color.White, style = MaterialTheme.typography.bodySmall)
-                Slider(
-                    value = dragged ?: (ui.positionMs.toFloat() / duration).coerceIn(0f, 1f),
-                    onValueChange = { dragged = it },
-                    onValueChangeFinished = {
-                        dragged?.let { onSeekTo((it * duration).toLong()) }
-                        dragged = null
-                    },
-                    enabled = ui.durationMs > 0,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 12.dp),
-                )
-                Text(
-                    text = formatDuration(ui.durationMs),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-            ) {
-                TextButton(onClick = onAudio) { Text(stringResource(R.string.player_audio)) }
-                TextButton(onClick = onSubtitles) { Text(stringResource(R.string.player_subtitles)) }
-                TextButton(onClick = onAspect) { Text(stringResource(R.string.player_aspect, ui.aspectMode.label())) }
-                if (ui.hasNext) {
-                    TextButton(onClick = onNext) { Text(stringResource(R.string.vod_next_episode)) }
-                }
-                if (onPip != null) {
-                    TextButton(onClick = onPip) { Text(stringResource(R.string.player_pip)) }
-                }
-            }
-        }
     }
 }
 

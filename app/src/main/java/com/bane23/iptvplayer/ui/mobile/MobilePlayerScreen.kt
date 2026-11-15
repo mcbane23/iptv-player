@@ -15,8 +15,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,10 +63,15 @@ import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.ui.common.guide.nextLine
-import com.bane23.iptvplayer.ui.common.guide.nowLine
+import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PlayerChip
+import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerProgress
+import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
@@ -96,6 +98,8 @@ fun MobilePlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
     var gestureHint by remember { mutableStateOf<String?>(null) }
+    var locked by remember { mutableStateOf(false) }
+    var unlockVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -118,17 +122,29 @@ fun MobilePlayerScreen(
         }
     }
     BackHandler(enabled = panel != Panel.NONE) { panel = Panel.NONE }
+    // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
+    BackHandler(enabled = locked) { unlockVisible = true }
+    LaunchedEffect(unlockVisible) {
+        if (unlockVisible) {
+            delay(CONTROLS_TIMEOUT_MS)
+            unlockVisible = false
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) {
+            .pointerInput(locked) {
                 detectTapGestures(onTap = {
-                    if (panel != Panel.NONE) panel = Panel.NONE else controlsVisible = !controlsVisible
+                    when {
+                        locked -> unlockVisible = !unlockVisible
+                        panel != Panel.NONE -> panel = Panel.NONE
+                        else -> controlsVisible = !controlsVisible
+                    }
                 })
             }
-            .volumeBrightnessDrag { gestureHint = it },
+            .then(if (locked) Modifier else Modifier.volumeBrightnessDrag { gestureHint = it }),
     ) {
         VideoSurface(
             player = viewModel.player,
@@ -150,12 +166,23 @@ fun MobilePlayerScreen(
             }
 
             gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
+            FirstLaunchGestureHint()
 
-            if (controlsVisible && panel == Panel.NONE) {
-                PlayerControls(
+            if (locked) {
+                LockedOverlay(visible = unlockVisible) {
+                    locked = false
+                    unlockVisible = false
+                    controlsVisible = true
+                }
+            } else if (controlsVisible && panel == Panel.NONE) {
+                LiveControls(
                     ui = ui,
                     playback = playback,
                     onClose = onClose,
+                    onLock = {
+                        locked = true
+                        controlsVisible = false
+                    },
                     onPrevious = viewModel::previous,
                     onNext = viewModel::next,
                     onPlayPause = viewModel::togglePlayPause,
@@ -206,12 +233,13 @@ fun MobilePlayerScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Iste kontrole kao u plejeru filmova: naziv kanala gore, emisija sa trakom i dugmad dole. */
 @Composable
-private fun PlayerControls(
+private fun LiveControls(
     ui: PlayerUiState,
     playback: PlaybackState,
     onClose: () -> Unit,
+    onLock: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onPlayPause: () -> Unit,
@@ -225,76 +253,77 @@ private fun PlayerControls(
     onFavorite: () -> Unit,
     onPip: (() -> Unit)?,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
-            .safeDrawingPadding()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onClose) { Text(stringResource(R.string.action_back)) }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 8.dp),
-            ) {
+    val channel = ui.channel
+    val now by rememberNow()
+    val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
+    MobilePlayerControls(
+        title = listOfNotNull(channel?.number?.toString(), channel?.name).joinToString("  "),
+        subtitle = nowNext.now?.title,
+        onClose = onClose,
+        onLock = onLock,
+        onPip = onPip,
+        center = {
+            PlayerIconButton(AppIcons.Previous, stringResource(R.string.player_previous), onPrevious, size = 52.dp)
+            val paused = playback.status == PlaybackStatus.PAUSED
+            PlayerIconButton(
+                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                description = stringResource(
+                    when {
+                        failed -> R.string.player_retry
+                        paused -> R.string.player_play
+                        else -> R.string.player_pause
+                    },
+                ),
+                onClick = if (failed) onRetry else onPlayPause,
+                primary = true,
+                size = 68.dp,
+            )
+            PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext, size = 52.dp)
+        },
+        bottom = {
+            nowNext.now?.let { program ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = formatTime(program.startMs), color = Color.White, style = MaterialTheme.typography.bodySmall)
+                    val length = (program.stopMs - program.startMs).coerceAtLeast(1)
+                    PlayerProgress(
+                        fraction = (now - program.startMs).toFloat() / length,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                    )
+                    Text(text = formatTime(program.stopMs), color = Color.White, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            nowNext.nextLine()?.let { line ->
                 Text(
-                    text = ui.channel?.name.orEmpty(),
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = line,
+                    color = Color.White.copy(alpha = 0.75f),
+                    style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                for (line in listOfNotNull(nowNext.nowLine(), nowNext.nextLine())) {
-                    Text(
-                        text = line,
-                        color = Color.White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
-            if (ui.channel != null) FavoriteButton(favorite = isFavorite, onClick = onFavorite)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            FilledTonalButton(onClick = onPrevious) { Text(stringResource(R.string.player_previous)) }
-            if (playback.status == PlaybackStatus.FAILED || ui.sourceMissing) {
-                FilledTonalButton(onClick = onRetry) { Text(stringResource(R.string.player_retry)) }
-            } else {
-                FilledTonalButton(onClick = onPlayPause) {
-                    Text(
-                        stringResource(
-                            if (playback.status == PlaybackStatus.PAUSED) R.string.player_play else R.string.player_pause,
-                        ),
-                    )
-                }
+        },
+        chips = {
+            PlayerChip(label = stringResource(R.string.player_channels), icon = AppIcons.ChannelList, onClick = onChannels)
+            PlayerChip(
+                label = stringResource(R.string.player_subtitles),
+                icon = AppIcons.Subtitles,
+                active = playback.textEnabled,
+                onClick = onSubtitles,
+            )
+            PlayerChip(label = stringResource(R.string.player_audio), icon = AppIcons.Audio, onClick = onAudio)
+            PlayerChip(label = ui.aspectMode.label(), icon = AppIcons.AspectRatio, onClick = onAspect)
+            if (channel != null) {
+                PlayerChip(
+                    label = stringResource(R.string.category_favorites),
+                    icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
+                    active = isFavorite,
+                    onClick = onFavorite,
+                )
             }
-            FilledTonalButton(onClick = onNext) { Text(stringResource(R.string.player_next)) }
-        }
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-        ) {
-            TextButton(onClick = onChannels) { Text(stringResource(R.string.player_channels)) }
-            TextButton(onClick = onAudio) { Text(stringResource(R.string.player_audio)) }
-            TextButton(onClick = onSubtitles) { Text(stringResource(R.string.player_subtitles)) }
-            TextButton(onClick = onAspect) {
-                Text(stringResource(R.string.player_aspect, ui.aspectMode.label()))
-            }
-            if (onPip != null) {
-                TextButton(onClick = onPip) { Text(stringResource(R.string.player_pip)) }
-            }
-        }
-    }
+        },
+    )
 }
 
 /** Lista kanala preko slike; kreće od kanala koji se trenutno gleda. */

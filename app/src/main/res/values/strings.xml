@@ -79,13 +79,15 @@
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_no_tracks">No tracks available</string>
-    <string name="player_aspect">Picture: %1$s</string>
     <string name="player_pip">Picture in picture</string>
     <string name="aspect_fit">Fit</string>
     <string name="aspect_fill">Stretch</string>
     <string name="aspect_zoom">Zoom</string>
     <string name="gesture_volume">Volume</string>
     <string name="gesture_brightness">Brightness</string>
+    <string name="player_lock">Lock screen</string>
+    <string name="player_unlock">Unlock</string>
+    <string name="gesture_guide">Swipe up or down: left side changes brightness, right side changes volume</string>
     <string name="playback_loading">Loading…</string>
     <string name="playback_retrying">Connection lost, trying again…</string>
     <string name="playback_error_network">The channel cannot be played. Check your internet connection.</string>
