@@ -289,6 +289,12 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
 
+**Izlaz iz aplikacije**
+
+- [ ] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
+      toast poruku („Pritisnite Nazad još jednom za izlaz”), drugi u roku od ~2 s zatvara aplikaciju.
+      Radi isto na telefonu i na TV-u (daljinski)
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.
