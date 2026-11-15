@@ -264,3 +264,22 @@ interface HistoryDao {
     @Query("DELETE FROM history WHERE playlistId = :playlistId")
     suspend fun clear(playlistId: Long)
 }
+
+@Dao
+interface WatchProgressDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(progress: WatchProgressEntity)
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun get(playlistId: Long, kind: String, itemId: Long): WatchProgressEntity?
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    fun observe(playlistId: Long, kind: String, itemId: Long): Flow<WatchProgressEntity?>
+
+    /** Napredak svih epizoda jedne serije, poslednje gledana prva. */
+    @Query(
+        "SELECT * FROM watch_progress WHERE playlistId = :playlistId AND seriesId = :seriesId " +
+            "AND kind = 'episode' ORDER BY updatedAt DESC",
+    )
+    fun observeSeries(playlistId: Long, seriesId: Long): Flow<List<WatchProgressEntity>>
+}

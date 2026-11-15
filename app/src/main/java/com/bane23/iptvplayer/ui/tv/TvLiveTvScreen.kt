@@ -54,6 +54,8 @@ fun TvLiveTvScreen(
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onManageCategories: () -> Unit,
     onSettings: () -> Unit,
+    onMovies: () -> Unit,
+    onSeries: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
 ) {
@@ -95,6 +97,10 @@ fun TvLiveTvScreen(
             )
             if (playlistId != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (state.hasVod) {
+                        OutlinedButton(onClick = onMovies) { Text(stringResource(R.string.vod_movies)) }
+                        OutlinedButton(onClick = onSeries) { Text(stringResource(R.string.vod_series)) }
+                    }
                     OutlinedButton(onClick = onSearch) { Text(stringResource(R.string.action_search)) }
                     OutlinedButton(
                         onClick = { onGuide(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS }) },

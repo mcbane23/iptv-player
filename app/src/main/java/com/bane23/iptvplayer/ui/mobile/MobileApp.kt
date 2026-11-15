@@ -18,10 +18,15 @@ import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
+import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
+import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
 import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
+import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
 import com.bane23.iptvplayer.ui.common.navigation.Settings
+import com.bane23.iptvplayer.ui.common.navigation.Vod
 
 /** Koren UI-ja za telefon. */
 @Composable
@@ -54,6 +59,8 @@ fun MobileApp() {
                     onSearch = { backStack.add(Search) },
                     onManageCategories = { backStack.add(ManageCategories) },
                     onSettings = { backStack.add(Settings) },
+                    onMovies = { backStack.add(Vod(series = false)) },
+                    onSeries = { backStack.add(Vod(series = true)) },
                     viewModel = liveTvViewModel,
                 )
             }
@@ -91,6 +98,54 @@ fun MobileApp() {
                 MobilePlayerScreen(
                     channelId = key.channelId,
                     categoryId = key.categoryId,
+                    onClose = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<Vod> { key ->
+                MobileVodScreen(
+                    series = key.series,
+                    onOpen = { item ->
+                        if (key.series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<MovieDetails> { key ->
+                MobileMovieScreen(
+                    movieId = key.movieId,
+                    name = key.name,
+                    poster = key.poster,
+                    extension = key.extension,
+                    onPlay = { extension, startOver ->
+                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver))
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<SeriesDetails> { key ->
+                MobileSeriesScreen(
+                    seriesId = key.seriesId,
+                    name = key.name,
+                    poster = key.poster,
+                    onPlay = { episodeId, startOver ->
+                        backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<PlayMovie> { key ->
+                MobileVodPlayerScreen(
+                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver) },
+                    onClose = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<PlayEpisode> { key ->
+                MobileVodPlayerScreen(
+                    start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
                     onClose = { backStack.removeLastOrNull() },
                 )
             }

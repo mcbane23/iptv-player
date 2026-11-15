@@ -71,6 +71,10 @@ class ChannelRepository @Inject constructor(
         }
     }
 
+    /** Da li je lista Xtream nalog (takve liste imaju i filmove i serije). */
+    fun observeIsXtream(playlistId: Long): Flow<Boolean> =
+        playlistDao.observeById(playlistId).map { it?.type == PlaylistType.XTREAM }
+
     fun observeChannelCount(playlistId: Long): Flow<Int> = channelDao.observeCountByPlaylist(playlistId)
 
     fun observeFavoriteCount(playlistId: Long): Flow<Int> = channelDao.observeFavoriteCount(playlistId)

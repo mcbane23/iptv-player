@@ -3,7 +3,7 @@
 Besplatan IPTV plejer za Android telefon i Android TV. Aplikacija ne sadrži nikakav
 sadržaj: korisnik dodaje sopstvene liste (M3U ili Xtream Codes nalog).
 
-**Stanje:** Faze 0 do 4 urađene: liste (M3U link, M3U fajl, Xtream Codes), gledanje kanala uživo na telefonu i TV-u, favoriti, nedavno gledano, pretraga, uređivanje kategorija i TV vodič (EPG). Filmovi i serije stižu u Fazi 5.
+**Stanje:** Faze 0 do 5 urađene: liste (M3U link, M3U fajl, Xtream Codes), gledanje kanala uživo na telefonu i TV-u, favoriti, nedavno gledano, pretraga, uređivanje kategorija, TV vodič (EPG) i filmovi i serije za Xtream naloge, sa nastavkom gledanja.
 
 - [PLAN.md](PLAN.md): detaljan plan, faze i odluke
 - [CLAUDE.md](CLAUDE.md): pravila za rad kroz Claude Code

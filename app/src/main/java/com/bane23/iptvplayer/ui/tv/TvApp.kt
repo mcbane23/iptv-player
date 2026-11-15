@@ -17,10 +17,15 @@ import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
+import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
+import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
 import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
+import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
 import com.bane23.iptvplayer.ui.common.navigation.Settings
+import com.bane23.iptvplayer.ui.common.navigation.Vod
 
 /** Koren UI-ja za TV. */
 @Composable
@@ -51,6 +56,8 @@ fun TvApp() {
                     onGuide = { playlistId, categoryId -> backStack.add(Guide(playlistId, categoryId)) },
                     onManageCategories = { backStack.add(ManageCategories) },
                     onSettings = { backStack.add(Settings) },
+                    onMovies = { backStack.add(Vod(series = false)) },
+                    onSeries = { backStack.add(Vod(series = true)) },
                     viewModel = liveTvViewModel,
                 )
             }
@@ -68,6 +75,49 @@ fun TvApp() {
             }
             entry<Player> { key ->
                 TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
+            }
+            entry<Vod> { key ->
+                TvVodScreen(
+                    series = key.series,
+                    onOpen = { item ->
+                        if (key.series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                )
+            }
+            entry<MovieDetails> { key ->
+                TvMovieScreen(
+                    movieId = key.movieId,
+                    name = key.name,
+                    poster = key.poster,
+                    extension = key.extension,
+                    onPlay = { extension, startOver ->
+                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver))
+                    },
+                )
+            }
+            entry<SeriesDetails> { key ->
+                TvSeriesScreen(
+                    seriesId = key.seriesId,
+                    name = key.name,
+                    poster = key.poster,
+                    onPlay = { episodeId, startOver ->
+                        backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                    },
+                )
+            }
+            entry<PlayMovie> { key ->
+                TvVodPlayerScreen(
+                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver) },
+                )
+            }
+            entry<PlayEpisode> { key ->
+                TvVodPlayerScreen(
+                    start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
+                )
             }
             entry<Playlists> {
                 TvPlaylistsScreen(

@@ -360,7 +360,7 @@ private fun ChannelListPanel(
 }
 
 @Composable
-private fun TrackDialog(
+internal fun TrackDialog(
     title: String,
     options: List<Pair<String, Boolean>>,
     emptyText: String?,
@@ -440,7 +440,7 @@ private fun rememberPlayerGestures(): PlayerGestures {
 
 /** Sakriva sistemske trake dok je plejer na ekranu. */
 @Composable
-private fun ImmersiveMode() {
+internal fun ImmersiveMode() {
     val activity = LocalActivity.current
     val view = LocalView.current
     DisposableEffect(activity, view) {
