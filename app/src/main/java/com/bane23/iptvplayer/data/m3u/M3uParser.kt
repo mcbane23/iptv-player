@@ -27,13 +27,16 @@ sealed interface M3uItem {
  */
 object M3uParser {
 
+    /** Byte-order-mark kojim neki editori započinju fajl. */
+    private val BOM = 0xFEFF.toChar().toString()
+
     fun parse(lines: Sequence<String>): Sequence<M3uItem> = sequence {
         var pending: PendingEntry? = null
         var first = true
         for (raw in lines) {
             var line = raw.trim()
             if (first) {
-                line = line.removePrefix("﻿").trim()
+                line = line.removePrefix(BOM).trim()
             }
             if (line.isEmpty()) continue
             first = false

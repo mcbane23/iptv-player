@@ -28,7 +28,7 @@ class M3uParserTest {
 
     @Test
     fun `header with BOM and no attributes`() {
-        val items = parse("﻿#EXTM3U\n")
+        val items = parse(0xFEFF.toChar() + "#EXTM3U\n")
         assertEquals(M3uItem.Header(null), items.single())
     }
 
