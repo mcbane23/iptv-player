@@ -8,7 +8,10 @@ import com.bane23.iptvplayer.data.lan.PairingResult
 import com.bane23.iptvplayer.data.lan.PairingServer
 import com.bane23.iptvplayer.data.lan.PairingSubmission
 import com.bane23.iptvplayer.data.lan.PairingTexts
+import com.bane23.iptvplayer.data.lan.TransferBundle
+import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.repo.PlaylistRepository
+import com.bane23.iptvplayer.data.repo.TransferRepository
 import com.bane23.iptvplayer.domain.PlaylistDraft
 import com.bane23.iptvplayer.domain.PlaylistError
 import com.bane23.iptvplayer.domain.PlaylistError.Kind
@@ -36,6 +39,11 @@ data class PairingUiState(
     val working: Boolean = false,
     /** Naziv liste koja je upravo dodata. */
     val addedName: String? = null,
+    /** Prenos svih lista iz aplikacije na telefonu: koja se lista učitava (od 1) i koliko ih je. */
+    val transferStep: Int = 0,
+    val transferTotal: Int = 0,
+    /** Ishod poslednjeg prenosa svih lista. */
+    val transferResult: TransferResult? = null,
 )
 
 /**
@@ -46,11 +54,12 @@ data class PairingUiState(
 class PairingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: PlaylistRepository,
+    private val transfers: TransferRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PairingUiState())
     val state: StateFlow<PairingUiState> = _state.asStateFlow()
 
-    private val server = PairingServer(texts(), ::submit)
+    private val server = PairingServer(texts(), ::submit, onBundle = ::receive)
 
     init {
         start()
@@ -99,7 +108,7 @@ class PairingViewModel @Inject constructor(
                 epgUrl = submission.epgUrl,
             )
         }
-        _state.update { it.copy(working = true) }
+        _state.update { it.copy(working = true, transferResult = null) }
         return try {
             runBlocking { repository.addPlaylist(draft) }
             _state.update { it.copy(working = false, addedName = draft.name) }
@@ -107,6 +116,24 @@ class PairingViewModel @Inject constructor(
         } catch (e: PlaylistException) {
             _state.update { it.copy(working = false) }
             PairingResult.Failed(message(e.error))
+        }
+    }
+
+    /** Paket sa svim listama iz aplikacije na telefonu. Poziva ga server na svojoj niti. */
+    private fun receive(bundle: TransferBundle): TransferResult {
+        _state.update {
+            it.copy(working = true, addedName = null, transferResult = null, transferTotal = bundle.playlists.size)
+        }
+        return try {
+            val result = runBlocking {
+                transfers.importBundle(bundle) { step, total ->
+                    _state.update { it.copy(transferStep = step, transferTotal = total) }
+                }
+            }
+            _state.update { it.copy(transferResult = result) }
+            result
+        } finally {
+            _state.update { it.copy(working = false, transferStep = 0, transferTotal = 0) }
         }
     }
 
@@ -149,5 +176,8 @@ class PairingViewModel @Inject constructor(
         doneTitle = context.getString(R.string.pairing_page_done_title),
         doneText = context.getString(R.string.pairing_page_done_text),
         notFound = context.getString(R.string.pairing_page_not_found),
+        appHeading = context.getString(R.string.pairing_page_app_heading),
+        appText = context.getString(R.string.pairing_page_app_text),
+        appButton = context.getString(R.string.pairing_page_app_button),
     )
 }

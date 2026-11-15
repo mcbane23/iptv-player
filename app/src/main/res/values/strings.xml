@@ -209,4 +209,25 @@
     <string name="settings_subtitle_language">Subtitles</string>
     <string name="settings_subtitle_language_summary">Subtitles in this language turn on by themselves. It also follows what you pick in the player.</string>
     <string name="language_default">As offered by the stream</string>
+    <string name="pairing_step_app">Already have this app with your playlists on the phone? Tap “Open the app” on that page to send them all at once.</string>
+    <string name="pairing_page_app_heading">Send everything from the app</string>
+    <string name="pairing_page_app_text">If this app is installed on this phone, it can send all its playlists, favorites and settings to the TV at once.</string>
+    <string name="pairing_page_app_button">Open the app</string>
+    <string name="transfer_title">Send playlists to the TV</string>
+    <string name="transfer_target">TV address: %1$s</string>
+    <plurals name="transfer_count">
+        <item quantity="one">%1$d playlist will be sent, with its favorites, category order and the app settings.</item>
+        <item quantity="other">%1$d playlists will be sent, with their favorites, category order and the app settings.</item>
+    </plurals>
+    <string name="transfer_skipped_files">Playlists that cannot be sent (loaded from a file on this phone, or with an unreadable password): %1$d</string>
+    <string name="transfer_warning">Account passwords are sent too, straight to the TV over your home network. Send only if this is your TV and its screen is showing the QR code.</string>
+    <string name="transfer_send">Send to TV</string>
+    <string name="transfer_sending">Sending… The TV is loading the playlists, which can take a few minutes. Keep this screen open.</string>
+    <string name="transfer_summary">New playlists: %1$d · already on the TV: %2$d · failed: %3$d</string>
+    <string name="transfer_done_hint">You can continue on the TV.</string>
+    <string name="transfer_nothing">There are no playlists on this phone that can be sent.</string>
+    <string name="transfer_bad_target">This link is not valid. Scan the code on the TV again.</string>
+    <string name="transfer_unreachable">The TV is not responding. Check that the QR code screen is still open on the TV and that the phone is on the same Wi-Fi.</string>
+    <string name="transfer_refused">The TV did not accept the playlists. Scan the code on the TV again; if that does not help, update the app on the TV.</string>
+    <string name="transfer_tv_working">Playlists received from the phone, loading %1$d of %2$d…</string>
 </resources>

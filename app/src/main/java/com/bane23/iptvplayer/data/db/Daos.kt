@@ -239,6 +239,10 @@ interface FavoriteDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(favorite: FavoriteEntity)
 
+    /** Ključevi omiljenih kanala liste, redom kojim su dodati. */
+    @Query("SELECT channelKey FROM favorites WHERE playlistId = :playlistId ORDER BY addedAt")
+    suspend fun keysByPlaylist(playlistId: Long): List<String>
+
     @Query("DELETE FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey")
     suspend fun delete(playlistId: Long, channelKey: String)
 
