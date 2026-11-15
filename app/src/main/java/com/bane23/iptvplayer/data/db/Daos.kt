@@ -12,6 +12,11 @@ import kotlinx.coroutines.flow.Flow
 private const val FAVORITE_COLUMN =
     "EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) AS favorite"
 
+/** Naslov emisije koja je u trenutku `:now` na programu kanala. */
+private const val NOW_COLUMN =
+    "(SELECT e.title FROM epg_programs e WHERE e.playlistId = ch.playlistId AND e.channelKey = ch.epgKey " +
+        "AND e.startMs <= :now AND e.stopMs > :now ORDER BY e.startMs DESC LIMIT 1) AS nowTitle"
+
 /** Kanali koji su u favoritima. Isti strim u više kategorija se računa jednom. */
 private const val FAVORITE_CHANNELS =
     "FROM channels ch JOIN favorites fav ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey " +
@@ -50,6 +55,15 @@ interface PlaylistDao {
 
     @Query("UPDATE playlists SET lastRefreshedAt = :time, epgUrl = :epgUrl WHERE id = :id")
     suspend fun markRefreshed(id: Long, time: Long, epgUrl: String?)
+
+    @Query("SELECT * FROM playlists")
+    suspend fun getAll(): List<PlaylistEntity>
+
+    @Query("SELECT * FROM playlists WHERE id = :id")
+    fun observeById(id: Long): Flow<PlaylistEntity?>
+
+    @Query("UPDATE playlists SET epgRefreshedAt = :time WHERE id = :id")
+    suspend fun markEpgRefreshed(id: Long, time: Long)
 
     @Query("DELETE FROM playlists WHERE id = :id")
     suspend fun deleteById(id: Long)
@@ -106,23 +120,23 @@ interface ChannelDao {
 
     /** Kanali jedne kategorije, ili svi kanali liste kad je [categoryId] null. */
     @Query(
-        "SELECT ch.*, $FAVORITE_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
+        "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
             "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) ORDER BY ch.sortOrder",
     )
-    fun pagingSource(playlistId: Long, categoryId: Long?): PagingSource<Int, ChannelWithFavorite>
+    fun pagingSource(playlistId: Long, categoryId: Long?, now: Long): PagingSource<Int, ChannelWithFavorite>
 
-    @Query("SELECT ch.*, 1 AS favorite $FAVORITE_CHANNELS")
-    fun favoritesPagingSource(playlistId: Long): PagingSource<Int, ChannelWithFavorite>
+    @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $FAVORITE_CHANNELS")
+    fun favoritesPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
 
-    @Query("SELECT ch.*, $FAVORITE_COLUMN $RECENT_CHANNELS")
-    fun recentPagingSource(playlistId: Long): PagingSource<Int, ChannelWithFavorite>
+    @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS")
+    fun recentPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
 
     /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
     @Query(
-        "SELECT ch.*, $FAVORITE_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
+        "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
             "AND ch.name LIKE :pattern ESCAPE '\\' ORDER BY ch.name COLLATE NOCASE, ch.sortOrder",
     )
-    fun searchPagingSource(playlistId: Long, pattern: String): PagingSource<Int, ChannelWithFavorite>
+    fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
 
     @Query("SELECT ch.id $FAVORITE_CHANNELS")
     suspend fun favoriteIds(playlistId: Long): List<Long>
@@ -178,8 +192,46 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND number = :number ORDER BY sortOrder LIMIT 1")
     suspend fun byNumber(playlistId: Long, number: Int): ChannelEntity?
 
+    @Query("SELECT id, name, tvgId FROM channels WHERE playlistId = :playlistId")
+    suspend fun epgRows(playlistId: Long): List<ChannelEpgRow>
+
+    @Query("UPDATE channels SET epgKey = :epgKey WHERE id IN (:ids)")
+    suspend fun setEpgKey(ids: List<Long>, epgKey: String)
+
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
+}
+
+@Dao
+interface EpgDao {
+    @Insert
+    suspend fun insertAll(programs: List<EpgProgramEntity>)
+
+    /** Emisija koja je u toku i one posle nje. */
+    @Query(
+        "SELECT * FROM epg_programs WHERE playlistId = :playlistId AND channelKey = :channelKey " +
+            "AND stopMs > :now GROUP BY startMs ORDER BY startMs LIMIT :limit",
+    )
+    suspend fun upcoming(playlistId: Long, channelKey: String, now: Long, limit: Int): List<EpgProgramEntity>
+
+    /** Emisije kanala koje se bar delom prikazuju u periodu od [from] do [to]. */
+    @Query(
+        "SELECT * FROM epg_programs WHERE playlistId = :playlistId AND channelKey = :channelKey " +
+            "AND stopMs > :from AND startMs < :to GROUP BY startMs ORDER BY startMs",
+    )
+    suspend fun range(playlistId: Long, channelKey: String, from: Long, to: Long): List<EpgProgramEntity>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM epg_programs WHERE playlistId = :playlistId)")
+    fun observeHasPrograms(playlistId: Long): Flow<Boolean>
+
+    @Query("DELETE FROM epg_programs WHERE playlistId = :playlistId AND generation != :generation")
+    suspend fun deleteOtherGenerations(playlistId: Long, generation: Long)
+
+    @Query("DELETE FROM epg_programs WHERE playlistId = :playlistId AND generation = :generation")
+    suspend fun deleteGeneration(playlistId: Long, generation: Long)
+
+    @Query("DELETE FROM epg_programs WHERE stopMs < :cutoff")
+    suspend fun deleteEndedBefore(cutoff: Long)
 }
 
 @Dao
@@ -211,4 +263,23 @@ interface HistoryDao {
 
     @Query("DELETE FROM history WHERE playlistId = :playlistId")
     suspend fun clear(playlistId: Long)
+}
+
+@Dao
+interface WatchProgressDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(progress: WatchProgressEntity)
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun get(playlistId: Long, kind: String, itemId: Long): WatchProgressEntity?
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    fun observe(playlistId: Long, kind: String, itemId: Long): Flow<WatchProgressEntity?>
+
+    /** Napredak svih epizoda jedne serije, poslednje gledana prva. */
+    @Query(
+        "SELECT * FROM watch_progress WHERE playlistId = :playlistId AND seriesId = :seriesId " +
+            "AND kind = 'episode' ORDER BY updatedAt DESC",
+    )
+    fun observeSeries(playlistId: Long, seriesId: Long): Flow<List<WatchProgressEntity>>
 }

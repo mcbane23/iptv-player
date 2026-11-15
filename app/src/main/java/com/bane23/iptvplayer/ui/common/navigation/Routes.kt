@@ -25,6 +25,30 @@ data object Playlists : NavKey
 @Serializable
 data class EditPlaylist(val playlistId: Long? = null) : NavKey
 
+/** TV vodič u obliku mreže za kanale jedne kategorije ([categoryId] null = svi kanali liste). */
+@Serializable
+data class Guide(val playlistId: Long, val categoryId: Long?) : NavKey
+
+/** Filmovi ([series] = false) ili serije Xtream naloga: kategorije i posteri. */
+@Serializable
+data class Vod(val series: Boolean) : NavKey
+
+/** Detalji filma. Naziv, poster i nastavak fajla dolaze iz spiska, da ekran ima šta da prikaže odmah. */
+@Serializable
+data class MovieDetails(val movieId: Long, val name: String, val poster: String?, val extension: String?) : NavKey
+
+/** Detalji serije sa sezonama i epizodama. */
+@Serializable
+data class SeriesDetails(val seriesId: Long, val name: String, val poster: String?) : NavKey
+
+/** Plejer za film. [startOver] zanemaruje zapamćenu poziciju. */
+@Serializable
+data class PlayMovie(val movieId: Long, val name: String, val extension: String, val startOver: Boolean) : NavKey
+
+/** Plejer za epizodu serije. */
+@Serializable
+data class PlayEpisode(val seriesId: Long, val episodeId: Long, val startOver: Boolean) : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey

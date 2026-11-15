@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.data.xtream
 
+import kotlinx.serialization.json.JsonElement
 import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -21,4 +22,18 @@ interface XtreamApi {
     @Streaming
     @GET
     suspend fun liveStreams(@Url url: String, @Header("User-Agent") userAgent: String? = null): ResponseBody
+
+    /** Kategorije filmova ili serija (isti oblik kao kategorije kanala). */
+    @GET
+    suspend fun categories(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamCategory>
+
+    @GET
+    suspend fun vodStreams(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamVodStream>
+
+    @GET
+    suspend fun series(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamSeries>
+
+    /** Detalji filma ili serije. Oblik odgovora se razlikuje od panela do panela, vidi [XtreamVodParser]. */
+    @GET
+    suspend fun details(@Url url: String, @Header("User-Agent") userAgent: String? = null): JsonElement
 }

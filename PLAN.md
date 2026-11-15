@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0, 1, 2 i 3 urađene** (Faze 2 i 3 čekaju ručnu proveru na TV-u). Sledeći korak je Faza 4.
+Stanje: **Faze 0 do 5 urađene** (Faza 5 čeka ručnu proveru; Faze 2 do 4 još nisu probane na TV-u). Sledeći korak je Faza 6.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -98,7 +98,8 @@ app/src/main/java/<package>/
 - `categories`: id, playlistId, naziv, tip (LIVE, VOD, SERIES), redosled
 - `channels`: id, playlistId, categoryId, naziv, logo, streamUrl, tvgId, broj kanala,
   catchup podaci
-- `vod_items`, `series`, `episodes`: za filmove i serije (Faza 5)
+- `watch_progress`: dokle se stiglo sa filmom ili epizodom (Faza 5). Spiskovi filmova i serija se ne
+  čuvaju u bazi, učitavaju se po kategoriji kad zatrebaju.
 - `favorites`: playlistId, tip, itemId, redosled
 - `history`: itemId, tip, poslednja pozicija, vreme gledanja
 - `epg_programs`: tvgId, početak, kraj, naslov, opis (indeks po tvgId + početak)
@@ -215,20 +216,20 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 
 ### Faza 4: TV vodič (EPG)
 
-- [ ] XMLTV parser (strimovan, podrška za `.gz`), upis u `epg_programs`
-- [ ] Izvor: EPG link iz liste, ručno unet link, ili Xtream `xmltv.php`
-- [ ] Povezivanje programa sa kanalima preko `tvg-id` (uz rezervno poklapanje po nazivu)
-- [ ] „Sada / Sledeće” u listi kanala i u plejeru
-- [ ] Ekran vodiča u obliku mreže (vremenska osa), prilagođen i telefonu i TV-u
-- [ ] Periodično osvežavanje preko WorkManager-a, brisanje starih programa
-- [ ] Vremenski pomak (time shift) za EPG po listi
+- [x] XMLTV parser (strimovan, podrška za `.gz`), upis u `epg_programs`
+- [x] Izvor: EPG link iz liste, ručno unet link, ili Xtream `xmltv.php`
+- [x] Povezivanje programa sa kanalima preko `tvg-id` (uz rezervno poklapanje po nazivu)
+- [x] „Sada / Sledeće” u listi kanala i u plejeru
+- [x] Ekran vodiča u obliku mreže (vremenska osa), prilagođen i telefonu i TV-u
+- [x] Periodično osvežavanje preko WorkManager-a, brisanje starih programa
+- [x] Vremenski pomak (time shift) za EPG po listi
 
 ### Faza 5: Filmovi i serije (samo Xtream)
 
-- [ ] `get_vod_categories`, `get_vod_streams`, `get_vod_info`
-- [ ] `get_series_categories`, `get_series`, `get_series_info` (sezone i epizode)
-- [ ] Ekrani sa posterima, detalji, puštanje
-- [ ] Nastavak gledanja od zapamćene pozicije, sledeća epizoda
+- [x] `get_vod_categories`, `get_vod_streams`, `get_vod_info`
+- [x] `get_series_categories`, `get_series`, `get_series_info` (sezone i epizode)
+- [x] Ekrani sa posterima, detalji, puštanje
+- [x] Nastavak gledanja od zapamćene pozicije, sledeća epizoda
 
 ### Faza 6: Doterivanje TV interfejsa
 

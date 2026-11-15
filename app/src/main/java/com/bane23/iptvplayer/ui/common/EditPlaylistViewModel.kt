@@ -26,6 +26,9 @@ data class EditPlaylistUiState(
     val username: String = "",
     val password: String = "",
     val userAgent: String = "",
+    val epgUrl: String = "",
+    /** Pomak vodiča u satima, onako kako ga korisnik kuca (može biti i prazno ili samo "-"). */
+    val epgShift: String = "",
     val saving: Boolean = false,
     val error: PlaylistError? = null,
     /** Lista je sačuvana; ekran treba da se zatvori. */
@@ -61,6 +64,8 @@ class EditPlaylistViewModel @Inject constructor(
                     server = if (playlist.type == PlaylistType.XTREAM) playlist.source else "",
                     username = playlist.username.orEmpty(),
                     userAgent = playlist.userAgent.orEmpty(),
+                    epgUrl = playlist.epgUrl.orEmpty(),
+                    epgShift = playlist.epgShiftHours.takeIf { hours -> hours != 0 }?.toString().orEmpty(),
                 )
             }
         }
@@ -73,6 +78,13 @@ class EditPlaylistViewModel @Inject constructor(
     fun setUsername(value: String) = _state.update { it.copy(username = value) }
     fun setPassword(value: String) = _state.update { it.copy(password = value) }
     fun setUserAgent(value: String) = _state.update { it.copy(userAgent = value) }
+    fun setEpgUrl(value: String) = _state.update { it.copy(epgUrl = value) }
+
+    fun setEpgShift(value: String) {
+        // Dozvoljen je samo ceo broj sati, sa znakom minus ispred.
+        val clean = value.filterIndexed { index, c -> c.isDigit() || (c == '-' && index == 0) }.take(3)
+        _state.update { it.copy(epgShift = clean) }
+    }
 
     fun setFile(uri: String, suggestedName: String?) = _state.update {
         it.copy(
@@ -100,6 +112,8 @@ class EditPlaylistViewModel @Inject constructor(
             username = current.username,
             password = current.password,
             userAgent = current.userAgent,
+            epgUrl = current.epgUrl,
+            epgShiftHours = current.epgShift.toIntOrNull() ?: 0,
         )
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {

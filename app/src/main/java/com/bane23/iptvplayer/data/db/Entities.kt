@@ -23,6 +23,11 @@ data class PlaylistEntity(
     val lastRefreshedAt: Long? = null,
     /** User-Agent koji se šalje serveru ove liste; null = podrazumevani. */
     val userAgent: String? = null,
+    /** EPG link koji je uneo korisnik; ima prednost nad [epgUrl] iz same liste. */
+    val epgUrlOverride: String? = null,
+    /** Pomak vodiča u satima (kad provajder šalje vremena u pogrešnoj zoni). */
+    val epgShiftHours: Int = 0,
+    val epgRefreshedAt: Long? = null,
 )
 
 @Entity(
@@ -65,6 +70,7 @@ data class CategoryEntity(
         Index("playlistId", "name"),
         Index("playlistId", "number"),
         Index("playlistId", "stableKey"),
+        Index("playlistId", "epgKey"),
     ],
 )
 data class ChannelEntity(
@@ -90,7 +96,67 @@ data class ChannelEntity(
      * link strima za M3U, odnosno Xtream ID. Favoriti i istorija se vezuju za njega.
      */
     val stableKey: String,
+    /**
+     * ID kanala u vodiču (malim slovima). Pri uvozu liste to je [tvgId]; kanalima bez njega
+     * se dodeljuje pri učitavanju vodiča, ako se naziv poklopi sa nazivom kanala u vodiču.
+     */
+    val epgKey: String? = null,
 )
+
+/** Emisija iz TV vodiča. Vremena su u milisekundama (UTC), već sa pomakom liste. */
+@Entity(
+    tableName = "epg_programs",
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "channelKey", "startMs"), Index("stopMs")],
+)
+data class EpgProgramEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val playlistId: Long,
+    val channelKey: String,
+    val startMs: Long,
+    val stopMs: Long,
+    val title: String,
+    val description: String? = null,
+    /** Oznaka učitavanja vodiča kojem red pripada; posle uspešnog učitavanja stari redovi se brišu. */
+    val generation: Long,
+)
+
+/** Dokle je korisnik stigao sa filmom ili epizodom, za nastavak gledanja. */
+@Entity(
+    tableName = "watch_progress",
+    primaryKeys = ["playlistId", "kind", "itemId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "seriesId", "updatedAt")],
+)
+data class WatchProgressEntity(
+    val playlistId: Long,
+    /** "movie" ili "episode". */
+    val kind: String,
+    /** Xtream ID filma, odnosno epizode. */
+    val itemId: Long,
+    /** Serija kojoj epizoda pripada; 0 za film. */
+    val seriesId: Long,
+    val positionMs: Long,
+    val durationMs: Long,
+    val updatedAt: Long,
+)
+
+/** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
+data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?)
 
 /** Kanal koji je korisnik označio kao omiljen. */
 @Entity(
@@ -133,6 +199,8 @@ data class HistoryEntity(
 data class ChannelWithFavorite(
     @Embedded val channel: ChannelEntity,
     @ColumnInfo(name = "favorite") val favorite: Boolean,
+    /** Naslov emisije koja je trenutno na programu, ako vodič postoji. */
+    @ColumnInfo(name = "nowTitle") val nowTitle: String? = null,
 )
 
 data class PlaylistWithCount(

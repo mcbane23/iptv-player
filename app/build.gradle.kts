@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.okhttp)
+    implementation(libs.androidx.work.runtime)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
 

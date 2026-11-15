@@ -51,8 +51,11 @@ fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
     onSearch: () -> Unit,
+    onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onManageCategories: () -> Unit,
     onSettings: () -> Unit,
+    onMovies: () -> Unit,
+    onSeries: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
 ) {
@@ -94,7 +97,16 @@ fun TvLiveTvScreen(
             )
             if (playlistId != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (state.hasVod) {
+                        OutlinedButton(onClick = onMovies) { Text(stringResource(R.string.vod_movies)) }
+                        OutlinedButton(onClick = onSeries) { Text(stringResource(R.string.vod_series)) }
+                    }
                     OutlinedButton(onClick = onSearch) { Text(stringResource(R.string.action_search)) }
+                    OutlinedButton(
+                        onClick = { onGuide(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS }) },
+                    ) {
+                        Text(stringResource(R.string.guide_title))
+                    }
                     OutlinedButton(onClick = onManageCategories) {
                         Text(stringResource(R.string.categories_manage_title))
                     }
@@ -201,16 +213,28 @@ fun TvLiveTvScreen(
                             onLongClick = { channel?.let { channelsViewModel.toggleFavorite(it.id) } },
                         ) { color ->
                             ChannelLogo(url = channel?.logo, size = 36.dp)
-                            Text(
-                                text = channel?.name.orEmpty(),
-                                color = color,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(start = 16.dp),
-                            )
+                            ) {
+                                Text(
+                                    text = channel?.name.orEmpty(),
+                                    color = color,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                channel?.nowTitle?.let { nowTitle ->
+                                    Text(
+                                        text = nowTitle,
+                                        color = color.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
                             if (channel?.favorite == true) {
                                 Text(text = "★", color = color, modifier = Modifier.padding(start = 12.dp))
                             }

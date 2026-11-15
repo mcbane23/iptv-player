@@ -100,10 +100,26 @@ fun PlaylistFormFields(
                 onValueChange = viewModel::setUserAgent,
                 label = stringResource(R.string.field_user_agent),
                 enabled = enabled,
-                imeAction = ImeAction.Done,
                 supportingText = stringResource(R.string.field_user_agent_hint),
             )
         }
+        FormField(
+            value = state.epgUrl,
+            onValueChange = viewModel::setEpgUrl,
+            label = stringResource(R.string.field_epg_url),
+            enabled = enabled,
+            keyboardType = KeyboardType.Uri,
+            supportingText = stringResource(R.string.field_epg_url_hint),
+        )
+        FormField(
+            value = state.epgShift,
+            onValueChange = viewModel::setEpgShift,
+            label = stringResource(R.string.field_epg_shift),
+            enabled = enabled,
+            // Tastatura za brojeve na mnogim uređajima nema minus, zato obična.
+            imeAction = ImeAction.Done,
+            supportingText = stringResource(R.string.field_epg_shift_hint),
+        )
     }
 }
 

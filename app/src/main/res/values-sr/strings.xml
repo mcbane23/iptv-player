@@ -127,4 +127,47 @@
     <string name="settings_resume_last_summary">Kad se aplikacija otvori, odmah kreće kanal koji ste poslednji gledali.</string>
     <string name="setting_on">Uključeno</string>
     <string name="setting_off">Isključeno</string>
+
+    <!-- TV vodič -->
+    <string name="guide_title">TV vodič</string>
+    <string name="guide_earlier">Ranije</string>
+    <string name="guide_later">Kasnije</string>
+    <string name="guide_now">Sada</string>
+    <string name="guide_watch">Gledaj</string>
+    <string name="guide_no_data">Nema podataka u vodiču</string>
+    <string name="guide_loading">Vodič se učitava. Za velike liste to može da potraje nekoliko minuta.</string>
+    <string name="guide_no_source">Ova lista nema vodič. EPG link možete uneti pri izmeni liste.</string>
+    <string name="guide_failed">Vodič nije mogao da se učita (%1$s).</string>
+    <string name="guide_refreshed_at">Vodič osvežen %1$s</string>
+    <string name="guide_not_loaded">Vodič još nije učitan.</string>
+    <string name="epg_now">Sada %1$s: %2$s</string>
+    <string name="epg_next">Sledeće %1$s: %2$s</string>
+    <string name="action_close">Zatvori</string>
+    <string name="field_epg_url">EPG link (opciono)</string>
+    <string name="field_epg_url_hint">Ostavite prazno da se koristi vodič koji dolazi uz listu</string>
+    <string name="field_epg_shift">Pomak vodiča u satima (opciono)</string>
+    <string name="field_epg_shift_hint">Na primer 1 ili -2, ako vremena emisija u vodiču nisu tačna</string>
+
+    <!-- Filmovi i serije -->
+    <string name="vod_movies">Filmovi</string>
+    <string name="vod_series">Serije</string>
+    <string name="vod_loading">Učitavanje…</string>
+    <string name="vod_empty">Ovde nema ničega</string>
+    <string name="vod_load_failed">Učitavanje nije uspelo. Proverite internet vezu.</string>
+    <string name="vod_pick_category">Izaberite kategoriju levo</string>
+    <string name="vod_play">Pusti</string>
+    <string name="vod_resume_from">Nastavi od %1$s</string>
+    <string name="vod_start_over">Od početka</string>
+    <string name="vod_director">Režija: %1$s</string>
+    <string name="vod_cast">Uloge: %1$s</string>
+    <string name="vod_no_episodes">Ova serija nema epizoda</string>
+    <string name="vod_continue_episode">Nastavi: %1$s</string>
+    <string name="vod_season">Sezona %1$d</string>
+    <string name="vod_episode_label">S%1$d E%2$d</string>
+    <string name="vod_watched">Odgledano</string>
+    <string name="vod_progress">%1$s od %2$s</string>
+    <string name="vod_seek_back">−10 s</string>
+    <string name="vod_seek_forward">+10 s</string>
+    <string name="vod_next_episode">Sledeća epizoda</string>
+    <string name="vod_tv_hint">Levo i desno: preskok 10 s · OK: pauza · Gore: opcije</string>
 </resources>

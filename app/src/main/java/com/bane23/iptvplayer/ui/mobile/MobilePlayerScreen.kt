@@ -64,6 +64,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.ui.common.guide.nextLine
+import com.bane23.iptvplayer.ui.common.guide.nowLine
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -88,6 +91,7 @@ fun MobilePlayerScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
@@ -190,6 +194,7 @@ fun MobilePlayerScreen(
                     onSubtitles = { panel = Panel.SUBTITLES },
                     onAspect = viewModel::cycleAspectMode,
                     isFavorite = isFavorite,
+                    nowNext = nowNext,
                     onFavorite = viewModel::toggleFavorite,
                     onPip = rememberEnterPictureInPicture(),
                 )
@@ -245,6 +250,7 @@ private fun PlayerControls(
     onSubtitles: () -> Unit,
     onAspect: () -> Unit,
     isFavorite: Boolean,
+    nowNext: NowNext,
     onFavorite: () -> Unit,
     onPip: (() -> Unit)?,
 ) {
@@ -258,16 +264,28 @@ private fun PlayerControls(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onClose) { Text(stringResource(R.string.action_back)) }
-            Text(
-                text = ui.channel?.name.orEmpty(),
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 8.dp),
-            )
+            ) {
+                Text(
+                    text = ui.channel?.name.orEmpty(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                for (line in listOfNotNull(nowNext.nowLine(), nowNext.nextLine())) {
+                    Text(
+                        text = line,
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             if (ui.channel != null) FavoriteButton(favorite = isFavorite, onClick = onFavorite)
         }
 
@@ -342,7 +360,7 @@ private fun ChannelListPanel(
 }
 
 @Composable
-private fun TrackDialog(
+internal fun TrackDialog(
     title: String,
     options: List<Pair<String, Boolean>>,
     emptyText: String?,
@@ -422,7 +440,7 @@ private fun rememberPlayerGestures(): PlayerGestures {
 
 /** Sakriva sistemske trake dok je plejer na ekranu. */
 @Composable
-private fun ImmersiveMode() {
+internal fun ImmersiveMode() {
     val activity = LocalActivity.current
     val view = LocalView.current
     DisposableEffect(activity, view) {
