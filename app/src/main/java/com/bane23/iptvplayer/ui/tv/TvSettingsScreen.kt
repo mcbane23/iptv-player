@@ -34,7 +34,10 @@ import com.bane23.iptvplayer.ui.common.playerSettingChoices
  * OK na podešavanju otvara njegove vrednosti, OK na vrednosti je bira i vraća fokus levo.
  */
 @Composable
-fun TvSettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun TvSettingsScreen(
+    onCategories: (() -> Unit)? = null,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
@@ -64,6 +67,17 @@ fun TvSettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 modifier = Modifier.weight(0.55f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
+                if (onCategories != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.categories_manage_title),
+                        trailing = "›",
+                        onClick = onCategories,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
                 TvTextRow(
                     text = stringResource(R.string.settings_resume_last),
                     trailing = stringResource(if (resumeLastChannel) R.string.setting_on else R.string.setting_off),

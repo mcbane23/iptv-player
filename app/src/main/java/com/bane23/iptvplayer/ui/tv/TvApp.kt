@@ -22,11 +22,8 @@ import com.bane23.iptvplayer.ui.common.navigation.PairPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
 import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
-import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
-import com.bane23.iptvplayer.ui.common.navigation.Settings
-import com.bane23.iptvplayer.ui.common.navigation.Vod
 
 /** Koren UI-ja za TV. */
 @Composable
@@ -50,23 +47,28 @@ fun TvApp() {
                         liveTvViewModel.channelToResume()?.let { backStack.add(Player(it, null)) }
                     }
                 }
-                TvLiveTvScreen(
+                TvHomeScreen(
+                    liveTvViewModel = liveTvViewModel,
                     onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
-                    onManagePlaylists = { backStack.add(Playlists) },
                     onSearch = { backStack.add(Search) },
-                    onGuide = { playlistId, categoryId -> backStack.add(Guide(playlistId, categoryId)) },
-                    onManageCategories = { backStack.add(ManageCategories) },
-                    onSettings = { backStack.add(Settings) },
-                    onMovies = { backStack.add(Vod(series = false)) },
-                    onSeries = { backStack.add(Vod(series = true)) },
-                    viewModel = liveTvViewModel,
+                    onGuide = { playlistId -> backStack.add(Guide(playlistId, null)) },
+                    onOpenVod = { item, series ->
+                        if (series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                    onAddPlaylist = { backStack.add(EditPlaylist()) },
+                    onAddFromPhone = { backStack.add(PairPlaylist) },
+                    onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
+                    onCategories = { backStack.add(ManageCategories) },
                 )
             }
             entry<Search> {
                 TvSearchScreen(onPlay = { channelId -> backStack.add(Player(channelId, null)) })
             }
             entry<ManageCategories> { TvCategoriesScreen() }
-            entry<Settings> { TvSettingsScreen() }
             entry<Guide> { key ->
                 TvGuideScreen(
                     playlistId = key.playlistId,
@@ -76,18 +78,6 @@ fun TvApp() {
             }
             entry<Player> { key ->
                 TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
-            }
-            entry<Vod> { key ->
-                TvVodScreen(
-                    series = key.series,
-                    onOpen = { item ->
-                        if (key.series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
-                        } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
-                        }
-                    },
-                )
             }
             entry<MovieDetails> { key ->
                 TvMovieScreen(
@@ -118,13 +108,6 @@ fun TvApp() {
             entry<PlayEpisode> { key ->
                 TvVodPlayerScreen(
                     start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
-                )
-            }
-            entry<Playlists> {
-                TvPlaylistsScreen(
-                    onAdd = { backStack.add(EditPlaylist()) },
-                    onAddFromPhone = { backStack.add(PairPlaylist) },
-                    onEdit = { id -> backStack.add(EditPlaylist(id)) },
                 )
             }
             entry<PairPlaylist> {

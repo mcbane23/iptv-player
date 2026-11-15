@@ -1,7 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +30,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -52,12 +49,6 @@ private const val ALL_CHANNELS = 0L
 fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
-    onSearch: () -> Unit,
-    onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
-    onManageCategories: () -> Unit,
-    onSettings: () -> Unit,
-    onMovies: () -> Unit,
-    onSeries: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
 ) {
@@ -100,33 +91,6 @@ fun TvLiveTvScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(end = 24.dp),
             )
-            if (playlistId != null) {
-                // Dugmadi ima dosta, pa se red pomera vodoravno ako ne stane na ekran.
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-                ) {
-                    if (state.hasVod) {
-                        OutlinedButton(onClick = onMovies) { Text(stringResource(R.string.vod_movies)) }
-                        OutlinedButton(onClick = onSeries) { Text(stringResource(R.string.vod_series)) }
-                    }
-                    OutlinedButton(onClick = onSearch) { Text(stringResource(R.string.action_search)) }
-                    OutlinedButton(
-                        onClick = { onGuide(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS }) },
-                    ) {
-                        Text(stringResource(R.string.guide_title))
-                    }
-                    OutlinedButton(onClick = onManageCategories) {
-                        Text(stringResource(R.string.categories_manage_title))
-                    }
-                    OutlinedButton(onClick = onManagePlaylists) {
-                        Text(stringResource(R.string.playlists_title))
-                    }
-                    OutlinedButton(onClick = onSettings) { Text(stringResource(R.string.settings_title)) }
-                }
-            }
         }
 
         when {

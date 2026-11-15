@@ -26,8 +26,6 @@ import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SendToTv
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
-import com.bane23.iptvplayer.ui.common.navigation.Settings
-import com.bane23.iptvplayer.ui.common.navigation.Vod
 
 /**
  * Koren UI-ja za telefon. [sendTarget] je adresa TV-a kada je aplikacija otvorena linkom sa
@@ -63,17 +61,22 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         liveTvViewModel.channelToResume()?.let { backStack.add(Player(it, null)) }
                     }
                 }
-                MobileLiveTvScreen(
+                MobileHomeScreen(
+                    liveTvViewModel = liveTvViewModel,
                     onOpenCategory = { playlistId, categoryId, title ->
                         backStack.add(Channels(playlistId, categoryId, title))
                     },
-                    onManagePlaylists = { backStack.add(Playlists) },
                     onSearch = { backStack.add(Search) },
-                    onManageCategories = { backStack.add(ManageCategories) },
-                    onSettings = { backStack.add(Settings) },
-                    onMovies = { backStack.add(Vod(series = false)) },
-                    onSeries = { backStack.add(Vod(series = true)) },
-                    viewModel = liveTvViewModel,
+                    onGuide = { playlistId -> backStack.add(Guide(playlistId, null)) },
+                    onOpenVod = { item, series ->
+                        if (series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                    onPlaylists = { backStack.add(Playlists) },
+                    onCategories = { backStack.add(ManageCategories) },
                 )
             }
             entry<Search> {
@@ -84,9 +87,6 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<ManageCategories> {
                 MobileCategoriesScreen(onBack = { backStack.removeLastOrNull() })
-            }
-            entry<Settings> {
-                MobileSettingsScreen(onBack = { backStack.removeLastOrNull() })
             }
             entry<Channels> { key ->
                 MobileChannelsScreen(
@@ -111,19 +111,6 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     channelId = key.channelId,
                     categoryId = key.categoryId,
                     onClose = { backStack.removeLastOrNull() },
-                )
-            }
-            entry<Vod> { key ->
-                MobileVodScreen(
-                    series = key.series,
-                    onOpen = { item ->
-                        if (key.series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
-                        } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
-                        }
-                    },
-                    onBack = { backStack.removeLastOrNull() },
                 )
             }
             entry<MovieDetails> { key ->
