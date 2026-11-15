@@ -259,7 +259,8 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Više profila
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
-- [ ] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV)
+- [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod
+  aplikacija na telefonu šalje sve liste, omiljene kanale, uređenje kategorija i podešavanja pravo na TV
 - [ ] Prikaz više kanala odjednom (multi-view)
 - [ ] Automatsko pokretanje pri paljenju uređaja (TV box)
 

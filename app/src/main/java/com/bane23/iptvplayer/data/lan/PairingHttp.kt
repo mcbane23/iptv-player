@@ -4,8 +4,17 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URLDecoder
 
-/** Jedan HTTP zahtev sa telefona. [form] su polja iz tela POST zahteva. */
-data class PairingRequest(val method: String, val path: String, val form: Map<String, String>)
+/**
+ * Jedan HTTP zahtev sa telefona. [form] su polja iz tela POST zahteva, [host] je adresa na koju se
+ * telefon obratio (zaglavlje Host), a [body] sirovo telo kada zahtev nosi paket umesto forme.
+ */
+data class PairingRequest(
+    val method: String,
+    val path: String,
+    val form: Map<String, String>,
+    val host: String = "",
+    val body: String = "",
+)
 
 /**
  * Najmanji deo HTTP-a koji je potreban da telefon u istoj mreži otvori stranicu sa TV-a i pošalje
@@ -14,6 +23,9 @@ data class PairingRequest(val method: String, val path: String, val form: Map<St
 object PairingHttp {
     private const val MAX_HEADER_BYTES = 16 * 1024
     private const val MAX_BODY_BYTES = 32 * 1024
+
+    /** Paket sa svim listama može da nosi mnogo omiljenih kanala, pa sme da bude veći od forme. */
+    private const val MAX_BUNDLE_BYTES = 2 * 1024 * 1024
 
     /** Čita zahtev. Vraća null ako nije ispravan ili je prevelik. */
     fun readRequest(input: InputStream): PairingRequest? {
@@ -24,13 +36,18 @@ object PairingHttp {
         val method = requestLine[0].uppercase()
         val path = requestLine[1].substringBefore('?')
         var contentLength = 0
+        var host = ""
         for (line in lines.drop(1)) {
             val name = line.substringBefore(':').trim()
             if (name.equals("Content-Length", ignoreCase = true)) {
                 contentLength = line.substringAfter(':').trim().toIntOrNull() ?: return null
+            } else if (name.equals("Host", ignoreCase = true)) {
+                host = line.substringAfter(':').trim()
             }
         }
-        if (contentLength < 0 || contentLength > MAX_BODY_BYTES) return null
+        val isBundle = path.endsWith(TransferTarget.BUNDLE_PATH)
+        if (contentLength < 0 || contentLength > (if (isBundle) MAX_BUNDLE_BYTES else MAX_BODY_BYTES)) return null
+        var rawBody = ""
         val form = if (method == "POST" && contentLength > 0) {
             val body = ByteArray(contentLength)
             var read = 0
@@ -39,11 +56,17 @@ object PairingHttp {
                 if (count < 0) return null
                 read += count
             }
-            decodeForm(String(body, Charsets.UTF_8))
+            val text = String(body, Charsets.UTF_8)
+            if (isBundle) {
+                rawBody = text
+                emptyMap()
+            } else {
+                decodeForm(text)
+            }
         } else {
             emptyMap()
         }
-        return PairingRequest(method, path, form)
+        return PairingRequest(method, path, form, host, rawBody)
     }
 
     /** Čita zaglavlje do praznog reda, bajt po bajt, da se ne bi pročitao i deo tela. */
@@ -80,8 +103,13 @@ object PairingHttp {
         .toMap()
 
     /** Ceo odgovor (zaglavlje i telo) za HTML stranicu. */
-    fun htmlResponse(status: Int, html: String): ByteArray {
-        val body = html.toByteArray(Charsets.UTF_8)
+    fun htmlResponse(status: Int, html: String): ByteArray = response(status, "text/html; charset=utf-8", html)
+
+    /** Odgovor aplikaciji na telefonu (ishod prenosa). */
+    fun jsonResponse(status: Int, json: String): ByteArray = response(status, "application/json; charset=utf-8", json)
+
+    private fun response(status: Int, contentType: String, text: String): ByteArray {
+        val body = text.toByteArray(Charsets.UTF_8)
         val reason = when (status) {
             200 -> "OK"
             400 -> "Bad Request"
@@ -89,7 +117,7 @@ object PairingHttp {
             else -> "Error"
         }
         val head = "HTTP/1.1 $status $reason\r\n" +
-            "Content-Type: text/html; charset=utf-8\r\n" +
+            "Content-Type: $contentType\r\n" +
             "Content-Length: ${body.size}\r\n" +
             "Cache-Control: no-store\r\n" +
             "Connection: close\r\n\r\n"

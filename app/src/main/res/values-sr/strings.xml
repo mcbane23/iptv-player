@@ -208,4 +208,26 @@
     <string name="settings_subtitle_language">Titlovi</string>
     <string name="settings_subtitle_language_summary">Titlovi na ovom jeziku se sami uključuju. Prati i ono što izaberete u plejeru.</string>
     <string name="language_default">Kako strim ponudi</string>
+    <string name="pairing_step_app">Već imate ovu aplikaciju sa listama na telefonu? Na toj stranici izaberite „Otvori aplikaciju” i pošaljite sve odjednom.</string>
+    <string name="pairing_page_app_heading">Pošalji sve iz aplikacije</string>
+    <string name="pairing_page_app_text">Ako je ova aplikacija instalirana na ovom telefonu, može odjednom da pošalje sve svoje liste, omiljene kanale i podešavanja na TV.</string>
+    <string name="pairing_page_app_button">Otvori aplikaciju</string>
+    <string name="transfer_title">Slanje lista na TV</string>
+    <string name="transfer_target">Adresa TV-a: %1$s</string>
+    <plurals name="transfer_count">
+        <item quantity="one">Biće poslata %1$d lista, sa omiljenim kanalima, redosledom kategorija i podešavanjima aplikacije.</item>
+        <item quantity="few">Biće poslate %1$d liste, sa omiljenim kanalima, redosledom kategorija i podešavanjima aplikacije.</item>
+        <item quantity="other">Biće poslato %1$d lista, sa omiljenim kanalima, redosledom kategorija i podešavanjima aplikacije.</item>
+    </plurals>
+    <string name="transfer_skipped_files">Liste koje ne mogu da se pošalju (učitane iz fajla na ovom telefonu ili sa nečitljivom lozinkom): %1$d</string>
+    <string name="transfer_warning">Šalju se i lozinke naloga, pravo na TV kroz kućnu mrežu. Pošaljite samo ako je ovo vaš TV i na njegovom ekranu je QR kod.</string>
+    <string name="transfer_send">Pošalji na TV</string>
+    <string name="transfer_sending">Slanje… TV učitava liste, što može da potraje nekoliko minuta. Ostavite ovaj ekran otvoren.</string>
+    <string name="transfer_summary">Nove liste: %1$d · već postoje na TV-u: %2$d · neuspešno: %3$d</string>
+    <string name="transfer_done_hint">Možete da nastavite na TV-u.</string>
+    <string name="transfer_nothing">Na ovom telefonu nema lista koje mogu da se pošalju.</string>
+    <string name="transfer_bad_target">Ovaj link nije ispravan. Ponovo skenirajte kod sa TV-a.</string>
+    <string name="transfer_unreachable">TV se ne javlja. Proverite da li je na TV-u i dalje otvoren ekran sa QR kodom i da li je telefon na istom Wi-Fi-ju.</string>
+    <string name="transfer_refused">TV nije prihvatio liste. Ponovo skenirajte kod sa TV-a; ako ne pomogne, ažurirajte aplikaciju na TV-u.</string>
+    <string name="transfer_tv_working">Liste su stigle sa telefona, učitava se %1$d od %2$d…</string>
 </resources>

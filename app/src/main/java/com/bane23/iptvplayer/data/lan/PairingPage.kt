@@ -17,6 +17,10 @@ data class PairingTexts(
     val doneTitle: String,
     val doneText: String,
     val notFound: String,
+    /** Odeljak za slanje svih lista iz aplikacije na telefonu. */
+    val appHeading: String = "",
+    val appText: String = "",
+    val appButton: String = "",
 )
 
 /** Šta je korisnik poslao sa telefona. */
@@ -60,15 +64,28 @@ data class PairingSubmission(
 object PairingPage {
     /**
      * Stranica sa dve forme: Xtream nalog i M3U link. [error] se prikazuje na vrhu, a [previous]
-     * vraća ono što je već uneto (osim lozinke), da se posle greške ne kuca sve ponovo.
+     * vraća ono što je već uneto (osim lozinke), da se posle greške ne kuca sve ponovo. Ako je dat
+     * [appLink], na vrhu je i dugme koje otvara aplikaciju na telefonu da pošalje sve liste odjednom.
      */
-    fun form(texts: PairingTexts, error: String? = null, previous: PairingSubmission? = null): String {
+    fun form(
+        texts: PairingTexts,
+        error: String? = null,
+        previous: PairingSubmission? = null,
+        appLink: String? = null,
+    ): String {
         val name = previous?.name.orEmpty()
         val epg = previous?.epgUrl.orEmpty()
         return page(texts.title) {
             append("<h1>").append(escape(texts.title)).append("</h1>")
             append("<p>").append(escape(texts.intro)).append("</p>")
             if (error != null) append("<p class=\"error\">").append(escape(error).replace("\n", "<br>")).append("</p>")
+
+            if (appLink != null) {
+                append("<div class=\"card\"><h2>").append(escape(texts.appHeading)).append("</h2>")
+                append("<p class=\"note\">").append(escape(texts.appText)).append("</p>")
+                append("<a class=\"button\" href=\"").append(escape(appLink)).append("\">")
+                append(escape(texts.appButton)).append("</a></div>")
+            }
 
             append("<form method=\"post\"><h2>").append(escape(texts.xtreamHeading)).append("</h2>")
             hidden(PairingSubmission.FIELD_KIND, PairingSubmission.KIND_XTREAM)
@@ -143,10 +160,11 @@ object PairingPage {
     private const val STYLE =
         "body{font-family:sans-serif;margin:0 auto;max-width:520px;padding:16px;background:#12151b;color:#e8eaed}" +
             "h1{font-size:22px}h2{font-size:18px;margin:0 0 8px}" +
-            "form{background:#1c2029;border-radius:12px;padding:16px;margin:16px 0}" +
+            "form,.card{background:#1c2029;border-radius:12px;padding:16px;margin:16px 0}" +
+            "a.button{display:block;text-align:center;text-decoration:none;margin-top:12px}" +
             "label{display:block;margin:10px 0;font-size:14px;color:#aab}" +
             "input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:12px;font-size:16px;" +
             "border-radius:8px;border:1px solid #445;background:#0e1116;color:#fff}" +
-            "button{width:100%;padding:14px;font-size:16px;border:0;border-radius:8px;background:#4c8dff;color:#fff}" +
+            "button,a.button{width:100%;box-sizing:border-box;padding:14px;font-size:16px;border:0;border-radius:8px;background:#4c8dff;color:#fff}" +
             ".error{background:#5a1f24;border-radius:8px;padding:12px}.note{font-size:13px;color:#99a;margin:8px 0 0}"
 }

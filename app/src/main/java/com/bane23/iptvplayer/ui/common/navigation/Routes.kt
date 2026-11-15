@@ -53,6 +53,10 @@ data class PlayEpisode(val seriesId: Long, val episodeId: Long, val startOver: B
 @Serializable
 data object PairPlaylist : NavKey
 
+/** Slanje svih lista i podešavanja na TV. [target] je adresa TV-a iz linka sa njegove stranice. */
+@Serializable
+data class SendToTv(val target: String) : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey

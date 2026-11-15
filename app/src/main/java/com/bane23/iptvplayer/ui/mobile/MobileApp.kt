@@ -24,16 +24,28 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
 import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
+import com.bane23.iptvplayer.ui.common.navigation.SendToTv
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
 import com.bane23.iptvplayer.ui.common.navigation.Settings
 import com.bane23.iptvplayer.ui.common.navigation.Vod
 
-/** Koren UI-ja za telefon. */
+/**
+ * Koren UI-ja za telefon. [sendTarget] je adresa TV-a kada je aplikacija otvorena linkom sa
+ * njegove stranice; tada se odmah otvara ekran za slanje lista, a [onSendTargetHandled] javlja
+ * da je link iskorišćen.
+ */
 @Composable
-fun MobileApp() {
+fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) {
     val backStack = rememberNavBackStack(LiveTv)
-    // Poslednji kanal se pušta samo jednom, pri startu aplikacije.
-    var resumeChecked by rememberSaveable { mutableStateOf(false) }
+    // Poslednji kanal se pušta samo jednom, pri startu aplikacije, i ne kada je otvorena linkom.
+    var resumeChecked by rememberSaveable { mutableStateOf(sendTarget != null) }
+    LaunchedEffect(sendTarget) {
+        if (sendTarget != null) {
+            backStack.removeAll { it is SendToTv }
+            backStack.add(SendToTv(sendTarget))
+            onSendTargetHandled()
+        }
+    }
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -148,6 +160,9 @@ fun MobileApp() {
                     start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
                     onClose = { backStack.removeLastOrNull() },
                 )
+            }
+            entry<SendToTv> { key ->
+                MobileSendToTvScreen(target = key.target, onClose = { backStack.removeLastOrNull() })
             }
             entry<Playlists> {
                 MobilePlaylistsScreen(

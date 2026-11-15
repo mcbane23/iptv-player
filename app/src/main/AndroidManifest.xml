@@ -36,6 +36,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <!-- Link sa stranice TV-a (posle skeniranja QR koda) otvara slanje svih lista na TV. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="send"
+                    android:scheme="iptvplayer" />
+            </intent-filter>
         </activity>
     </application>
 

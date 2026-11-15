@@ -65,6 +65,7 @@ fun TvPairingScreen(
                 else -> {
                     Note(stringResource(R.string.pairing_step_scan))
                     Note(stringResource(R.string.pairing_step_fill))
+                    Note(stringResource(R.string.pairing_step_app))
                     Text(
                         text = stringResource(R.string.pairing_manual_address, url),
                         style = MaterialTheme.typography.bodyMedium,
@@ -72,9 +73,18 @@ fun TvPairingScreen(
                     )
                 }
             }
+            val transfer = state.transferResult
             val status = when {
+                state.working && state.transferTotal > 0 ->
+                    stringResource(R.string.transfer_tv_working, state.transferStep.coerceAtLeast(1), state.transferTotal)
+
                 state.working -> stringResource(R.string.pairing_working)
+
+                transfer != null ->
+                    stringResource(R.string.transfer_summary, transfer.added, transfer.existing, transfer.failed)
+
                 state.addedName != null -> stringResource(R.string.pairing_added, state.addedName.orEmpty())
+
                 else -> null
             }
             if (status != null) {
@@ -87,7 +97,7 @@ fun TvPairingScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 8.dp)) {
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
                 Button(onClick = onClose, modifier = Modifier.focusRequester(firstFocus)) {
-                    Text(stringResource(if (state.addedName != null) R.string.pairing_finish else R.string.action_cancel))
+                    Text(stringResource(if (state.addedName != null || transfer != null) R.string.pairing_finish else R.string.action_cancel))
                 }
                 if (!state.starting && url == null) {
                     OutlinedButton(onClick = viewModel::start) { Text(stringResource(R.string.player_retry)) }
