@@ -463,7 +463,7 @@ internal fun ImmersiveMode() {
 }
 
 @Composable
-private fun rememberIsInPictureInPicture(): Boolean {
+internal fun rememberIsInPictureInPicture(): Boolean {
     val activity = LocalActivity.current as? ComponentActivity
     var inPip by remember { mutableStateOf(activity?.isInPictureInPictureMode == true) }
     DisposableEffect(activity) {
@@ -476,7 +476,7 @@ private fun rememberIsInPictureInPicture(): Boolean {
 
 /** Funkcija koja prebacuje plejer u sliku u slici, ili null ako uređaj to ne podržava. */
 @Composable
-private fun rememberEnterPictureInPicture(): (() -> Unit)? {
+internal fun rememberEnterPictureInPicture(): (() -> Unit)? {
     val activity = LocalActivity.current
     if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
     return {
@@ -492,7 +492,7 @@ private fun rememberEnterPictureInPicture(): (() -> Unit)? {
 
 /** Dok se kanal gleda, izlazak na početni ekran telefona sam prebacuje plejer u sliku u slici (Android 12+). */
 @Composable
-private fun AutoPictureInPicture(enabled: Boolean) {
+internal fun AutoPictureInPicture(enabled: Boolean) {
     val activity = LocalActivity.current
     if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
     DisposableEffect(activity, enabled) {
