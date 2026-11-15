@@ -74,6 +74,7 @@ fun TvEditPlaylistScreen(
             state = state,
             viewModel = viewModel,
             modifier = Modifier.fillMaxWidth(0.6f),
+            plainKeyboard = true,
             pickFileButton = { label, onClick ->
                 OutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
             },

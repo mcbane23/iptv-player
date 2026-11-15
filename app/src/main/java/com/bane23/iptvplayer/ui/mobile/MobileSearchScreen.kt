@@ -61,7 +61,7 @@ fun MobileSearchScreen(
                     onValueChange = viewModel::setQuery,
                     placeholder = { Text(stringResource(R.string.search_hint)) },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
