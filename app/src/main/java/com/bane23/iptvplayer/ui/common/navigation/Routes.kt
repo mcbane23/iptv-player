@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 /** Odredišta u aplikaciji. Zajednička su za telefon i TV, razlikuju se samo ekrani. */
 
-/** Početni ekran: kategorije (i na TV-u kanali) aktivne liste. */
+/** Početni ekran: sekcije (Uživo, Filmovi, Serije...) sa donjom trakom na telefonu, bočnim menijem na TV-u. */
 @Serializable
 data object LiveTv : NavKey
 
@@ -28,10 +28,6 @@ data class EditPlaylist(val playlistId: Long? = null) : NavKey
 /** TV vodič u obliku mreže za kanale jedne kategorije ([categoryId] null = svi kanali liste). */
 @Serializable
 data class Guide(val playlistId: Long, val categoryId: Long?) : NavKey
-
-/** Filmovi ([series] = false) ili serije Xtream naloga: kategorije i posteri. */
-@Serializable
-data class Vod(val series: Boolean) : NavKey
 
 /** Detalji filma. Naziv, poster i nastavak fajla dolaze iz spiska, da ekran ima šta da prikaže odmah. */
 @Serializable
@@ -64,7 +60,3 @@ data object Search : NavKey
 /** Sakrivanje kategorija i promena njihovog redosleda. */
 @Serializable
 data object ManageCategories : NavKey
-
-/** Podešavanja aplikacije. */
-@Serializable
-data object Settings : NavKey

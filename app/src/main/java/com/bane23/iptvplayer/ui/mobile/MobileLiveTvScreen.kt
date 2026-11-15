@@ -2,7 +2,6 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,19 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,24 +28,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
-/** Početni ekran na telefonu: kategorije aktivne liste. */
+/** Sekcija Uživo na telefonu: kategorije aktivne liste. Prikazuje se u kartici donje trake. */
 @Composable
 fun MobileLiveTvScreen(
     onOpenCategory: (playlistId: Long, categoryId: Long?, title: String) -> Unit,
     onManagePlaylists: () -> Unit,
     onSearch: () -> Unit,
-    onManageCategories: () -> Unit,
-    onSettings: () -> Unit,
-    onMovies: () -> Unit,
-    onSeries: () -> Unit,
+    onGuide: (playlistId: Long) -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val allChannelsTitle = stringResource(R.string.category_all)
     val favoritesTitle = stringResource(R.string.category_favorites)
     val recentTitle = stringResource(R.string.category_recent)
-    var menuOpen by remember { mutableStateOf(false) }
 
     Scaffold { padding ->
         Column(
@@ -61,47 +50,11 @@ fun MobileLiveTvScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.live_tv_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                if (state.playlistId != null) {
-                    TextButton(onClick = onSearch) { Text(stringResource(R.string.action_search)) }
-                }
-                Box {
-                    TextButton(onClick = { menuOpen = true }) { Text(stringResource(R.string.action_menu)) }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.playlists_title)) },
-                            onClick = {
-                                menuOpen = false
-                                onManagePlaylists()
-                            },
-                        )
-                        if (state.playlistId != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.categories_manage_title)) },
-                                onClick = {
-                                    menuOpen = false
-                                    onManageCategories()
-                                },
-                            )
-                        }
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_title)) },
-                            onClick = {
-                                menuOpen = false
-                                onSettings()
-                            },
-                        )
-                    }
+            SectionTopBar(title = stringResource(R.string.live_tv_title)) {
+                val playlistId = state.playlistId
+                if (playlistId != null) {
+                    ToolbarIcon(AppIcons.Guide, stringResource(R.string.guide_title)) { onGuide(playlistId) }
+                    ToolbarIcon(AppIcons.Search, stringResource(R.string.action_search), onSearch)
                 }
             }
 
@@ -128,23 +81,6 @@ fun MobileLiveTvScreen(
                 }
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-                    if (state.hasVod) {
-                        item(key = "vod") {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                FilledTonalButton(onClick = onMovies, modifier = Modifier.weight(1f)) {
-                                    Text(stringResource(R.string.vod_movies))
-                                }
-                                FilledTonalButton(onClick = onSeries, modifier = Modifier.weight(1f)) {
-                                    Text(stringResource(R.string.vod_series))
-                                }
-                            }
-                        }
-                    }
                     item(key = "favorites") {
                         CategoryRow(
                             name = favoritesTitle,

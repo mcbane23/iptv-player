@@ -264,6 +264,24 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Prikaz više kanala odjednom (multi-view)
 - [ ] Automatsko pokretanje pri paljenju uređaja (TV box)
 
+### Novi izgled (UI revamp)
+
+Odobreno 15. 11. 2026. Funkcije ostaju iste, menja se izgled i raspored. Predlog sa maketama:
+https://claude.ai/artifact/BKuSvoRR7m39b1p82H9bi4. Dok ovo traje, nove stavke Faze 7 su pauzirane.
+Svaki korak je posebna grana (`faza-uN-...`) i pull request. Baza se ne menja.
+
+Odluke: telefon ima donju traku (Uživo, Filmovi, Serije, Podešavanja); TV ima bočni meni koji se
+raširi na fokus; Uživo na TV-u ima tri kolone sa malim pregledom kanala (može da se isključi);
+u TV plejeru OK prikazuje kontrole, strelica levo listu kanala. Tekst se nigde ne sme preklapati,
+a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
+
+- [x] 1. Osnova: ikonice, tipografija, donja traka na telefonu, bočni meni na TV-u
+- [ ] 2. Uživo: kategorije kao čipovi, „sada” uz kanal, pretraga u sekciji, TV u tri kolone sa pregledom
+- [ ] 3. Filmovi i serije: „Nastavi gledanje”, mreža postera, pretraga kroz sve kategorije, novi detalji
+- [ ] 4. Plejer na telefonu: ikonice, panel titlova i zvuka, „Više”, zaključavanje, dupli dodir
+- [ ] 5. Plejer na TV-u: kontrole na OK, lista kanala preko slike, premotavanje držanjem
+- [ ] 6. Podešavanja i liste: grupisana podešavanja, prazna stanja i poruke o greškama
+
 ### Faza 8: Izdanje
 
 - [ ] Potvrđeni ime, akcentna boja, ikonica i TV baner

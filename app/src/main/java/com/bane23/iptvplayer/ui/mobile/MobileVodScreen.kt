@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,11 +18,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,12 +32,15 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
-/** Filmovi ili serije na telefonu: prvo kategorije, pa posteri izabrane kategorije. */
+/**
+ * Filmovi ili serije na telefonu: prvo kategorije, pa posteri izabrane kategorije.
+ * Bez [onBack] (kartica donje trake) strelica nazad se vidi samo unutar kategorije.
+ */
 @Composable
 fun MobileVodScreen(
     series: Boolean,
     onOpen: (VodItem) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: VodBrowseViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
@@ -54,23 +54,11 @@ fun MobileVodScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { if (selected != null) viewModel.clearCategory() else onBack() }) {
-                    Text(stringResource(R.string.action_back))
-                }
-                Text(
-                    text = selected?.name ?: stringResource(if (series) R.string.vod_series else R.string.vod_movies),
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
+            val back: (() -> Unit)? = if (selected != null) viewModel::clearCategory else onBack
+            SectionTopBar(
+                title = selected?.name ?: stringResource(if (series) R.string.vod_series else R.string.vod_movies),
+                onBack = back,
+            )
 
             when {
                 selected == null && state.loadingCategories -> Message(stringResource(R.string.vod_loading))
