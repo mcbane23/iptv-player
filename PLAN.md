@@ -57,6 +57,9 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 - [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
       Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
+- [ ] **Sinhronizacija preko naloga (Faza 9).** Gde se čuvaju podaci (npr. korisnikov
+      Google Drive, sopstveni server ili nešto treće), koji nalog (Google, email) i šta se
+      sinhronizuje. Mora ostati besplatno i bez praćenja, a lozinke lista ne smeju na tuđi server.
 
 ## 4. Arhitektura
 
@@ -247,8 +250,10 @@ početnom ekranu se pomera ako ne stane. Stavke ostaju otvorene dok se ne potvrd
 
 Redosled unutar faze po želji vlasnika.
 
-- [x] Podešavanja plejera (bafer, dekoder hardverski/softverski, podrazumevani jezik zvuka i titlova,
-      pamćenje jezika izabranog u plejeru)
+- [x] Podešavanja plejera (bafer, dekoder hardverski/softverski, podrazumevani jezik zvuka i titlova)
+- [x] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
+      sami uključuju pri sledećem puštanju, bez ponovnog biranja (pamti se jezik, pa titl bez
+      oznake jezika ne može da se zapamti)
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila
@@ -266,6 +271,42 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
 - [ ] README: kako instalirati APK na telefon i na TV
 - [ ] Prvo izdanje `v1.0.0` u GitHub Releases
+
+### Faza 9: Naknadne ideje
+
+Ideje dodate posle prvobitnog plana. Rade se posle Faze 8, redosled po želji vlasnika.
+Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
+
+**Sinhronizacija gledanog sadržaja preko naloga**
+
+- [ ] Prijava nalogom (Google ili email) u podešavanjima, potpuno opciono
+- [ ] Sinhronizacija pozicije gledanja: film ili serija započeti na TV-u nastavljaju se
+      na telefonu od istog mesta, i obrnuto
+- [ ] Odlučiti šta se još sinhronizuje (favoriti, istorija, liste) i gde se podaci čuvaju
+
+**Premotavanje strima**
+
+- [ ] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
+- [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
+      sa pregledom vremena na traci, da se lako stigne do željenog mesta
+
+**Snimanje sadržaja**
+
+- [ ] Snimanje kanala koji se trenutno gleda (dugme u plejeru), snimak se čuva na uređaju
+- [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
+- [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
+- [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+
+**Izlaz iz aplikacije**
+
+- [ ] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
+      toast poruku („Pritisnite Nazad još jednom za izlaz”), drugi u roku od ~2 s zatvara aplikaciju.
+      Radi isto na telefonu i na TV-u (daljinski)
+
+**Titlovi**
+
+- [ ] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
+      veličina slova i položaj na ekranu (visina od dna), sa pregledom
 
 ## 7. Testiranje
 
