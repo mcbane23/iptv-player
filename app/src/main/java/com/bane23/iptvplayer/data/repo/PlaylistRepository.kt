@@ -27,6 +27,7 @@ import java.io.EOFException
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
+import java.net.ConnectException
 import java.net.ProtocolException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -184,7 +185,11 @@ class PlaylistRepository @Inject constructor(
         channelDao.deleteByPlaylist(playlist.id)
         categoryDao.deleteByPlaylist(playlist.id)
         val epgUrl = when (playlist.type) {
-            PlaylistType.M3U_URL -> openUrl(playlist.source).use { importM3u(playlist.id, it) }
+            PlaylistType.M3U_URL -> {
+                val (workingUrl, stream) = openUrlWithHttpFallback(playlist.source)
+                if (workingUrl != playlist.source) playlistDao.update(playlist.copy(source = workingUrl))
+                stream.use { importM3u(playlist.id, it) }
+            }
             PlaylistType.M3U_FILE -> openFile(playlist.source).use { importM3u(playlist.id, it) }
             PlaylistType.XTREAM -> {
                 importXtream(playlist)
@@ -192,6 +197,32 @@ class PlaylistRepository @Inject constructor(
             }
         }
         playlistDao.markRefreshed(playlist.id, System.currentTimeMillis(), epgUrl ?: playlist.epgUrl)
+    }
+
+    /**
+     * Mnogi IPTV serveri rade samo preko običnog HTTP-a, iako korisnik dobije link sa `https`.
+     * Ako https veza ne može ni da se uspostavi (odbijena ili neuspeo TLS), vraća istu adresu
+     * sa `http`; inače null. Port koji je izričito naveden se zadržava.
+     */
+    private fun httpFallback(url: HttpUrl, error: IOException): HttpUrl? {
+        val connectionLevel = error is ConnectException || error is SSLException
+        return if (url.isHttps && connectionLevel) url.newBuilder().scheme("http").build() else null
+    }
+
+    /** Otvara link; ako https ne radi, proba http. Vraća adresu koja je radila i sadržaj. */
+    private fun openUrlWithHttpFallback(url: String): Pair<String, InputStream> {
+        return try {
+            url to openUrl(url)
+        } catch (e: IOException) {
+            val http = url.toHttpUrlOrNull()?.let { httpFallback(it, e) } ?: throw e
+            val stream = try {
+                openUrl(http.toString())
+            } catch (second: IOException) {
+                e.addSuppressed(second)
+                throw e
+            }
+            http.toString() to stream
+        }
     }
 
     private fun openUrl(url: String): InputStream {
@@ -271,7 +302,7 @@ class PlaylistRepository @Inject constructor(
 
     @OptIn(ExperimentalSerializationApi::class)
     private suspend fun importXtream(playlist: PlaylistEntity) {
-        val server: HttpUrl = XtreamUrls.normalizeServer(playlist.source)
+        var server: HttpUrl = XtreamUrls.normalizeServer(playlist.source)
             ?: throw PlaylistException(Kind.INVALID_URL)
         val username = playlist.username ?: throw PlaylistException(Kind.MISSING_FIELDS)
         val password = try {
@@ -283,10 +314,19 @@ class PlaylistRepository @Inject constructor(
         }
 
         val account = try {
-            xtreamApi.account(XtreamUrls.playerApi(server, username, password))
-        } catch (e: HttpException) {
-            // Paneli za pogrešnu lozinku često vraćaju 401/403/404 umesto JSON odgovora.
-            if (e.code() in setOf(401, 403, 404)) throw PlaylistException(Kind.AUTH_FAILED, e) else throw e
+            fetchAccount(server, username, password)
+        } catch (e: IOException) {
+            // https ne radi: probaj http i, ako uspe, zapamti tu adresu za ubuduće.
+            val http = httpFallback(server, e) ?: throw e
+            val result = try {
+                fetchAccount(http, username, password)
+            } catch (second: IOException) {
+                e.addSuppressed(second)
+                throw e
+            }
+            server = http
+            playlistDao.update(playlist.copy(source = http.toString()))
+            result
         }
         val user = account.userInfo
         if (user == null || !user.isAuthenticated) throw PlaylistException(Kind.AUTH_FAILED)
@@ -338,6 +378,13 @@ class PlaylistRepository @Inject constructor(
             }
         }
         writer.flush()
+    }
+
+    private suspend fun fetchAccount(server: HttpUrl, username: String, password: String) = try {
+        xtreamApi.account(XtreamUrls.playerApi(server, username, password))
+    } catch (e: HttpException) {
+        // Paneli za pogrešnu lozinku često vraćaju 401/403/404 umesto JSON odgovora.
+        if (e.code() in setOf(401, 403, 404)) throw PlaylistException(Kind.AUTH_FAILED, e) else throw e
     }
 
     /** Upisuje kanale u paketima i usput pravi kategorije po redosledu pojavljivanja. */
