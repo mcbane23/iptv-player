@@ -232,7 +232,7 @@ private fun ChannelInfoBar(ui: PlayerUiState, nowNext: NowNext, modifier: Modifi
         Text(
             text = stringResource(R.string.player_tv_hint),
             color = Color.White.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }

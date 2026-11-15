@@ -170,4 +170,24 @@
     <string name="vod_seek_forward">+10 s</string>
     <string name="vod_next_episode">Sledeća epizoda</string>
     <string name="vod_tv_hint">Levo i desno: preskok 10 s · OK: pauza · Gore: opcije</string>
+
+    <!-- Dodavanje liste sa telefona -->
+    <string name="action_add_from_phone">Dodaj preko telefona</string>
+    <string name="pairing_title">Dodavanje liste preko telefona</string>
+    <string name="pairing_step_scan">1. Povežite telefon na isti Wi-Fi kao TV i skenirajte kod kamerom.</string>
+    <string name="pairing_step_fill">2. Na stranici koja se otvori unesite podatke liste i pošaljite ih.</string>
+    <string name="pairing_manual_address">Ili u pregledač na telefonu ukucajte adresu: %1$s</string>
+    <string name="pairing_unavailable">TV nije povezan na lokalnu mrežu, pa telefon ne može da ga nađe.</string>
+    <string name="pairing_working">Podaci su stigli, lista se učitava…</string>
+    <string name="pairing_added">Lista je dodata: %1$s</string>
+    <string name="pairing_finish">Gotovo</string>
+    <string name="pairing_default_name">Moja lista</string>
+    <string name="pairing_field_name">Naziv (nije obavezno)</string>
+    <string name="pairing_page_title">Dodavanje liste na TV</string>
+    <string name="pairing_page_intro">Popunite jednu od dve forme. Podaci idu pravo na vaš TV kroz kućnu mrežu.</string>
+    <string name="pairing_page_submit">Pošalji na TV</string>
+    <string name="pairing_page_wait">Posle slanja sačekajte trenutak dok TV učita listu.</string>
+    <string name="pairing_page_done_title">Lista je dodata</string>
+    <string name="pairing_page_done_text">Možete da nastavite na TV-u. Ovu stranicu možete da zatvorite.</string>
+    <string name="pairing_page_not_found">Ova adresa više ne važi. Ponovo skenirajte kod sa TV-a.</string>
 </resources>

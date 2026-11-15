@@ -158,12 +158,12 @@ fun TvSeriesScreen(
                 overflow = TextOverflow.Ellipsis,
             )
             details?.metaLine()?.takeIf { it.isNotEmpty() }?.let { meta ->
-                Text(text = meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = meta, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             details?.plot?.let { plot ->
                 Text(
                     text = plot,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 6,
                     overflow = TextOverflow.Ellipsis,

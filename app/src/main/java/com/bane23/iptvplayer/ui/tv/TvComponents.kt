@@ -1,7 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -90,4 +91,13 @@ fun TvTextRow(
             )
         }
     }
+}
+
+/**
+ * Traži fokus bez rušenja ako element još nije na ekranu.
+ * Vraća true samo kad je fokus zaista prešao na element.
+ */
+fun FocusRequester.tryRequestFocus(): Boolean {
+    val result: Any? = runCatching { requestFocus() }.getOrNull()
+    return result != null && result != false
 }

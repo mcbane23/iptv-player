@@ -119,10 +119,6 @@ fun MobilePlayerScreen(
     }
     BackHandler(enabled = panel != Panel.NONE) { panel = Panel.NONE }
 
-    val volumeText = stringResource(R.string.gesture_volume)
-    val brightnessText = stringResource(R.string.gesture_brightness)
-    val gestures = rememberPlayerGestures()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -132,20 +128,7 @@ fun MobilePlayerScreen(
                     if (panel != Panel.NONE) panel = Panel.NONE else controlsVisible = !controlsVisible
                 })
             }
-            .pointerInput(Unit) {
-                var leftSide = false
-                detectDragGestures(
-                    onDragStart = { offset -> leftSide = offset.x < size.width / 2 },
-                ) { change, drag ->
-                    change.consume()
-                    val delta = -drag.y / size.height
-                    gestureHint = if (leftSide) {
-                        "$brightnessText ${gestures.changeBrightness(delta)}%"
-                    } else {
-                        "$volumeText ${gestures.changeVolume(delta)}%"
-                    }
-                }
-            },
+            .volumeBrightnessDrag { gestureHint = it },
     ) {
         VideoSurface(
             player = viewModel.player,
@@ -166,19 +149,7 @@ fun MobilePlayerScreen(
                 )
             }
 
-            gestureHint?.let { hint ->
-                Text(
-                    text = hint,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .safeDrawingPadding()
-                        .padding(top = 72.dp)
-                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
+            gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
 
             if (controlsVisible && panel == Panel.NONE) {
                 PlayerControls(
@@ -425,6 +396,45 @@ private class PlayerGestures(private val activity: Activity?, private val audio:
     }
 }
 
+/** Prevlačenje gore-dole: leva polovina ekrana menja osvetljenje, desna jačinu zvuka. */
+@Composable
+internal fun Modifier.volumeBrightnessDrag(onHint: (String) -> Unit): Modifier {
+    val volumeText = stringResource(R.string.gesture_volume)
+    val brightnessText = stringResource(R.string.gesture_brightness)
+    val gestures = rememberPlayerGestures()
+    return pointerInput(gestures) {
+        var leftSide = false
+        detectDragGestures(
+            onDragStart = { offset -> leftSide = offset.x < size.width / 2 },
+        ) { change, drag ->
+            change.consume()
+            val delta = -drag.y / size.height
+            onHint(
+                if (leftSide) {
+                    "$brightnessText ${gestures.changeBrightness(delta)}%"
+                } else {
+                    "$volumeText ${gestures.changeVolume(delta)}%"
+                },
+            )
+        }
+    }
+}
+
+/** Kratka poruka sa novom vrednošću zvuka ili osvetljenja. */
+@Composable
+internal fun GestureHint(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = modifier
+            .safeDrawingPadding()
+            .padding(top = 72.dp)
+            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
 @Composable
 private fun rememberPlayerGestures(): PlayerGestures {
     val activity = LocalActivity.current
@@ -453,7 +463,7 @@ internal fun ImmersiveMode() {
 }
 
 @Composable
-private fun rememberIsInPictureInPicture(): Boolean {
+internal fun rememberIsInPictureInPicture(): Boolean {
     val activity = LocalActivity.current as? ComponentActivity
     var inPip by remember { mutableStateOf(activity?.isInPictureInPictureMode == true) }
     DisposableEffect(activity) {
@@ -466,7 +476,7 @@ private fun rememberIsInPictureInPicture(): Boolean {
 
 /** Funkcija koja prebacuje plejer u sliku u slici, ili null ako uređaj to ne podržava. */
 @Composable
-private fun rememberEnterPictureInPicture(): (() -> Unit)? {
+internal fun rememberEnterPictureInPicture(): (() -> Unit)? {
     val activity = LocalActivity.current
     if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
     return {
@@ -482,7 +492,7 @@ private fun rememberEnterPictureInPicture(): (() -> Unit)? {
 
 /** Dok se kanal gleda, izlazak na početni ekran telefona sam prebacuje plejer u sliku u slici (Android 12+). */
 @Composable
-private fun AutoPictureInPicture(enabled: Boolean) {
+internal fun AutoPictureInPicture(enabled: Boolean) {
     val activity = LocalActivity.current
     if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
     DisposableEffect(activity, enabled) {

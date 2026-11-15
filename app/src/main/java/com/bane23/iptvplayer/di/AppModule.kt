@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.bane23.iptvplayer.data.crypto.KeystorePasswordCipher
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
+import com.bane23.iptvplayer.data.db.Migrations
 import com.bane23.iptvplayer.data.xtream.XtreamApi
 import com.bane23.iptvplayer.data.xtream.XtreamJson
 import dagger.Binds
@@ -28,8 +29,11 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "iptv.db")
-            // Dok je aplikacija u razvoju šema se menja bez migracija; pre izdanja (Faza 8) uvesti migracije.
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            // Od verzije 5 svaka promena šeme ide sa migracijom, da liste i favoriti prežive nadogradnju.
+            .addMigrations(*Migrations.ALL)
+            // Samo baze iz ranog razvoja (verzije 1 do 4) i vraćanje na stariju verziju prave bazu iznova.
+            .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1, 2, 3, 4)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
 
     @Provides

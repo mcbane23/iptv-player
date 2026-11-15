@@ -49,6 +49,10 @@ data class PlayMovie(val movieId: Long, val name: String, val extension: String,
 @Serializable
 data class PlayEpisode(val seriesId: Long, val episodeId: Long, val startOver: Boolean) : NavKey
 
+/** Dodavanje liste sa telefona preko QR koda. Koristi se na TV-u. */
+@Serializable
+data object PairPlaylist : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey
