@@ -191,4 +191,22 @@
     <string name="pairing_page_done_title">Playlist added</string>
     <string name="pairing_page_done_text">You can continue on the TV. This page can be closed.</string>
     <string name="pairing_page_not_found">This address is no longer valid. Scan the code on the TV again.</string>
+
+    <!-- Podešavanja plejera -->
+    <string name="settings_player_header">Player</string>
+    <string name="settings_player_note">Changes apply the next time something starts playing.</string>
+    <string name="settings_buffer">Buffer</string>
+    <string name="settings_buffer_summary">Small starts and switches channels faster. Large handles a weak connection better.</string>
+    <string name="buffer_small">Small</string>
+    <string name="buffer_normal">Normal</string>
+    <string name="buffer_large">Large</string>
+    <string name="settings_decoder">Decoder</string>
+    <string name="settings_decoder_summary">Try software if the picture is black, green or stutters. It uses more battery and can be slow at high resolutions.</string>
+    <string name="decoder_auto">Automatic (hardware)</string>
+    <string name="decoder_software">Software</string>
+    <string name="settings_audio_language">Audio language</string>
+    <string name="settings_audio_language_summary">Used when a stream has more than one audio track. It also follows the language you pick in the player.</string>
+    <string name="settings_subtitle_language">Subtitles</string>
+    <string name="settings_subtitle_language_summary">Subtitles in this language turn on by themselves. It also follows what you pick in the player.</string>
+    <string name="language_default">As offered by the stream</string>
 </resources>

@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.player.BufferSize
+import com.bane23.iptvplayer.player.DecoderMode
+import com.bane23.iptvplayer.player.PlayerSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -168,7 +172,27 @@ class CategoriesViewModel @Inject constructor(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: ChannelRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
+
+    val playerSettings: StateFlow<PlayerSettings> = settings.playerSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerSettings())
+
+    fun setBuffer(buffer: BufferSize) {
+        viewModelScope.launch { settings.setPlayerBuffer(buffer) }
+    }
+
+    fun setDecoder(decoder: DecoderMode) {
+        viewModelScope.launch { settings.setPlayerDecoder(decoder) }
+    }
+
+    fun setAudioLanguage(language: String) {
+        viewModelScope.launch { settings.setAudioLanguage(language) }
+    }
+
+    fun setSubtitleLanguage(language: String) {
+        viewModelScope.launch { settings.setSubtitleLanguage(language) }
+    }
 
     val resumeLastChannel: StateFlow<Boolean> = repository.resumeLastChannel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

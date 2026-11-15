@@ -11,7 +11,11 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.bane23.iptvplayer.domain.StreamSource
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +38,8 @@ data class TrackOption(
     val trackIndex: Int,
     val label: String,
     val selected: Boolean,
+    /** Jezik zapisa (npr. "sr"), ako ga strim navodi. */
+    val language: String? = null,
 )
 
 data class PlaybackState(
@@ -53,7 +59,11 @@ data class PlaybackState(
  * izbor zvuka i titlova. Ne zna ništa o kanalima ni o UI-ju.
  */
 @OptIn(UnstableApi::class)
-class PlayerEngine(context: Context, private val scope: CoroutineScope) {
+class PlayerEngine(
+    context: Context,
+    private val scope: CoroutineScope,
+    settings: PlayerSettings = PlayerSettings(),
+) {
 
     private val appContext = context.applicationContext
     private val httpFactory = DefaultHttpDataSource.Factory()
@@ -62,8 +72,23 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
         .setConnectTimeoutMs(15_000)
         .setReadTimeoutMs(20_000)
 
-    val player: ExoPlayer = ExoPlayer.Builder(appContext)
+    private val renderersFactory = DefaultRenderersFactory(appContext)
+        // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
+        .setEnableDecoderFallback(true)
+        .apply {
+            if (settings.decoder == DecoderMode.SOFTWARE) {
+                setMediaCodecSelector(
+                    MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
+                        MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
+                            .sortedByDescending { it.softwareOnly }
+                    },
+                )
+            }
+        }
+
+    val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
         .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory)))
+        .apply { loadControl(settings.buffer)?.let { setLoadControl(it) } }
         .build()
 
     private val _state = MutableStateFlow(PlaybackState())
@@ -108,6 +133,10 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
 
     init {
         player.addListener(listener)
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
+            .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
+            .build()
     }
 
     /**
@@ -296,7 +325,8 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
                     format.label?.takeIf { it.isNotBlank() },
                     format.language?.takeIf { it.isNotBlank() && it != "und" },
                 ).distinct().joinToString(" · ").ifEmpty { "${target.size + 1}" }
-                target.add(TrackOption(groupIndex, trackIndex, label, group.isTrackSelected(trackIndex)))
+                val language = format.language?.takeIf { it.isNotBlank() && it != "und" }
+                target.add(TrackOption(groupIndex, trackIndex, label, group.isTrackSelected(trackIndex), language))
             }
         }
         _state.update {
@@ -338,6 +368,18 @@ class PlayerEngine(context: Context, private val scope: CoroutineScope) {
         val cause = error.cause
         val causeText = cause?.let { "${it.javaClass.simpleName}: ${it.message.orEmpty()}" }
         return listOfNotNull(error.errorCodeName, causeText).joinToString(" · ")
+    }
+
+    /** Bafer prema podešavanju; null znači podrazumevane vrednosti plejera. */
+    private fun loadControl(buffer: BufferSize): DefaultLoadControl? = when (buffer) {
+        BufferSize.NORMAL -> null
+        BufferSize.SMALL -> DefaultLoadControl.Builder()
+            .setBufferDurationsMs(8_000, 20_000, 1_000, 2_000)
+            .build()
+
+        BufferSize.LARGE -> DefaultLoadControl.Builder()
+            .setBufferDurationsMs(30_000, 90_000, 4_000, 8_000)
+            .build()
     }
 
     private companion object {

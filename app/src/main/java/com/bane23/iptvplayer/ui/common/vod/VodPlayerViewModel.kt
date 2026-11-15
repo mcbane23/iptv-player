@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.ui.common.vod
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
@@ -19,10 +20,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 data class VodPlayerUiState(
     val title: String = "",
@@ -42,9 +45,11 @@ data class VodPlayerUiState(
 class VodPlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val repository: VodRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
 
-    private val engine = PlayerEngine(context, viewModelScope)
+    // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
+    private val engine = PlayerEngine(context, viewModelScope, runBlocking { settings.playerSettings.first() })
     val player get() = engine.player
     val playback: StateFlow<PlaybackState> = engine.state
 
@@ -145,9 +150,20 @@ class VodPlayerViewModel @Inject constructor(
         it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
     }
 
-    fun selectAudio(option: TrackOption) = engine.selectAudio(option)
+    /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći film ili epizoda krene isto. */
+    fun selectAudio(option: TrackOption) {
+        engine.selectAudio(option)
+        option.language?.let { language -> viewModelScope.launch { settings.setAudioLanguage(language) } }
+    }
 
-    fun selectText(option: TrackOption?) = engine.selectText(option)
+    fun selectText(option: TrackOption?) {
+        engine.selectText(option)
+        if (option == null) {
+            viewModelScope.launch { settings.setSubtitleLanguage("") }
+        } else {
+            option.language?.let { language -> viewModelScope.launch { settings.setSubtitleLanguage(language) } }
+        }
+    }
 
     fun onForeground() = engine.resume()
 

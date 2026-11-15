@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.domain.Channel
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /** Kako se slika uklapa u ekran. */
 enum class AspectMode { FIT, FILL, ZOOM }
@@ -57,9 +60,11 @@ class PlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val repository: ChannelRepository,
     private val epg: EpgRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
 
-    private val engine = PlayerEngine(context, viewModelScope)
+    // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
+    private val engine = PlayerEngine(context, viewModelScope, runBlocking { settings.playerSettings.first() })
     val player get() = engine.player
     val playback: StateFlow<PlaybackState> = engine.state
 
@@ -148,9 +153,20 @@ class PlayerViewModel @Inject constructor(
         it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
     }
 
-    fun selectAudio(option: com.bane23.iptvplayer.player.TrackOption) = engine.selectAudio(option)
+    /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći kanal ili film krene isto. */
+    fun selectAudio(option: com.bane23.iptvplayer.player.TrackOption) {
+        engine.selectAudio(option)
+        option.language?.let { language -> viewModelScope.launch { settings.setAudioLanguage(language) } }
+    }
 
-    fun selectText(option: com.bane23.iptvplayer.player.TrackOption?) = engine.selectText(option)
+    fun selectText(option: com.bane23.iptvplayer.player.TrackOption?) {
+        engine.selectText(option)
+        if (option == null) {
+            viewModelScope.launch { settings.setSubtitleLanguage("") }
+        } else {
+            option.language?.let { language -> viewModelScope.launch { settings.setSubtitleLanguage(language) } }
+        }
+    }
 
     /** Cifra sa daljinskog: brojevi se skupljaju, pa se posle kratke pauze prelazi na taj kanal. */
     fun typeDigit(digit: Int) {
