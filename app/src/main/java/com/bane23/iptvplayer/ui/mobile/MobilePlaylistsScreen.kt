@@ -3,8 +3,7 @@ package com.bane23.iptvplayer.ui.mobile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,12 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.message
 import com.bane23.iptvplayer.ui.common.summary
 
@@ -53,47 +55,37 @@ fun MobilePlaylistsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(start = 8.dp, end = 16.dp),
+                .padding(padding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
-                Text(
-                    text = stringResource(R.string.playlists_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp),
-                )
-                Button(onClick = onAdd) {
-                    Text(stringResource(R.string.action_add_playlist))
-                }
+            SectionTopBar(title = stringResource(R.string.playlists_title), onBack = onBack) {
+                ToolbarIcon(AppIcons.Add, stringResource(R.string.action_add_playlist), onAdd)
             }
 
             when {
                 state.loading -> Unit
 
-                state.playlists.isEmpty() -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
+                state.playlists.isEmpty() -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = stringResource(R.string.playlists_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(24.dp),
                     )
+                    Button(onClick = onAdd) {
+                        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.action_add_playlist), modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
 
                 else -> LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 ) {
                     items(state.playlists, key = { it.id }) { playlist ->
                         PlaylistCard(
@@ -139,7 +131,7 @@ fun MobilePlaylistsScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Lista: naziv, oznaka aktivne liste, kratki podaci i radnje kao ikonice. */
 @Composable
 private fun PlaylistCard(
     playlist: Playlist,
@@ -150,18 +142,30 @@ private fun PlaylistCard(
     onDelete: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
                 Text(
                     text = playlist.name,
                     style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 if (playlist.isActive) {
+                    Icon(
+                        imageVector = AppIcons.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .size(18.dp),
+                    )
                     Text(
                         text = stringResource(R.string.playlist_active),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = 4.dp),
                     )
                 }
             }
@@ -169,25 +173,29 @@ private fun PlaylistCard(
                 text = playlist.summary(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp, end = 8.dp),
             )
-            if (refreshing) {
-                Row(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                if (refreshing) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Text(stringResource(R.string.playlist_refreshing))
-                }
-            } else {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(R.string.playlist_refreshing),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp),
+                    )
+                } else {
                     if (!playlist.isActive) {
                         TextButton(onClick = onSelect) { Text(stringResource(R.string.action_select)) }
                     }
-                    TextButton(onClick = onRefresh) { Text(stringResource(R.string.action_refresh)) }
-                    TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit)) }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
+                    Spacer(modifier = Modifier.weight(1f))
+                    ToolbarIcon(AppIcons.Refresh, stringResource(R.string.action_refresh), onRefresh)
+                    ToolbarIcon(AppIcons.Edit, stringResource(R.string.action_edit), onEdit)
+                    ToolbarIcon(AppIcons.Delete, stringResource(R.string.action_delete), onDelete)
                 }
             }
         }

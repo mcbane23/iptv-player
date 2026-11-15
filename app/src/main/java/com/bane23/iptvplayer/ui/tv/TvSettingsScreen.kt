@@ -79,6 +79,12 @@ fun TvSettingsScreen(
                         },
                     )
                 }
+                Text(
+                    text = stringResource(R.string.settings_general_header),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp),
+                )
                 TvTextRow(
                     text = stringResource(R.string.settings_resume_last),
                     trailing = stringResource(if (resumeLastChannel) R.string.setting_on else R.string.setting_off),
