@@ -236,4 +236,8 @@
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>
     <string name="settings_tv_preview">Channel preview</string>
+    <string name="vod_continue_watching">Continue watching</string>
+    <string name="search_movies">Search movies</string>
+    <string name="search_series">Search series</string>
+    <string name="search_empty_vod">Nothing matches.</string>
 </resources>

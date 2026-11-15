@@ -153,6 +153,12 @@ data class WatchProgressEntity(
     val positionMs: Long,
     val durationMs: Long,
     val updatedAt: Long,
+    /** Naziv filma, odnosno serije, za red „Nastavi gledanje” (od verzije baze 6). */
+    val title: String? = null,
+    /** Poster filma, odnosno serije. */
+    val poster: String? = null,
+    /** Nastavak fajla filma (mp4, mkv...); za epizode null. */
+    val extension: String? = null,
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */

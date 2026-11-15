@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.common.vod
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.VodKind
@@ -14,7 +15,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class VodBrowseUiState(
     val series: Boolean = false,
@@ -51,10 +55,21 @@ class VodBrowseViewModel @Inject constructor(
     private var itemsJob: Job? = null
     private val kind get() = if (_state.value.series) VodKind.SERIES else VodKind.MOVIES
 
+    private val openedKind = MutableStateFlow<VodKind?>(null)
+
+    /** Red „Nastavi gledanje” za filmove, odnosno serije aktivne liste. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val continueItems: StateFlow<List<ContinueItem>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeContinue(playlistId, kind)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun open(series: Boolean) {
         if (opened) return
         opened = true
         _state.update { it.copy(series = series) }
+        openedKind.value = if (series) VodKind.SERIES else VodKind.MOVIES
         loadCategories()
     }
 
@@ -64,6 +79,8 @@ class VodBrowseViewModel @Inject constructor(
             try {
                 val categories = repository.categories(kind)
                 _state.update { it.copy(loadingCategories = false, categories = categories) }
+                // Kategorije su čipovi iznad postera, pa je jedna uvek izabrana: prva, dok korisnik ne izabere.
+                if (_state.value.selected == null) categories.firstOrNull()?.let(::selectCategory)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -224,4 +241,74 @@ class SeriesViewModel @Inject constructor(
     }
 
     fun selectSeason(number: Int) = base.update { it.copy(selectedSeason = number) }
+}
+
+data class VodSearchUiState(
+    val query: String = "",
+    val loading: Boolean = false,
+    val failed: Boolean = false,
+    val results: List<VodItem> = emptyList(),
+)
+
+/**
+ * Pretraga filmova, odnosno serija, kroz sve kategorije aktivne liste. Ceo spisak se učitava jednom
+ * (pri prvom kucanju), a traži se po nazivu bez obzira na velika slova i kvačice (č, ć, š, ž, đ).
+ */
+@HiltViewModel
+class VodSearchViewModel @Inject constructor(
+    private val repository: VodRepository,
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(VodSearchUiState())
+    val state: StateFlow<VodSearchUiState> = _state.asStateFlow()
+
+    private var kind = VodKind.MOVIES
+    private var all: List<Pair<String, VodItem>>? = null
+    private var searchJob: Job? = null
+
+    fun open(series: Boolean) {
+        kind = if (series) VodKind.SERIES else VodKind.MOVIES
+    }
+
+    fun setQuery(text: String) {
+        _state.update { it.copy(query = text) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(SEARCH_DELAY_MS)
+            val needle = VodSearch.normalize(text)
+            if (needle.isEmpty()) {
+                _state.update { it.copy(results = emptyList(), loading = false, failed = false) }
+                return@launch
+            }
+            val items = all ?: try {
+                _state.update { it.copy(loading = true, failed = false) }
+                repository.allItems(kind).map { VodSearch.normalize(it.name) to it }.also { all = it }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _state.update { it.copy(loading = false, failed = true) }
+                return@launch
+            }
+            val results = withContext(Dispatchers.Default) {
+                items.asSequence().filter { (name, _) -> needle in name }.map { it.second }.take(MAX_RESULTS).toList()
+            }
+            _state.update { it.copy(loading = false, results = results) }
+        }
+    }
+
+    fun retry() = setQuery(_state.value.query)
+
+    private companion object {
+        const val SEARCH_DELAY_MS = 300L
+        const val MAX_RESULTS = 300
+    }
+}
+
+/** Poređenje naziva za pretragu: mala slova, bez kvačica, „đ” kao „dj”. */
+object VodSearch {
+    private val marks = Regex("\\p{Mn}+")
+
+    fun normalize(text: String): String =
+        java.text.Normalizer.normalize(text.trim().lowercase().replace("đ", "dj"), java.text.Normalizer.Form.NFD)
+            .replace(marks, "")
 }

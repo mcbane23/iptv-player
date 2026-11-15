@@ -24,6 +24,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
+import com.bane23.iptvplayer.ui.common.navigation.VodSearch
 
 /** Koren UI-ja za TV. */
 @Composable
@@ -59,6 +60,7 @@ fun TvApp() {
                             backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
+                    onSearchVod = { series -> backStack.add(VodSearch(series)) },
                     onAddPlaylist = { backStack.add(EditPlaylist()) },
                     onAddFromPhone = { backStack.add(PairPlaylist) },
                     onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
@@ -67,6 +69,18 @@ fun TvApp() {
             }
             entry<Search> {
                 TvSearchScreen(onPlay = { channelId -> backStack.add(Player(channelId, null)) })
+            }
+            entry<VodSearch> { key ->
+                TvVodSearchScreen(
+                    series = key.series,
+                    onOpen = { item ->
+                        if (key.series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                )
             }
             entry<ManageCategories> { TvCategoriesScreen() }
             entry<Guide> { key ->
@@ -86,7 +100,7 @@ fun TvApp() {
                     poster = key.poster,
                     extension = key.extension,
                     onPlay = { extension, startOver ->
-                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver))
+                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
                     },
                 )
             }
@@ -102,7 +116,7 @@ fun TvApp() {
             }
             entry<PlayMovie> { key ->
                 TvVodPlayerScreen(
-                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver) },
+                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
                 )
             }
             entry<PlayEpisode> { key ->

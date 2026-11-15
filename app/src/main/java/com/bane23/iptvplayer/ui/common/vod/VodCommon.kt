@@ -3,9 +3,13 @@ package com.bane23.iptvplayer.ui.common.vod
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -14,15 +18,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.repo.ContinueItem
+import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.WatchProgress
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 
-/** Poster filma ili serije u odnosu 2:3. Dok se ne učita (ili ako ga nema) ostaje tamno polje. */
+/**
+ * Poster filma ili serije u odnosu 2:3. Dok se ne učita (ili ako ga nema) ostaje tamno polje.
+ * [progress] (0 do 1) crta tanku traku na dnu: koliko je odgledano.
+ */
 @Composable
-fun Poster(url: String?, modifier: Modifier = Modifier) {
+fun Poster(url: String?, modifier: Modifier = Modifier, progress: Float? = null) {
     Box(
         modifier = modifier
             .aspectRatio(POSTER_RATIO)
@@ -37,8 +46,27 @@ fun Poster(url: String?, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        if (progress != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .background(Color.White.copy(alpha = 0.85f)),
+                )
+            }
+        }
     }
 }
+
+/** Stavka „Nastavi gledanje” kao stavka spiska, da bi otvorila iste detalje. */
+fun ContinueItem.toVodItem() = VodItem(id = id, name = name, poster = poster, rating = null, extension = extension)
 
 private const val POSTER_RATIO = 2f / 3f
 

@@ -292,4 +292,26 @@ interface WatchProgressDao {
             "AND kind = 'episode' ORDER BY updatedAt DESC",
     )
     fun observeSeries(playlistId: Long, seriesId: Long): Flow<List<WatchProgressEntity>>
+
+    /** Filmovi koji su započeti, a nisu odgledani do kraja; poslednje gledan prvi. */
+    @Query(
+        "SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = 'movie' AND title IS NOT NULL " +
+            "AND positionMs >= :minPositionMs AND positionMs * 100 < durationMs * :finishedPercent " +
+            "ORDER BY updatedAt DESC LIMIT :limit",
+    )
+    fun observeContinueMovies(
+        playlistId: Long,
+        minPositionMs: Long,
+        finishedPercent: Int,
+        limit: Int,
+    ): Flow<List<WatchProgressEntity>>
+
+    /** Poslednje gledana epizoda svake serije; poslednje gledana serija prva. */
+    @Query(
+        "SELECT * FROM watch_progress w WHERE w.playlistId = :playlistId AND w.kind = 'episode' " +
+            "AND w.title IS NOT NULL AND w.updatedAt = (SELECT MAX(w2.updatedAt) FROM watch_progress w2 " +
+            "WHERE w2.playlistId = w.playlistId AND w2.kind = 'episode' AND w2.seriesId = w.seriesId) " +
+            "ORDER BY w.updatedAt DESC LIMIT :limit",
+    )
+    fun observeContinueSeries(playlistId: Long, limit: Int): Flow<List<WatchProgressEntity>>
 }

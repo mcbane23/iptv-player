@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -35,27 +37,38 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
+import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
 
-/** Filmovi ili serije na TV-u: kategorije levo (bira se sa OK), posteri izabrane kategorije desno. */
+/**
+ * Filmovi ili serije na TV-u: levo pretraga, „Nastavi gledanje” i kategorije (bira se sa OK),
+ * desno posteri izabrane grupe.
+ */
 @Composable
 fun TvVodScreen(
     series: Boolean,
     onOpen: (VodItem) -> Unit,
+    onSearch: () -> Unit,
     viewModel: VodBrowseViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val firstFocus = remember { FocusRequester() }
     val posterFocus = remember { FocusRequester() }
     // Poster na kome je fokus bio poslednji put, da se posle povratka iz detalja nastavi odatle.
     var lastItemId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // „Nastavi gledanje” je prikazano dok korisnik ne izabere neku kategoriju.
+    var continueChosen by rememberSaveable { mutableStateOf(true) }
+    val showContinue = continueChosen && continueItems.isNotEmpty()
 
     Column(
         modifier = Modifier
@@ -87,43 +100,79 @@ fun TvVodScreen(
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 LazyColumn(
                     modifier = Modifier
-                        .weight(0.3f)
+                        .weight(0.28f)
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    item(key = "search") {
+                        TvListRow(onClick = onSearch, modifier = Modifier.padding(bottom = 8.dp)) { color ->
+                            Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                            Text(
+                                text = stringResource(if (series) R.string.search_series else R.string.search_movies),
+                                color = color,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
+                    if (continueItems.isNotEmpty()) {
+                        item(key = "continue") {
+                            TvTextRow(
+                                text = stringResource(R.string.vod_continue_watching),
+                                selected = showContinue,
+                                onClick = {
+                                    lastItemId = null
+                                    continueChosen = true
+                                },
+                                modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
+                            )
+                        }
+                    }
                     items(state.categories, key = { it.id }) { category ->
-                        val isFirst = category == state.categories.first()
+                        val selected = !showContinue && category == state.selected
                         TvTextRow(
                             text = category.name,
-                            selected = category == state.selected,
+                            selected = selected,
                             onClick = {
                                 lastItemId = null
+                                continueChosen = false
                                 viewModel.selectCategory(category)
                             },
-                            modifier = if (isFirst) Modifier.focusRequester(firstFocus) else Modifier,
+                            modifier = if (selected) Modifier.focusRequester(firstFocus) else Modifier,
                         )
                     }
                 }
                 Column(
                     modifier = Modifier
-                        .weight(0.7f)
+                        .weight(0.72f)
                         .fillMaxHeight(),
                 ) {
                     when {
+                        showContinue -> PosterGrid {
+                            items(continueItems, key = { it.id }) { item ->
+                                PosterCard(
+                                    name = item.name,
+                                    poster = item.poster,
+                                    progress = item.progress,
+                                    onClick = { onOpen(item.toVodItem()) },
+                                    onFocused = { lastItemId = item.id },
+                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                )
+                            }
+                        }
+
                         state.selected == null -> Note(stringResource(R.string.vod_pick_category))
                         state.loadingItems -> Note(stringResource(R.string.vod_loading))
                         state.itemsFailed -> Note(stringResource(R.string.vod_load_failed))
                         state.items.isEmpty() -> Note(stringResource(R.string.vod_empty))
 
-                        else -> LazyVerticalGrid(
-                            columns = GridCells.Fixed(5),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(4.dp),
-                        ) {
+                        else -> PosterGrid {
                             items(state.items, key = { it.id }) { item ->
                                 PosterCard(
-                                    item = item,
+                                    name = item.name,
+                                    poster = item.poster,
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
@@ -139,11 +188,25 @@ fun TvVodScreen(
                             delay(FOCUS_RESTORE_STEP_MS)
                         }
                     }
-                    firstFocus.tryRequestFocus()
+                    repeat(FOCUS_RESTORE_ATTEMPTS) {
+                        if (firstFocus.tryRequestFocus()) return@LaunchedEffect
+                        delay(FOCUS_RESTORE_STEP_MS)
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun PosterGrid(content: LazyGridScope.() -> Unit) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(5),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(4.dp),
+        content = content,
+    )
 }
 
 private const val FOCUS_RESTORE_ATTEMPTS = 10
@@ -151,7 +214,14 @@ private const val FOCUS_RESTORE_STEP_MS = 60L
 
 /** Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji. */
 @Composable
-private fun PosterCard(item: VodItem, onClick: () -> Unit, onFocused: () -> Unit, modifier: Modifier = Modifier) {
+fun PosterCard(
+    name: String,
+    poster: String?,
+    onClick: () -> Unit,
+    onFocused: () -> Unit,
+    modifier: Modifier = Modifier,
+    progress: Float? = null,
+) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(10.dp)
     Column(
@@ -164,9 +234,9 @@ private fun PosterCard(item: VodItem, onClick: () -> Unit, onFocused: () -> Unit
             .clickable(onClick = onClick)
             .padding(5.dp),
     ) {
-        Poster(url = item.poster, modifier = Modifier.fillMaxWidth())
+        Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
         Text(
-            text = item.name,
+            text = name,
             style = MaterialTheme.typography.bodySmall,
             color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
             maxLines = 2,

@@ -66,6 +66,7 @@ fun MobileHomeScreen(
     onSearch: () -> Unit,
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
+    onSearchVod: (series: Boolean) -> Unit,
     onPlaylists: () -> Unit,
     onCategories: () -> Unit,
 ) {
@@ -107,12 +108,14 @@ fun MobileHomeScreen(
                     MobileTab.MOVIES -> MobileVodScreen(
                         series = false,
                         onOpen = { onOpenVod(it, false) },
+                        onSearch = { onSearchVod(false) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}"),
                     )
 
                     MobileTab.SERIES -> MobileVodScreen(
                         series = true,
                         onOpen = { onOpenVod(it, true) },
+                        onSearch = { onSearchVod(true) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
                     )
 

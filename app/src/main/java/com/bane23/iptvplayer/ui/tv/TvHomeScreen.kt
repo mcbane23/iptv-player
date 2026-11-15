@@ -71,6 +71,7 @@ fun TvHomeScreen(
     onSearch: () -> Unit,
     onGuide: (playlistId: Long) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
+    onSearchVod: (series: Boolean) -> Unit,
     onAddPlaylist: () -> Unit,
     onAddFromPhone: () -> Unit,
     onEditPlaylist: (Long) -> Unit,
@@ -116,12 +117,14 @@ fun TvHomeScreen(
                     TvTab.MOVIES -> TvVodScreen(
                         series = false,
                         onOpen = { onOpenVod(it, false) },
+                        onSearch = { onSearchVod(false) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-$playlistId"),
                     )
 
                     TvTab.SERIES -> TvVodScreen(
                         series = true,
                         onOpen = { onOpenVod(it, true) },
+                        onSearch = { onSearchVod(true) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-$playlistId"),
                     )
 

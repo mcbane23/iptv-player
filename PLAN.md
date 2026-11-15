@@ -268,7 +268,8 @@ Redosled unutar faze po želji vlasnika.
 
 Odobreno 15. 11. 2026. Funkcije ostaju iste, menja se izgled i raspored. Predlog sa maketama:
 https://claude.ai/artifact/BKuSvoRR7m39b1p82H9bi4. Dok ovo traje, nove stavke Faze 7 su pauzirane.
-Svaki korak je posebna grana (`faza-uN-...`) i pull request. Baza se ne menja.
+Svaki korak je posebna grana (`faza-uN-...`) i pull request. Korak 3 menja bazu (verzija 6, sa
+migracijom: dodaje naziv i poster u zapamćeno gledanje), liste i istorija ostaju.
 
 Odluke: telefon ima donju traku (Uživo, Filmovi, Serije, Podešavanja); TV ima bočni meni koji se
 raširi na fokus; Uživo na TV-u ima tri kolone sa malim pregledom kanala (može da se isključi);
@@ -277,9 +278,10 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 
 - [x] 1. Osnova: ikonice, tipografija, donja traka na telefonu, bočni meni na TV-u
 - [x] 2. Uživo: kategorije kao čipovi, „sada” uz kanal, pretraga u sekciji, TV u tri kolone sa pregledom
-- [ ] 3. Filmovi i serije: „Nastavi gledanje”, mreža postera, pretraga kroz sve kategorije, novi detalji
-- [ ] 4. Plejer na telefonu: ikonice, panel titlova i zvuka, „Više”, zaključavanje, dupli dodir
-- [ ] 5. Plejer na TV-u: kontrole na OK, lista kanala preko slike, premotavanje držanjem
+- [x] 3. Filmovi i serije: „Nastavi gledanje”, mreža postera, pretraga kroz sve kategorije, novi detalji
+- [ ] 4. Plejer na TV-u: kontrole na OK (traka sa vremenom i red dugmadi Titlovi, Audio, Format, Još),
+  lista kanala preko slike, premotavanje držanjem
+- [ ] 5. Plejer na telefonu: ikonice, panel titlova i zvuka, „Više”, zaključavanje, dupli dodir
 - [ ] 6. Podešavanja i liste: grupisana podešavanja, prazna stanja i poruke o greškama
 
 ### Faza 8: Izdanje
