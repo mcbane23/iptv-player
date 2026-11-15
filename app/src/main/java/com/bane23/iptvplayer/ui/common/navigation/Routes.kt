@@ -5,7 +5,19 @@ import kotlinx.serialization.Serializable
 
 /** Odredišta u aplikaciji. Zajednička su za telefon i TV, razlikuju se samo ekrani. */
 
-/** Spisak lista (početni ekran dok ne stigne Live TV u Fazi 2). */
+/** Početni ekran: kategorije (i na TV-u kanali) aktivne liste. */
+@Serializable
+data object LiveTv : NavKey
+
+/** Kanali jedne kategorije; [categoryId] null znači svi kanali liste. Koristi se na telefonu. */
+@Serializable
+data class Channels(val playlistId: Long, val categoryId: Long?, val title: String) : NavKey
+
+/** Plejer. [categoryId] određuje kroz koje kanale se lista (null = svi kanali liste). */
+@Serializable
+data class Player(val channelId: Long, val categoryId: Long?) : NavKey
+
+/** Spisak lista. */
 @Serializable
 data object Playlists : NavKey
 

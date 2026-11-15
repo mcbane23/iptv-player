@@ -63,4 +63,39 @@
     <string name="error_bad_response">The server sent a response the app does not understand.</string>
     <string name="error_credentials_unreadable">The saved password can no longer be read. Edit the playlist and enter the password again.</string>
     <string name="error_unknown">Something went wrong. Try again.</string>
+
+    <!-- Live TV -->
+    <string name="live_tv_title">Live TV</string>
+    <string name="category_all">All channels</string>
+
+    <!-- Plejer -->
+    <string name="player_previous">Previous</string>
+    <string name="player_next">Next</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_retry">Try again</string>
+    <string name="player_channels">Channels</string>
+    <string name="player_audio">Audio</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_no_tracks">No tracks available</string>
+    <string name="player_aspect">Picture: %1$s</string>
+    <string name="player_pip">Picture in picture</string>
+    <string name="player_tv_hint">Up/Down: change channel · OK: channel list · Right: options</string>
+    <string name="aspect_fit">Fit</string>
+    <string name="aspect_fill">Stretch</string>
+    <string name="aspect_zoom">Zoom</string>
+    <string name="gesture_volume">Volume</string>
+    <string name="gesture_brightness">Brightness</string>
+    <string name="playback_loading">Loading…</string>
+    <string name="playback_retrying">Connection lost, trying again…</string>
+    <string name="playback_error_network">The channel cannot be played. Check your internet connection.</string>
+    <string name="playback_error_not_found">This channel is currently unavailable.</string>
+    <string name="playback_error_forbidden">The server refused access to this channel. The account may be in use on another device or expired.</string>
+    <string name="playback_error_unsupported">This device cannot play this channel\'s format.</string>
+    <string name="playback_error_unknown">The channel cannot be played.</string>
+    <string name="playback_error_source">The channel address could not be built. Edit the playlist and enter the password again.</string>
+
+    <string name="field_user_agent">User-Agent (optional)</string>
+    <string name="field_user_agent_hint">Only needed if your provider requires it</string>
 </resources>
