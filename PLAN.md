@@ -54,10 +54,6 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 - [ ] **Ime aplikacije.** Za sada ostaje radni naziv „IPTV Player”. Konačno ime potvrditi pre Faze 8.
 - [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
       Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
-- [ ] **Stalan debug ključ.** GitHub Actions na svakom buildu pravi nov debug ključ, pa se
-      novi APK ne može instalirati preko starog (prvo deinstalacija, gube se liste i podešavanja).
-      Rešenje je jedan stalan debug keystore: u repou (debug ključ nije tajna, ali traži
-      izuzetak od pravila „keystore ne ide u repo”) ili u GitHub Secrets. Odlučiti u Fazi 0.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 
 ## 4. Arhitektura
@@ -133,6 +129,13 @@ pokreće se na tag `v*`):
 
 - `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
 
+**Stalan debug ključ (potvrđeno):** `keystore/debug.keystore` je u repou i koristi se za
+svaki debug build, lokalno i u CI-ju, da bi novi APK mogao da se instalira preko starog.
+Podaci su standardni Android debug podaci: store i key lozinka `android`, alias
+`androiddebugkey`. U Fazi 0 ga povezati u `app/build.gradle.kts`
+(`signingConfigs.getByName("debug")` sa `storeFile = rootProject.file("keystore/debug.keystore")`).
+Ovaj fajl se ne menja i ne generiše ponovo. Koristi se samo za debug, nikad za release.
+
 Dok secrets ne postoje, nijedan workflow ne sme da zavisi od njih: build mora da
 prolazi i bez njih.
 
@@ -161,6 +164,7 @@ Cilj: prazan ekran „Hello” koji se bilduje na GitHub-u i instalira na telefo
 - [ ] `app` modul sa Compose-om, Hilt-om i praznom navigacijom
 - [ ] Manifest za telefon + TV (oba launcher-a, TV baner)
 - [ ] Tema (tamna), `strings.xml` za srpski i engleski
+- [ ] Debug potpis povezan na `keystore/debug.keystore` iz repoa
 - [ ] `build.yml` workflow, debug APK kao artifact
 - [ ] `.gitignore`, ažuriran README sa uputstvom za preuzimanje APK-a
 - [ ] **Provera:** CI zelen, APK instaliran na telefon i TV, aplikacija vidljiva u oba launcher-a

@@ -17,6 +17,8 @@ captures/
 *.jks
 *.keystore
 keystore.properties
+# Izuzetak: stalan debug ključ je namerno u repou
+!keystore/debug.keystore
 
 # OS
 .DS_Store
