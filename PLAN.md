@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **planiranje završeno, kod još nije započet.** Sledeći korak je Faza 0.
+Stanje: **Faza 0 urađena, čeka ručnu proveru na telefonu i TV-u.** Sledeći korak je Faza 1.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -35,6 +35,7 @@ aplikacijama Hot Player Plus, TiViMate i Smarters TV Pro.
 | DI | Hilt |
 | Asinhroni rad | Coroutines + Flow |
 | Pozadinsko osvežavanje | WorkManager |
+| Navigacija | Navigation 3 (`androidx.navigation3`) |
 | Build | Gradle (Kotlin DSL) + version catalog (`gradle/libs.versions.toml`) |
 | Isporuka | Jedan APK za telefon i TV |
 | Gde se bilduje | **Samo GitHub Actions** (vidi odeljak 5) |
@@ -160,13 +161,13 @@ i proba. Jedna faza = jedna grana + pull request.
 
 Cilj: prazan ekran „Hello” koji se bilduje na GitHub-u i instalira na telefon i TV.
 
-- [ ] Gradle projekat (Kotlin DSL, version catalog, wrapper)
-- [ ] `app` modul sa Compose-om, Hilt-om i praznom navigacijom
-- [ ] Manifest za telefon + TV (oba launcher-a, TV baner)
-- [ ] Tema (tamna), `strings.xml` za srpski i engleski
-- [ ] Debug potpis povezan na `keystore/debug.keystore` iz repoa
-- [ ] `build.yml` workflow, debug APK kao artifact
-- [ ] `.gitignore`, ažuriran README sa uputstvom za preuzimanje APK-a
+- [x] Gradle projekat (Kotlin DSL, version catalog, wrapper)
+- [x] `app` modul sa Compose-om, Hilt-om i praznom navigacijom (Navigation 3)
+- [x] Manifest za telefon + TV (oba launcher-a, TV baner)
+- [x] Tema (tamna), `strings.xml` za srpski i engleski
+- [x] Debug potpis povezan na `keystore/debug.keystore` iz repoa
+- [x] `build.yml` workflow, debug APK kao artifact
+- [x] `.gitignore`, ažuriran README sa uputstvom za preuzimanje APK-a
 - [ ] **Provera:** CI zelen, APK instaliran na telefon i TV, aplikacija vidljiva u oba launcher-a
 
 ### Faza 1: Liste (playlists)
