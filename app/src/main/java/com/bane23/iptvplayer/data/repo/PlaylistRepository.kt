@@ -23,12 +23,16 @@ import com.bane23.iptvplayer.domain.PlaylistError.Kind
 import com.bane23.iptvplayer.domain.PlaylistException
 import com.bane23.iptvplayer.domain.PlaylistType
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.EOFException
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
+import java.net.ProtocolException
 import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -213,33 +217,40 @@ class PlaylistRepository @Inject constructor(
     private suspend fun importM3u(playlistId: Long, input: InputStream): String? {
         var epgUrl: String? = null
         val writer = ChannelWriter(playlistId)
-        input.bufferedReader(Charsets.UTF_8).useLines { lines ->
-            for (item in M3uParser.parse(lines)) {
-                when (item) {
-                    is M3uItem.Header -> epgUrl = item.epgUrl
-                    is M3uItem.Entry -> writer.add(
-                        categoryKey = item.group,
-                        categoryName = item.group,
-                    ) { categoryId, order ->
-                        ChannelEntity(
-                            playlistId = playlistId,
-                            categoryId = categoryId,
-                            name = item.name,
-                            logo = item.logo,
-                            streamUrl = item.url,
-                            tvgId = item.tvgId,
-                            tvgName = item.tvgName,
-                            number = item.number,
-                            catchupType = item.catchupType,
-                            catchupSource = item.catchupSource,
-                            catchupDays = item.catchupDays,
-                            userAgent = item.userAgent,
-                            referrer = item.referrer,
-                            sortOrder = order,
-                        )
+        try {
+            input.bufferedReader(Charsets.UTF_8).useLines { lines ->
+                for (item in M3uParser.parse(lines)) {
+                    when (item) {
+                        is M3uItem.Header -> epgUrl = item.epgUrl
+                        is M3uItem.Entry -> writer.add(
+                            categoryKey = item.group,
+                            categoryName = item.group,
+                        ) { categoryId, order ->
+                            ChannelEntity(
+                                playlistId = playlistId,
+                                categoryId = categoryId,
+                                name = item.name,
+                                logo = item.logo,
+                                streamUrl = item.url,
+                                tvgId = item.tvgId,
+                                tvgName = item.tvgName,
+                                number = item.number,
+                                catchupType = item.catchupType,
+                                catchupSource = item.catchupSource,
+                                catchupDays = item.catchupDays,
+                                userAgent = item.userAgent,
+                                referrer = item.referrer,
+                                sortOrder = order,
+                            )
+                        }
                     }
                 }
             }
+        } catch (e: IOException) {
+            // Neki serveri prekinu vezu bez urednog kraja odgovora. Ako su kanali već pročitani,
+            // lista se prihvata; inače je to prava greška.
+            val truncated = e is ProtocolException || e is EOFException
+            if (!truncated || writer.total == 0) throw e
         }
         writer.flush()
         if (writer.total == 0) throw PlaylistException(Kind.EMPTY_PLAYLIST)
@@ -369,6 +380,10 @@ class PlaylistRepository @Inject constructor(
             throw PlaylistException(PlaylistError(Kind.HTTP_ERROR, e.code()), e)
         } catch (e: SocketTimeoutException) {
             throw PlaylistException(Kind.TIMEOUT, e)
+        } catch (e: UnknownHostException) {
+            throw PlaylistException(Kind.HOST_NOT_FOUND, e)
+        } catch (e: SSLException) {
+            throw PlaylistException(Kind.SSL_ERROR, e)
         } catch (e: SerializationException) {
             throw PlaylistException(Kind.BAD_RESPONSE, e)
         } catch (e: IOException) {

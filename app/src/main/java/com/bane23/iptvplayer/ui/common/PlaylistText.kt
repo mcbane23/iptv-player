@@ -13,11 +13,19 @@ import java.util.Date
 
 /** Poruka o grešci razumljiva korisniku. */
 @Composable
-fun PlaylistError.message(): String = when (kind) {
+fun PlaylistError.message(): String {
+    val text = friendlyMessage()
+    return if (detail.isNullOrBlank()) text else "$text\n\n$detail"
+}
+
+@Composable
+private fun PlaylistError.friendlyMessage(): String = when (kind) {
     Kind.MISSING_FIELDS -> stringResource(R.string.error_missing_fields)
     Kind.INVALID_URL -> stringResource(R.string.error_invalid_url)
     Kind.NO_NETWORK -> stringResource(R.string.error_no_network)
     Kind.TIMEOUT -> stringResource(R.string.error_timeout)
+    Kind.HOST_NOT_FOUND -> stringResource(R.string.error_host_not_found)
+    Kind.SSL_ERROR -> stringResource(R.string.error_ssl)
     Kind.HTTP_ERROR -> stringResource(R.string.error_http, httpCode ?: 0)
     Kind.EMPTY_PLAYLIST -> stringResource(R.string.error_empty_playlist)
     Kind.FILE_UNREADABLE -> stringResource(R.string.error_file_unreadable)

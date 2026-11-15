@@ -50,6 +50,8 @@
     <string name="error_missing_fields">Popunite sva polja.</string>
     <string name="error_invalid_url">Adresa nije ispravna. Proverite link i pokušajte ponovo.</string>
     <string name="error_no_network">Povezivanje nije uspelo. Proverite internet vezu i adresu.</string>
+    <string name="error_host_not_found">Adresa servera nije pronađena. Proverite da li je link tačno unet i da li imate internet.</string>
+    <string name="error_ssl">Bezbedna veza sa serverom nije uspostavljena. Ako link počinje sa https, probajte http.</string>
     <string name="error_timeout">Server predugo ne odgovara. Pokušajte kasnije.</string>
     <string name="error_http">Server je vratio grešku (%1$d). Proverite link.</string>
     <string name="error_empty_playlist">Nije pronađen nijedan kanal. Link ili fajl nije ispravna M3U lista.</string>
