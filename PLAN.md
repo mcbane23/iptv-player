@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faza 0 urađena, čeka ručnu proveru na telefonu i TV-u.** Sledeći korak je Faza 1.
+Stanje: **Faze 0 i 1 urađene.** Sledeći korak je Faza 2.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -175,17 +175,19 @@ Cilj: prazan ekran „Hello” koji se bilduje na GitHub-u i instalira na telefo
 
 Cilj: korisnik može da doda, osveži i obriše listu, a sadržaj se upisuje u bazu.
 
-- [ ] Room baza: `playlists`, `categories`, `channels`
-- [ ] **M3U parser**: `#EXTM3U`, `#EXTINF` sa atributima `tvg-id`, `tvg-name`,
+- [x] Room baza: `playlists`, `categories`, `channels`
+- [x] **M3U parser**: `#EXTM3U`, `#EXTINF` sa atributima `tvg-id`, `tvg-name`,
       `tvg-logo`, `group-title`, `tvg-chno`, `catchup*`; `url-tvg` / `x-tvg-url` iz zaglavlja;
       `#EXTVLCOPT` i `#EXTGRP`; tolerancija na loše formirane redove
-- [ ] Parser radi strimovano (liste mogu imati desetine hiljada stavki), upis u bazu u paketima
-- [ ] **Xtream Codes klijent** (`player_api.php`): prijava i podaci o nalogu,
+- [x] Parser radi strimovano (liste mogu imati desetine hiljada stavki), upis u bazu u paketima
+- [x] **Xtream Codes klijent** (`player_api.php`): prijava i podaci o nalogu,
       `get_live_categories`, `get_live_streams`; sastavljanje URL-a strima
-- [ ] Ekran „Dodaj listu”: M3U link, M3U fajl sa uređaja, Xtream prijava
-- [ ] Ekran sa spiskom lista: osveži, izmeni, obriši, izaberi aktivnu
-- [ ] Prikaz grešaka razumljiv korisniku (pogrešan link, istekao nalog, nema mreže)
-- [ ] Unit testovi za M3U parser i Xtream modele (sa izmišljenim primerima, bez pravih lista)
+- [x] Ekran „Dodaj listu”: M3U link, M3U fajl sa uređaja, Xtream prijava
+- [x] Ekran sa spiskom lista: osveži, izmeni, obriši, izaberi aktivnu
+- [x] Prikaz grešaka razumljiv korisniku (pogrešan link, istekao nalog, nema mreže), sa tehničkim detaljem ispod poruke
+- [x] M3U link oblika `get.php?username=..&password=..` se prepoznaje i dodaje kao Xtream nalog
+- [x] Ako https veza sa serverom ne uspe, proba se http i pamti adresa koja radi
+- [x] Unit testovi za M3U parser i Xtream modele (sa izmišljenim primerima, bez pravih lista)
 
 ### Faza 2: Live TV i plejer
 
