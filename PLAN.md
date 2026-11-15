@@ -275,12 +275,6 @@ Redosled unutar faze po želji vlasnika.
 Ideje dodate posle prvobitnog plana. Rade se posle Faze 8, redosled po želji vlasnika.
 Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
-**Dodavanje liste na TV preko telefona**
-
-- [ ] TV prikazuje QR kod (i kratku adresu za ručni unos) za dodavanje liste
-- [ ] Telefon skenira QR kod i u lokalnoj mreži šalje listu na TV (M3U link ili Xtream podaci),
-      bez spoljnog servera; TV traži potvrdu pre upisa
-
 **Sinhronizacija gledanog sadržaja preko naloga**
 
 - [ ] Prijava nalogom (Google ili email) u podešavanjima, potpuno opciono
