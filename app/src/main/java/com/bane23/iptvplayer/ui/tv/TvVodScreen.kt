@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -40,6 +41,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
+import kotlinx.coroutines.delay
 
 /** Filmovi ili serije na TV-u: kategorije levo (bira se sa OK), posteri izabrane kategorije desno. */
 @Composable
@@ -51,6 +53,9 @@ fun TvVodScreen(
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val firstFocus = remember { FocusRequester() }
+    val posterFocus = remember { FocusRequester() }
+    // Poster na kome je fokus bio poslednji put, da se posle povratka iz detalja nastavi odatle.
+    var lastItemId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier
@@ -91,7 +96,10 @@ fun TvVodScreen(
                         TvTextRow(
                             text = category.name,
                             selected = category == state.selected,
-                            onClick = { viewModel.selectCategory(category) },
+                            onClick = {
+                                lastItemId = null
+                                viewModel.selectCategory(category)
+                            },
                             modifier = if (isFirst) Modifier.focusRequester(firstFocus) else Modifier,
                         )
                     }
@@ -114,25 +122,44 @@ fun TvVodScreen(
                             contentPadding = PaddingValues(4.dp),
                         ) {
                             items(state.items, key = { it.id }) { item ->
-                                PosterCard(item = item, onClick = { onOpen(item) })
+                                PosterCard(
+                                    item = item,
+                                    onClick = { onOpen(item) },
+                                    onFocused = { lastItemId = item.id },
+                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                )
                             }
                         }
                     }
                 }
-                LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+                LaunchedEffect(Unit) {
+                    if (lastItemId != null) {
+                        repeat(FOCUS_RESTORE_ATTEMPTS) {
+                            if (posterFocus.tryRequestFocus()) return@LaunchedEffect
+                            delay(FOCUS_RESTORE_STEP_MS)
+                        }
+                    }
+                    firstFocus.tryRequestFocus()
+                }
             }
         }
     }
 }
 
+private const val FOCUS_RESTORE_ATTEMPTS = 10
+private const val FOCUS_RESTORE_STEP_MS = 60L
+
 /** Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji. */
 @Composable
-private fun PosterCard(item: VodItem, onClick: () -> Unit) {
+private fun PosterCard(item: VodItem, onClick: () -> Unit, onFocused: () -> Unit, modifier: Modifier = Modifier) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(10.dp)
     Column(
-        modifier = Modifier
-            .onFocusChanged { focused = it.isFocused }
+        modifier = modifier
+            .onFocusChanged {
+                if (it.isFocused && !focused) onFocused()
+                focused = it.isFocused
+            }
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
             .clickable(onClick = onClick)
             .padding(5.dp),

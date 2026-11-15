@@ -236,7 +236,7 @@ private fun ProgressBar(ui: VodPlayerUiState, paused: Boolean, modifier: Modifie
         Text(
             text = stringResource(R.string.vod_tv_hint),
             color = Color.White.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 8.dp),
         )
     }

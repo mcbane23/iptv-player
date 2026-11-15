@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,9 @@ import com.bane23.iptvplayer.domain.PlaylistType
  * Polja za unos liste. Zajednička su za telefon i TV: Material3 polja za tekst rade i na dodir
  * i sa daljinskim (fokus D-padom, OK otvara tastaturu).
  *
+ * [plainKeyboard] traži tastaturu bez predloga i ispravki i za adrese i korisničko ime. Koristi se na
+ * TV-u, gde tastature umeju da ubace razmak ili veliko slovo i kad je polje označeno kao adresa.
+ *
  * [pickFileButton] crta dugme za izbor fajla u stilu platforme (telefon ili TV).
  */
 @Composable
@@ -36,15 +40,20 @@ fun PlaylistFormFields(
     state: EditPlaylistUiState,
     viewModel: EditPlaylistViewModel,
     modifier: Modifier = Modifier,
+    plainKeyboard: Boolean = false,
     pickFileButton: @Composable (label: String, onClick: () -> Unit) -> Unit,
 ) {
     val enabled = !state.saving
+    // Polje tipa lozinke (bez sakrivanja teksta) je jedino kod koga tastature pouzdano ne diraju unos.
+    val addressKeyboard = if (plainKeyboard) KeyboardType.Password else KeyboardType.Uri
+    val plainTextKeyboard = if (plainKeyboard) KeyboardType.Password else KeyboardType.Text
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         FormField(
             value = state.name,
             onValueChange = viewModel::setName,
             label = stringResource(R.string.field_name),
             enabled = enabled,
+            keyboardType = plainTextKeyboard,
         )
         when (state.type) {
             PlaylistType.M3U_URL -> FormField(
@@ -52,7 +61,7 @@ fun PlaylistFormFields(
                 onValueChange = viewModel::setUrl,
                 label = stringResource(R.string.field_m3u_url),
                 enabled = enabled,
-                keyboardType = KeyboardType.Uri,
+                keyboardType = addressKeyboard,
             )
 
             PlaylistType.M3U_FILE -> {
@@ -75,13 +84,14 @@ fun PlaylistFormFields(
                     onValueChange = viewModel::setServer,
                     label = stringResource(R.string.field_server),
                     enabled = enabled,
-                    keyboardType = KeyboardType.Uri,
+                    keyboardType = addressKeyboard,
                 )
                 FormField(
                     value = state.username,
                     onValueChange = viewModel::setUsername,
                     label = stringResource(R.string.field_username),
                     enabled = enabled,
+                    keyboardType = plainTextKeyboard,
                 )
                 FormField(
                     value = state.password,
@@ -108,7 +118,7 @@ fun PlaylistFormFields(
             onValueChange = viewModel::setEpgUrl,
             label = stringResource(R.string.field_epg_url),
             enabled = enabled,
-            keyboardType = KeyboardType.Uri,
+            keyboardType = addressKeyboard,
             supportingText = stringResource(R.string.field_epg_url_hint),
         )
         FormField(
@@ -140,7 +150,13 @@ private fun FormField(
         label = { Text(label) },
         enabled = enabled,
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+        // Bez automatskih ispravki i velikog početnog slova: adrese i nazivi se unose tačno kako su otkucani.
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.None,
+            autoCorrectEnabled = false,
+            keyboardType = keyboardType,
+            imeAction = imeAction,
+        ),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         supportingText = supportingText?.let { { Text(it) } },
         modifier = Modifier.fillMaxWidth(),

@@ -59,7 +59,7 @@ fun TvSearchScreen(
             onValueChange = viewModel::setQuery,
             placeholder = { androidx.compose.material3.Text(stringResource(R.string.search_hint)) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
             modifier = Modifier
                 .fillMaxWidth(0.6f)
                 .focusRequester(fieldFocus),

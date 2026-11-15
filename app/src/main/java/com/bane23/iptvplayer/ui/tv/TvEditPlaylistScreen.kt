@@ -62,14 +62,9 @@ fun TvEditPlaylistScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PlaylistType.entries.forEachIndexed { index, type ->
                     val modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
-                    if (state.type == type) {
-                        Button(onClick = { viewModel.setType(type) }, modifier = modifier) {
-                            Text(type.label())
-                        }
-                    } else {
-                        OutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
-                            Text(type.label())
-                        }
+                    // Isto dugme za izabran i neizabran tip: zamena dugmeta bi izgubila fokus.
+                    OutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
+                        Text(if (state.type == type) "● ${type.label()}" else type.label())
                     }
                 }
             }
@@ -79,6 +74,7 @@ fun TvEditPlaylistScreen(
             state = state,
             viewModel = viewModel,
             modifier = Modifier.fillMaxWidth(0.6f),
+            plainKeyboard = true,
             pickFileButton = { label, onClick ->
                 OutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
             },
@@ -101,14 +97,15 @@ fun TvEditPlaylistScreen(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             val saveModifier = if (playlistId != null) Modifier.focusRequester(firstFocus) else Modifier
-            Button(onClick = viewModel::save, enabled = !state.saving, modifier = saveModifier) {
+            // Dok traje čuvanje dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
+            Button(onClick = viewModel::save, modifier = saveModifier) {
                 Text(stringResource(R.string.action_save))
             }
-            OutlinedButton(onClick = onClose, enabled = !state.saving) {
+            OutlinedButton(onClick = { if (!state.saving) onClose() }) {
                 Text(stringResource(R.string.action_cancel))
             }
         }
     }
 
-    LaunchedEffect(Unit) { firstFocus.requestFocus() }
+    LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
 }

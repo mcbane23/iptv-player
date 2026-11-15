@@ -18,6 +18,7 @@ import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.PairPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
 import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
@@ -122,8 +123,12 @@ fun TvApp() {
             entry<Playlists> {
                 TvPlaylistsScreen(
                     onAdd = { backStack.add(EditPlaylist()) },
+                    onAddFromPhone = { backStack.add(PairPlaylist) },
                     onEdit = { id -> backStack.add(EditPlaylist(id)) },
                 )
+            }
+            entry<PairPlaylist> {
+                TvPairingScreen(onClose = { backStack.removeLastOrNull() })
             }
             entry<EditPlaylist> { key ->
                 TvEditPlaylistScreen(

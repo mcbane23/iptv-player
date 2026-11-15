@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0 do 5 urađene** (Faza 5 čeka ručnu proveru; Faze 2 do 4 još nisu probane na TV-u). Sledeći korak je Faza 6.
+Stanje: **Faze 0 do 5 urađene** (Faze 2 do 5 još nisu probane na TV-u). Faza 6 je u toku: pregled koda je urađen, čeka se proba na TV-u.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -102,6 +102,9 @@ app/src/main/java/<package>/
 - `epg_programs`: tvgId, početak, kraj, naslov, opis (indeks po tvgId + početak)
 
 Lozinke Xtream naloga čuvati šifrovano (Android Keystore), ne kao običan tekst.
+
+Nadogradnja aplikacije ne sme da obriše liste, favorite ni istoriju: od verzije baze 5 svaka promena
+šeme ide sa migracijom (`data/db/Migrations.kt`).
 
 ## 5. Build i CI (GitHub Actions)
 
@@ -230,6 +233,10 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 
 ### Faza 6: Doterivanje TV interfejsa
 
+Pregled koda je urađen: ispravljena su mesta gde je fokus mogao da nestane (isključena ili zamenjena
+dugmad, obrisani redovi), fokus se posle povratka vraća na poslednji kanal ili poster, a red dugmadi na
+početnom ekranu se pomera ako ne stane. Stavke ostaju otvorene dok se ne potvrde na pravom TV-u.
+
 - [ ] Pregled svih ekrana samo sa daljinskim: fokus nikad ne sme da se izgubi
 - [ ] Brzina listanja dugih lista, učitavanje logotipa bez zastajkivanja
 - [ ] Margine za overscan, čitljivost sa daljine
@@ -243,6 +250,8 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila
+- [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
+      i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [ ] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV)
 - [ ] Prikaz više kanala odjednom (multi-view)
 - [ ] Automatsko pokretanje pri paljenju uređaja (TV box)

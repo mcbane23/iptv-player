@@ -64,12 +64,15 @@ fun MobileVodPlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(VodPanel.NONE) }
+    var gestureHint by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { start(viewModel) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
     ImmersiveMode()
+    val inPip = rememberIsInPictureInPicture()
+    AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
 
     // Kontrole se same sklanjaju posle nekoliko sekundi gledanja; svaka promena pozicije odlaže to.
     LaunchedEffect(controlsVisible, panel, playback.status, ui.positionMs / SEEK_STEP_MS) {
@@ -79,13 +82,24 @@ fun MobileVodPlayerScreen(
         }
     }
 
+    LaunchedEffect(gestureHint) {
+        if (gestureHint != null) {
+            delay(VOD_GESTURE_HINT_MS)
+            gestureHint = null
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible }) },
+            .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible }) }
+            .volumeBrightnessDrag { gestureHint = it },
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
+
+        // U slici u slici ostaje samo video, kao kod kanala.
+        if (inPip) return@Box
 
         statusMessage(ui.sourceMissing, playback)?.let { message ->
             Text(
@@ -98,6 +112,8 @@ fun MobileVodPlayerScreen(
                     .padding(horizontal = 32.dp),
             )
         }
+
+        gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
 
         if (controlsVisible) {
             VodControls(
@@ -112,6 +128,7 @@ fun MobileVodPlayerScreen(
                 onSubtitles = { panel = VodPanel.SUBTITLES },
                 onAspect = viewModel::cycleAspectMode,
                 onNext = viewModel::next,
+                onPip = rememberEnterPictureInPicture(),
             )
         }
     }
@@ -154,6 +171,7 @@ private fun VodControls(
     onSubtitles: () -> Unit,
     onAspect: () -> Unit,
     onNext: () -> Unit,
+    onPip: (() -> Unit)?,
 ) {
     Column(
         modifier = Modifier
@@ -240,10 +258,14 @@ private fun VodControls(
                 if (ui.hasNext) {
                     TextButton(onClick = onNext) { Text(stringResource(R.string.vod_next_episode)) }
                 }
+                if (onPip != null) {
+                    TextButton(onClick = onPip) { Text(stringResource(R.string.player_pip)) }
+                }
             }
         }
     }
 }
 
 private const val SEEK_STEP_MS = 10_000L
+private const val VOD_GESTURE_HINT_MS = 1_200L
 private const val VOD_CONTROLS_TIMEOUT_MS = 4_000L

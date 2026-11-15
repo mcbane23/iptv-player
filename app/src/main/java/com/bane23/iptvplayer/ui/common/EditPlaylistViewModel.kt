@@ -73,12 +73,13 @@ class EditPlaylistViewModel @Inject constructor(
 
     fun setType(type: PlaylistType) = _state.update { it.copy(type = type, error = null) }
     fun setName(value: String) = _state.update { it.copy(name = value) }
-    fun setUrl(value: String) = _state.update { it.copy(url = value) }
-    fun setServer(value: String) = _state.update { it.copy(server = value) }
-    fun setUsername(value: String) = _state.update { it.copy(username = value) }
-    fun setPassword(value: String) = _state.update { it.copy(password = value) }
+    // Adrese, korisničko ime i lozinka ne sadrže razmake; tastature (naročito na TV-u) umeju da ih ubace.
+    fun setUrl(value: String) = _state.update { it.copy(url = value.withoutWhitespace()) }
+    fun setServer(value: String) = _state.update { it.copy(server = value.withoutWhitespace()) }
+    fun setUsername(value: String) = _state.update { it.copy(username = value.withoutWhitespace()) }
+    fun setPassword(value: String) = _state.update { it.copy(password = value.withoutWhitespace()) }
     fun setUserAgent(value: String) = _state.update { it.copy(userAgent = value) }
-    fun setEpgUrl(value: String) = _state.update { it.copy(epgUrl = value) }
+    fun setEpgUrl(value: String) = _state.update { it.copy(epgUrl = value.withoutWhitespace()) }
 
     fun setEpgShift(value: String) {
         // Dozvoljen je samo ceo broj sati, sa znakom minus ispred.
@@ -127,3 +128,5 @@ class EditPlaylistViewModel @Inject constructor(
         }
     }
 }
+
+private fun String.withoutWhitespace(): String = filterNot { it.isWhitespace() }
