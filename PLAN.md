@@ -282,6 +282,13 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
       sa pregledom vremena na traci, da se lako stigne do željenog mesta
 
+**Snimanje sadržaja**
+
+- [ ] Snimanje kanala koji se trenutno gleda (dugme u plejeru), snimak se čuva na uređaju
+- [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
+- [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
+- [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.
