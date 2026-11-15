@@ -296,6 +296,14 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
       toast poruku („Pritisnite Nazad još jednom za izlaz”), drugi u roku od ~2 s zatvara aplikaciju.
       Radi isto na telefonu i na TV-u (daljinski)
 
+**Titlovi**
+
+- [ ] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
+      sami uključuju pri sledećem puštanju, bez ponovnog biranja (dopuna stavke o
+      podrazumevanom jeziku titlova iz Faze 7)
+- [ ] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
+      veličina slova i položaj na ekranu (visina od dna), sa pregledom
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.
