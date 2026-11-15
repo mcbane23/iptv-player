@@ -56,6 +56,9 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 - [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
       Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
+- [ ] **Sinhronizacija preko naloga (Faza 9).** Gde se čuvaju podaci (npr. korisnikov
+      Google Drive, sopstveni server ili nešto treće), koji nalog (Google, email) i šta se
+      sinhronizuje. Mora ostati besplatno i bez praćenja, a lozinke lista ne smeju na tuđi server.
 
 ## 4. Arhitektura
 
@@ -254,6 +257,30 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
 - [ ] README: kako instalirati APK na telefon i na TV
 - [ ] Prvo izdanje `v1.0.0` u GitHub Releases
+
+### Faza 9: Naknadne ideje
+
+Ideje dodate posle prvobitnog plana. Rade se posle Faze 8, redosled po želji vlasnika.
+Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
+
+**Dodavanje liste na TV preko telefona**
+
+- [ ] TV prikazuje QR kod (i kratku adresu za ručni unos) za dodavanje liste
+- [ ] Telefon skenira QR kod i u lokalnoj mreži šalje listu na TV (M3U link ili Xtream podaci),
+      bez spoljnog servera; TV traži potvrdu pre upisa
+
+**Sinhronizacija gledanog sadržaja preko naloga**
+
+- [ ] Prijava nalogom (Google ili email) u podešavanjima, potpuno opciono
+- [ ] Sinhronizacija pozicije gledanja: film ili serija započeti na TV-u nastavljaju se
+      na telefonu od istog mesta, i obrnuto
+- [ ] Odlučiti šta se još sinhronizuje (favoriti, istorija, liste) i gde se podaci čuvaju
+
+**Premotavanje strima**
+
+- [ ] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
+- [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
+      sa pregledom vremena na traci, da se lako stigne do željenog mesta
 
 ## 7. Testiranje
 
