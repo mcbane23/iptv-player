@@ -3,10 +3,40 @@
 Besplatan IPTV plejer za Android telefon i Android TV. Aplikacija ne sadrži nikakav
 sadržaj: korisnik dodaje sopstvene liste (M3U ili Xtream Codes nalog).
 
-**Stanje:** planiranje završeno, razvoj počinje od Faze 0.
+**Stanje:** Faza 0 (kostur projekta i CI). Aplikacija za sada prikazuje samo početni ekran.
 
 - [PLAN.md](PLAN.md): detaljan plan, faze i odluke
 - [CLAUDE.md](CLAUDE.md): pravila za rad kroz Claude Code
 
-APK se bilduje automatski preko GitHub Actions. Uputstvo za preuzimanje i instalaciju
-biće dodato kad se završi Faza 0.
+## Preuzimanje APK-a
+
+APK se bilduje automatski preko GitHub Actions na svaki push i pull request.
+
+1. Otvori karticu **Actions** u repou i izaberi workflow **Build**.
+2. Klikni na poslednji uspešan run (zelena kvačica) za granu koja te zanima (obično `main`).
+3. Na dnu stranice, u odeljku **Artifacts**, preuzmi `iptv-player-debug-<broj>`.
+4. GitHub daje ZIP; raspakuj ga i dobićeš `app-debug.apk`.
+
+Debug APK je uvek potpisan istim ključem (`keystore/debug.keystore`), pa novi APK
+može da se instalira preko starog bez brisanja aplikacije.
+
+## Instalacija
+
+**Telefon:** prebaci APK na telefon, otvori ga i dozvoli instalaciju iz nepoznatih
+izvora kad Android to zatraži.
+
+**Android TV / TV box:** najlakše preko ADB-a sa računara u istoj mreži
+(na TV-u uključi *Developer options* i *Network/USB debugging*):
+
+```
+adb connect <ip-adresa-tv-a>
+adb install -r app-debug.apk
+```
+
+Druga mogućnost je aplikacija za prenos fajlova ili USB fleš, pa instalacija preko
+fajl menadžera na TV-u. Aplikacija se pojavljuje i u običnom launcher-u telefona
+i u Android TV launcher-u.
+
+## Build
+
+Lokalni build: `./gradlew assembleDebug` (potreban JDK 17 ili noviji i Android SDK).

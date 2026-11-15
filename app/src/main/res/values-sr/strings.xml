@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Dobro došli</string>
+    <string name="home_subtitle">Dodajte svoju listu (M3U link ili Xtream Codes nalog) da biste počeli.</string>
+    <string name="home_add_playlist">Dodaj listu</string>
+</resources>

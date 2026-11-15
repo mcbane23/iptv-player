@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">IPTV Player</string>
+    <string name="home_title">Welcome</string>
+    <string name="home_subtitle">Add your playlist (M3U link or Xtream Codes account) to get started.</string>
+    <string name="home_add_playlist">Add playlist</string>
+</resources>
