@@ -40,6 +40,9 @@ aplikacijama Hot Player Plus, TiViMate i Smarters TV Pro.
 | Gde se bilduje | **Samo GitHub Actions** (vidi odeljak 5) |
 | Repo | Privatan, `mcbane23/iptv-player` |
 | Način rada | Claude Code na webu i u Android aplikaciji |
+| Package name (applicationId) | `com.bane23.iptvplayer` (potvrđeno) |
+| Jezici interfejsa | Engleski i srpski (svi tekstovi u `strings.xml`) |
+| Tema | Tamna, sa jednom akcentnom bojom |
 
 Verzije biblioteka se ne zakucavaju u ovom planu. U Fazi 0 uzeti najnovije **stabilne**
 verzije i upisati ih u version catalog.
@@ -48,11 +51,9 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 
 ## 3. Otvorene odluke (pitati vlasnika pre nego što zatrebaju)
 
-- [ ] **Ime aplikacije.** Radni naziv je „IPTV Player”.
-- [ ] **Package name** (applicationId). Radni predlog: `com.mcbane.iptvplayer`.
-      Mora se potvrditi **pre prvog release-a**, jer se posle ne menja bez gubitka podataka.
-- [ ] **Boje i ikonica.** Podrazumevano: tamna tema, jedna akcentna boja.
-- [ ] **Jezici interfejsa.** Predlog: srpski i engleski od početka (svi tekstovi u `strings.xml`).
+- [ ] **Ime aplikacije.** Za sada ostaje radni naziv „IPTV Player”. Konačno ime potvrditi pre Faze 8.
+- [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
+      Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 
 ## 4. Arhitektura
@@ -228,7 +229,7 @@ Redosled unutar faze po želji vlasnika.
 
 ### Faza 8: Izdanje
 
-- [ ] Potvrđeni ime, package name, ikonica i TV baner
+- [ ] Potvrđeni ime, akcentna boja, ikonica i TV baner
 - [ ] Keystore napravljen, secrets dodati, `release.yml` radi
 - [ ] R8/ProGuard pravila proverena na release buildu
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
