@@ -183,8 +183,15 @@ class PlaylistRepository @Inject constructor(
         return entity.copy(userAgent = userAgent.trim().takeIf { it.isNotEmpty() })
     }
 
+    /** Podešavanja kategorija liste koja se upravo osvežava (naziv -> stara kategorija). */
+    private var categoryPrefs: Map<String, CategoryEntity> = emptyMap()
+
     /** Briše stari sadržaj liste i upisuje novi. Poziva se unutar transakcije. */
     private suspend fun importContent(playlist: PlaylistEntity) {
+        // Sakrivene kategorije i njihov redosled se pamte po nazivu, da prežive osvežavanje.
+        categoryPrefs = categoryDao.getByPlaylist(playlist.id)
+            .filter { it.hidden || it.userOrder != null }
+            .associateBy { it.name }
         channelDao.deleteByPlaylist(playlist.id)
         categoryDao.deleteByPlaylist(playlist.id)
         val epgUrl = when (playlist.type) {
@@ -280,6 +287,7 @@ class PlaylistRepository @Inject constructor(
                                 name = item.name,
                                 logo = item.logo,
                                 streamUrl = item.url,
+                                stableKey = item.url,
                                 tvgId = item.tvgId,
                                 tvgName = item.tvgName,
                                 number = item.number,
@@ -375,6 +383,7 @@ class PlaylistRepository @Inject constructor(
                         name = stream.name?.takeIf { n -> n.isNotBlank() } ?: streamId.toString(),
                         logo = stream.icon?.takeIf { i -> i.isNotBlank() },
                         xtreamStreamId = streamId,
+                        stableKey = "xtream:$streamId",
                         tvgId = stream.epgChannelId?.takeIf { e -> e.isNotBlank() },
                         number = stream.num?.toIntOrNull(),
                         catchupType = if (hasArchive) "xtream" else null,
@@ -414,6 +423,8 @@ class PlaylistRepository @Inject constructor(
                     name = name,
                     type = CategoryType.LIVE,
                     sortOrder = categoryIds.size,
+                    hidden = categoryPrefs[name]?.hidden ?: false,
+                    userOrder = categoryPrefs[name]?.userOrder,
                 ),
             )
             categoryIds[key] = id

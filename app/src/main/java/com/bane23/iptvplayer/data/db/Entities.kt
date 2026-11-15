@@ -43,6 +43,10 @@ data class CategoryEntity(
     val name: String,
     val type: CategoryType,
     val sortOrder: Int,
+    /** Korisnik je sakrio kategoriju; čuva se i posle osvežavanja liste (po nazivu). */
+    val hidden: Boolean = false,
+    /** Redosled koji je zadao korisnik; null = kategorija još nije ručno raspoređena. */
+    val userOrder: Int? = null,
 )
 
 @Entity(
@@ -60,6 +64,7 @@ data class CategoryEntity(
         Index("playlistId", "sortOrder"),
         Index("playlistId", "name"),
         Index("playlistId", "number"),
+        Index("playlistId", "stableKey"),
     ],
 )
 data class ChannelEntity(
@@ -80,6 +85,54 @@ data class ChannelEntity(
     val userAgent: String? = null,
     val referrer: String? = null,
     val sortOrder: Int,
+    /**
+     * Ključ kanala koji ostaje isti i posle osvežavanja liste (kad se menjaju [id]-jevi):
+     * link strima za M3U, odnosno Xtream ID. Favoriti i istorija se vezuju za njega.
+     */
+    val stableKey: String,
+)
+
+/** Kanal koji je korisnik označio kao omiljen. */
+@Entity(
+    tableName = "favorites",
+    primaryKeys = ["playlistId", "channelKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class FavoriteEntity(
+    val playlistId: Long,
+    val channelKey: String,
+    val addedAt: Long,
+)
+
+/** Kanal koji je gledan; čuva se samo vreme poslednjeg gledanja. */
+@Entity(
+    tableName = "history",
+    primaryKeys = ["playlistId", "channelKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class HistoryEntity(
+    val playlistId: Long,
+    val channelKey: String,
+    val watchedAt: Long,
+)
+
+data class ChannelWithFavorite(
+    @Embedded val channel: ChannelEntity,
+    @ColumnInfo(name = "favorite") val favorite: Boolean,
 )
 
 data class PlaylistWithCount(

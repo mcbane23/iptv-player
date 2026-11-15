@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0, 1 i 2 urađene** (Faza 2 čeka ručnu proveru na telefonu i TV-u). Sledeći korak je Faza 3.
+Stanje: **Faze 0, 1, 2 i 3 urađene** (Faze 2 i 3 čekaju ručnu proveru na TV-u). Sledeći korak je Faza 4.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -205,10 +205,10 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 
 ### Faza 3: Favoriti, istorija, pretraga
 
-- [ ] Dodavanje i uklanjanje favorita, posebna kategorija „Favoriti”
-- [ ] „Nedavno gledano” i pokretanje poslednjeg kanala pri startu (opciono u podešavanjima)
-- [ ] Pretraga kanala po nazivu kroz sve kategorije
-- [ ] Sakrivanje i promena redosleda kategorija
+- [x] Dodavanje i uklanjanje favorita, posebna kategorija „Favoriti”
+- [x] „Nedavno gledano” i pokretanje poslednjeg kanala pri startu (opciono u podešavanjima)
+- [x] Pretraga kanala po nazivu kroz sve kategorije
+- [x] Sakrivanje i promena redosleda kategorija
 
 ### Faza 4: TV vodič (EPG)
 

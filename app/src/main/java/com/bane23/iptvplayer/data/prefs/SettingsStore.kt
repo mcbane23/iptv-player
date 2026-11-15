@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.data.prefs
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -31,7 +32,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /** Da li se pri startu aplikacije odmah pušta poslednji gledani kanal. */
+    val resumeLastChannel: Flow<Boolean> =
+        dataStore.data.map { it[RESUME_LAST_CHANNEL] ?: false }.distinctUntilChanged()
+
+    suspend fun setResumeLastChannel(enabled: Boolean) {
+        dataStore.edit { it[RESUME_LAST_CHANNEL] = enabled }
+    }
+
     private companion object {
+        val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
 }

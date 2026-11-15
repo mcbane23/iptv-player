@@ -24,3 +24,15 @@ data object Playlists : NavKey
 /** Dodavanje nove liste ([playlistId] je null) ili izmena postojeće. */
 @Serializable
 data class EditPlaylist(val playlistId: Long? = null) : NavKey
+
+/** Pretraga kanala kroz celu aktivnu listu. */
+@Serializable
+data object Search : NavKey
+
+/** Sakrivanje kategorija i promena njihovog redosleda. */
+@Serializable
+data object ManageCategories : NavKey
+
+/** Podešavanja aplikacije. */
+@Serializable
+data object Settings : NavKey

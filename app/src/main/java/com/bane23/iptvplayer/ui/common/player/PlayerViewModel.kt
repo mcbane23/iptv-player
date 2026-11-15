@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,10 +18,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -63,6 +69,19 @@ class PlayerViewModel @Inject constructor(
         .flatMapLatest { repository.channels(it.playlistId, it.categoryId, it.startIndex) }
         .cachedIn(viewModelScope)
 
+    /** Da li je kanal koji se gleda među favoritima. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val isFavorite: StateFlow<Boolean> = _ui.map { it.channel }
+        .distinctUntilChangedBy { it?.id }
+        .flatMapLatest { channel -> if (channel == null) flowOf(false) else repository.observeFavorite(channel) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /**
+     * Za posebne grupe (favoriti, nedavno gledano): redosled kanala zapamćen pri otvaranju plejera.
+     * Tako se redosled ne menja pod prstima dok se kanali gledaju.
+     */
+    private var groupIds: List<Long>? = null
+
     private var started = false
     private var numberJob: Job? = null
 
@@ -73,7 +92,10 @@ class PlayerViewModel @Inject constructor(
         _ui.update { it.copy(categoryId = categoryId) }
         viewModelScope.launch {
             val channel = repository.getChannel(channelId) ?: return@launch
-            val position = repository.positionOf(channel, categoryId)
+            if (ChannelGroups.isVirtual(categoryId) && categoryId != null) {
+                groupIds = repository.groupChannelIds(channel.playlistId, categoryId)
+            }
+            val position = positionOf(channel)
             listScope.value = ListScope(channel.playlistId, categoryId, position)
             show(channel)
         }
@@ -83,9 +105,14 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch { show(channel) }
     }
 
-    fun next() = step { repository.next(it, _ui.value.categoryId) }
+    fun next() = step { neighbor(it, 1) }
 
-    fun previous() = step { repository.previous(it, _ui.value.categoryId) }
+    fun previous() = step { neighbor(it, -1) }
+
+    fun toggleFavorite() {
+        val channel = _ui.value.channel ?: return
+        viewModelScope.launch { repository.toggleFavorite(channel.id) }
+    }
 
     fun togglePlayPause() = engine.togglePlayPause()
 
@@ -129,9 +156,25 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch { pick(current)?.let { show(it) } }
     }
 
+    private suspend fun positionOf(channel: Channel): Int {
+        val ids = groupIds ?: return repository.positionOf(channel, _ui.value.categoryId)
+        return ids.indexOf(channel.id).coerceAtLeast(0)
+    }
+
+    /** Sledeći ([delta] = 1) ili prethodni (-1) kanal u trenutnoj kategoriji ili grupi, ukrug. */
+    private suspend fun neighbor(channel: Channel, delta: Int): Channel? {
+        val ids = groupIds
+        if (ids == null) {
+            val categoryId = _ui.value.categoryId
+            return if (delta > 0) repository.next(channel, categoryId) else repository.previous(channel, categoryId)
+        }
+        if (ids.isEmpty()) return null
+        val index = ids.indexOf(channel.id)
+        return repository.getChannel(ids[(index + delta).mod(ids.size)])
+    }
+
     private suspend fun show(channel: Channel) {
-        val categoryId = _ui.value.categoryId
-        val position = repository.positionOf(channel, categoryId)
+        val position = positionOf(channel)
         _ui.update { it.copy(channel = channel, position = position, sourceMissing = false) }
         val source = repository.streamSource(channel.id)
         if (source == null) {
@@ -139,6 +182,7 @@ class PlayerViewModel @Inject constructor(
             _ui.update { it.copy(sourceMissing = true) }
         } else {
             engine.play(source)
+            repository.markWatched(channel.id)
         }
     }
 

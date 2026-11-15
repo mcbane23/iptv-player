@@ -289,6 +289,7 @@ private fun OptionsPanel(
     modifier: Modifier = Modifier,
 ) {
     val firstFocus = remember { FocusRequester() }
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(2.dp),
         modifier = modifier
@@ -299,9 +300,16 @@ private fun OptionsPanel(
     ) {
         item {
             TvTextRow(
+                text = stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add),
+                trailing = if (isFavorite) "★" else "☆",
+                onClick = viewModel::toggleFavorite,
+                modifier = Modifier.focusRequester(firstFocus),
+            )
+        }
+        item {
+            TvTextRow(
                 text = stringResource(R.string.player_aspect, ui.aspectMode.label()),
                 onClick = viewModel::cycleAspectMode,
-                modifier = Modifier.focusRequester(firstFocus),
             )
         }
 

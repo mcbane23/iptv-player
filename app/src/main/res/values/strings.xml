@@ -98,4 +98,34 @@
 
     <string name="field_user_agent">User-Agent (optional)</string>
     <string name="field_user_agent_hint">Only needed if your provider requires it</string>
+
+    <!-- Favorites, history, search -->
+    <string name="category_favorites">Favorites</string>
+    <string name="category_recent">Recently watched</string>
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="favorite_tv_hint">Hold OK on a channel to add it to favorites or remove it</string>
+    <string name="favorites_empty">No favorites yet. Tap the star next to a channel to add it.</string>
+    <string name="channels_empty">No channels here.</string>
+    <string name="action_search">Search</string>
+    <string name="action_menu">Menu</string>
+    <string name="search_title">Search channels</string>
+    <string name="search_hint">Channel name</string>
+    <string name="search_empty">No channels match.</string>
+
+    <!-- Categories -->
+    <string name="categories_manage_title">Categories</string>
+    <string name="categories_manage_hint">Hide categories you do not watch and change their order. This is kept when the playlist is refreshed.</string>
+    <string name="category_move_up">Move up</string>
+    <string name="category_move_down">Move down</string>
+    <string name="category_shown">Show category</string>
+    <string name="category_show">Show</string>
+    <string name="category_hide">Hide</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_resume_last">Play last channel on start</string>
+    <string name="settings_resume_last_summary">When the app opens, the channel you watched last starts right away.</string>
+    <string name="setting_on">On</string>
+    <string name="setting_off">Off</string>
 </resources>

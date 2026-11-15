@@ -1,7 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,12 +28,14 @@ import androidx.tv.material3.Text
  * a [selected] red (npr. trenutna kategorija ili kanal) ostaje blago istaknut i kad nema fokus.
  * [content] dobija boju teksta koja odgovara pozadini.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TvListRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     onFocused: () -> Unit = {},
+    onLongClick: (() -> Unit)? = null,
     content: @Composable RowScope.(contentColor: Color) -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -52,7 +55,7 @@ fun TvListRow(
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         content = { content(contentColor) },

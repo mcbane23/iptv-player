@@ -33,13 +33,14 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import kotlinx.coroutines.delay
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
-private const val ALL_CHANNELS = -1L
+private const val ALL_CHANNELS = 0L
 
 /**
  * Početni ekran na TV-u: kategorije levo, kanali izabrane kategorije desno.
@@ -49,6 +50,9 @@ private const val ALL_CHANNELS = -1L
 fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
+    onSearch: () -> Unit,
+    onManageCategories: () -> Unit,
+    onSettings: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
 ) {
@@ -89,8 +93,15 @@ fun TvLiveTvScreen(
                 modifier = Modifier.weight(1f),
             )
             if (playlistId != null) {
-                OutlinedButton(onClick = onManagePlaylists) {
-                    Text(stringResource(R.string.playlists_title))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = onSearch) { Text(stringResource(R.string.action_search)) }
+                    OutlinedButton(onClick = onManageCategories) {
+                        Text(stringResource(R.string.categories_manage_title))
+                    }
+                    OutlinedButton(onClick = onManagePlaylists) {
+                        Text(stringResource(R.string.playlists_title))
+                    }
+                    OutlinedButton(onClick = onSettings) { Text(stringResource(R.string.settings_title)) }
                 }
             }
         }
@@ -119,6 +130,28 @@ fun TvLiveTvScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    item(key = ChannelGroups.FAVORITES) {
+                        TvTextRow(
+                            text = stringResource(R.string.category_favorites),
+                            trailing = state.favoriteCount.toString(),
+                            selected = selectedCategory == ChannelGroups.FAVORITES,
+                            onFocused = { focusedCategory = ChannelGroups.FAVORITES },
+                            onClick = { focusedCategory = ChannelGroups.FAVORITES },
+                            modifier = focusTarget(selectedCategory == ChannelGroups.FAVORITES, firstFocus),
+                        )
+                    }
+                    if (state.recentCount > 0) {
+                        item(key = ChannelGroups.RECENT) {
+                            TvTextRow(
+                                text = stringResource(R.string.category_recent),
+                                trailing = state.recentCount.toString(),
+                                selected = selectedCategory == ChannelGroups.RECENT,
+                                onFocused = { focusedCategory = ChannelGroups.RECENT },
+                                onClick = { focusedCategory = ChannelGroups.RECENT },
+                                modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
+                            )
+                        }
+                    }
                     item(key = ALL_CHANNELS) {
                         TvTextRow(
                             text = stringResource(R.string.category_all),
@@ -142,10 +175,19 @@ fun TvLiveTvScreen(
                 }
 
                 val channels = channelsViewModel.channels.collectAsLazyPagingItems()
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .weight(0.62f)
                         .fillMaxHeight(),
+                ) {
+                Text(
+                    text = stringResource(R.string.favorite_tv_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
@@ -156,6 +198,7 @@ fun TvLiveTvScreen(
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
+                            onLongClick = { channel?.let { channelsViewModel.toggleFavorite(it.id) } },
                         ) { color ->
                             ChannelLogo(url = channel?.logo, size = 36.dp)
                             Text(
@@ -168,8 +211,12 @@ fun TvLiveTvScreen(
                                     .weight(1f)
                                     .padding(start = 16.dp),
                             )
+                            if (channel?.favorite == true) {
+                                Text(text = "★", color = color, modifier = Modifier.padding(start = 12.dp))
+                            }
                         }
                     }
+                }
                 }
                 // Fokus ide na izabranu kategoriju (i posle povratka iz plejera).
                 LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
