@@ -18,6 +18,24 @@ object XtreamUrls {
         return url.newBuilder().encodedPath("/").query(null).fragment(null).build()
     }
 
+    /** Podaci za Xtream prijavu izvučeni iz M3U linka oblika `get.php?username=..&password=..`. */
+    data class Credentials(val server: HttpUrl, val username: String, val password: String)
+
+    /**
+     * Mnogi provajderi daju M3U link koji je u stvari Xtream nalog (`/get.php?username=..&password=..`).
+     * Takav link se prepoznaje ovde, da bi se lista dodala preko Xtream API-ja: on radi i kad je
+     * izvoz M3U fajla na serveru isključen, a donosi i podatke o nalogu i arhivi.
+     * Vraća null ako link nije tog oblika.
+     */
+    fun parseGetPhpLink(link: String): Credentials? {
+        val url = link.trim().toHttpUrlOrNull() ?: return null
+        if (!url.pathSegments.lastOrNull().equals("get.php", ignoreCase = true)) return null
+        val username = url.queryParameter("username")?.takeIf { it.isNotEmpty() } ?: return null
+        val password = url.queryParameter("password")?.takeIf { it.isNotEmpty() } ?: return null
+        val server = url.newBuilder().encodedPath("/").query(null).fragment(null).build()
+        return Credentials(server, username, password)
+    }
+
     fun playerApi(server: HttpUrl, username: String, password: String, action: String? = null): String {
         val builder = server.newBuilder()
             .addPathSegment("player_api.php")

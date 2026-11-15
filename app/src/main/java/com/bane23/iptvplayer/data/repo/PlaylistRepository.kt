@@ -143,7 +143,19 @@ class PlaylistRepository @Inject constructor(
         return when (type) {
             PlaylistType.M3U_URL -> {
                 val url = cleanSource.toHttpUrlOrNull() ?: throw PlaylistException(Kind.INVALID_URL)
-                PlaylistEntity(name = cleanName, type = type, source = url.toString())
+                val xtream = XtreamUrls.parseGetPhpLink(cleanSource)
+                if (xtream != null) {
+                    // Link je u stvari Xtream nalog: dodaje se kao Xtream lista.
+                    PlaylistEntity(
+                        name = cleanName,
+                        type = PlaylistType.XTREAM,
+                        source = xtream.server.toString(),
+                        username = xtream.username,
+                        passwordEncrypted = cipher.encrypt(xtream.password),
+                    )
+                } else {
+                    PlaylistEntity(name = cleanName, type = type, source = url.toString())
+                }
             }
 
             PlaylistType.M3U_FILE -> PlaylistEntity(name = cleanName, type = type, source = cleanSource)

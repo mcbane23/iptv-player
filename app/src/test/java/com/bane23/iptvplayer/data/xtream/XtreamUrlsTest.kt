@@ -59,4 +59,29 @@ class XtreamUrlsTest {
             XtreamUrls.liveStream(server, "proba", "tajna", 101, "m3u8"),
         )
     }
+
+    @Test
+    fun `get php link is recognized as xtream account`() {
+        val parsed = XtreamUrls.parseGetPhpLink(
+            " https://tv.invalid:8443/get.php?username=proba&password=taj%26na&type=m3u_plus&output=ts ",
+        )!!
+        assertEquals("https://tv.invalid:8443/", parsed.server.toString())
+        assertEquals("proba", parsed.username)
+        assertEquals("taj&na", parsed.password)
+    }
+
+    @Test
+    fun `get php link keeps http scheme and default port`() {
+        val parsed = XtreamUrls.parseGetPhpLink("http://tv.invalid/get.php?password=tajna&username=proba")!!
+        assertEquals("http://tv.invalid/", parsed.server.toString())
+    }
+
+    @Test
+    fun `other links are not treated as xtream`() {
+        assertNull(XtreamUrls.parseGetPhpLink("http://tv.invalid/lista.m3u"))
+        assertNull(XtreamUrls.parseGetPhpLink("http://tv.invalid/get.php?username=proba"))
+        assertNull(XtreamUrls.parseGetPhpLink("http://tv.invalid/get.php?username=&password=tajna"))
+        assertNull(XtreamUrls.parseGetPhpLink("http://tv.invalid/drugo.php?username=proba&password=tajna"))
+        assertNull(XtreamUrls.parseGetPhpLink("nije link"))
+    }
 }
