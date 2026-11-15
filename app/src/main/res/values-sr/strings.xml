@@ -1,6 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_title">Dobro došli</string>
-    <string name="home_subtitle">Dodajte svoju listu (M3U link ili Xtream Codes nalog) da biste počeli.</string>
-    <string name="home_add_playlist">Dodaj listu</string>
+    <!-- Spisak lista -->
+    <string name="playlists_title">Liste</string>
+    <string name="playlists_empty">Još nema lista. Dodajte svoju listu (M3U link, M3U fajl ili Xtream Codes nalog) da biste počeli.</string>
+    <string name="playlist_active">Aktivna</string>
+    <string name="playlist_refreshed_at">osveženo %1$s</string>
+    <string name="playlist_refreshing">Osvežavanje…</string>
+    <plurals name="channel_count">
+        <item quantity="one">%1$d kanal</item>
+        <item quantity="few">%1$d kanala</item>
+        <item quantity="other">%1$d kanala</item>
+    </plurals>
+    <string name="playlist_type_m3u_url">M3U link</string>
+    <string name="playlist_type_m3u_file">M3U fajl</string>
+    <string name="playlist_type_xtream">Xtream Codes</string>
+
+    <!-- Akcije -->
+    <string name="action_add_playlist">Dodaj listu</string>
+    <string name="action_select">Izaberi</string>
+    <string name="action_refresh">Osveži</string>
+    <string name="action_edit">Izmeni</string>
+    <string name="action_delete">Obriši</string>
+    <string name="action_confirm_delete">Potvrdi brisanje</string>
+    <string name="action_cancel">Otkaži</string>
+    <string name="action_save">Sačuvaj</string>
+    <string name="action_back">Nazad</string>
+    <string name="action_ok">U redu</string>
+    <string name="action_pick_file">Izaberi fajl</string>
+
+    <!-- Brisanje -->
+    <string name="delete_title">Obrisati listu?</string>
+    <string name="delete_message">„%1$s” i svi njeni kanali biće uklonjeni sa ovog uređaja.</string>
+
+    <!-- Dodavanje i izmena liste -->
+    <string name="edit_title_add">Dodaj listu</string>
+    <string name="edit_title_edit">Izmeni listu</string>
+    <string name="edit_saving">Učitavanje liste…</string>
+    <string name="field_name">Naziv</string>
+    <string name="field_m3u_url">M3U link</string>
+    <string name="field_server">Adresa servera</string>
+    <string name="field_username">Korisničko ime</string>
+    <string name="field_password">Lozinka</string>
+    <string name="field_password_keep">Ostavite prazno da zadržite postojeću lozinku</string>
+    <string name="file_not_selected">Fajl nije izabran</string>
+    <string name="file_selected">Izabrano: %1$s</string>
+
+    <!-- Greške -->
+    <string name="error_title">Greška</string>
+    <string name="error_missing_fields">Popunite sva polja.</string>
+    <string name="error_invalid_url">Adresa nije ispravna. Proverite link i pokušajte ponovo.</string>
+    <string name="error_no_network">Povezivanje nije uspelo. Proverite internet vezu i adresu.</string>
+    <string name="error_timeout">Server predugo ne odgovara. Pokušajte kasnije.</string>
+    <string name="error_http">Server je vratio grešku (%1$d). Proverite link.</string>
+    <string name="error_empty_playlist">Nije pronađen nijedan kanal. Link ili fajl nije ispravna M3U lista.</string>
+    <string name="error_file_unreadable">Fajl ne može da se otvori. Izaberite fajl ponovo.</string>
+    <string name="error_auth_failed">Prijava nije uspela. Proverite adresu servera, korisničko ime i lozinku.</string>
+    <string name="error_account_expired">Ovaj nalog je istekao. Obratite se svom provajderu.</string>
+    <string name="error_account_disabled">Ovaj nalog je isključen. Obratite se svom provajderu.</string>
+    <string name="error_bad_response">Server je poslao odgovor koji aplikacija ne razume.</string>
+    <string name="error_credentials_unreadable">Sačuvana lozinka više ne može da se pročita. Izmenite listu i unesite lozinku ponovo.</string>
+    <string name="error_unknown">Nešto nije u redu. Pokušajte ponovo.</string>
 </resources>
