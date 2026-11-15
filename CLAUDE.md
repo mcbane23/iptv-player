@@ -13,6 +13,8 @@ nezavršene faze.
   drugih IPTV aplikacija (Hot Player Plus, TiViMate, Smarters). One su samo
   inspiracija za spisak funkcija.
 - Tajne (keystore, lozinke, tokeni) nikada ne idu u repo. Samo GitHub Secrets.
+  Jedini izuzetak je `keystore/debug.keystore`: stalan debug ključ, namerno u repou.
+  Ne brisati ga i ne generisati ponovo, i ne koristiti ga za release.
 
 ## Tehnologije
 

@@ -40,6 +40,9 @@ aplikacijama Hot Player Plus, TiViMate i Smarters TV Pro.
 | Gde se bilduje | **Samo GitHub Actions** (vidi odeljak 5) |
 | Repo | Privatan, `mcbane23/iptv-player` |
 | Način rada | Claude Code na webu i u Android aplikaciji |
+| Package name (applicationId) | `com.bane23.iptvplayer` (potvrđeno) |
+| Jezici interfejsa | Engleski i srpski (svi tekstovi u `strings.xml`) |
+| Tema | Tamna, sa jednom akcentnom bojom |
 
 Verzije biblioteka se ne zakucavaju u ovom planu. U Fazi 0 uzeti najnovije **stabilne**
 verzije i upisati ih u version catalog.
@@ -48,11 +51,9 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 
 ## 3. Otvorene odluke (pitati vlasnika pre nego što zatrebaju)
 
-- [ ] **Ime aplikacije.** Radni naziv je „IPTV Player”.
-- [ ] **Package name** (applicationId). Radni predlog: `com.mcbane.iptvplayer`.
-      Mora se potvrditi **pre prvog release-a**, jer se posle ne menja bez gubitka podataka.
-- [ ] **Boje i ikonica.** Podrazumevano: tamna tema, jedna akcentna boja.
-- [ ] **Jezici interfejsa.** Predlog: srpski i engleski od početka (svi tekstovi u `strings.xml`).
+- [ ] **Ime aplikacije.** Za sada ostaje radni naziv „IPTV Player”. Konačno ime potvrditi pre Faze 8.
+- [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
+      Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 
 ## 4. Arhitektura
@@ -113,18 +114,32 @@ pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions
 4. `./gradlew testDebugUnitTest lintDebug assembleDebug`
 5. upload debug APK-a kao artifact
 
-**`.github/workflows/release.yml`** (pokreće se na tag `v*`):
+APK artifact se pravi na **svaki** CI build, ne samo za release. Za sada je APK
+**potpisan debug ključem**.
+
+**`.github/workflows/release.yml`** (odloženo do Faze 8, kad vlasnik doda secrets;
+pokreće se na tag `v*`):
 
 1. isti koraci za pripremu
 2. dekodiranje keystore-a iz secreta
 3. `./gradlew assembleRelease`
 4. objava potpisanog APK-a u GitHub Releases
 
-**GitHub Secrets za release** (dodaje vlasnik repoa, uputstvo ide u README u Fazi 8):
+**GitHub Secrets za release** (vlasnik ih dodaje kasnije, uputstvo ide u README u Fazi 8):
 
 - `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
 
-Keystore fajl se **nikada** ne komituje u repo. Jednom napravljen ključ mora da se
+**Stalan debug ključ (potvrđeno):** `keystore/debug.keystore` je u repou i koristi se za
+svaki debug build, lokalno i u CI-ju, da bi novi APK mogao da se instalira preko starog.
+Podaci su standardni Android debug podaci: store i key lozinka `android`, alias
+`androiddebugkey`. U Fazi 0 ga povezati u `app/build.gradle.kts`
+(`signingConfigs.getByName("debug")` sa `storeFile = rootProject.file("keystore/debug.keystore")`).
+Ovaj fajl se ne menja i ne generiše ponovo. Koristi se samo za debug, nikad za release.
+
+Dok secrets ne postoje, nijedan workflow ne sme da zavisi od njih: build mora da
+prolazi i bez njih.
+
+Release keystore se **nikada** ne komituje u repo. Jednom napravljen ključ mora da se
 sačuva na sigurnom, jer bez njega nema ažuriranja već instalirane aplikacije.
 
 **Gradle wrapper:** `gradlew`, `gradlew.bat` i `gradle/wrapper/*` moraju biti u repou.
@@ -149,6 +164,7 @@ Cilj: prazan ekran „Hello” koji se bilduje na GitHub-u i instalira na telefo
 - [ ] `app` modul sa Compose-om, Hilt-om i praznom navigacijom
 - [ ] Manifest za telefon + TV (oba launcher-a, TV baner)
 - [ ] Tema (tamna), `strings.xml` za srpski i engleski
+- [ ] Debug potpis povezan na `keystore/debug.keystore` iz repoa
 - [ ] `build.yml` workflow, debug APK kao artifact
 - [ ] `.gitignore`, ažuriran README sa uputstvom za preuzimanje APK-a
 - [ ] **Provera:** CI zelen, APK instaliran na telefon i TV, aplikacija vidljiva u oba launcher-a
@@ -228,7 +244,7 @@ Redosled unutar faze po želji vlasnika.
 
 ### Faza 8: Izdanje
 
-- [ ] Potvrđeni ime, package name, ikonica i TV baner
+- [ ] Potvrđeni ime, akcentna boja, ikonica i TV baner
 - [ ] Keystore napravljen, secrets dodati, `release.yml` radi
 - [ ] R8/ProGuard pravila proverena na release buildu
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
