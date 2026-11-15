@@ -87,6 +87,7 @@ fun MobilePlayerScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
@@ -188,6 +189,8 @@ fun MobilePlayerScreen(
                     onAudio = { panel = Panel.AUDIO },
                     onSubtitles = { panel = Panel.SUBTITLES },
                     onAspect = viewModel::cycleAspectMode,
+                    isFavorite = isFavorite,
+                    onFavorite = viewModel::toggleFavorite,
                     onPip = rememberEnterPictureInPicture(),
                 )
             }
@@ -241,6 +244,8 @@ private fun PlayerControls(
     onAudio: () -> Unit,
     onSubtitles: () -> Unit,
     onAspect: () -> Unit,
+    isFavorite: Boolean,
+    onFavorite: () -> Unit,
     onPip: (() -> Unit)?,
 ) {
     Column(
@@ -259,8 +264,11 @@ private fun PlayerControls(
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
             )
+            if (ui.channel != null) FavoriteButton(favorite = isFavorite, onClick = onFavorite)
         }
 
         Row(

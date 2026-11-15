@@ -17,13 +17,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 
@@ -61,9 +65,23 @@ fun MobileChannelsScreen(
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
+            if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
+                Text(
+                    text = stringResource(
+                        if (categoryId == ChannelGroups.FAVORITES) R.string.favorites_empty else R.string.channels_empty,
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
-                    MobileChannelRow(channel = channels[index], onClick = onPlay)
+                    MobileChannelRow(
+                        channel = channels[index],
+                        onClick = onPlay,
+                        onToggleFavorite = viewModel::toggleFavorite,
+                    )
                 }
             }
         }
@@ -77,12 +95,13 @@ fun MobileChannelRow(
     onClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
     highlighted: Boolean = false,
+    onToggleFavorite: ((Long) -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = channel != null) { channel?.let { onClick(it.id) } }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ChannelLogo(url = channel?.logo)
@@ -95,6 +114,25 @@ fun MobileChannelRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 16.dp),
+        )
+        if (onToggleFavorite != null && channel != null) {
+            FavoriteButton(favorite = channel.favorite, onClick = { onToggleFavorite(channel.id) })
+        }
+    }
+}
+
+/** Zvezdica za dodavanje u favorite i uklanjanje iz njih. */
+@Composable
+fun FavoriteButton(favorite: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val description = stringResource(if (favorite) R.string.favorite_remove else R.string.favorite_add)
+    TextButton(
+        onClick = onClick,
+        modifier = modifier.semantics { contentDescription = description },
+    ) {
+        Text(
+            text = if (favorite) "★" else "☆",
+            style = MaterialTheme.typography.titleLarge,
+            color = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

@@ -97,4 +97,34 @@
 
     <string name="field_user_agent">User-Agent (opciono)</string>
     <string name="field_user_agent_hint">Potrebno samo ako provajder to zahteva</string>
+
+    <!-- Favoriti, istorija, pretraga -->
+    <string name="category_favorites">Favoriti</string>
+    <string name="category_recent">Nedavno gledano</string>
+    <string name="favorite_add">Dodaj u favorite</string>
+    <string name="favorite_remove">Ukloni iz favorita</string>
+    <string name="favorite_tv_hint">Držite OK na kanalu da ga dodate u favorite ili uklonite iz njih</string>
+    <string name="favorites_empty">Još nema favorita. Dodirnite zvezdicu pored kanala da ga dodate.</string>
+    <string name="channels_empty">Ovde nema kanala.</string>
+    <string name="action_search">Pretraga</string>
+    <string name="action_menu">Meni</string>
+    <string name="search_title">Pretraga kanala</string>
+    <string name="search_hint">Naziv kanala</string>
+    <string name="search_empty">Nijedan kanal ne odgovara.</string>
+
+    <!-- Kategorije -->
+    <string name="categories_manage_title">Kategorije</string>
+    <string name="categories_manage_hint">Sakrijte kategorije koje ne gledate i promenite im redosled. Ovo ostaje i posle osvežavanja liste.</string>
+    <string name="category_move_up">Pomeri gore</string>
+    <string name="category_move_down">Pomeri dole</string>
+    <string name="category_shown">Prikaži kategoriju</string>
+    <string name="category_show">Prikaži</string>
+    <string name="category_hide">Sakrij</string>
+
+    <!-- Podešavanja -->
+    <string name="settings_title">Podešavanja</string>
+    <string name="settings_resume_last">Pusti poslednji kanal pri startu</string>
+    <string name="settings_resume_last_summary">Kad se aplikacija otvori, odmah kreće kanal koji ste poslednji gledali.</string>
+    <string name="setting_on">Uključeno</string>
+    <string name="setting_off">Isključeno</string>
 </resources>

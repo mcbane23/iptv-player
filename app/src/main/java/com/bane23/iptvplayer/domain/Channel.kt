@@ -4,7 +4,19 @@ data class Category(
     val id: Long,
     val name: String,
     val channelCount: Int,
+    val hidden: Boolean = false,
 )
+
+/**
+ * Posebne grupe kanala koje nisu kategorije iz liste. Koriste se na mestu ID-ja kategorije
+ * (pravi ID-jevi su uvek pozitivni).
+ */
+object ChannelGroups {
+    const val FAVORITES = -1L
+    const val RECENT = -2L
+
+    fun isVirtual(categoryId: Long?): Boolean = categoryId != null && categoryId < 0
+}
 
 data class Channel(
     val id: Long,
@@ -15,6 +27,7 @@ data class Channel(
     val number: Int?,
     /** Redosled u listi; služi za prelazak na sledeći i prethodni kanal. */
     val sortOrder: Int,
+    val favorite: Boolean = false,
 )
 
 /** Sve što plejeru treba da pusti kanal. */
