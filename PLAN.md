@@ -115,7 +115,8 @@ pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions
 4. `./gradlew testDebugUnitTest lintDebug assembleDebug`
 5. upload debug APK-a kao artifact
 
-APK artifact se pravi na **svaki** CI build, ne samo za release. Za sada je APK
+APK artifact se pravi na **svaki** CI build, ne samo za release. Svaki push dodatno
+objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Za sada je APK
 **potpisan debug ključem**.
 
 **`.github/workflows/release.yml`** (odloženo do Faze 8, kad vlasnik doda secrets;

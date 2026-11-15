@@ -2,6 +2,7 @@ name: Build
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
@@ -10,7 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  # write je potreban da bi build objavio pre-release sa APK-om
+  contents: write
 
 jobs:
   build:
@@ -35,6 +37,20 @@ jobs:
           name: iptv-player-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Stalan link ka poslednjem APK-u (zgodno za TV): tag dev-latest se pomera na svaki push.
+      - name: Objavi pre-release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk iptv-player-debug.apk
+          gh release delete dev-latest --yes --cleanup-tag || true
+          gh release create dev-latest iptv-player-debug.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Poslednji debug build (#${{ github.run_number }})" \
+            --notes "Grana: ${{ github.ref_name }}, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
 
       - name: Izveštaji (lint, testovi)
         if: always()

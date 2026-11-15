@@ -17,6 +17,13 @@ APK se bilduje automatski preko GitHub Actions na svaki push i pull request.
 3. Na dnu stranice, u odeljku **Artifacts**, preuzmi `iptv-player-debug-<broj>`.
 4. GitHub daje ZIP; raspakuj ga i dobićeš `app-debug.apk`.
 
+**Direktan link (bez ZIP-a):** svaki push objavljuje APK i kao pre-release `dev-latest`:
+
+<https://github.com/mcbane23/iptv-player/releases/download/dev-latest/iptv-player-debug.apk>
+
+Link je uvek isti i vodi na poslednji build. Pošto je repo privatan, radi samo u
+pregledaču u kome si prijavljen na GitHub.
+
 Debug APK je uvek potpisan istim ključem (`keystore/debug.keystore`), pa novi APK
 može da se instalira preko starog bez brisanja aplikacije.
 
