@@ -92,6 +92,8 @@ dependencies {
 
     implementation(libs.okhttp)
     implementation(libs.androidx.work.runtime)
+    // Samo za crtanje QR koda (dodavanje liste sa telefona).
+    implementation(libs.zxing.core)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
 

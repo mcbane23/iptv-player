@@ -46,3 +46,5 @@ Faza ili izmena nije gotova dok CI nije zelen. Zbog toga: male izmene, čest pus
 - Svi tekstovi u interfejsu idu u `strings.xml` (srpski i engleski), ne u kod.
 - Svaki ekran mora da radi i na dodir i samo sa daljinskim upravljačem (D-pad).
 - Parseri (M3U, XMLTV) moraju imati unit testove sa izmišljenim podacima.
+- Nadogradnja aplikacije ne sme da obriše korisnikove liste, favorite ni istoriju. Svaka promena
+  šeme baze ide sa migracijom u `data/db/Migrations.kt`; ne vraćati `fallbackToDestructiveMigration`.

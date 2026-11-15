@@ -38,6 +38,7 @@ import com.bane23.iptvplayer.ui.common.summary
 @Composable
 fun TvPlaylistsScreen(
     onAdd: () -> Unit,
+    onAddFromPhone: () -> Unit,
     onEdit: (Long) -> Unit,
     viewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
@@ -66,6 +67,9 @@ fun TvPlaylistsScreen(
             // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
             Button(onClick = onAdd, modifier = Modifier.focusRequester(addFocus)) {
                 Text(stringResource(R.string.action_add_playlist))
+            }
+            OutlinedButton(onClick = onAddFromPhone, modifier = Modifier.padding(start = 12.dp)) {
+                Text(stringResource(R.string.action_add_from_phone))
             }
         }
 

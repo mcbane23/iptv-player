@@ -103,6 +103,9 @@ app/src/main/java/<package>/
 
 Lozinke Xtream naloga čuvati šifrovano (Android Keystore), ne kao običan tekst.
 
+Nadogradnja aplikacije ne sme da obriše liste, favorite ni istoriju: od verzije baze 5 svaka promena
+šeme ide sa migracijom (`data/db/Migrations.kt`).
+
 ## 5. Build i CI (GitHub Actions)
 
 U cloud okruženju Claude Code-a pristup Google i Maven serverima može biti blokiran,
@@ -247,6 +250,8 @@ Redosled unutar faze po želji vlasnika.
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila
+- [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
+      i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [ ] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV)
 - [ ] Prikaz više kanala odjednom (multi-view)
 - [ ] Automatsko pokretanje pri paljenju uređaja (TV box)

@@ -53,6 +53,7 @@ fun PlaylistFormFields(
             onValueChange = viewModel::setName,
             label = stringResource(R.string.field_name),
             enabled = enabled,
+            keyboardType = plainTextKeyboard,
         )
         when (state.type) {
             PlaylistType.M3U_URL -> FormField(

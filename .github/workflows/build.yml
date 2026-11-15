@@ -20,6 +20,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Cela istorija je potrebna za proveru da li grana sadrži vrh main-a (vidi „Objavi pre-release”).
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -39,11 +42,18 @@ jobs:
           if-no-files-found: error
 
       # Stalan link ka poslednjem APK-u (zgodno za TV): tag dev-latest se pomera na svaki push.
+      # Objavljuje se samo sa grana koje sadrže vrh main-a. Grana zasnovana na starijem main-u bi
+      # inače zamenila APK starijim kodom (i starijom bazom, što briše korisnikove liste).
       - name: Objavi pre-release
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor origin/main "$GITHUB_SHA"; then
+            echo "Grana ne sadrži vrh main-a, dev-latest se ne menja."
+            exit 0
+          fi
           cp app/build/outputs/apk/debug/app-debug.apk iptv-player-debug.apk
           gh release delete dev-latest --yes --cleanup-tag || true
           gh release create dev-latest iptv-player-debug.apk \

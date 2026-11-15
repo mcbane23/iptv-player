@@ -171,4 +171,24 @@
     <string name="vod_seek_forward">+10 s</string>
     <string name="vod_next_episode">Next episode</string>
     <string name="vod_tv_hint">Left and right: skip 10 s · OK: pause · Up: options</string>
+
+    <!-- Dodavanje liste sa telefona -->
+    <string name="action_add_from_phone">Add from phone</string>
+    <string name="pairing_title">Add a playlist from your phone</string>
+    <string name="pairing_step_scan">1. Connect the phone to the same Wi-Fi as the TV and scan the code with the camera.</string>
+    <string name="pairing_step_fill">2. Enter the playlist details on the page that opens and send them.</string>
+    <string name="pairing_manual_address">Or type this address into the phone browser: %1$s</string>
+    <string name="pairing_unavailable">The TV is not connected to a local network, so the phone cannot reach it.</string>
+    <string name="pairing_working">Details received, loading the playlist…</string>
+    <string name="pairing_added">Playlist added: %1$s</string>
+    <string name="pairing_finish">Done</string>
+    <string name="pairing_default_name">My playlist</string>
+    <string name="pairing_field_name">Name (optional)</string>
+    <string name="pairing_page_title">Add a playlist to the TV</string>
+    <string name="pairing_page_intro">Fill in one of the two forms. The details go straight to your TV over the home network.</string>
+    <string name="pairing_page_submit">Send to TV</string>
+    <string name="pairing_page_wait">After sending, wait a moment while the TV loads the playlist.</string>
+    <string name="pairing_page_done_title">Playlist added</string>
+    <string name="pairing_page_done_text">You can continue on the TV. This page can be closed.</string>
+    <string name="pairing_page_not_found">This address is no longer valid. Scan the code on the TV again.</string>
 </resources>
