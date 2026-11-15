@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +65,9 @@ fun TvLiveTvScreen(
     var selectedCategory by rememberSaveable { mutableStateOf(ALL_CHANNELS) }
     var focusedCategory by remember { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
+    val channelFocus = remember { FocusRequester() }
+    // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
+    var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
     val playlistId = state.playlistId
 
     // Kratka pauza pre učitavanja kanala, da brzo listanje kroz kategorije ne pokreće upit za svaku.
@@ -93,10 +98,16 @@ fun TvLiveTvScreen(
                 text = stringResource(R.string.live_tv_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.padding(end = 24.dp),
             )
             if (playlistId != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Dugmadi ima dosta, pa se red pomera vodoravno ako ne stane na ekran.
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
                     if (state.hasVod) {
                         OutlinedButton(onClick = onMovies) { Text(stringResource(R.string.vod_movies)) }
                         OutlinedButton(onClick = onSeries) { Text(stringResource(R.string.vod_series)) }
@@ -132,7 +143,7 @@ fun TvLiveTvScreen(
                 Button(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(R.string.action_add_playlist))
                 }
-                LaunchedEffect(Unit) { firstFocus.requestFocus() }
+                LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
             }
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -147,7 +158,7 @@ fun TvLiveTvScreen(
                             text = stringResource(R.string.category_favorites),
                             trailing = state.favoriteCount.toString(),
                             selected = selectedCategory == ChannelGroups.FAVORITES,
-                            onFocused = { focusedCategory = ChannelGroups.FAVORITES },
+                            onFocused = { focusedCategory = ChannelGroups.FAVORITES; lastChannelId = null },
                             onClick = { focusedCategory = ChannelGroups.FAVORITES },
                             modifier = focusTarget(selectedCategory == ChannelGroups.FAVORITES, firstFocus),
                         )
@@ -158,7 +169,7 @@ fun TvLiveTvScreen(
                                 text = stringResource(R.string.category_recent),
                                 trailing = state.recentCount.toString(),
                                 selected = selectedCategory == ChannelGroups.RECENT,
-                                onFocused = { focusedCategory = ChannelGroups.RECENT },
+                                onFocused = { focusedCategory = ChannelGroups.RECENT; lastChannelId = null },
                                 onClick = { focusedCategory = ChannelGroups.RECENT },
                                 modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
                             )
@@ -169,7 +180,7 @@ fun TvLiveTvScreen(
                             text = stringResource(R.string.category_all),
                             trailing = state.totalChannels.toString(),
                             selected = selectedCategory == ALL_CHANNELS,
-                            onFocused = { focusedCategory = ALL_CHANNELS },
+                            onFocused = { focusedCategory = ALL_CHANNELS; lastChannelId = null },
                             onClick = { focusedCategory = ALL_CHANNELS },
                             modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus),
                         )
@@ -179,7 +190,7 @@ fun TvLiveTvScreen(
                             text = category.name,
                             trailing = category.channelCount.toString(),
                             selected = selectedCategory == category.id,
-                            onFocused = { focusedCategory = category.id },
+                            onFocused = { focusedCategory = category.id; lastChannelId = null },
                             onClick = { focusedCategory = category.id },
                             modifier = focusTarget(selectedCategory == category.id, firstFocus),
                         )
@@ -194,7 +205,7 @@ fun TvLiveTvScreen(
                 ) {
                 Text(
                     text = stringResource(R.string.favorite_tv_hint),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
                 )
@@ -211,6 +222,8 @@ fun TvLiveTvScreen(
                                 }
                             },
                             onLongClick = { channel?.let { channelsViewModel.toggleFavorite(it.id) } },
+                            onFocused = { channel?.let { lastChannelId = it.id } },
+                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
                         ) { color ->
                             ChannelLogo(url = channel?.logo, size = 36.dp)
                             Column(
@@ -242,8 +255,17 @@ fun TvLiveTvScreen(
                     }
                 }
                 }
-                // Fokus ide na izabranu kategoriju (i posle povratka iz plejera).
-                LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+                // Posle povratka iz plejera fokus ide na kanal koji je gledan, inače na izabranu kategoriju.
+                LaunchedEffect(Unit) {
+                    if (lastChannelId != null) {
+                        // Kanali se učitavaju sa malim zakašnjenjem, pa se pokušava nekoliko puta.
+                        repeat(FOCUS_RESTORE_ATTEMPTS) {
+                            if (channelFocus.tryRequestFocus()) return@LaunchedEffect
+                            delay(FOCUS_RESTORE_STEP_MS)
+                        }
+                    }
+                    firstFocus.tryRequestFocus()
+                }
             }
         }
     }
@@ -254,3 +276,5 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 
 private const val CATEGORY_FOCUS_DELAY_MS = 250L
+private const val FOCUS_RESTORE_ATTEMPTS = 10
+private const val FOCUS_RESTORE_STEP_MS = 60L

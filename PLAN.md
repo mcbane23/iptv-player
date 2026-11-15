@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0 do 5 urađene** (Faza 5 čeka ručnu proveru; Faze 2 do 4 još nisu probane na TV-u). Sledeći korak je Faza 6.
+Stanje: **Faze 0 do 5 urađene** (Faze 2 do 5 još nisu probane na TV-u). Faza 6 je u toku: pregled koda je urađen, čeka se proba na TV-u.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -229,6 +229,10 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 - [x] Nastavak gledanja od zapamćene pozicije, sledeća epizoda
 
 ### Faza 6: Doterivanje TV interfejsa
+
+Pregled koda je urađen: ispravljena su mesta gde je fokus mogao da nestane (isključena ili zamenjena
+dugmad, obrisani redovi), fokus se posle povratka vraća na poslednji kanal ili poster, a red dugmadi na
+početnom ekranu se pomera ako ne stane. Stavke ostaju otvorene dok se ne potvrde na pravom TV-u.
 
 - [ ] Pregled svih ekrana samo sa daljinskim: fokus nikad ne sme da se izgubi
 - [ ] Brzina listanja dugih lista, učitavanje logotipa bez zastajkivanja

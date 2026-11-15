@@ -91,13 +91,12 @@ fun TvCategoriesScreen(viewModel: CategoriesViewModel = hiltViewModel()) {
                         )
                     }
                     OutlinedButton(
-                        onClick = { viewModel.move(category, -1) },
-                        enabled = index > 0,
+                        // Dugme se ne isključuje na kraju spiska: isključeno dugme bi izgubilo fokus.
+                        onClick = { if (index > 0) viewModel.move(category, -1) },
                         modifier = Modifier.semantics { contentDescription = moveUp },
                     ) { Text("▲") }
                     OutlinedButton(
-                        onClick = { viewModel.move(category, 1) },
-                        enabled = index < state.categories.lastIndex,
+                        onClick = { if (index < state.categories.lastIndex) viewModel.move(category, 1) },
                         modifier = Modifier.semantics { contentDescription = moveDown },
                     ) { Text("▼") }
                 }

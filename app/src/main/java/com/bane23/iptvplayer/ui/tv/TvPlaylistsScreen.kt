@@ -117,7 +117,13 @@ fun TvPlaylistsScreen(
         }
     }
 
-    LaunchedEffect(Unit) { addFocus.requestFocus() }
+    LaunchedEffect(Unit) { addFocus.tryRequestFocus() }
+    // Kad se lista obriše, njen red nestaje zajedno sa fokusom, pa se fokus vraća na dugme za dodavanje.
+    var knownCount by remember { mutableStateOf(state.playlists.size) }
+    LaunchedEffect(state.playlists.size) {
+        if (state.playlists.size < knownCount) addFocus.tryRequestFocus()
+        knownCount = state.playlists.size
+    }
 }
 
 @Composable
@@ -131,6 +137,21 @@ private fun TvPlaylistRow(
 ) {
     // Brisanje se potvrđuje u samom redu: dijalozi na TV-u lako izgube fokus.
     var confirmDelete by remember { mutableStateOf(false) }
+    val cancelFocus = remember { FocusRequester() }
+    val refreshFocus = remember { FocusRequester() }
+    val deleteFocus = remember { FocusRequester() }
+    // Dugmad se menjaju u mestu, pa fokus mora ručno da pređe na novo dugme.
+    var confirmWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(confirmDelete) {
+        if (confirmDelete) cancelFocus.tryRequestFocus() else if (confirmWasOpen) deleteFocus.tryRequestFocus()
+        confirmWasOpen = confirmDelete
+    }
+    var wasActive by remember { mutableStateOf(playlist.isActive) }
+    LaunchedEffect(playlist.isActive) {
+        // Dugme „Izaberi” nestaje kad lista postane aktivna.
+        if (playlist.isActive && !wasActive) refreshFocus.tryRequestFocus()
+        wasActive = playlist.isActive
+    }
 
     Column(
         modifier = Modifier
@@ -162,20 +183,24 @@ private fun TvPlaylistRow(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (confirmDelete) {
                 Button(onClick = onDelete) { Text(stringResource(R.string.action_confirm_delete)) }
-                OutlinedButton(onClick = { confirmDelete = false }) {
+                OutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.focusRequester(cancelFocus)) {
                     Text(stringResource(R.string.action_cancel))
                 }
             } else {
                 if (!playlist.isActive) {
                     OutlinedButton(onClick = onSelect) { Text(stringResource(R.string.action_select)) }
                 }
-                OutlinedButton(onClick = onRefresh, enabled = !refreshing) {
+                // Tokom osvežavanja dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
+                OutlinedButton(onClick = { if (!refreshing) onRefresh() }, modifier = Modifier.focusRequester(refreshFocus)) {
                     Text(stringResource(R.string.action_refresh))
                 }
-                OutlinedButton(onClick = onEdit, enabled = !refreshing) {
+                OutlinedButton(onClick = { if (!refreshing) onEdit() }) {
                     Text(stringResource(R.string.action_edit))
                 }
-                OutlinedButton(onClick = { confirmDelete = true }, enabled = !refreshing) {
+                OutlinedButton(
+                    onClick = { if (!refreshing) confirmDelete = true },
+                    modifier = Modifier.focusRequester(deleteFocus),
+                ) {
                     Text(stringResource(R.string.action_delete))
                 }
             }

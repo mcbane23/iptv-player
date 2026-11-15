@@ -64,6 +64,7 @@ fun MobileVodPlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(VodPanel.NONE) }
+    var gestureHint by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { start(viewModel) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -79,11 +80,19 @@ fun MobileVodPlayerScreen(
         }
     }
 
+    LaunchedEffect(gestureHint) {
+        if (gestureHint != null) {
+            delay(VOD_GESTURE_HINT_MS)
+            gestureHint = null
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible }) },
+            .pointerInput(Unit) { detectTapGestures(onTap = { controlsVisible = !controlsVisible }) }
+            .volumeBrightnessDrag { gestureHint = it },
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
@@ -98,6 +107,8 @@ fun MobileVodPlayerScreen(
                     .padding(horizontal = 32.dp),
             )
         }
+
+        gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
 
         if (controlsVisible) {
             VodControls(
@@ -246,4 +257,5 @@ private fun VodControls(
 }
 
 private const val SEEK_STEP_MS = 10_000L
+private const val VOD_GESTURE_HINT_MS = 1_200L
 private const val VOD_CONTROLS_TIMEOUT_MS = 4_000L

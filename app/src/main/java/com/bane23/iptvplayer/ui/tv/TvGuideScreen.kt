@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
 import com.bane23.iptvplayer.ui.common.guide.timeRange
+import kotlinx.coroutines.delay
 
 /** Na TV-u se odjednom vide dva i po sata programa. */
 private const val WINDOW_MS = 150 * 60_000L
@@ -72,6 +74,9 @@ fun TvGuideScreen(
     val status by viewModel.status.collectAsStateWithLifecycle()
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val firstFocus = remember { FocusRequester() }
+    // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
+    var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var restoreChannelId by remember { mutableStateOf(lastChannelId) }
     val now = System.currentTimeMillis()
 
     Column(
@@ -94,7 +99,7 @@ fun TvGuideScreen(
                 )
                 Text(
                     text = status.message(),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = if (status.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -104,7 +109,8 @@ fun TvGuideScreen(
             }
             OutlinedButton(onClick = viewModel::jumpToNow) { Text(stringResource(R.string.guide_now)) }
             OutlinedButton(onClick = { viewModel.shift(1) }) { Text(stringResource(R.string.guide_later)) }
-            OutlinedButton(onClick = viewModel::refresh, enabled = !status.loading) {
+            // Dok traje osvežavanje dugme samo ne radi ništa: isključeno dugme bi izgubilo fokus.
+            OutlinedButton(onClick = { if (!status.loading) viewModel.refresh() }) {
                 Text(stringResource(R.string.action_refresh))
             }
         }
@@ -129,6 +135,9 @@ fun TvGuideScreen(
                         now = now,
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
+                        onFocused = { lastChannelId = channel.id },
+                        restoreFocus = channel.id == restoreChannelId,
+                        onFocusRestored = { restoreChannelId = null },
                     )
                 } else {
                     Box(modifier = Modifier.height(ROW_HEIGHT))
@@ -138,7 +147,12 @@ fun TvGuideScreen(
 
         SelectionPanel(ui.selection)
     }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    LaunchedEffect(Unit) {
+        firstFocus.tryRequestFocus()
+        // Ako red sa zapamćenim kanalom nije na ekranu, od vraćanja fokusa se odustaje.
+        delay(FOCUS_RESTORE_TIMEOUT_MS)
+        restoreChannelId = null
+    }
 }
 
 @Composable
@@ -149,11 +163,20 @@ private fun GuideRow(
     now: Long,
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
+    onFocused: () -> Unit,
+    restoreFocus: Boolean,
+    onFocusRestored: () -> Unit,
 ) {
     val cells by produceState(emptyList<GuideCell>(), channel.id, windowStart, reloadKey) {
         value = viewModel.row(channel.id, windowStart, WINDOW_MS)
     }
     val channelFocus = remember { FocusRequester() }
+    if (restoreFocus) {
+        LaunchedEffect(Unit) {
+            channelFocus.tryRequestFocus()
+            onFocusRestored()
+        }
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +186,10 @@ private fun GuideRow(
         GuideBox(
             text = channel.name,
             highlighted = false,
-            onFocused = { viewModel.select(channel, null) },
+            onFocused = {
+                onFocused()
+                viewModel.select(channel, null)
+            },
             onClick = onPlay,
             modifier = Modifier
                 .width(CHANNEL_WIDTH)
@@ -180,7 +206,10 @@ private fun GuideRow(
             GuideBox(
                 text = program?.title.orEmpty(),
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
-                onFocused = { viewModel.select(channel, program) },
+                onFocused = {
+                    onFocused()
+                    viewModel.select(channel, program)
+                },
                 onClick = onPlay,
                 modifier = Modifier
                     .weight(cell.weight)
@@ -275,6 +304,7 @@ private fun SelectionPanel(selection: GuideSelection?) {
     }
 }
 
+private const val FOCUS_RESTORE_TIMEOUT_MS = 1_500L
 private val CHANNEL_WIDTH = 220.dp
 private val ROW_HEIGHT = 56.dp
 private val PANEL_HEIGHT = 112.dp
