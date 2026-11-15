@@ -190,4 +190,22 @@
     <string name="pairing_page_done_title">Lista je dodata</string>
     <string name="pairing_page_done_text">Možete da nastavite na TV-u. Ovu stranicu možete da zatvorite.</string>
     <string name="pairing_page_not_found">Ova adresa više ne važi. Ponovo skenirajte kod sa TV-a.</string>
+
+    <!-- Podešavanja plejera -->
+    <string name="settings_player_header">Plejer</string>
+    <string name="settings_player_note">Izmene važe od sledećeg puštanja.</string>
+    <string name="settings_buffer">Bafer</string>
+    <string name="settings_buffer_summary">Mali brže kreće i brže menja kanale. Veliki bolje podnosi slabu vezu.</string>
+    <string name="buffer_small">Mali</string>
+    <string name="buffer_normal">Običan</string>
+    <string name="buffer_large">Veliki</string>
+    <string name="settings_decoder">Dekoder</string>
+    <string name="settings_decoder_summary">Probajte softverski ako je slika crna, zelena ili secka. Troši više baterije i ume da bude spor na visokim rezolucijama.</string>
+    <string name="decoder_auto">Automatski (hardverski)</string>
+    <string name="decoder_software">Softverski</string>
+    <string name="settings_audio_language">Jezik zvuka</string>
+    <string name="settings_audio_language_summary">Koristi se kad strim ima više zvučnih zapisa. Prati i jezik koji izaberete u plejeru.</string>
+    <string name="settings_subtitle_language">Titlovi</string>
+    <string name="settings_subtitle_language_summary">Titlovi na ovom jeziku se sami uključuju. Prati i ono što izaberete u plejeru.</string>
+    <string name="language_default">Kako strim ponudi</string>
 </resources>

@@ -1,6 +1,7 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0 do 5 urađene** (Faze 2 do 5 još nisu probane na TV-u). Faza 6 je u toku: pregled koda je urađen, čeka se proba na TV-u.
+Stanje: **Faze 0 do 5 urađene**. Faza 6 (TV) je prošla pregled koda i čeka probu na TV-u. Faza 7 je u toku:
+urađena su podešavanja plejera i dodavanje liste preko telefona.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -249,9 +250,10 @@ početnom ekranu se pomera ako ne stane. Stavke ostaju otvorene dok se ne potvrd
 
 Redosled unutar faze po želji vlasnika.
 
-- [ ] Podešavanja plejera (bafer, dekoder hardverski/softverski, podrazumevani jezik zvuka i titlova)
-- [ ] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
-      sami uključuju pri sledećem puštanju, bez ponovnog biranja
+- [x] Podešavanja plejera (bafer, dekoder hardverski/softverski, podrazumevani jezik zvuka i titlova)
+- [x] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
+      sami uključuju pri sledećem puštanju, bez ponovnog biranja (pamti se jezik, pa titl bez
+      oznake jezika ne može da se zapamti)
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila

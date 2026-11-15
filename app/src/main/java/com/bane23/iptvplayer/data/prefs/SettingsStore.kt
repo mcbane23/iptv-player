@@ -6,7 +6,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.bane23.iptvplayer.player.BufferSize
+import com.bane23.iptvplayer.player.DecoderMode
+import com.bane23.iptvplayer.player.PlayerSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,7 +44,37 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[RESUME_LAST_CHANNEL] = enabled }
     }
 
+    /** Podešavanja plejera. Čitaju se pri otvaranju plejera, pa izmena važi od sledećeg puštanja. */
+    val playerSettings: Flow<PlayerSettings> = dataStore.data.map { prefs ->
+        PlayerSettings(
+            buffer = BufferSize.entries.firstOrNull { it.name == prefs[PLAYER_BUFFER] } ?: BufferSize.NORMAL,
+            decoder = DecoderMode.entries.firstOrNull { it.name == prefs[PLAYER_DECODER] } ?: DecoderMode.AUTO,
+            audioLanguage = prefs[PLAYER_AUDIO_LANGUAGE].orEmpty(),
+            subtitleLanguage = prefs[PLAYER_SUBTITLE_LANGUAGE].orEmpty(),
+        )
+    }.distinctUntilChanged()
+
+    suspend fun setPlayerBuffer(buffer: BufferSize) {
+        dataStore.edit { it[PLAYER_BUFFER] = buffer.name }
+    }
+
+    suspend fun setPlayerDecoder(decoder: DecoderMode) {
+        dataStore.edit { it[PLAYER_DECODER] = decoder.name }
+    }
+
+    suspend fun setAudioLanguage(language: String) {
+        dataStore.edit { it[PLAYER_AUDIO_LANGUAGE] = language }
+    }
+
+    suspend fun setSubtitleLanguage(language: String) {
+        dataStore.edit { it[PLAYER_SUBTITLE_LANGUAGE] = language }
+    }
+
     private companion object {
+        val PLAYER_BUFFER = stringPreferencesKey("player_buffer")
+        val PLAYER_DECODER = stringPreferencesKey("player_decoder")
+        val PLAYER_AUDIO_LANGUAGE = stringPreferencesKey("player_audio_language")
+        val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
