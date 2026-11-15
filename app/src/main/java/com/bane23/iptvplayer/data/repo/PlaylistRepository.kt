@@ -74,6 +74,7 @@ class PlaylistRepository @Inject constructor(
                     type = p.type,
                     source = p.source,
                     username = p.username,
+                    userAgent = p.userAgent,
                     channelCount = row.channelCount,
                     lastRefreshedAt = p.lastRefreshedAt,
                     isActive = p.id == activeId,
@@ -89,6 +90,7 @@ class PlaylistRepository @Inject constructor(
             type = p.type,
             source = p.source,
             username = p.username,
+                    userAgent = p.userAgent,
             channelCount = channelDao.countByPlaylist(id),
             lastRefreshedAt = p.lastRefreshedAt,
             isActive = settings.activePlaylistId.first() == id,
@@ -141,7 +143,7 @@ class PlaylistRepository @Inject constructor(
         val cleanName = name.trim()
         val cleanSource = source.trim()
         if (cleanName.isEmpty() || cleanSource.isEmpty()) throw PlaylistException(Kind.MISSING_FIELDS)
-        return when (type) {
+        val entity = when (type) {
             PlaylistType.M3U_URL -> {
                 val url = cleanSource.toHttpUrlOrNull() ?: throw PlaylistException(Kind.INVALID_URL)
                 val xtream = XtreamUrls.parseGetPhpLink(cleanSource)
@@ -178,6 +180,7 @@ class PlaylistRepository @Inject constructor(
                 )
             }
         }
+        return entity.copy(userAgent = userAgent.trim().takeIf { it.isNotEmpty() })
     }
 
     /** Briše stari sadržaj liste i upisuje novi. Poziva se unutar transakcije. */
@@ -186,7 +189,7 @@ class PlaylistRepository @Inject constructor(
         categoryDao.deleteByPlaylist(playlist.id)
         val epgUrl = when (playlist.type) {
             PlaylistType.M3U_URL -> {
-                val (workingUrl, stream) = openUrlWithHttpFallback(playlist.source)
+                val (workingUrl, stream) = openUrlWithHttpFallback(playlist.source, playlist.userAgent)
                 if (workingUrl != playlist.source) playlistDao.update(playlist.copy(source = workingUrl))
                 stream.use { importM3u(playlist.id, it) }
             }
@@ -210,13 +213,13 @@ class PlaylistRepository @Inject constructor(
     }
 
     /** Otvara link; ako https ne radi, proba http. Vraća adresu koja je radila i sadržaj. */
-    private fun openUrlWithHttpFallback(url: String): Pair<String, InputStream> {
+    private fun openUrlWithHttpFallback(url: String, userAgent: String?): Pair<String, InputStream> {
         return try {
-            url to openUrl(url)
+            url to openUrl(url, userAgent)
         } catch (e: IOException) {
             val http = url.toHttpUrlOrNull()?.let { httpFallback(it, e) } ?: throw e
             val stream = try {
-                openUrl(http.toString())
+                openUrl(http.toString(), userAgent)
             } catch (second: IOException) {
                 e.addSuppressed(second)
                 throw e
@@ -225,8 +228,10 @@ class PlaylistRepository @Inject constructor(
         }
     }
 
-    private fun openUrl(url: String): InputStream {
-        val request = Request.Builder().url(url).build()
+    private fun openUrl(url: String, userAgent: String?): InputStream {
+        val request = Request.Builder().url(url)
+            .apply { if (userAgent != null) header("User-Agent", userAgent) }
+            .build()
         val response = httpClient.newCall(request).execute()
         if (!response.isSuccessful) {
             val code = response.code
@@ -314,12 +319,12 @@ class PlaylistRepository @Inject constructor(
         }
 
         val account = try {
-            fetchAccount(server, username, password)
+            fetchAccount(server, username, password, playlist.userAgent)
         } catch (e: IOException) {
             // https ne radi: probaj http i, ako uspe, zapamti tu adresu za ubuduće.
             val http = httpFallback(server, e) ?: throw e
             val result = try {
-                fetchAccount(http, username, password)
+                fetchAccount(http, username, password, playlist.userAgent)
             } catch (second: IOException) {
                 e.addSuppressed(second)
                 throw e
@@ -342,6 +347,7 @@ class PlaylistRepository @Inject constructor(
         val writer = ChannelWriter(playlist.id)
         val categories = xtreamApi.liveCategories(
             XtreamUrls.playerApi(server, username, password, XtreamUrls.ACTION_LIVE_CATEGORIES),
+            playlist.userAgent,
         )
         for (category in categories) {
             val key = category.id ?: continue
@@ -350,6 +356,7 @@ class PlaylistRepository @Inject constructor(
 
         val body = xtreamApi.liveStreams(
             XtreamUrls.playerApi(server, username, password, XtreamUrls.ACTION_LIVE_STREAMS),
+            playlist.userAgent,
         )
         body.use {
             val streams = XtreamJson.decodeToSequence(
@@ -380,8 +387,13 @@ class PlaylistRepository @Inject constructor(
         writer.flush()
     }
 
-    private suspend fun fetchAccount(server: HttpUrl, username: String, password: String) = try {
-        xtreamApi.account(XtreamUrls.playerApi(server, username, password))
+    private suspend fun fetchAccount(
+        server: HttpUrl,
+        username: String,
+        password: String,
+        userAgent: String?,
+    ) = try {
+        xtreamApi.account(XtreamUrls.playerApi(server, username, password), userAgent)
     } catch (e: HttpException) {
         // Paneli za pogrešnu lozinku često vraćaju 401/403/404 umesto JSON odgovora.
         if (e.code() in setOf(401, 403, 404)) throw PlaylistException(Kind.AUTH_FAILED, e) else throw e

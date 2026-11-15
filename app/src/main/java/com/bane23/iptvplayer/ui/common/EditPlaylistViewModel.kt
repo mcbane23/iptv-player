@@ -25,6 +25,7 @@ data class EditPlaylistUiState(
     val server: String = "",
     val username: String = "",
     val password: String = "",
+    val userAgent: String = "",
     val saving: Boolean = false,
     val error: PlaylistError? = null,
     /** Lista je sačuvana; ekran treba da se zatvori. */
@@ -59,6 +60,7 @@ class EditPlaylistViewModel @Inject constructor(
                     fileUri = if (playlist.type == PlaylistType.M3U_FILE) playlist.source else "",
                     server = if (playlist.type == PlaylistType.XTREAM) playlist.source else "",
                     username = playlist.username.orEmpty(),
+                    userAgent = playlist.userAgent.orEmpty(),
                 )
             }
         }
@@ -70,6 +72,7 @@ class EditPlaylistViewModel @Inject constructor(
     fun setServer(value: String) = _state.update { it.copy(server = value) }
     fun setUsername(value: String) = _state.update { it.copy(username = value) }
     fun setPassword(value: String) = _state.update { it.copy(password = value) }
+    fun setUserAgent(value: String) = _state.update { it.copy(userAgent = value) }
 
     fun setFile(uri: String, suggestedName: String?) = _state.update {
         it.copy(
@@ -96,6 +99,7 @@ class EditPlaylistViewModel @Inject constructor(
             },
             username = current.username,
             password = current.password,
+            userAgent = current.userAgent,
         )
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {

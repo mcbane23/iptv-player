@@ -12,6 +12,7 @@ data class Playlist(
     /** M3U link ili URI fajla; za Xtream adresa servera. */
     val source: String,
     val username: String?,
+    val userAgent: String?,
     val channelCount: Int,
     val lastRefreshedAt: Long?,
     val isActive: Boolean,
@@ -26,4 +27,6 @@ data class PlaylistDraft(
     val username: String = "",
     /** Prazno pri izmeni znači: zadrži postojeću lozinku. */
     val password: String = "",
+    /** Prazno = podrazumevani User-Agent. */
+    val userAgent: String = "",
 )

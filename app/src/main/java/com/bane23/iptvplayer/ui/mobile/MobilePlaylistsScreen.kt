@@ -43,6 +43,7 @@ import com.bane23.iptvplayer.ui.common.summary
 fun MobilePlaylistsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
+    onBack: () -> Unit,
     viewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -53,7 +54,7 @@ fun MobilePlaylistsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
+                .padding(start = 8.dp, end = 16.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -61,10 +62,13 @@ fun MobilePlaylistsScreen(
                     .padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
                 Text(
                     text = stringResource(R.string.playlists_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp),
                 )
                 Button(onClick = onAdd) {
                     Text(stringResource(R.string.action_add_playlist))

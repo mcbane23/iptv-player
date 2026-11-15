@@ -53,7 +53,6 @@ fun PlaylistFormFields(
                 label = stringResource(R.string.field_m3u_url),
                 enabled = enabled,
                 keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Done,
             )
 
             PlaylistType.M3U_FILE -> {
@@ -90,11 +89,20 @@ fun PlaylistFormFields(
                     label = stringResource(R.string.field_password),
                     enabled = enabled,
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
                     isPassword = true,
                     supportingText = if (state.isEditing) stringResource(R.string.field_password_keep) else null,
                 )
             }
+        }
+        if (state.type != PlaylistType.M3U_FILE) {
+            FormField(
+                value = state.userAgent,
+                onValueChange = viewModel::setUserAgent,
+                label = stringResource(R.string.field_user_agent),
+                enabled = enabled,
+                imeAction = ImeAction.Done,
+                supportingText = stringResource(R.string.field_user_agent_hint),
+            )
         }
     }
 }

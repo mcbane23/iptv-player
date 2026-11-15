@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0 i 1 urađene.** Sledeći korak je Faza 2.
+Stanje: **Faze 0, 1 i 2 urađene** (Faza 2 čeka ručnu proveru na telefonu i TV-u). Sledeći korak je Faza 3.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -193,15 +193,15 @@ Cilj: korisnik može da doda, osveži i obriše listu, a sadržaj se upisuje u b
 
 Cilj: izbor kategorije, izbor kanala, gledanje.
 
-- [ ] Ekran kategorija i kanala (telefon: lista; TV: kolone sa fokusom)
-- [ ] Media3 plejer: HLS, MPEG-TS, DASH, progresivni strim
-- [ ] Kontrole: pauza, sledeći/prethodni kanal, lista kanala preko slike
-- [ ] Izbor audio zapisa i titlova, odnos stranica (fit / fill / zoom)
-- [ ] Automatski ponovni pokušaj kad strim pukne, jasna poruka kad ne može da se pusti
-- [ ] Podešavanje User-Agent-a po listi (neki provajderi ga zahtevaju)
-- [ ] Ekran ostaje upaljen tokom gledanja; pravilno ponašanje pri izlasku i povratku
-- [ ] Telefon: rotacija, gestovi za jačinu zvuka i osvetljenje, slika u slici (PiP)
-- [ ] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
+- [x] Ekran kategorija i kanala (telefon: lista; TV: kolone sa fokusom)
+- [x] Media3 plejer: HLS, MPEG-TS, DASH, progresivni strim
+- [x] Kontrole: pauza, sledeći/prethodni kanal, lista kanala preko slike
+- [x] Izbor audio zapisa i titlova, odnos stranica (fit / fill / zoom)
+- [x] Automatski ponovni pokušaj kad strim pukne, jasna poruka kad ne može da se pusti
+- [x] Podešavanje User-Agent-a po listi (neki provajderi ga zahtevaju)
+- [x] Ekran ostaje upaljen tokom gledanja; pravilno ponašanje pri izlasku i povratku
+- [x] Telefon: rotacija, gestovi za jačinu zvuka i osvetljenje, slika u slici (PiP)
+- [x] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
 
 ### Faza 3: Favoriti, istorija, pretraga
 

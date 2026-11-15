@@ -21,6 +21,8 @@ data class PlaylistEntity(
     val passwordEncrypted: String? = null,
     val epgUrl: String? = null,
     val lastRefreshedAt: Long? = null,
+    /** User-Agent koji se šalje serveru ove liste; null = podrazumevani. */
+    val userAgent: String? = null,
 )
 
 @Entity(
@@ -53,7 +55,12 @@ data class CategoryEntity(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("playlistId", "categoryId"), Index("playlistId", "name")],
+    indices = [
+        Index("playlistId", "categoryId", "sortOrder"),
+        Index("playlistId", "sortOrder"),
+        Index("playlistId", "name"),
+        Index("playlistId", "number"),
+    ],
 )
 data class ChannelEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -77,5 +84,10 @@ data class ChannelEntity(
 
 data class PlaylistWithCount(
     @Embedded val playlist: PlaylistEntity,
+    @ColumnInfo(name = "channelCount") val channelCount: Int,
+)
+
+data class CategoryWithCount(
+    @Embedded val category: CategoryEntity,
     @ColumnInfo(name = "channelCount") val channelCount: Int,
 )

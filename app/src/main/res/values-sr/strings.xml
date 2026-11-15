@@ -62,4 +62,39 @@
     <string name="error_bad_response">Server je poslao odgovor koji aplikacija ne razume.</string>
     <string name="error_credentials_unreadable">Sačuvana lozinka više ne može da se pročita. Izmenite listu i unesite lozinku ponovo.</string>
     <string name="error_unknown">Nešto nije u redu. Pokušajte ponovo.</string>
+
+    <!-- Live TV -->
+    <string name="live_tv_title">TV uživo</string>
+    <string name="category_all">Svi kanali</string>
+
+    <!-- Plejer -->
+    <string name="player_previous">Prethodni</string>
+    <string name="player_next">Sledeći</string>
+    <string name="player_play">Pusti</string>
+    <string name="player_pause">Pauza</string>
+    <string name="player_retry">Pokušaj ponovo</string>
+    <string name="player_channels">Kanali</string>
+    <string name="player_audio">Zvuk</string>
+    <string name="player_subtitles">Titlovi</string>
+    <string name="player_subtitles_off">Isključeno</string>
+    <string name="player_no_tracks">Nema dostupnih zapisa</string>
+    <string name="player_aspect">Slika: %1$s</string>
+    <string name="player_pip">Slika u slici</string>
+    <string name="player_tv_hint">Gore/dole: promena kanala · OK: lista kanala · Desno: opcije</string>
+    <string name="aspect_fit">Uklopi</string>
+    <string name="aspect_fill">Razvuci</string>
+    <string name="aspect_zoom">Uvećaj</string>
+    <string name="gesture_volume">Zvuk</string>
+    <string name="gesture_brightness">Osvetljenje</string>
+    <string name="playback_loading">Učitavanje…</string>
+    <string name="playback_retrying">Veza je prekinuta, pokušavam ponovo…</string>
+    <string name="playback_error_network">Kanal ne može da se pusti. Proverite internet vezu.</string>
+    <string name="playback_error_not_found">Ovaj kanal trenutno nije dostupan.</string>
+    <string name="playback_error_forbidden">Server je odbio pristup kanalu. Nalog se možda koristi na drugom uređaju ili je istekao.</string>
+    <string name="playback_error_unsupported">Ovaj uređaj ne može da pusti format ovog kanala.</string>
+    <string name="playback_error_unknown">Kanal ne može da se pusti.</string>
+    <string name="playback_error_source">Adresa kanala ne može da se sastavi. Izmenite listu i unesite lozinku ponovo.</string>
+
+    <string name="field_user_agent">User-Agent (opciono)</string>
+    <string name="field_user_agent_hint">Potrebno samo ako provajder to zahteva</string>
 </resources>
