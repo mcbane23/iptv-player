@@ -7,6 +7,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,6 +29,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -42,23 +45,32 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.NowNext
-import com.bane23.iptvplayer.ui.common.guide.nextLine
-import com.bane23.iptvplayer.ui.common.guide.nowLine
-import com.bane23.iptvplayer.player.PlaybackState
+import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.ChannelLogo
+import com.bane23.iptvplayer.ui.common.guide.formatTime
+import com.bane23.iptvplayer.ui.common.guide.nextLine
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PlayerChip
+import com.bane23.iptvplayer.ui.common.player.PlayerProgress
+import com.bane23.iptvplayer.ui.common.player.PlayerScrim
+import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
+import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
 
-private enum class TvPanel { NONE, CHANNELS, OPTIONS }
+/** Kontrole preko slike: sklonjene, samo prikazane posle promene kanala, ili u fokusu. */
+private enum class Overlay { HIDDEN, INFO, ACTIVE }
 
 /**
- * Plejer na TV-u, upravlja se samo daljinskim:
- * gore/dole menja kanal, OK ili levo otvara listu kanala, desno otvara opcije (zvuk, titlovi, slika),
- * cifre biraju kanal po broju, a Nazad zatvara otvoreni panel ili plejer.
+ * Plejer kanala na TV-u, upravlja se samo daljinskim. Dok su kontrole sklonjene: gore/dole menja
+ * kanal, levo otvara listu kanala, OK (ili desno) prikazuje kontrole, cifre biraju kanal po broju.
+ * Kontrole izgledaju kao u plejeru filmova: naziv kanala gore, a dole emisija sa trakom i dugmad
+ * Kanali, Titlovi, Audio, Format i Omiljeni. Nazad prvo zatvara spisak ili kontrole.
  */
 @Composable
 fun TvPlayerScreen(
@@ -69,38 +81,70 @@ fun TvPlayerScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
-    var panel by remember { mutableStateOf(TvPanel.NONE) }
-    var infoVisible by remember { mutableStateOf(true) }
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    var overlay by remember { mutableStateOf(Overlay.INFO) }
+    var channelList by remember { mutableStateOf(false) }
+    var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
+    val firstChipFocus = remember { FocusRequester() }
+    val panelOpen = channelList || tracks != null
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
-    BackHandler(enabled = panel != TvPanel.NONE) { panel = TvPanel.NONE }
-
-    // Naziv kanala se kratko prikaže posle svake promene kanala.
-    LaunchedEffect(ui.channel?.id) {
-        infoVisible = true
-        delay(INFO_TIMEOUT_MS)
-        infoVisible = false
+    BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
+        when {
+            tracks != null -> tracks = null
+            channelList -> channelList = false
+            else -> overlay = Overlay.HIDDEN
+        }
     }
-    // Kad se panel zatvori, fokus se vraća na plejer, inače tasteri ne bi stizali do njega.
-    LaunchedEffect(panel) {
-        if (panel == TvPanel.NONE) runCatching { rootFocus.requestFocus() }
+
+    // Posle promene kanala kratko se prikaže šta se gleda.
+    LaunchedEffect(ui.channel?.id) {
+        if (overlay == Overlay.HIDDEN) overlay = Overlay.INFO
+    }
+    LaunchedEffect(overlay, panelOpen, activity, playback.status) {
+        if (overlay != Overlay.HIDDEN && !panelOpen && playback.status == PlaybackStatus.PLAYING) {
+            delay(if (overlay == Overlay.INFO) INFO_TIMEOUT_MS else CONTROLS_TIMEOUT_MS)
+            overlay = Overlay.HIDDEN
+        }
+    }
+    // Fokus prati ono što je na ekranu, inače tasteri ne bi stizali nikuda.
+    LaunchedEffect(overlay, panelOpen) {
+        when {
+            panelOpen -> Unit
+            overlay == Overlay.ACTIVE -> repeat(FOCUS_ATTEMPTS) {
+                if (firstChipFocus.tryRequestFocus()) return@LaunchedEffect
+                delay(FOCUS_STEP_MS)
+            }
+            else -> rootFocus.tryRequestFocus()
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .focusRequester(rootFocus)
-            .focusable()
+            .onPreviewKeyEvent {
+                if (it.type == KeyEventType.KeyDown) activity++
+                false
+            }
             .onKeyEvent { event ->
-                if (panel != TvPanel.NONE) return@onKeyEvent false
                 val code = event.nativeKeyEvent.keyCode
                 val isDown = event.type == KeyEventType.KeyDown
                 val isUp = event.type == KeyEventType.KeyUp
+                if (code == AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE ||
+                    code == AndroidKeyEvent.KEYCODE_MEDIA_PLAY ||
+                    code == AndroidKeyEvent.KEYCODE_MEDIA_PAUSE
+                ) {
+                    if (isDown) viewModel.togglePlayPause()
+                    return@onKeyEvent true
+                }
+                // Ostali tasteri ovde stižu samo dok je fokus na samom plejeru.
+                if (overlay == Overlay.ACTIVE || panelOpen) return@onKeyEvent false
                 when (code) {
                     AndroidKeyEvent.KEYCODE_DPAD_UP, AndroidKeyEvent.KEYCODE_CHANNEL_DOWN -> {
                         if (isDown) viewModel.previous()
@@ -112,26 +156,19 @@ fun TvPlayerScreen(
                         true
                     }
 
-                    // Panel se otvara kad se taster pusti, da isti pritisak ne bi odmah izabrao stavku u njemu.
+                    // Spisak i kontrole se otvaraju kad se taster pusti, da isti pritisak ne bi odmah nešto izabrao.
+                    AndroidKeyEvent.KEYCODE_DPAD_LEFT -> {
+                        if (isUp) channelList = true
+                        true
+                    }
+
                     AndroidKeyEvent.KEYCODE_DPAD_CENTER,
                     AndroidKeyEvent.KEYCODE_ENTER,
                     AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
-                    AndroidKeyEvent.KEYCODE_DPAD_LEFT,
+                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
+                    AndroidKeyEvent.KEYCODE_MENU,
                     -> {
-                        if (isUp) panel = TvPanel.CHANNELS
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT, AndroidKeyEvent.KEYCODE_MENU -> {
-                        if (isUp) panel = TvPanel.OPTIONS
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-                    AndroidKeyEvent.KEYCODE_MEDIA_PLAY,
-                    AndroidKeyEvent.KEYCODE_MEDIA_PAUSE,
-                    -> {
-                        if (isDown) viewModel.togglePlayPause()
+                        if (isUp) overlay = Overlay.ACTIVE
                         true
                     }
 
@@ -147,7 +184,9 @@ fun TvPlayerScreen(
 
                     else -> false
                 }
-            },
+            }
+            .focusRequester(rootFocus)
+            .focusable(),
     ) {
         VideoSurface(
             player = viewModel.player,
@@ -180,60 +219,129 @@ fun TvPlayerScreen(
             )
         }
 
-        if (infoVisible && panel == TvPanel.NONE) {
-            ChannelInfoBar(ui = ui, nowNext = nowNext, modifier = Modifier.align(Alignment.BottomStart))
+        if (overlay != Overlay.HIDDEN && !channelList) {
+            LiveControls(
+                ui = ui,
+                nowNext = nowNext,
+                textEnabled = playback.textEnabled,
+                isFavorite = isFavorite,
+                firstChipFocus = firstChipFocus,
+                onChannels = { channelList = true },
+                onSubtitles = { tracks = TvTrackKind.SUBTITLES },
+                onAudio = { tracks = TvTrackKind.AUDIO },
+                onAspect = viewModel::cycleAspectMode,
+                onFavorite = viewModel::toggleFavorite,
+            )
         }
 
-        when (panel) {
-            TvPanel.CHANNELS -> ChannelListPanel(
+        if (channelList) {
+            ChannelListPanel(
                 viewModel = viewModel,
                 ui = ui,
-                onPick = { panel = TvPanel.NONE },
+                onPick = {
+                    channelList = false
+                    overlay = Overlay.INFO
+                },
                 modifier = Modifier.align(Alignment.CenterStart),
             )
+        }
 
-            TvPanel.OPTIONS -> OptionsPanel(
-                viewModel = viewModel,
-                ui = ui,
+        tracks?.let { kind ->
+            TvTrackPanel(
+                kind = kind,
                 playback = playback,
+                onSelectAudio = viewModel::selectAudio,
+                onSelectText = viewModel::selectText,
+                onClose = { tracks = null },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
-
-            TvPanel.NONE -> Unit
         }
     }
 }
 
+/** Naziv kanala gore; dole emisija sa trakom koliko je odmakla i dugmad. */
 @Composable
-private fun ChannelInfoBar(ui: PlayerUiState, nowNext: NowNext, modifier: Modifier = Modifier) {
+private fun LiveControls(
+    ui: PlayerUiState,
+    nowNext: NowNext,
+    textEnabled: Boolean,
+    isFavorite: Boolean,
+    firstChipFocus: FocusRequester,
+    onChannels: () -> Unit,
+    onSubtitles: () -> Unit,
+    onAudio: () -> Unit,
+    onAspect: () -> Unit,
+    onFavorite: () -> Unit,
+) {
     val channel = ui.channel ?: return
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.6f))
-            .padding(horizontal = 48.dp, vertical = 20.dp),
-    ) {
-        Text(
-            text = channel.name,
-            color = Color.White,
-            style = MaterialTheme.typography.headlineSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        for (line in listOfNotNull(nowNext.nowLine(), nowNext.nextLine())) {
-            Text(
-                text = line,
-                color = Color.White.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+    val now by rememberNow()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.align(Alignment.TopStart)) {
+            PlayerScrim(top = true, modifier = Modifier.matchParentSize())
+            PlayerTitle(
+                title = listOfNotNull(channel.number?.toString(), channel.name).joinToString("  "),
+                subtitle = nowNext.now?.title,
+                large = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
             )
         }
-        Text(
-            text = stringResource(R.string.player_tv_hint),
-            color = Color.White.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+
+        Box(modifier = Modifier.align(Alignment.BottomStart)) {
+            PlayerScrim(top = false, modifier = Modifier.matchParentSize())
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                nowNext.now?.let { program ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = formatTime(program.startMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                        val length = (program.stopMs - program.startMs).coerceAtLeast(1)
+                        PlayerProgress(
+                            fraction = (now - program.startMs).toFloat() / length,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                        )
+                        Text(text = formatTime(program.stopMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                nowNext.nextLine()?.let { line ->
+                    Text(
+                        text = line,
+                        color = Color.White.copy(alpha = 0.75f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PlayerChip(
+                        label = stringResource(R.string.player_channels),
+                        icon = AppIcons.ChannelList,
+                        onClick = onChannels,
+                        modifier = Modifier.focusRequester(firstChipFocus),
+                    )
+                    PlayerChip(
+                        label = stringResource(R.string.player_subtitles),
+                        icon = AppIcons.Subtitles,
+                        active = textEnabled,
+                        onClick = onSubtitles,
+                    )
+                    PlayerChip(label = stringResource(R.string.player_audio), icon = AppIcons.Audio, onClick = onAudio)
+                    PlayerChip(label = ui.aspectMode.label(), icon = AppIcons.AspectRatio, onClick = onAspect)
+                    PlayerChip(
+                        label = stringResource(R.string.category_favorites),
+                        icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
+                        active = isFavorite,
+                        onClick = onFavorite,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -292,26 +400,7 @@ private fun ChannelListPanel(
     }
 }
 
-/** Opcije: favorit, zvuk, titlovi i odnos stranica. */
-@Composable
-private fun OptionsPanel(
-    viewModel: PlayerViewModel,
-    ui: PlayerUiState,
-    playback: PlaybackState,
-    modifier: Modifier = Modifier,
-) {
-    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
-    TvPlayerOptionsPanel(
-        playback = playback,
-        aspectMode = ui.aspectMode,
-        onCycleAspect = viewModel::cycleAspectMode,
-        onSelectAudio = viewModel::selectAudio,
-        onSelectText = viewModel::selectText,
-        modifier = modifier,
-        firstRowText = stringResource(if (isFavorite) R.string.favorite_remove else R.string.favorite_add),
-        firstRowTrailing = if (isFavorite) "★" else "☆",
-        onFirstRow = viewModel::toggleFavorite,
-    )
-}
-
 private const val INFO_TIMEOUT_MS = 4_000L
+private const val CONTROLS_TIMEOUT_MS = 6_000L
+private const val FOCUS_ATTEMPTS = 10
+private const val FOCUS_STEP_MS = 50L

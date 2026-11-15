@@ -81,7 +81,6 @@
     <string name="player_no_tracks">No tracks available</string>
     <string name="player_aspect">Picture: %1$s</string>
     <string name="player_pip">Picture in picture</string>
-    <string name="player_tv_hint">Up/Down: change channel · OK: channel list · Right: options</string>
     <string name="aspect_fit">Fit</string>
     <string name="aspect_fill">Stretch</string>
     <string name="aspect_zoom">Zoom</string>
@@ -170,7 +169,6 @@
     <string name="vod_seek_back">−10 s</string>
     <string name="vod_seek_forward">+10 s</string>
     <string name="vod_next_episode">Next episode</string>
-    <string name="vod_tv_hint">Left and right: skip 10 s · OK: pause · Up: options</string>
 
     <!-- Dodavanje liste sa telefona -->
     <string name="action_add_from_phone">Add from phone</string>
