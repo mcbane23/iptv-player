@@ -243,6 +243,8 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 Redosled unutar faze po želji vlasnika.
 
 - [ ] Podešavanja plejera (bafer, dekoder hardverski/softverski, podrazumevani jezik zvuka i titlova)
+- [ ] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
+      sami uključuju pri sledećem puštanju, bez ponovnog biranja
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila
@@ -298,9 +300,6 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Titlovi**
 
-- [ ] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
-      sami uključuju pri sledećem puštanju, bez ponovnog biranja (dopuna stavke o
-      podrazumevanom jeziku titlova iz Faze 7)
 - [ ] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna), sa pregledom
 
