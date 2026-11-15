@@ -197,6 +197,13 @@ class SettingsViewModel @Inject constructor(
     val resumeLastChannel: StateFlow<Boolean> = repository.resumeLastChannel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val tvChannelPreview: StateFlow<Boolean> = settings.tvChannelPreview
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setTvChannelPreview(enabled: Boolean) {
+        viewModelScope.launch { settings.setTvChannelPreview(enabled) }
+    }
+
     fun setResumeLastChannel(enabled: Boolean) {
         viewModelScope.launch { repository.setResumeLastChannel(enabled) }
     }

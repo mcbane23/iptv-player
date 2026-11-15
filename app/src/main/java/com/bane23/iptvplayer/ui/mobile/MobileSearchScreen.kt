@@ -12,7 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +31,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SearchViewModel
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
 /** Pretraga kanala po nazivu na telefonu. */
 @Composable
@@ -52,19 +53,20 @@ fun MobileSearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
+                ToolbarIcon(AppIcons.Back, stringResource(R.string.action_back), onBack)
                 OutlinedTextField(
                     value = state.query,
                     onValueChange = viewModel::setQuery,
-                    placeholder = { Text(stringResource(R.string.search_hint)) },
+                    placeholder = { Text(stringResource(R.string.search_channels)) },
+                    leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 8.dp)
+                        .padding(start = 4.dp)
                         .focusRequester(fieldFocus),
                 )
             }

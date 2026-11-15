@@ -197,7 +197,12 @@ class ChannelRepository @Inject constructor(
         if (urls.isEmpty()) null else StreamSource(urls, userAgent, channel.referrer)
     }
 
-    private fun ChannelWithFavorite.toDomain() = channel.toDomain().copy(favorite = favorite, nowTitle = nowTitle)
+    private fun ChannelWithFavorite.toDomain() = channel.toDomain().copy(
+        favorite = favorite,
+        nowTitle = nowTitle,
+        nowStartMs = nowStartMs,
+        nowStopMs = nowStopMs,
+    )
 
     private fun ChannelEntity.toDomain() = Channel(
         id = id,

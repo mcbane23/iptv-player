@@ -44,6 +44,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[RESUME_LAST_CHANNEL] = enabled }
     }
 
+    /** Da li Uživo na TV-u pušta mali pregled (bez zvuka) kanala na kome je fokus. */
+    val tvChannelPreview: Flow<Boolean> =
+        dataStore.data.map { it[TV_CHANNEL_PREVIEW] ?: true }.distinctUntilChanged()
+
+    suspend fun setTvChannelPreview(enabled: Boolean) {
+        dataStore.edit { it[TV_CHANNEL_PREVIEW] = enabled }
+    }
+
     /** Podešavanja plejera. Čitaju se pri otvaranju plejera, pa izmena važi od sledećeg puštanja. */
     val playerSettings: Flow<PlayerSettings> = dataStore.data.map { prefs ->
         PlayerSettings(
@@ -76,6 +84,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PLAYER_AUDIO_LANGUAGE = stringPreferencesKey("player_audio_language")
         val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
+        val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
 }

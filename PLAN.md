@@ -276,7 +276,7 @@ u TV plejeru OK prikazuje kontrole, strelica levo listu kanala. Tekst se nigde n
 a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 
 - [x] 1. Osnova: ikonice, tipografija, donja traka na telefonu, bočni meni na TV-u
-- [ ] 2. Uživo: kategorije kao čipovi, „sada” uz kanal, pretraga u sekciji, TV u tri kolone sa pregledom
+- [x] 2. Uživo: kategorije kao čipovi, „sada” uz kanal, pretraga u sekciji, TV u tri kolone sa pregledom
 - [ ] 3. Filmovi i serije: „Nastavi gledanje”, mreža postera, pretraga kroz sve kategorije, novi detalji
 - [ ] 4. Plejer na telefonu: ikonice, panel titlova i zvuka, „Više”, zaključavanje, dupli dodir
 - [ ] 5. Plejer na TV-u: kontrole na OK, lista kanala preko slike, premotavanje držanjem

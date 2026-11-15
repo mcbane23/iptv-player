@@ -13,7 +13,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
-import com.bane23.iptvplayer.ui.common.navigation.Channels
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
@@ -63,11 +62,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 }
                 MobileHomeScreen(
                     liveTvViewModel = liveTvViewModel,
-                    onOpenCategory = { playlistId, categoryId, title ->
-                        backStack.add(Channels(playlistId, categoryId, title))
-                    },
+                    onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
                     onSearch = { backStack.add(Search) },
-                    onGuide = { playlistId -> backStack.add(Guide(playlistId, null)) },
+                    onGuide = { playlistId, categoryId -> backStack.add(Guide(playlistId, categoryId)) },
                     onOpenVod = { item, series ->
                         if (series) {
                             backStack.add(SeriesDetails(item.id, item.name, item.poster))
@@ -87,16 +84,6 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<ManageCategories> {
                 MobileCategoriesScreen(onBack = { backStack.removeLastOrNull() })
-            }
-            entry<Channels> { key ->
-                MobileChannelsScreen(
-                    playlistId = key.playlistId,
-                    categoryId = key.categoryId,
-                    title = key.title,
-                    onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
-                    onBack = { backStack.removeLastOrNull() },
-                    onGuide = { backStack.add(Guide(key.playlistId, key.categoryId)) },
-                )
             }
             entry<Guide> { key ->
                 MobileGuideScreen(

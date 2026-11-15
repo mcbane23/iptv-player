@@ -234,4 +234,6 @@
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">Opšte</string>
     <string name="nav_live">Uživo</string>
+    <string name="search_channels">Pretraga kanala</string>
+    <string name="settings_tv_preview">Pregled kanala</string>
 </resources>
