@@ -61,6 +61,15 @@ class XtreamUrlsTest {
     }
 
     @Test
+    fun `xmltv url`() {
+        val server = XtreamUrls.normalizeServer("tv.invalid:8080")!!
+        assertEquals(
+            "http://tv.invalid:8080/xmltv.php?username=proba&password=tajna",
+            XtreamUrls.xmltv(server, "proba", "tajna"),
+        )
+    }
+
+    @Test
     fun `get php link is recognized as xtream account`() {
         val parsed = XtreamUrls.parseGetPhpLink(
             " https://tv.invalid:8443/get.php?username=proba&password=taj%26na&type=m3u_plus&output=ts ",

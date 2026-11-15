@@ -1,6 +1,6 @@
 # Plan projekta: IPTV plejer za Android telefon i Android TV
 
-Stanje: **Faze 0, 1, 2 i 3 urađene** (Faze 2 i 3 čekaju ručnu proveru na TV-u). Sledeći korak je Faza 4.
+Stanje: **Faze 0 do 4 urađene** (Faza 4 čeka ručnu proveru; Faze 2 i 3 još nisu probane na TV-u). Sledeći korak je Faza 5.
 
 Ovaj dokument je izvor istine za obim i redosled rada. Kad se neka stavka završi,
 označi je sa `[x]`. Kad se odluka promeni, izmeni je ovde, ne samo u razgovoru.
@@ -212,13 +212,13 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 
 ### Faza 4: TV vodič (EPG)
 
-- [ ] XMLTV parser (strimovan, podrška za `.gz`), upis u `epg_programs`
-- [ ] Izvor: EPG link iz liste, ručno unet link, ili Xtream `xmltv.php`
-- [ ] Povezivanje programa sa kanalima preko `tvg-id` (uz rezervno poklapanje po nazivu)
-- [ ] „Sada / Sledeće” u listi kanala i u plejeru
-- [ ] Ekran vodiča u obliku mreže (vremenska osa), prilagođen i telefonu i TV-u
-- [ ] Periodično osvežavanje preko WorkManager-a, brisanje starih programa
-- [ ] Vremenski pomak (time shift) za EPG po listi
+- [x] XMLTV parser (strimovan, podrška za `.gz`), upis u `epg_programs`
+- [x] Izvor: EPG link iz liste, ručno unet link, ili Xtream `xmltv.php`
+- [x] Povezivanje programa sa kanalima preko `tvg-id` (uz rezervno poklapanje po nazivu)
+- [x] „Sada / Sledeće” u listi kanala i u plejeru
+- [x] Ekran vodiča u obliku mreže (vremenska osa), prilagođen i telefonu i TV-u
+- [x] Periodično osvežavanje preko WorkManager-a, brisanje starih programa
+- [x] Vremenski pomak (time shift) za EPG po listi
 
 ### Faza 5: Filmovi i serije (samo Xtream)
 

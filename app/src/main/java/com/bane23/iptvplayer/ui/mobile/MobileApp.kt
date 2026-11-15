@@ -15,6 +15,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.navigation.Channels
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
+import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.Player
@@ -73,6 +74,15 @@ fun MobileApp() {
                     playlistId = key.playlistId,
                     categoryId = key.categoryId,
                     title = key.title,
+                    onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
+                    onBack = { backStack.removeLastOrNull() },
+                    onGuide = { backStack.add(Guide(key.playlistId, key.categoryId)) },
+                )
+            }
+            entry<Guide> { key ->
+                MobileGuideScreen(
+                    playlistId = key.playlistId,
+                    categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
                     onBack = { backStack.removeLastOrNull() },
                 )

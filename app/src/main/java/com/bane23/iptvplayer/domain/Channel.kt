@@ -28,7 +28,20 @@ data class Channel(
     /** Redosled u listi; služi za prelazak na sledeći i prethodni kanal. */
     val sortOrder: Int,
     val favorite: Boolean = false,
+    /** Naslov emisije koja je trenutno na programu, ako vodič postoji. */
+    val nowTitle: String? = null,
 )
+
+/** Emisija iz TV vodiča. */
+data class Program(
+    val startMs: Long,
+    val stopMs: Long,
+    val title: String,
+    val description: String?,
+)
+
+/** Šta je na kanalu sada i šta sledi. */
+data class NowNext(val now: Program? = null, val next: Program? = null)
 
 /** Sve što plejeru treba da pusti kanal. */
 data class StreamSource(

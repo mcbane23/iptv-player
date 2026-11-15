@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.bane23.iptvplayer.data.repo.ChannelRepository
+import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,9 +23,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -52,6 +56,7 @@ private data class ListScope(val playlistId: Long, val categoryId: Long?, val st
 class PlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val repository: ChannelRepository,
+    private val epg: EpgRepository,
 ) : ViewModel() {
 
     private val engine = PlayerEngine(context, viewModelScope)
@@ -75,6 +80,24 @@ class PlayerViewModel @Inject constructor(
         .distinctUntilChangedBy { it?.id }
         .flatMapLatest { channel -> if (channel == null) flowOf(false) else repository.observeFavorite(channel) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Šta je na kanalu sada i šta sledi; osvežava se dok se kanal gleda. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val nowNext: StateFlow<NowNext> = _ui.map { it.channel?.id }
+        .distinctUntilChanged()
+        .flatMapLatest { channelId ->
+            if (channelId == null) {
+                flowOf(NowNext())
+            } else {
+                flow {
+                    while (true) {
+                        emit(epg.nowNext(channelId))
+                        delay(NOW_NEXT_REFRESH_MS)
+                    }
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NowNext())
 
     /**
      * Za posebne grupe (favoriti, nedavno gledano): redosled kanala zapamćen pri otvaranju plejera.
@@ -193,5 +216,6 @@ class PlayerViewModel @Inject constructor(
     private companion object {
         const val MAX_NUMBER_DIGITS = 5
         const val NUMBER_ENTRY_DELAY_MS = 1_500L
+        const val NOW_NEXT_REFRESH_MS = 30_000L
     }
 }

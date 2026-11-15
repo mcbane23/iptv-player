@@ -13,6 +13,9 @@ data class Playlist(
     val source: String,
     val username: String?,
     val userAgent: String?,
+    /** EPG link koji je uneo korisnik, ili null ako se koristi onaj iz liste. */
+    val epgUrl: String? = null,
+    val epgShiftHours: Int = 0,
     val channelCount: Int,
     val lastRefreshedAt: Long?,
     val isActive: Boolean,
@@ -29,4 +32,8 @@ data class PlaylistDraft(
     val password: String = "",
     /** Prazno = podrazumevani User-Agent. */
     val userAgent: String = "",
+    /** Prazno = vodič iz same liste (M3U zaglavlje, odnosno Xtream nalog). */
+    val epgUrl: String = "",
+    /** Pomak vodiča u satima. */
+    val epgShiftHours: Int = 0,
 )

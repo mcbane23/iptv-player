@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
+import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.Player
@@ -47,6 +48,7 @@ fun TvApp() {
                     onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
                     onManagePlaylists = { backStack.add(Playlists) },
                     onSearch = { backStack.add(Search) },
+                    onGuide = { playlistId, categoryId -> backStack.add(Guide(playlistId, categoryId)) },
                     onManageCategories = { backStack.add(ManageCategories) },
                     onSettings = { backStack.add(Settings) },
                     viewModel = liveTvViewModel,
@@ -57,6 +59,13 @@ fun TvApp() {
             }
             entry<ManageCategories> { TvCategoriesScreen() }
             entry<Settings> { TvSettingsScreen() }
+            entry<Guide> { key ->
+                TvGuideScreen(
+                    playlistId = key.playlistId,
+                    categoryId = key.categoryId,
+                    onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
+                )
+            }
             entry<Player> { key ->
                 TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
             }

@@ -10,8 +10,9 @@ import androidx.room.RoomDatabase
         ChannelEntity::class,
         FavoriteEntity::class,
         HistoryEntity::class,
+        EpgProgramEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,4 +21,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun channelDao(): ChannelDao
     abstract fun favoriteDao(): FavoriteDao
     abstract fun historyDao(): HistoryDao
+    abstract fun epgDao(): EpgDao
 }

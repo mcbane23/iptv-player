@@ -25,6 +25,10 @@ data object Playlists : NavKey
 @Serializable
 data class EditPlaylist(val playlistId: Long? = null) : NavKey
 
+/** TV vodič u obliku mreže za kanale jedne kategorije ([categoryId] null = svi kanali liste). */
+@Serializable
+data class Guide(val playlistId: Long, val categoryId: Long?) : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey

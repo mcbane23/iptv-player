@@ -41,6 +41,9 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.ui.common.guide.nextLine
+import com.bane23.iptvplayer.ui.common.guide.nowLine
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -66,6 +69,7 @@ fun TvPlayerScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
+    val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     var panel by remember { mutableStateOf(TvPanel.NONE) }
     var infoVisible by remember { mutableStateOf(true) }
     val rootFocus = remember { FocusRequester() }
@@ -178,7 +182,7 @@ fun TvPlayerScreen(
         }
 
         if (infoVisible && panel == TvPanel.NONE) {
-            ChannelInfoBar(ui = ui, modifier = Modifier.align(Alignment.BottomStart))
+            ChannelInfoBar(ui = ui, nowNext = nowNext, modifier = Modifier.align(Alignment.BottomStart))
         }
 
         when (panel) {
@@ -202,7 +206,7 @@ fun TvPlayerScreen(
 }
 
 @Composable
-private fun ChannelInfoBar(ui: PlayerUiState, modifier: Modifier = Modifier) {
+private fun ChannelInfoBar(ui: PlayerUiState, nowNext: NowNext, modifier: Modifier = Modifier) {
     val channel = ui.channel ?: return
     Column(
         modifier = modifier
@@ -217,6 +221,15 @@ private fun ChannelInfoBar(ui: PlayerUiState, modifier: Modifier = Modifier) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        for (line in listOfNotNull(nowNext.nowLine(), nowNext.nextLine())) {
+            Text(
+                text = line,
+                color = Color.White.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Text(
             text = stringResource(R.string.player_tv_hint),
             color = Color.White.copy(alpha = 0.7f),

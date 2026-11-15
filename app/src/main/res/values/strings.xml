@@ -128,4 +128,24 @@
     <string name="settings_resume_last_summary">When the app opens, the channel you watched last starts right away.</string>
     <string name="setting_on">On</string>
     <string name="setting_off">Off</string>
+
+    <!-- TV guide -->
+    <string name="guide_title">TV guide</string>
+    <string name="guide_earlier">Earlier</string>
+    <string name="guide_later">Later</string>
+    <string name="guide_now">Now</string>
+    <string name="guide_watch">Watch</string>
+    <string name="guide_no_data">No guide data</string>
+    <string name="guide_loading">Loading the guide. For large playlists this can take a few minutes.</string>
+    <string name="guide_no_source">This playlist has no guide. You can enter an EPG link when editing the playlist.</string>
+    <string name="guide_failed">The guide could not be loaded (%1$s).</string>
+    <string name="guide_refreshed_at">Guide refreshed %1$s</string>
+    <string name="guide_not_loaded">The guide has not been loaded yet.</string>
+    <string name="epg_now">Now %1$s: %2$s</string>
+    <string name="epg_next">Next %1$s: %2$s</string>
+    <string name="action_close">Close</string>
+    <string name="field_epg_url">EPG link (optional)</string>
+    <string name="field_epg_url_hint">Leave empty to use the guide that comes with the playlist</string>
+    <string name="field_epg_shift">Guide time shift in hours (optional)</string>
+    <string name="field_epg_shift_hint">For example 1 or -2, if programme times in the guide are off</string>
 </resources>
