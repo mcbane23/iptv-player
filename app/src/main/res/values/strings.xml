@@ -1,7 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">IPTV Player</string>
-    <string name="home_title">Welcome</string>
-    <string name="home_subtitle">Add your playlist (M3U link or Xtream Codes account) to get started.</string>
-    <string name="home_add_playlist">Add playlist</string>
+
+    <!-- Spisak lista -->
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_empty">No playlists yet. Add your playlist (M3U link, M3U file or Xtream Codes account) to get started.</string>
+    <string name="playlist_active">Active</string>
+    <string name="playlist_refreshed_at">refreshed %1$s</string>
+    <string name="playlist_refreshing">Refreshing…</string>
+    <plurals name="channel_count">
+        <item quantity="one">%1$d channel</item>
+        <item quantity="other">%1$d channels</item>
+    </plurals>
+    <string name="playlist_type_m3u_url">M3U link</string>
+    <string name="playlist_type_m3u_file">M3U file</string>
+    <string name="playlist_type_xtream">Xtream Codes</string>
+
+    <!-- Akcije -->
+    <string name="action_add_playlist">Add playlist</string>
+    <string name="action_select">Select</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_confirm_delete">Confirm delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_back">Back</string>
+    <string name="action_ok">OK</string>
+    <string name="action_pick_file">Choose file</string>
+
+    <!-- Brisanje -->
+    <string name="delete_title">Delete playlist?</string>
+    <string name="delete_message">“%1$s” and all its channels will be removed from this device.</string>
+
+    <!-- Dodavanje i izmena liste -->
+    <string name="edit_title_add">Add playlist</string>
+    <string name="edit_title_edit">Edit playlist</string>
+    <string name="edit_saving">Loading playlist…</string>
+    <string name="field_name">Name</string>
+    <string name="field_m3u_url">M3U link</string>
+    <string name="field_server">Server address</string>
+    <string name="field_username">Username</string>
+    <string name="field_password">Password</string>
+    <string name="field_password_keep">Leave empty to keep the current password</string>
+    <string name="file_not_selected">No file selected</string>
+    <string name="file_selected">Selected: %1$s</string>
+
+    <!-- Greške -->
+    <string name="error_title">Error</string>
+    <string name="error_missing_fields">Please fill in all fields.</string>
+    <string name="error_invalid_url">The address is not valid. Check the link and try again.</string>
+    <string name="error_no_network">Could not connect. Check your internet connection and the address.</string>
+    <string name="error_host_not_found">The server address could not be found. Check the link for typos and your internet connection.</string>
+    <string name="error_ssl">A secure connection to the server could not be established. If the link starts with https, try http.</string>
+    <string name="error_timeout">The server took too long to respond. Try again later.</string>
+    <string name="error_http">The server returned an error (%1$d). Check the link.</string>
+    <string name="error_empty_playlist">No channels found. The link or file is not a valid M3U playlist.</string>
+    <string name="error_file_unreadable">The file could not be opened. Choose the file again.</string>
+    <string name="error_auth_failed">Sign-in failed. Check the server address, username and password.</string>
+    <string name="error_account_expired">This account has expired. Contact your provider.</string>
+    <string name="error_account_disabled">This account is disabled. Contact your provider.</string>
+    <string name="error_bad_response">The server sent a response the app does not understand.</string>
+    <string name="error_credentials_unreadable">The saved password can no longer be read. Edit the playlist and enter the password again.</string>
+    <string name="error_unknown">Something went wrong. Try again.</string>
 </resources>

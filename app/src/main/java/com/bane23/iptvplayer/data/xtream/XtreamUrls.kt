@@ -1,0 +1,65 @@
+package com.bane23.iptvplayer.data.xtream
+
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+
+/** Sastavljanje adresa za Xtream Codes API. */
+object XtreamUrls {
+
+    /**
+     * Sređuje adresu servera koju je korisnik uneo: dodaje `http://` ako nema šemu i
+     * odbacuje putanju (`/player_api.php`, `/get.php`...). Vraća null ako adresa nije ispravna.
+     */
+    fun normalizeServer(input: String): HttpUrl? {
+        val trimmed = input.trim()
+        if (trimmed.isEmpty()) return null
+        val withScheme = if (trimmed.contains("://")) trimmed else "http://$trimmed"
+        val url = withScheme.toHttpUrlOrNull() ?: return null
+        return url.newBuilder().encodedPath("/").query(null).fragment(null).build()
+    }
+
+    /** Podaci za Xtream prijavu izvučeni iz M3U linka oblika `get.php?username=..&password=..`. */
+    data class Credentials(val server: HttpUrl, val username: String, val password: String)
+
+    /**
+     * Mnogi provajderi daju M3U link koji je u stvari Xtream nalog (`/get.php?username=..&password=..`).
+     * Takav link se prepoznaje ovde, da bi se lista dodala preko Xtream API-ja: on radi i kad je
+     * izvoz M3U fajla na serveru isključen, a donosi i podatke o nalogu i arhivi.
+     * Vraća null ako link nije tog oblika.
+     */
+    fun parseGetPhpLink(link: String): Credentials? {
+        val url = link.trim().toHttpUrlOrNull() ?: return null
+        if (!url.pathSegments.lastOrNull().equals("get.php", ignoreCase = true)) return null
+        val username = url.queryParameter("username")?.takeIf { it.isNotEmpty() } ?: return null
+        val password = url.queryParameter("password")?.takeIf { it.isNotEmpty() } ?: return null
+        val server = url.newBuilder().encodedPath("/").query(null).fragment(null).build()
+        return Credentials(server, username, password)
+    }
+
+    fun playerApi(server: HttpUrl, username: String, password: String, action: String? = null): String {
+        val builder = server.newBuilder()
+            .addPathSegment("player_api.php")
+            .addQueryParameter("username", username)
+            .addQueryParameter("password", password)
+        if (action != null) builder.addQueryParameter("action", action)
+        return builder.build().toString()
+    }
+
+    /** Link za gledanje kanala uživo. */
+    fun liveStream(
+        server: HttpUrl,
+        username: String,
+        password: String,
+        streamId: Long,
+        extension: String = "ts",
+    ): String = server.newBuilder()
+        .addPathSegment("live")
+        .addPathSegment(username)
+        .addPathSegment(password)
+        .addPathSegment("$streamId.$extension")
+        .build()
+        .toString()
+
+    const val ACTION_LIVE_CATEGORIES = "get_live_categories"
+    const val ACTION_LIVE_STREAMS = "get_live_streams"
+}
