@@ -274,13 +274,9 @@ fun TvLiveTvScreen(
                                 channel?.nowProgress(now)?.let { progress ->
                                     TvProgressBar(
                                         progress = progress,
-                                        trackColor = color.copy(alpha = 0.2f),
-                                        barColor = if (color == MaterialTheme.colorScheme.onSurface) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            color
-                                        },
-                                        modifier = Modifier.padding(top = 4.dp),
+                                        trackColor = color.copy(alpha = 0.15f),
+                                        barColor = color.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(top = 5.dp),
                                     )
                                 }
                             }
@@ -332,14 +328,13 @@ private const val FOCUS_RESTORE_STEP_MS = 60L
 /** Zlatna zvezdica za omiljene kanale. */
 private val FavoriteGold = Color(0xFFFFD166)
 
-/** Tanka traka koliko je emisija odmakla ([progress] od 0 do 1). */
+/** Diskretna traka koliko je emisija odmakla ([progress] od 0 do 1). */
 @Composable
 fun TvProgressBar(progress: Float, trackColor: Color, barColor: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(3.dp)
-            .clip(RoundedCornerShape(2.dp))
+            .height(2.dp)
             .background(trackColor),
     ) {
         Box(
@@ -406,8 +401,8 @@ private fun ChannelPreviewPane(viewModel: ChannelPreviewViewModel, now: Long, mo
             if (program.stopMs > program.startMs) {
                 TvProgressBar(
                     progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    barColor = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                    barColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }

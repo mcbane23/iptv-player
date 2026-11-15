@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -25,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,7 +101,7 @@ fun MobileChannelRow(
                     )
                 }
                 channel?.nowProgress(now)?.let { progress ->
-                    ProgramProgress(progress = progress, modifier = Modifier.padding(top = 4.dp))
+                    ProgramProgress(progress = progress, modifier = Modifier.padding(top = 5.dp))
                 }
             }
             if (onToggleFavorite != null && channel != null) {
@@ -154,21 +152,24 @@ fun FavoriteButton(favorite: Boolean, onClick: () -> Unit, modifier: Modifier = 
     }
 }
 
-/** Tanka traka koliko je emisija odmakla ([progress] od 0 do 1). */
+/**
+ * Diskretna traka koliko je emisija odmakla ([progress] od 0 do 1): tanka i u prigušenoj boji,
+ * da ne odvlači pažnju sa naziva kanala.
+ */
 @Composable
 fun ProgramProgress(progress: Float, modifier: Modifier = Modifier) {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(2.dp)
-            .clip(RoundedCornerShape(1.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .height(1.dp)
+            .background(color.copy(alpha = 0.15f)),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(progress)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.primary),
+                .background(color.copy(alpha = 0.55f)),
         )
     }
 }
