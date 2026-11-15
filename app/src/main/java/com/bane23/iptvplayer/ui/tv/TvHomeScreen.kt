@@ -108,6 +108,7 @@ fun TvHomeScreen(
                     TvTab.LIVE -> TvLiveTvScreen(
                         onPlay = onPlay,
                         onManagePlaylists = { tab = TvTab.PLAYLISTS },
+                        onSearch = onSearch,
                         viewModel = liveTvViewModel,
                     )
 

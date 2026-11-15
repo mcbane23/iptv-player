@@ -39,6 +39,7 @@ fun TvSettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
+    val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
     val firstFocus = remember { FocusRequester() }
@@ -87,6 +88,15 @@ fun TvSettingsScreen(
                         openChoice = null
                     },
                     modifier = Modifier.focusRequester(firstFocus),
+                )
+                TvTextRow(
+                    text = stringResource(R.string.settings_tv_preview),
+                    trailing = stringResource(if (channelPreview) R.string.setting_on else R.string.setting_off),
+                    onClick = { viewModel.setTvChannelPreview(!channelPreview) },
+                    onFocused = {
+                        focusedChoice = null
+                        openChoice = null
+                    },
                 )
                 Text(
                     text = stringResource(R.string.settings_player_header),

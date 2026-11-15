@@ -62,9 +62,9 @@ private enum class MobileTab(val icon: ImageVector, val label: Int) {
 @Composable
 fun MobileHomeScreen(
     liveTvViewModel: LiveTvViewModel,
-    onOpenCategory: (playlistId: Long, categoryId: Long?, title: String) -> Unit,
+    onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onSearch: () -> Unit,
-    onGuide: (playlistId: Long) -> Unit,
+    onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
     onPlaylists: () -> Unit,
     onCategories: () -> Unit,
@@ -97,7 +97,7 @@ fun MobileHomeScreen(
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
                     MobileTab.LIVE -> MobileLiveTvScreen(
-                        onOpenCategory = onOpenCategory,
+                        onPlay = onPlay,
                         onManagePlaylists = onPlaylists,
                         onSearch = onSearch,
                         onGuide = onGuide,

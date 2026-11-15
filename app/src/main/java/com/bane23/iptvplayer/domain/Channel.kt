@@ -30,7 +30,18 @@ data class Channel(
     val favorite: Boolean = false,
     /** Naslov emisije koja je trenutno na programu, ako vodič postoji. */
     val nowTitle: String? = null,
-)
+    /** Početak i kraj te emisije (ms), za traku koliko je odmakla. */
+    val nowStartMs: Long? = null,
+    val nowStopMs: Long? = null,
+) {
+    /** Koliki deo tekuće emisije je prošao u trenutku [nowMs] (0 do 1), ili null bez vodiča. */
+    fun nowProgress(nowMs: Long): Float? {
+        val start = nowStartMs ?: return null
+        val stop = nowStopMs ?: return null
+        if (stop <= start) return null
+        return ((nowMs - start).toFloat() / (stop - start)).coerceIn(0f, 1f)
+    }
+}
 
 /** Emisija iz TV vodiča. */
 data class Program(

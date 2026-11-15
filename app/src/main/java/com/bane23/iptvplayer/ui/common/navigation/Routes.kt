@@ -9,10 +9,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object LiveTv : NavKey
 
-/** Kanali jedne kategorije; [categoryId] null znači svi kanali liste. Koristi se na telefonu. */
-@Serializable
-data class Channels(val playlistId: Long, val categoryId: Long?, val title: String) : NavKey
-
 /** Plejer. [categoryId] određuje kroz koje kanale se lista (null = svi kanali liste). */
 @Serializable
 data class Player(val channelId: Long, val categoryId: Long?) : NavKey

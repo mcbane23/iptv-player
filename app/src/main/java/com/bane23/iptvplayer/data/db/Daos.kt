@@ -12,10 +12,16 @@ import kotlinx.coroutines.flow.Flow
 private const val FAVORITE_COLUMN =
     "EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) AS favorite"
 
-/** Naslov emisije koja je u trenutku `:now` na programu kanala. */
+/** Emisija koja je u trenutku `:now` na programu kanala (uslov za podupit). */
+private const val NOW_PROGRAM =
+    "FROM epg_programs e WHERE e.playlistId = ch.playlistId AND e.channelKey = ch.epgKey " +
+        "AND e.startMs <= :now AND e.stopMs > :now ORDER BY e.startMs DESC LIMIT 1"
+
+/** Naslov, početak i kraj emisije koja je u trenutku `:now` na programu kanala. */
 private const val NOW_COLUMN =
-    "(SELECT e.title FROM epg_programs e WHERE e.playlistId = ch.playlistId AND e.channelKey = ch.epgKey " +
-        "AND e.startMs <= :now AND e.stopMs > :now ORDER BY e.startMs DESC LIMIT 1) AS nowTitle"
+    "(SELECT e.title $NOW_PROGRAM) AS nowTitle, " +
+        "(SELECT e.startMs $NOW_PROGRAM) AS nowStartMs, " +
+        "(SELECT e.stopMs $NOW_PROGRAM) AS nowStopMs"
 
 /** Kanali koji su u favoritima. Isti strim u više kategorija se računa jednom. */
 private const val FAVORITE_CHANNELS =

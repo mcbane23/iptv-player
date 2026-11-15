@@ -36,21 +36,45 @@ import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.tv.material3.Icon
+import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.guide.nextLine
+import com.bane23.iptvplayer.ui.common.guide.timeRange
+import com.bane23.iptvplayer.ui.common.player.AspectMode
+import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import com.bane23.iptvplayer.ui.common.player.statusMessage
+import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
 private const val ALL_CHANNELS = 0L
 
 /**
- * Početni ekran na TV-u: kategorije levo, kanali izabrane kategorije desno.
+ * Uživo na TV-u, u tri kolone: kategorije (sa pretragom na vrhu), kanali izabrane kategorije
+ * i pregled kanala na kome je fokus (slika bez zvuka i šta je na programu).
  * Kategorija se bira samim prelaskom fokusa na nju; desno se ide u kanale, OK pušta kanal.
  */
 @Composable
 fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
+    onSearch: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
+    previewViewModel: ChannelPreviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var selectedCategory by rememberSaveable { mutableStateOf(ALL_CHANNELS) }
@@ -60,6 +84,12 @@ fun TvLiveTvScreen(
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
     val playlistId = state.playlistId
+    val now by rememberNow()
+
+    // Pregled ne sme da drži vezu kad se izađe sa ekrana ili aplikacija ode u pozadinu.
+    DisposableEffect(Unit) { onDispose { previewViewModel.stop() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { previewViewModel.stop() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { lastChannelId?.let(previewViewModel::focus) }
 
     // Kratka pauza pre učitavanja kanala, da brzo listanje kroz kategorije ne pokreće upit za svaku.
     LaunchedEffect(focusedCategory) {
@@ -86,7 +116,7 @@ fun TvLiveTvScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.live_tv_title),
+                text = stringResource(R.string.nav_live),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(end = 24.dp),
@@ -113,10 +143,23 @@ fun TvLiveTvScreen(
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 LazyColumn(
                     modifier = Modifier
-                        .weight(0.38f)
+                        .weight(0.26f)
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    item(key = "search") {
+                        TvListRow(onClick = onSearch, modifier = Modifier.padding(bottom = 8.dp)) { color ->
+                            Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                            Text(
+                                text = stringResource(R.string.search_channels),
+                                color = color,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
                     item(key = ChannelGroups.FAVORITES) {
                         TvTextRow(
                             text = stringResource(R.string.category_favorites),
@@ -164,7 +207,7 @@ fun TvLiveTvScreen(
                 val channels = channelsViewModel.channels.collectAsLazyPagingItems()
                 Column(
                     modifier = Modifier
-                        .weight(0.62f)
+                        .weight(0.42f)
                         .fillMaxHeight(),
                 ) {
                 Text(
@@ -182,13 +225,30 @@ fun TvLiveTvScreen(
                         TvListRow(
                             onClick = {
                                 channel?.let {
+                                    // Veza pregleda se zatvara pre pravog plejera (provajderi sa jednom vezom).
+                                    previewViewModel.stop()
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
                             onLongClick = { channel?.let { channelsViewModel.toggleFavorite(it.id) } },
-                            onFocused = { channel?.let { lastChannelId = it.id } },
+                            onFocused = {
+                                channel?.let {
+                                    lastChannelId = it.id
+                                    previewViewModel.focus(it.id)
+                                }
+                            },
                             modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
                         ) { color ->
+                            Text(
+                                text = channel?.number?.toString().orEmpty(),
+                                color = color.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.End,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .width(36.dp)
+                                    .padding(end = 10.dp),
+                            )
                             ChannelLogo(url = channel?.logo, size = 36.dp)
                             Column(
                                 modifier = Modifier
@@ -211,14 +271,40 @@ fun TvLiveTvScreen(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                                channel?.nowProgress(now)?.let { progress ->
+                                    TvProgressBar(
+                                        progress = progress,
+                                        trackColor = color.copy(alpha = 0.2f),
+                                        barColor = if (color == MaterialTheme.colorScheme.onSurface) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            color
+                                        },
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                }
                             }
                             if (channel?.favorite == true) {
-                                Text(text = "★", color = color, modifier = Modifier.padding(start = 12.dp))
+                                Icon(
+                                    AppIcons.Star,
+                                    contentDescription = null,
+                                    tint = if (color == MaterialTheme.colorScheme.onSurface) FavoriteGold else color,
+                                    modifier = Modifier
+                                        .padding(start = 12.dp)
+                                        .size(18.dp),
+                                )
                             }
                         }
                     }
                 }
                 }
+                ChannelPreviewPane(
+                    viewModel = previewViewModel,
+                    now = now,
+                    modifier = Modifier
+                        .weight(0.32f)
+                        .fillMaxHeight(),
+                )
                 // Posle povratka iz plejera fokus ide na kanal koji je gledan, inače na izabranu kategoriju.
                 LaunchedEffect(Unit) {
                     if (lastChannelId != null) {
@@ -242,3 +328,109 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
 private const val CATEGORY_FOCUS_DELAY_MS = 250L
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
+
+/** Zlatna zvezdica za omiljene kanale. */
+private val FavoriteGold = Color(0xFFFFD166)
+
+/** Tanka traka koliko je emisija odmakla ([progress] od 0 do 1). */
+@Composable
+fun TvProgressBar(progress: Float, trackColor: Color, barColor: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(trackColor),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress)
+                .fillMaxHeight()
+                .background(barColor),
+        )
+    }
+}
+
+/**
+ * Desna kolona: slika kanala na kome je fokus (bez zvuka) i šta je na njemu sada i sledeće.
+ * Ako je pregled isključen u podešavanjima, umesto slike stoji samo prazna površina.
+ */
+@Composable
+private fun ChannelPreviewPane(viewModel: ChannelPreviewViewModel, now: Long, modifier: Modifier = Modifier) {
+    val player by viewModel.player.collectAsStateWithLifecycle()
+    val playback by viewModel.playback.collectAsStateWithLifecycle()
+    val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
+            val current = player
+            if (current != null) {
+                VideoSurface(player = current, aspectMode = AspectMode.FIT, modifier = Modifier.fillMaxSize())
+            }
+            val status = statusMessage(sourceMissing = false, playback = playback)
+            if (current != null && status != null) {
+                Text(
+                    text = status.lineSequence().first(),
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
+        }
+        val program = nowNext.now
+        if (program != null) {
+            Text(
+                text = program.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+            Text(
+                text = program.timeRange(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (program.stopMs > program.startMs) {
+                TvProgressBar(
+                    progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    barColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+            program.description?.takeIf { it.isNotBlank() }?.let { description ->
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+        }
+        nowNext.nextLine()?.let { line ->
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+    }
+}

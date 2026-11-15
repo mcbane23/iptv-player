@@ -201,6 +201,8 @@ data class ChannelWithFavorite(
     @ColumnInfo(name = "favorite") val favorite: Boolean,
     /** Naslov emisije koja je trenutno na programu, ako vodič postoji. */
     @ColumnInfo(name = "nowTitle") val nowTitle: String? = null,
+    @ColumnInfo(name = "nowStartMs") val nowStartMs: Long? = null,
+    @ColumnInfo(name = "nowStopMs") val nowStopMs: Long? = null,
 )
 
 data class PlaylistWithCount(
