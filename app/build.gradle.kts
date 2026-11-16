@@ -17,8 +17,19 @@ android {
         // U CI-ju broj builda, da bi svaki novi APK bio „noviji” i ažuriranje u aplikaciji ga prepoznalo.
         // Lokalni build ostaje 1, pa ga CI build uvek može zameniti.
         val ciBuild = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull()
-        versionCode = ciBuild ?: 1
-        versionName = if (ciBuild != null) "0.0.1-dev.$ciBuild" else "0.0.1-local"
+        // Zvanično izdanje: release.yml postavlja RELEASE_VERSION iz oznake (v1.2.3 daje „1.2.3”).
+        // Broj verzije se računa iz oznake (1.2.3 daje 1002003), pa ne zavisi od broja CI run-a
+        // i uvek je veći od dev buildova.
+        val release = providers.environmentVariable("RELEASE_VERSION").orNull?.trim()
+            ?.let { Regex("""(\d{1,3})\.(\d{1,3})\.(\d{1,3})""").matchEntire(it) }
+        if (release != null) {
+            val (major, minor, patch) = release.destructured
+            versionCode = major.toInt() * 1_000_000 + minor.toInt() * 1_000 + patch.toInt()
+            versionName = release.value
+        } else {
+            versionCode = ciBuild ?: 1
+            versionName = if (ciBuild != null) "0.0.1-dev.$ciBuild" else "0.0.1-local"
+        }
 
         // Ključevi Trakt aplikacije stižu iz GitHub Secrets (CI) i nikad nisu u repou.
         // Kad ih nema (lokalni build, testovi), Trakt se u aplikaciji ne prikazuje.
@@ -36,14 +47,30 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // Ključ za zvanična izdanja postoji samo u GitHub Secrets (release.yml ga privremeno upiše u fajl).
+        // Bez njega release build ostaje nepotpisan, što je dovoljno za proveru R8 u CI-ju.
+        val releaseStore = providers.environmentVariable("RELEASE_KEYSTORE_FILE").orNull?.takeIf { it.isNotBlank() }
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = file(releaseStore)
+                storePassword = providers.environmentVariable("RELEASE_KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("RELEASE_KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("RELEASE_KEY_PASSWORD").orNull
+            }
+        }
     }
 
     buildTypes {
         debug {
             signingConfig = signingConfigs.getByName("debug")
+            // Kanal ažuriranja: oznaka izdanja u javnom repou (vidi data/update/UpdateSource.kt).
+            buildConfigField("String", "UPDATE_CHANNEL", "\"iptv-player-dev\"")
         }
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+            buildConfigField("String", "UPDATE_CHANNEL", "\"iptv-player\"")
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
