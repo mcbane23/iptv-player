@@ -330,7 +330,7 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Premotavanje strima**
 
-- [ ] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
+- [x] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
 - [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
       sa pregledom vremena na traci, da se lako stigne do željenog mesta
 

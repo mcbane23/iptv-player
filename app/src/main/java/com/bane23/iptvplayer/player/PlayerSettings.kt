@@ -20,4 +20,13 @@ data class PlayerSettings(
     val audioLanguage: String = "",
     /** Jezik titlova koji se sam uključuje; prazno = titlovi su isključeni dok ih korisnik ne uključi. */
     val subtitleLanguage: String = "",
-)
+    /** Za koliko sekundi dugmad napred i nazad premotaju film ili epizodu. */
+    val seekStepSeconds: Int = DEFAULT_SEEK_STEP_SECONDS,
+) {
+    companion object {
+        const val DEFAULT_SEEK_STEP_SECONDS = 10
+
+        /** Vrednosti koje se nude u podešavanjima. */
+        val SEEK_STEP_OPTIONS = listOf(5, 10, 15, 30, 60)
+    }
+}

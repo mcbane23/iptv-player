@@ -62,6 +62,13 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             selected = DecoderMode.entries.indexOf(settings.decoder),
             onSelect = { viewModel.setDecoder(DecoderMode.entries[it]) },
         ),
+        SettingChoice(
+            title = stringResource(R.string.settings_seek_step),
+            summary = stringResource(R.string.settings_seek_step_summary),
+            options = PlayerSettings.SEEK_STEP_OPTIONS.map { stringResource(R.string.seek_step_seconds, it) },
+            selected = PlayerSettings.SEEK_STEP_OPTIONS.indexOf(settings.seekStepSeconds).coerceAtLeast(0),
+            onSelect = { viewModel.setSeekStep(PlayerSettings.SEEK_STEP_OPTIONS[it]) },
+        ),
         languageChoice(
             title = stringResource(R.string.settings_audio_language),
             summary = stringResource(R.string.settings_audio_language_summary),

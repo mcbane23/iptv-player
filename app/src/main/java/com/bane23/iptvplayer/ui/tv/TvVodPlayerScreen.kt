@@ -135,12 +135,12 @@ fun TvVodPlayerScreen(
                     }
 
                     AndroidKeyEvent.KEYCODE_MEDIA_REWIND -> {
-                        if (isDown) viewModel.seekBy(-seekStepFor(event.nativeKeyEvent.repeatCount + 6))
+                        if (isDown) viewModel.seekBy(-seekStepFor(event.nativeKeyEvent.repeatCount + 6, viewModel.seekStepMs))
                         return@onKeyEvent true
                     }
 
                     AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                        if (isDown) viewModel.seekBy(seekStepFor(event.nativeKeyEvent.repeatCount + 6))
+                        if (isDown) viewModel.seekBy(seekStepFor(event.nativeKeyEvent.repeatCount + 6, viewModel.seekStepMs))
                         return@onKeyEvent true
                     }
 
@@ -155,7 +155,7 @@ fun TvVodPlayerScreen(
                     AndroidKeyEvent.KEYCODE_DPAD_LEFT, AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
                         if (isDown) {
                             val direction = if (event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
-                            viewModel.seekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount))
+                            viewModel.seekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount, viewModel.seekStepMs))
                             show(VodFocus.SEEK)
                         }
                         true
@@ -231,8 +231,8 @@ fun TvVodPlayerScreen(
                         leading = {
                             PlayerIconButton(
                                 icon = AppIcons.FastRewind,
-                                description = stringResource(R.string.vod_seek_back),
-                                onClick = { viewModel.seekBy(-SEEK_STEP_MS) },
+                                description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
+                                onClick = { viewModel.seekBy(-viewModel.seekStepMs) },
                             )
                             PlayerIconButton(
                                 icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
@@ -254,8 +254,8 @@ fun TvVodPlayerScreen(
                             PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                             PlayerIconButton(
                                 icon = AppIcons.FastForward,
-                                description = stringResource(R.string.vod_seek_forward),
-                                onClick = { viewModel.seekBy(SEEK_STEP_MS) },
+                                description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
+                                onClick = { viewModel.seekBy(viewModel.seekStepMs) },
                             )
                             if (ui.hasNext) {
                                 PlayerIconButton(
@@ -315,7 +315,6 @@ fun TvVodPlayerScreen(
     }
 }
 
-private const val SEEK_STEP_MS = 10_000L
 private const val CONTROLS_TIMEOUT_MS = 5_000L
 private const val FOCUS_ATTEMPTS = 10
 private const val FOCUS_STEP_MS = 50L

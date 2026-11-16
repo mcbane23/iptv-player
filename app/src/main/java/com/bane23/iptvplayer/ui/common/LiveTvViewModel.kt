@@ -182,6 +182,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setPlayerBuffer(buffer) }
     }
 
+    fun setSeekStep(seconds: Int) {
+        viewModelScope.launch { settings.setSeekStep(seconds) }
+    }
+
     fun setDecoder(decoder: DecoderMode) {
         viewModelScope.launch { settings.setPlayerDecoder(decoder) }
     }
