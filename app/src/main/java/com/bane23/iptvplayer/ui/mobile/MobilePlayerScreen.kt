@@ -10,7 +10,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +85,7 @@ import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES }
 
@@ -433,29 +437,54 @@ private class PlayerGestures(private val activity: Activity?, private val audio:
     }
 }
 
-/** Prevlačenje gore-dole: leva polovina ekrana menja osvetljenje, desna jačinu zvuka. */
+/**
+ * Prevlačenje gore-dole: leva polovina ekrana menja osvetljenje, desna jačinu zvuka. Računa se samo
+ * potez koji je krenuo uspravno; vodoravan potez (npr. sistemski gest Nazad) ne menja ništa, kao ni
+ * potez koji počne uz samu levu ili desnu ivicu ekrana.
+ */
 @Composable
 internal fun Modifier.volumeBrightnessDrag(onHint: (String) -> Unit): Modifier {
     val volumeText = stringResource(R.string.gesture_volume)
     val brightnessText = stringResource(R.string.gesture_brightness)
     val gestures = rememberPlayerGestures()
     return pointerInput(gestures) {
-        var leftSide = false
-        detectDragGestures(
-            onDragStart = { offset -> leftSide = offset.x < size.width / 2 },
-        ) { change, drag ->
-            change.consume()
-            val delta = -drag.y / size.height
-            onHint(
-                if (leftSide) {
-                    "$brightnessText ${gestures.changeBrightness(delta)}%"
-                } else {
-                    "$volumeText ${gestures.changeVolume(delta)}%"
-                },
-            )
+        val edge = GESTURE_EDGE.toPx()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            if (down.position.x < edge || down.position.x > size.width - edge) return@awaitEachGesture
+            val leftSide = down.position.x < size.width / 2
+            var moved = Offset.Zero
+            var vertical = false
+            while (true) {
+                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) break
+                val step = change.positionChange()
+                if (!vertical) {
+                    // Smer se odlučuje jednom, čim prst pređe prag; posle toga se više ne menja.
+                    moved += step
+                    if (moved.getDistance() < viewConfiguration.touchSlop) continue
+                    if (abs(moved.y) < abs(moved.x) * VERTICAL_RATIO) break
+                    vertical = true
+                }
+                change.consume()
+                val delta = -step.y / size.height
+                onHint(
+                    if (leftSide) {
+                        "$brightnessText ${gestures.changeBrightness(delta)}%"
+                    } else {
+                        "$volumeText ${gestures.changeVolume(delta)}%"
+                    },
+                )
+            }
         }
     }
 }
+
+/** Pojas uz levu i desnu ivicu u kome se potezi ne računaju, jer odatle kreće sistemski gest Nazad. */
+private val GESTURE_EDGE = 32.dp
+
+/** Koliko puta pomeraj gore-dole mora biti veći od pomeraja levo-desno da bi se potez računao kao uspravan. */
+private const val VERTICAL_RATIO = 1.5f
 
 /** Kratka poruka sa novom vrednošću zvuka ili osvetljenja. */
 @Composable
