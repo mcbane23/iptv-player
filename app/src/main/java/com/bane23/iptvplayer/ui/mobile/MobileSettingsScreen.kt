@@ -47,6 +47,7 @@ fun MobileSettingsScreen(
     onPlaylists: (() -> Unit)? = null,
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
+    onTrakt: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -64,7 +65,7 @@ fun MobileSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
-            if (onPlaylists != null || onCategories != null || onParental != null) {
+            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
                         SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
@@ -74,6 +75,9 @@ fun MobileSettingsScreen(
                     }
                     if (onParental != null) {
                         SettingsLinkRow(AppIcons.Lock, stringResource(R.string.parental_title), onParental)
+                    }
+                    if (onTrakt != null) {
+                        SettingsLinkRow(AppIcons.Check, stringResource(R.string.trakt_title), onTrakt)
                     }
                 }
             }

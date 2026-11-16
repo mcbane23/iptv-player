@@ -16,6 +16,7 @@ import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
+import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
@@ -71,6 +72,7 @@ fun TvApp() {
                     onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
+                    onTrakt = { backStack.add(TraktAccount) },
                     onMultiView = { backStack.add(MultiView) },
                 )
             }
@@ -165,6 +167,7 @@ fun TvApp() {
                 TvMultiViewScreen(onOpen = { channelId -> backStack.add(Player(channelId, null)) })
             }
             entry<ParentalControl> { TvParentalScreen() }
+            entry<TraktAccount> { TvTraktScreen() }
             entry<PairPlaylist> {
                 TvPairingScreen(onClose = { backStack.removeLastOrNull() })
             }

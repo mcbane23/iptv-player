@@ -37,7 +37,11 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
+      # Ključevi Trakt aplikacije (GitHub Secrets) ugrađuju se u APK. Bez njih Trakt se ne prikazuje.
       - name: Debug APK
+        env:
+          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
         run: ./gradlew assembleDebug
 
       # APK se objavljuje samo sa main-a (posle spajanja). Na granama build služi samo kao provera.

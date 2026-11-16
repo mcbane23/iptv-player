@@ -64,7 +64,7 @@ fun MobileVodScreen(
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
-    val watchedIds by viewModel.watchedIds.collectAsStateWithLifecycle()
+    val watched by viewModel.watched.collectAsStateWithLifecycle()
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val favoritesLabel = stringResource(R.string.category_favorites)
     val showingFavorites = state.selected?.id == FAVORITES_ID
@@ -134,7 +134,7 @@ fun MobileVodScreen(
                                 poster = item.poster,
                                 onClick = { onOpen(item) },
                                 favorite = true,
-                                watched = item.id in watchedIds,
+                                watched = watched.of(item),
                                 onToggleFavorite = { viewModel.toggleFavorite(item) },
                             )
                         }
@@ -157,7 +157,7 @@ fun MobileVodScreen(
                                 poster = item.poster,
                                 onClick = { onOpen(item) },
                                 favorite = item.id in favoriteIds,
-                                watched = item.id in watchedIds,
+                                watched = watched.of(item),
                                 onToggleFavorite = { viewModel.toggleFavorite(item) },
                             )
                         }

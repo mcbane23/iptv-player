@@ -47,6 +47,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -78,6 +79,7 @@ fun TvHomeScreen(
     onEditPlaylist: (Long) -> Unit,
     onCategories: () -> Unit,
     onParental: () -> Unit,
+    onTrakt: () -> Unit,
     onMultiView: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
@@ -141,6 +143,7 @@ fun TvHomeScreen(
                     TvTab.SETTINGS -> TvSettingsScreen(
                         onCategories = onCategories.takeIf { playlistId != null },
                         onParental = onParental.takeIf { playlistId != null },
+                        onTrakt = onTrakt.takeIf { isTraktConfigured },
                     )
                 }
             }

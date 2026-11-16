@@ -44,6 +44,7 @@ import com.bane23.iptvplayer.work.Autostart
 fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
+    onTrakt: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -103,6 +104,17 @@ fun TvSettingsScreen(
                         text = stringResource(R.string.parental_title),
                         trailing = "›",
                         onClick = onParental,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
+                if (onTrakt != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.trakt_title),
+                        trailing = "›",
+                        onClick = onTrakt,
                         onFocused = {
                             focusedChoice = null
                             openChoice = null

@@ -70,7 +70,7 @@ fun TvVodScreen(
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
-    val watchedIds by viewModel.watchedIds.collectAsStateWithLifecycle()
+    val watched by viewModel.watched.collectAsStateWithLifecycle()
     val favoritesLabel = stringResource(R.string.category_favorites)
     val firstFocus = remember { FocusRequester() }
     val posterFocus = remember { FocusRequester() }
@@ -204,7 +204,7 @@ fun TvVodScreen(
                                     poster = item.poster,
                                     // Odavde se ne uklanja dugim pritiskom: poster bi nestao zajedno sa fokusom.
                                     favorite = true,
-                                    watched = item.id in watchedIds,
+                                    watched = watched.of(item),
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
@@ -223,7 +223,7 @@ fun TvVodScreen(
                                     name = item.name,
                                     poster = item.poster,
                                     favorite = item.id in favoriteIds,
-                                    watched = item.id in watchedIds,
+                                    watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },

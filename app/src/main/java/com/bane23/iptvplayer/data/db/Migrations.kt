@@ -58,5 +58,21 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+    /** 8 → 9: Trakt (odgledano na nalogu i promene koje čekaju slanje). */
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `trakt_watched` (`kind` TEXT NOT NULL, `tmdbId` INTEGER NOT NULL, " +
+                    "`season` INTEGER NOT NULL, `episode` INTEGER NOT NULL, `watchedAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`kind`, `tmdbId`, `season`, `episode`))",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `trakt_pending` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`playlistId` INTEGER NOT NULL, `kind` TEXT NOT NULL, `itemId` INTEGER NOT NULL, " +
+                    "`seriesId` INTEGER NOT NULL, `watched` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
 }

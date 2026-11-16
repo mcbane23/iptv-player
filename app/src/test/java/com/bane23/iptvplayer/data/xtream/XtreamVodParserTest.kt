@@ -152,4 +152,23 @@ class XtreamVodParserTest {
             XtreamUrls.playerApi(server, "proba", "tajna", XtreamUrls.ACTION_VOD_INFO, "vod_id", "501"),
         )
     }
+
+    @Test
+    fun `tmdb ids are read from lists and details`() {
+        val movies = XtreamJson.decodeFromString(
+            ListSerializer(XtreamVodStream.serializer()),
+            """[{"stream_id":501,"tmdb":"12345"},{"stream_id":502,"tmdb_id":678},{"stream_id":503,"tmdb":"0"},
+               {"stream_id":504,"tmdb":"11","tmdb_id":"11"}]""",
+        )
+        assertEquals(12345L, XtreamVodParser.tmdbId(movies[0].tmdb))
+        assertEquals(678L, XtreamVodParser.tmdbId(movies[1].tmdbId))
+        assertNull(XtreamVodParser.tmdbId(movies[2].tmdb))
+        assertEquals(11L, XtreamVodParser.tmdbId(movies[3].tmdb))
+
+        val movie = XtreamVodParser.movie(json("""{"info":{"tmdb_id":"999"},"movie_data":{"stream_id":501}}"""))
+        assertEquals(999L, movie.tmdbId)
+        val series = XtreamVodParser.series(json("""{"info":{"name":"Izmisljena","tmdb":4321},"episodes":{}}"""))
+        assertEquals(4321L, series.tmdbId)
+        assertNull(XtreamVodParser.series(json("""{"info":{"name":"Bez"},"episodes":{}}""")).tmdbId)
+    }
 }

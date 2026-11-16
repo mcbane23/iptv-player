@@ -19,6 +19,12 @@ android {
         val ciBuild = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull()
         versionCode = ciBuild ?: 1
         versionName = if (ciBuild != null) "0.0.1-dev.$ciBuild" else "0.0.1-local"
+
+        // Ključevi Trakt aplikacije stižu iz GitHub Secrets (CI) i nikad nisu u repou.
+        // Kad ih nema (lokalni build, testovi), Trakt se u aplikaciji ne prikazuje.
+        fun quoted(name: String) = "\"" + (providers.environmentVariable(name).orNull ?: "").trim().replace("\"", "") + "\""
+        buildConfigField("String", "TRAKT_CLIENT_ID", quoted("TRAKT_CLIENT_ID"))
+        buildConfigField("String", "TRAKT_CLIENT_SECRET", quoted("TRAKT_CLIENT_SECRET"))
     }
 
     signingConfigs {
@@ -52,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

@@ -81,6 +81,10 @@ data object Search : NavKey
 @Serializable
 data object ManageCategories : NavKey
 
+/** Trakt nalog: prijava i sinhronizacija odgledanog. */
+@Serializable
+data object TraktAccount : NavKey
+
 /** Roditeljska zaštita: PIN i zaključane kategorije. */
 @Serializable
 data object ParentalControl : NavKey

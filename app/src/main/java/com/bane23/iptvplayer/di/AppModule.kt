@@ -2,10 +2,13 @@ package com.bane23.iptvplayer.di
 
 import android.content.Context
 import androidx.room.Room
+import com.bane23.iptvplayer.BuildConfig
 import com.bane23.iptvplayer.data.crypto.KeystorePasswordCipher
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.Migrations
+import com.bane23.iptvplayer.data.trakt.TraktApi
+import com.bane23.iptvplayer.data.trakt.TraktJson
 import com.bane23.iptvplayer.data.xtream.XtreamApi
 import com.bane23.iptvplayer.data.xtream.XtreamJson
 import dagger.Binds
@@ -52,6 +55,27 @@ object AppModule {
         .addConverterFactory(XtreamJson.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(XtreamApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideTraktApi(client: OkHttpClient): TraktApi = Retrofit.Builder()
+        .baseUrl("https://api.trakt.tv/")
+        .client(
+            client.newBuilder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder()
+                            .header("trakt-api-version", "2")
+                            .header("trakt-api-key", BuildConfig.TRAKT_CLIENT_ID)
+                            .header("User-Agent", "IPTVPlayer/${BuildConfig.VERSION_NAME}")
+                            .build(),
+                    )
+                }
+                .build(),
+        )
+        .addConverterFactory(TraktJson.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(TraktApi::class.java)
 }
 
 @Module

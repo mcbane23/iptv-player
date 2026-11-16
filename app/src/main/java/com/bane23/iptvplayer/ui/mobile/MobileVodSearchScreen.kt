@@ -44,7 +44,7 @@ fun MobileVodSearchScreen(
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
-    val watchedIds by viewModel.watchedIds.collectAsStateWithLifecycle()
+    val watched by viewModel.watched.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
 
     Scaffold { padding ->
@@ -91,7 +91,7 @@ fun MobileVodSearchScreen(
                             poster = item.poster,
                             onClick = { onOpen(item) },
                             favorite = item.id in favoriteIds,
-                            watched = item.id in watchedIds,
+                            watched = watched.of(item),
                             onToggleFavorite = { viewModel.toggleFavorite(item) },
                         )
                     }

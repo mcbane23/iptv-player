@@ -11,6 +11,9 @@ import kotlinx.serialization.json.JsonPrimitive
 @Serializable
 data class XtreamVodStream(
     val name: FlexString = null,
+    /** ID filma na TMDB-u, ako ga panel šalje; služi za poklapanje sa Trakt-om. */
+    val tmdb: FlexString = null,
+    @SerialName("tmdb_id") val tmdbId: FlexString = null,
     @SerialName("stream_id") val streamId: FlexString = null,
     @SerialName("stream_icon") val icon: FlexString = null,
     val rating: FlexString = null,
@@ -20,6 +23,9 @@ data class XtreamVodStream(
 @Serializable
 data class XtreamSeries(
     val name: FlexString = null,
+    /** ID serije na TMDB-u, ako ga panel šalje. */
+    val tmdb: FlexString = null,
+    @SerialName("tmdb_id") val tmdbId: FlexString = null,
     @SerialName("series_id") val seriesId: FlexString = null,
     val cover: FlexString = null,
     val rating: FlexString = null,
@@ -38,6 +44,8 @@ data class MovieDetails(
     val durationSeconds: Long?,
     /** Nastavak fajla (mp4, mkv...), potreban za link strima. */
     val extension: String?,
+    /** ID na TMDB-u, ako ga panel šalje. */
+    val tmdbId: Long? = null,
 )
 
 data class Episode(
@@ -62,6 +70,8 @@ data class SeriesDetails(
     val releaseDate: String?,
     val rating: String?,
     val seasons: List<Season>,
+    /** ID serije na TMDB-u, ako ga panel šalje. */
+    val tmdbId: Long? = null,
 ) {
     /** Sve epizode redom: po sezoni, pa po broju epizode. */
     val episodes: List<Episode> get() = seasons.flatMap { it.episodes }
@@ -96,6 +106,8 @@ object XtreamVodParser {
             rating = info.text("rating"),
             durationSeconds = info.text("duration_secs")?.toLongOrNull()?.takeIf { it > 0 },
             extension = data.text("container_extension"),
+            tmdbId = listOf(info.text("tmdb_id"), info.text("tmdb"), data.text("tmdb_id"), data.text("tmdb"))
+                .firstNotNullOfOrNull(::tmdbId),
         )
     }
 
@@ -122,6 +134,7 @@ object XtreamVodParser {
             releaseDate = info.text("releaseDate") ?: info.text("releasedate") ?: info.text("release_date"),
             rating = info.text("rating"),
             seasons = seasons,
+            tmdbId = tmdbId(info.text("tmdb")) ?: tmdbId(info.text("tmdb_id")),
         )
     }
 
@@ -153,6 +166,9 @@ object XtreamVodParser {
         if (value == null || value is JsonNull || value !is JsonPrimitive) return null
         return value.content.trim().takeIf { it.isNotEmpty() }
     }
+
+    /** TMDB ID kao broj; paneli umesto praznog šalju i "0". */
+    fun tmdbId(text: String?): Long? = text?.trim()?.toLongOrNull()?.takeIf { it > 0 }
 
     const val DEFAULT_EXTENSION = "mp4"
 }
