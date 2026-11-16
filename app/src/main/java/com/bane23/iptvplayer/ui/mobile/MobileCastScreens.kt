@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +19,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -34,28 +36,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.cast.CastKind
 import com.bane23.iptvplayer.cast.CastMedia
+import com.bane23.iptvplayer.data.cast.CastPairing
 import com.bane23.iptvplayer.ui.common.cast.CastPickerViewModel
 import com.bane23.iptvplayer.ui.common.cast.CastRemoteViewModel
+import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkAccess
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import kotlinx.coroutines.launch
 
 /**
- * Dugme za cast u plejeru. Vraća akciju koja otvara izbor uređaja, ili null kad Google Cast nije
- * dostupan na telefonu (tada se dugme ne prikazuje). [media] daje ono što se trenutno gleda, a
- * [onStarted] se poziva kad puštanje na TV-u krene.
+ * Dugme za cast u plejeru. Vraća akciju koja otvara izbor uređaja. [media] daje ono što se trenutno
+ * gleda, a [onStarted] se poziva kad puštanje na TV-u krene.
  */
 @Composable
 fun rememberCastLauncher(media: suspend () -> CastMedia?, onStarted: () -> Unit): (() -> Unit)? {
     val picker: CastPickerViewModel = hiltViewModel()
-    val state by picker.state.collectAsStateWithLifecycle()
     var open by remember { mutableStateOf(false) }
     if (open) {
         MobileCastDialog(
@@ -68,10 +72,13 @@ fun rememberCastLauncher(media: suspend () -> CastMedia?, onStarted: () -> Unit)
             viewModel = picker,
         )
     }
-    return if (state.available) ({ open = true }) else null
+    return { open = true }
 }
 
-/** Izbor uređaja: spisak Chromecast uređaja u mreži. Ako je veza već uspostavljena, odmah pušta. */
+/**
+ * Izbor uređaja: prvo Chromecast uređaji, pa televizori na kojima je otvorena ova aplikacija.
+ * Ako je veza već uspostavljena, odmah pušta.
+ */
 @Composable
 private fun MobileCastDialog(
     media: suspend () -> CastMedia?,
@@ -80,12 +87,15 @@ private fun MobileCastDialog(
     viewModel: CastPickerViewModel,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val chromecast by viewModel.chromecast.collectAsStateWithLifecycle()
+    val tvApp by viewModel.tvApp.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var requested by remember { mutableStateOf(false) }
     var noSource by remember { mutableStateOf(false) }
+    val localNetwork = rememberLocalNetworkAccess()
 
-    DisposableEffect(Unit) {
-        viewModel.startDiscovery()
+    DisposableEffect(localNetwork) {
+        if (localNetwork) viewModel.startDiscovery()
         onDispose { viewModel.stopDiscovery() }
     }
     LaunchedEffect(Unit) {
@@ -103,13 +113,36 @@ private fun MobileCastDialog(
         if (requested && state.deviceName != null) onStarted()
     }
 
+    /** Uzima ono što se gleda i predaje ga izabranom načinu slanja. */
+    fun send(connect: (CastMedia) -> Unit) {
+        scope.launch {
+            val current = media()
+            if (current == null) {
+                noSource = true
+            } else {
+                requested = true
+                connect(current)
+            }
+        }
+    }
+
+    val pairingWith = tvApp.pairingWith
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.cast_pick_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 when {
                     noSource -> Text(stringResource(R.string.cast_no_source), color = MaterialTheme.colorScheme.error)
+
+                    pairingWith != null -> PairingCodeEntry(
+                        deviceName = pairingWith.name,
+                        wrong = tvApp.codeWrong,
+                        onConfirm = viewModel::confirmCode,
+                    )
 
                     state.connecting -> Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -120,39 +153,20 @@ private fun MobileCastDialog(
                         if (state.connectFailed) {
                             Text(stringResource(R.string.cast_connect_failed), color = MaterialTheme.colorScheme.error)
                         }
-                        if (state.routes.isEmpty()) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                Text(stringResource(R.string.cast_searching), modifier = Modifier.padding(start = 12.dp))
+                        if (!localNetwork) {
+                            Text(stringResource(R.string.cast_permission_needed), color = MaterialTheme.colorScheme.error)
+                        }
+                        if (chromecast.available) {
+                            SectionLabel(stringResource(R.string.cast_section_chromecast))
+                            if (chromecast.routes.isEmpty()) Searching()
+                            chromecast.routes.forEach { route ->
+                                DeviceRow(route.name) { send { viewModel.connectChromecast(route.id, it) } }
                             }
                         }
-                        state.routes.forEach { route ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        scope.launch {
-                                            val current = media()
-                                            if (current == null) {
-                                                noSource = true
-                                            } else {
-                                                requested = true
-                                                viewModel.connect(route.id, current)
-                                            }
-                                        }
-                                    }
-                                    .padding(vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(imageVector = AppIcons.Cast, contentDescription = null)
-                                Text(
-                                    text = route.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(start = 16.dp),
-                                )
-                            }
+                        SectionLabel(stringResource(R.string.cast_section_tv_app))
+                        if (tvApp.devices.isEmpty()) Searching()
+                        tvApp.devices.forEach { device ->
+                            DeviceRow(device.name) { send { viewModel.connectTvApp(device, it) } }
                         }
                         Text(
                             text = stringResource(R.string.cast_search_hint),
@@ -168,10 +182,84 @@ private fun MobileCastDialog(
     )
 }
 
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+@Composable
+private fun Searching() {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        Text(
+            text = stringResource(R.string.cast_searching),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun DeviceRow(name: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(imageVector = AppIcons.Cast, contentDescription = null)
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 16.dp),
+        )
+    }
+}
+
+/** Prvo povezivanje sa našom aplikacijom na TV-u: prepisuje se kod sa ekrana TV-a. */
+@Composable
+private fun PairingCodeEntry(deviceName: String, wrong: Boolean, onConfirm: (String) -> Unit) {
+    var code by remember { mutableStateOf("") }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = deviceName, style = MaterialTheme.typography.titleMedium)
+        Text(text = stringResource(R.string.cast_enter_code), style = MaterialTheme.typography.bodyMedium)
+        OutlinedTextField(
+            value = code,
+            onValueChange = { value ->
+                val digits = value.filter { it.isDigit() }.take(CastPairing.CODE_LENGTH)
+                code = digits
+                if (digits.length == CastPairing.CODE_LENGTH) {
+                    onConfirm(digits)
+                    code = ""
+                }
+            },
+            singleLine = true,
+            isError = wrong,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        if (wrong) {
+            Text(
+                text = stringResource(R.string.cast_code_wrong),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
 /** Daljinski dok se sadržaj pušta na TV-u. Nazad zaustavlja puštanje i prekida vezu. */
 @Composable
 fun MobileCastRemoteScreen(onClose: () -> Unit, viewModel: CastRemoteViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val kind by viewModel.kind.collectAsStateWithLifecycle()
     val media = state.media
     val stop = {
         viewModel.stop()
@@ -213,7 +301,9 @@ fun MobileCastRemoteScreen(onClose: () -> Unit, viewModel: CastRemoteViewModel =
                 )
                 Text(
                     text = when {
-                        state.failed -> stringResource(R.string.cast_failed)
+                        state.failed -> stringResource(
+                            if (kind == CastKind.CHROMECAST) R.string.cast_failed else R.string.cast_failed_tv_app,
+                        )
                         state.buffering -> stringResource(R.string.cast_loading)
                         else -> stringResource(R.string.cast_playing_on, state.deviceName.orEmpty())
                     },

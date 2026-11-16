@@ -359,7 +359,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
       podrazumevani prijemnik, bez registracije. Izbor uređaja i daljinski su sopstveni ekrani.
       Ograničenja: traži Google Play servise na telefonu; Chromecast ne pušta sirov MPEG-TS (za kanale
       se šalje HLS adresa) ni sve formate filmova, a strim mora biti dostupan samom uređaju
-- [ ] Ako Chromecast ne pusti strimove provajdera: slanje na ovu aplikaciju na TV-u kroz lokalnu mrežu
+- [x] Drugi izbor u istom spisku: slanje na ovu aplikaciju na TV-u kroz kućnu mrežu (TV se oglašava
+      preko mDNS-a dok je aplikacija otvorena, prvo povezivanje kodom sa ekrana TV-a, TV pušta strim
+      svojim plejerom pa rade svi formati). Chromecast uređaji su prvi u spisku
 
 **Izlaz iz aplikacije**
 

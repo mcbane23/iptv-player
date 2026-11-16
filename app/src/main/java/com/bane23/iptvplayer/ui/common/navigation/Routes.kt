@@ -96,3 +96,7 @@ data object MultiView : NavKey
 /** Daljinski na telefonu dok se sadržaj pušta na TV-u preko Chromecast-a. */
 @Serializable
 data object CastRemote : NavKey
+
+/** Plejer na TV-u za sadržaj poslat sa telefona kroz kućnu mrežu. */
+@Serializable
+data object CastPlayback : NavKey

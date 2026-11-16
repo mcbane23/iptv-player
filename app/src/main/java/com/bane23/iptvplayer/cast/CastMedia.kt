@@ -21,6 +21,9 @@ data class CastMedia(
     val channelId: Long? = null,
     val categoryId: Long? = null,
     val vod: CastVodItem? = null,
+    /** Zaglavlja koja provajder traži; koristi ih samo slanje na našu aplikaciju na TV-u. */
+    val userAgent: String? = null,
+    val referrer: String? = null,
 )
 
 /** Izbor adrese i vrste sadržaja za Chromecast. Bez Android klasa, da može da se testira. */

@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 17+: pristup uređajima u kućnoj mreži (cast, dodavanje liste sa telefona). -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!-- Ažuriranje iz aplikacije: instaliranje preuzetog APK-a (korisnik potvrđuje). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Android 14+: sledeće ažuriranje može bez potvrde kad je aplikacija već instalirala sebe. -->

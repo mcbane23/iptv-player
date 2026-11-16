@@ -27,6 +27,9 @@ object PairingHttp {
     /** Paket sa svim listama može da nosi mnogo omiljenih kanala, pa sme da bude veći od forme. */
     private const val MAX_BUNDLE_BYTES = 2 * 1024 * 1024
 
+    /** Putevi čije se telo čita sirovo (JSON), vidi `CastServer`. */
+    private const val RAW_BODY_PREFIX = "/cast/"
+
     /** Čita zahtev. Vraća null ako nije ispravan ili je prevelik. */
     fun readRequest(input: InputStream): PairingRequest? {
         val head = readHead(input) ?: return null
@@ -46,6 +49,8 @@ object PairingHttp {
             }
         }
         val isBundle = path.endsWith(TransferTarget.BUNDLE_PATH)
+        // Zahtevi za puštanje na TV-u nose JSON, a ne formu.
+        val isRaw = isBundle || path.startsWith(RAW_BODY_PREFIX)
         if (contentLength < 0 || contentLength > (if (isBundle) MAX_BUNDLE_BYTES else MAX_BODY_BYTES)) return null
         var rawBody = ""
         val form = if (method == "POST" && contentLength > 0) {
@@ -57,7 +62,7 @@ object PairingHttp {
                 read += count
             }
             val text = String(body, Charsets.UTF_8)
-            if (isBundle) {
+            if (isRaw) {
                 rawBody = text
                 emptyMap()
             } else {
@@ -113,6 +118,7 @@ object PairingHttp {
         val reason = when (status) {
             200 -> "OK"
             400 -> "Bad Request"
+            403 -> "Forbidden"
             404 -> "Not Found"
             else -> "Error"
         }

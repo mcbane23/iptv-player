@@ -3,7 +3,10 @@ package com.bane23.iptvplayer.ui.common.cast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.cast.CastMedia
-import com.bane23.iptvplayer.cast.CastSender
+import com.bane23.iptvplayer.cast.CastHub
+import com.bane23.iptvplayer.cast.CastKind
+import com.bane23.iptvplayer.cast.LanDevice
+import com.bane23.iptvplayer.cast.LanPickerState
 import com.bane23.iptvplayer.cast.CastState
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
@@ -18,22 +21,38 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-/** Izbor uređaja za cast: traži uređaje dok je dijalog otvoren i povezuje se sa izabranim. */
+/** Izbor uređaja za cast: Chromecast uređaji i televizori sa ovom aplikacijom u kućnoj mreži. */
 @HiltViewModel
-class CastPickerViewModel @Inject constructor(private val sender: CastSender) : ViewModel() {
-    val state: StateFlow<CastState> = sender.state
+class CastPickerViewModel @Inject constructor(private val hub: CastHub) : ViewModel() {
+    /** Stanje načina koji se koristi (povezivanje, veza). */
+    val state: StateFlow<CastState> = hub.state
+    val chromecast: StateFlow<CastState> = hub.chromecast.state
+    val tvApp: StateFlow<LanPickerState> = hub.tvApp.picker
 
     init {
-        sender.init()
+        hub.chromecast.init()
     }
 
-    fun startDiscovery() = sender.startDiscovery()
+    fun startDiscovery() {
+        hub.chromecast.startDiscovery()
+        hub.tvApp.startDiscovery()
+    }
 
-    fun stopDiscovery() = sender.stopDiscovery()
+    fun stopDiscovery() {
+        hub.chromecast.stopDiscovery()
+        hub.tvApp.stopDiscovery()
+        hub.tvApp.cancelPairing()
+    }
 
-    fun connect(routeId: String, media: CastMedia) = sender.connect(routeId, media)
+    fun connectChromecast(routeId: String, media: CastMedia) = hub.connectChromecast(routeId, media)
 
-    fun play(media: CastMedia) = sender.play(media)
+    fun connectTvApp(device: LanDevice, media: CastMedia) = hub.connectTvApp(device, media)
+
+    fun confirmCode(code: String) = hub.tvApp.confirmCode(code)
+
+    fun cancelPairing() = hub.tvApp.cancelPairing()
+
+    fun play(media: CastMedia) = hub.play(media)
 }
 
 /**
@@ -42,13 +61,14 @@ class CastPickerViewModel @Inject constructor(private val sender: CastSender) : 
  */
 @HiltViewModel
 class CastRemoteViewModel @Inject constructor(
-    private val sender: CastSender,
+    private val sender: CastHub,
     private val channels: ChannelRepository,
     private val locks: LockRepository,
     private val vod: VodRepository,
     settings: SettingsStore,
 ) : ViewModel() {
     val state: StateFlow<CastState> = sender.state
+    val kind: StateFlow<CastKind> = sender.kind
 
     /** Korak dugmadi napred i nazad, iz podešavanja. */
     val seekStepMs: Long = runBlocking { settings.playerSettings.first() }.seekStepSeconds * 1_000L
@@ -58,7 +78,6 @@ class CastRemoteViewModel @Inject constructor(
     private var lastSavedAt = 0L
 
     init {
-        sender.init()
         viewModelScope.launch {
             sender.state.collect { current ->
                 val now = System.currentTimeMillis()
@@ -73,9 +92,9 @@ class CastRemoteViewModel @Inject constructor(
 
     fun seekTo(positionMs: Long) = sender.seekTo(positionMs)
 
-    fun volumeUp() = sender.changeVolume(VOLUME_STEP)
+    fun volumeUp() = sender.changeVolume(up = true)
 
-    fun volumeDown() = sender.changeVolume(-VOLUME_STEP)
+    fun volumeDown() = sender.changeVolume(up = false)
 
     fun retry() {
         sender.state.value.media?.let { sender.play(it.copy(positionMs = sender.state.value.positionMs)) }
@@ -104,6 +123,8 @@ class CastRemoteViewModel @Inject constructor(
                     live = true,
                     channelId = target.id,
                     categoryId = media.categoryId,
+                    userAgent = source.userAgent,
+                    referrer = source.referrer,
                 ),
             )
             channels.markWatched(target.id)
@@ -147,7 +168,6 @@ class CastRemoteViewModel @Inject constructor(
     }
 
     private companion object {
-        const val VOLUME_STEP = 0.05
         const val SAVE_EVERY_MS = 10_000L
         const val MAX_LOCKED_SKIP = 300
     }

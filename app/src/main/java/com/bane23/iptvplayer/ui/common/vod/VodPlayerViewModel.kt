@@ -175,6 +175,8 @@ class VodPlayerViewModel @Inject constructor(
             live = false,
             positionMs = engine.positionMs,
             vod = item?.let { CastVodItem(it.id, it.seriesId, it.title, it.poster, it.extension) },
+            userAgent = current.userAgent,
+            referrer = current.referrer,
         )
     }
 

@@ -342,7 +342,7 @@
     <string name="cast_button">Play on TV</string>
     <string name="cast_pick_title">Play on TV</string>
     <string name="cast_searching">Looking for devices…</string>
-    <string name="cast_search_hint">The phone and the Chromecast or TV must be on the same Wi-Fi network.</string>
+    <string name="cast_search_hint">The phone and the TV must be on the same Wi-Fi network. For this app on a TV, open the app on the TV first.</string>
     <string name="cast_connecting">Connecting…</string>
     <string name="cast_connect_failed">Could not connect. Try again.</string>
     <string name="cast_no_source">This stream cannot be sent to the TV.</string>
@@ -353,4 +353,12 @@
     <string name="cast_stop">Stop and disconnect</string>
     <string name="cast_volume_up">Volume up</string>
     <string name="cast_volume_down">Volume down</string>
+    <string name="cast_section_chromecast">Chromecast</string>
+    <string name="cast_section_tv_app">This app on a TV</string>
+    <string name="cast_enter_code">Enter the code shown on the TV.</string>
+    <string name="cast_code_wrong">Wrong code. Try again.</string>
+    <string name="cast_permission_needed">Allow access to devices on the local network so TVs can be found.</string>
+    <string name="cast_failed_tv_app">The TV could not play this stream.</string>
+    <string name="cast_tv_code_title">Code for connecting the phone</string>
+    <string name="cast_from_phone">Sent from the phone</string>
 </resources>

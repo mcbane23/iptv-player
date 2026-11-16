@@ -157,6 +157,8 @@ class PlayerViewModel @Inject constructor(
             live = true,
             channelId = channel.id,
             categoryId = _ui.value.categoryId,
+            userAgent = source.userAgent,
+            referrer = source.referrer,
         )
     }
 

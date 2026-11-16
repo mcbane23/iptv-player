@@ -342,7 +342,7 @@
     <string name="cast_button">Pusti na TV-u</string>
     <string name="cast_pick_title">Pusti na TV-u</string>
     <string name="cast_searching">Tražim uređaje…</string>
-    <string name="cast_search_hint">Telefon i Chromecast ili TV moraju biti na istoj Wi-Fi mreži.</string>
+    <string name="cast_search_hint">Telefon i TV moraju biti na istoj Wi-Fi mreži. Za ovu aplikaciju na TV-u prvo je otvori na TV-u.</string>
     <string name="cast_connecting">Povezivanje…</string>
     <string name="cast_connect_failed">Povezivanje nije uspelo. Pokušaj ponovo.</string>
     <string name="cast_no_source">Ovaj strim ne može da se pošalje na TV.</string>
@@ -353,4 +353,12 @@
     <string name="cast_stop">Zaustavi i prekini vezu</string>
     <string name="cast_volume_up">Pojačaj</string>
     <string name="cast_volume_down">Utišaj</string>
+    <string name="cast_section_chromecast">Chromecast</string>
+    <string name="cast_section_tv_app">Ova aplikacija na TV-u</string>
+    <string name="cast_enter_code">Unesi kod koji piše na TV-u.</string>
+    <string name="cast_code_wrong">Pogrešan kod. Pokušaj ponovo.</string>
+    <string name="cast_permission_needed">Dozvoli pristup uređajima u kućnoj mreži da bi televizori mogli da se pronađu.</string>
+    <string name="cast_failed_tv_app">TV ne može da pusti ovaj strim.</string>
+    <string name="cast_tv_code_title">Kod za povezivanje telefona</string>
+    <string name="cast_from_phone">Poslato sa telefona</string>
 </resources>
