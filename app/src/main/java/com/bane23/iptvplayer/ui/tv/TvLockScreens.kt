@@ -281,6 +281,7 @@ private fun LazyListScope.section(
         TvTextRow(
             text = item.name,
             trailing = if (item.locked) lockedText else openText,
+            checked = item.locked,
             onClick = { onToggle(item) },
         )
     }
