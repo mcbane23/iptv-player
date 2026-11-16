@@ -4,9 +4,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** JSON za Trakt API: nepoznata polja se preskaču, a null vrednosti se ne šalju. */
+/**
+ * JSON za Trakt API: nepoznata polja se preskaču, null vrednosti se ne šalju, a podrazumevane
+ * (npr. `grant_type`) se šalju.
+ */
 val TraktJson: Json = Json {
     ignoreUnknownKeys = true
+    encodeDefaults = true
     explicitNulls = false
     coerceInputValues = true
 }
