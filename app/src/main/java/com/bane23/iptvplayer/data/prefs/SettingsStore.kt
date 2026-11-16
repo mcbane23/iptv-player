@@ -89,6 +89,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
+    val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
+
+    suspend fun setAccentColor(name: String) {
+        dataStore.edit { it[ACCENT_COLOR] = name }
+    }
+
     /** Uputstvo za gestove u plejeru na telefonu je već prikazano (prikazuje se samo prvi put). */
     val gestureHintShown: Flow<Boolean> =
         dataStore.data.map { it[GESTURE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -160,6 +167,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
+        val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
 }

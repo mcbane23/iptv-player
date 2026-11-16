@@ -237,6 +237,14 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">Opšte</string>
+    <string name="settings_accent_color">Boja aplikacije</string>
+    <string name="settings_accent_color_tv_summary">Pritisni OK za sledeću boju. Promena se vidi odmah.</string>
+    <string name="accent_orange">Narandžasta</string>
+    <string name="accent_blue">Plava</string>
+    <string name="accent_green">Zelena</string>
+    <string name="accent_teal">Tirkizna</string>
+    <string name="accent_purple">Ljubičasta</string>
+    <string name="accent_pink">Roze</string>
     <string name="settings_content_header">Sadržaj</string>
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Pretraga kanala</string>
