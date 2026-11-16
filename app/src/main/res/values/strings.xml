@@ -237,6 +237,14 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">General</string>
+    <string name="settings_accent_color">App color</string>
+    <string name="settings_accent_color_tv_summary">Press OK to switch to the next color. The change shows right away.</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_purple">Purple</string>
+    <string name="accent_pink">Pink</string>
     <string name="settings_content_header">Content</string>
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>

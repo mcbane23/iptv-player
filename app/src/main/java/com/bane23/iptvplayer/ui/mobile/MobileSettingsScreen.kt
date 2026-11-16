@@ -1,6 +1,19 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.label
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -53,6 +66,7 @@ fun MobileSettingsScreen(
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
+    val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
@@ -106,6 +120,7 @@ fun MobileSettingsScreen(
                     }
                     Switch(checked = resumeLastChannel, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
                 }
+                AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
             }
             SettingsGroup(stringResource(R.string.settings_player_header)) {
                 choices.forEachIndexed { index, choice ->
@@ -180,6 +195,57 @@ fun MobileSettingsScreen(
             onSelect = choice.onSelect,
             onDismiss = { openChoice = null },
         )
+    }
+}
+
+/** Izbor akcentne boje: naziv i red krugova u ponuđenim bojama; izabrana ima beli prsten. */
+@Composable
+private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Unit) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.settings_accent_color),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (selected != null) {
+                Text(
+                    text = selected.label(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AccentColor.entries.forEach { accent ->
+                val description = accent.label()
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .then(
+                            if (accent == selected) {
+                                Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(5.dp)
+                        .clip(CircleShape)
+                        .background(accent.color)
+                        .selectable(selected = accent == selected, role = Role.RadioButton) { onSelect(accent) }
+                        .semantics { contentDescription = description },
+                )
+            }
+        }
     }
 }
 

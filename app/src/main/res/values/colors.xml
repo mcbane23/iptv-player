@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Iste vrednosti kao u ui/common/theme/Color.kt; ovde samo za prozor i ikonice. -->
-    <color name="accent">#FF4FC3F7</color>
+    <color name="accent">#FFFFB74D</color>
     <color name="background">#FF101418</color>
 </resources>

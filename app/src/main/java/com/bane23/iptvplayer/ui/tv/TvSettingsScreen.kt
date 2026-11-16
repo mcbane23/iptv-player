@@ -30,6 +30,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
@@ -51,6 +53,7 @@ fun TvSettingsScreen(
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
+    val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // Dozvola se menja u sistemskim podešavanjima, pa se proverava pri svakom povratku na ekran.
     var autostartAllowed by remember { mutableStateOf(Autostart.isAllowed(context)) }
@@ -162,6 +165,19 @@ fun TvSettingsScreen(
                     },
                 )
                 TvTextRow(
+                    text = stringResource(R.string.settings_accent_color),
+                    trailing = accentColor?.label(),
+                    onClick = {
+                        // Svaki pritisak prelazi na sledeću boju; promena se vidi odmah.
+                        val current = accentColor ?: AccentColor.DEFAULT
+                        viewModel.setAccentColor(AccentColor.entries[(current.ordinal + 1) % AccentColor.entries.size])
+                    },
+                    onFocused = {
+                        focusedChoice = ACCENT_ROW
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
                     text = stringResource(R.string.update_check),
                     trailing = updateViewModel.installedVersion,
                     onClick = updateViewModel::check,
@@ -192,6 +208,7 @@ fun TvSettingsScreen(
                 Text(
                     text = when (val focused = focusedChoice) {
                         null -> stringResource(R.string.settings_resume_last_summary)
+                        ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
                         AUTOSTART_ROW -> stringResource(
                             when {
                                 !autostart || autostartAllowed -> R.string.settings_autostart_summary
@@ -248,3 +265,4 @@ fun TvSettingsScreen(
 
 /** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
 private const val AUTOSTART_ROW = -1
+private const val ACCENT_ROW = -2
