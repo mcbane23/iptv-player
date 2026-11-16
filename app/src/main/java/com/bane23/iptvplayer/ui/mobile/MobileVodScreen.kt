@@ -22,6 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.data.repo.VodCategory
 import androidx.compose.runtime.setValue
@@ -55,6 +63,7 @@ fun MobileVodScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+    val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val favoritesLabel = stringResource(R.string.category_favorites)
     val showingFavorites = state.selected?.id == FAVORITES_ID
@@ -119,7 +128,13 @@ fun MobileVodScreen(
                         }
 
                         showingFavorites -> items(favorites, key = { it.id }) { item ->
-                            PosterTile(name = item.name, poster = item.poster, onClick = { onOpen(item) })
+                            PosterTile(
+                                name = item.name,
+                                poster = item.poster,
+                                onClick = { onOpen(item) },
+                                favorite = true,
+                                onToggleFavorite = { viewModel.toggleFavorite(item) },
+                            )
                         }
 
                         state.loadingItems -> item(span = { GridItemSpan(maxLineSpan) }) {
@@ -135,7 +150,13 @@ fun MobileVodScreen(
                         }
 
                         else -> items(state.items, key = { it.id }) { item ->
-                            PosterTile(name = item.name, poster = item.poster, onClick = { onOpen(item) })
+                            PosterTile(
+                                name = item.name,
+                                poster = item.poster,
+                                onClick = { onOpen(item) },
+                                favorite = item.id in favoriteIds,
+                                onToggleFavorite = { viewModel.toggleFavorite(item) },
+                            )
                         }
                     }
                 }
@@ -159,7 +180,10 @@ fun MobileVodScreen(
     }
 }
 
-/** Poster sa nazivom ispod (najviše dva reda, pa „…”). */
+/**
+ * Poster sa nazivom ispod (najviše dva reda, pa „…”). Kad je [favorite] zadat, u uglu postera je
+ * zvezdica kojom se film ili serija brzo dodaje u omiljene.
+ */
 @Composable
 fun PosterTile(
     name: String,
@@ -167,9 +191,35 @@ fun PosterTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     progress: Float? = null,
+    favorite: Boolean? = null,
+    onToggleFavorite: () -> Unit = {},
 ) {
     Column(modifier = modifier.clickable(onClick = onClick)) {
-        Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
+        Box {
+            Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
+            if (favorite != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(40.dp)
+                        .clickable(
+                            onClick = onToggleFavorite,
+                            onClickLabel = stringResource(if (favorite) R.string.favorite_remove else R.string.favorite_add),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (favorite) AppIcons.Star else AppIcons.StarOutline,
+                        contentDescription = null,
+                        tint = if (favorite) Color(0xFFFFD166) else Color.White,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                            .padding(4.dp),
+                    )
+                }
+            }
+        }
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,

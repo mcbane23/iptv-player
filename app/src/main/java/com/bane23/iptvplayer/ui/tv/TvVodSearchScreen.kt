@@ -40,6 +40,7 @@ fun TvVodSearchScreen(
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
 
     Column(
@@ -91,7 +92,14 @@ fun TvVodSearchScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 4.dp, start = 4.dp, end = 4.dp),
             ) {
                 items(state.results, key = { it.id }) { item ->
-                    PosterCard(name = item.name, poster = item.poster, onClick = { onOpen(item) }, onFocused = {})
+                    PosterCard(
+                        name = item.name,
+                        poster = item.poster,
+                        onClick = { onOpen(item) },
+                        onFocused = {},
+                        favorite = item.id in favoriteIds,
+                        onToggleFavorite = { viewModel.toggleFavorite(item) },
+                    )
                 }
             }
         }

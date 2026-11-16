@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -72,6 +73,12 @@ class VodBrowseViewModel @Inject constructor(
             if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeFavorites(playlistId, kind)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Dodaje film ili seriju u omiljene, odnosno uklanja (zvezdica na posteru). */
+    fun toggleFavorite(item: VodItem) {
+        val isFavorite = favorites.value.any { it.id == item.id }
+        viewModelScope.launch { repository.toggleFavorite(kind, item, isFavorite) }
+    }
 
     fun open(series: Boolean) {
         if (opened) return
@@ -306,11 +313,27 @@ class VodSearchViewModel @Inject constructor(
     val state: StateFlow<VodSearchUiState> = _state.asStateFlow()
 
     private var kind = VodKind.MOVIES
+    private val openedKind = MutableStateFlow<VodKind?>(null)
     private var all: List<Pair<String, VodItem>>? = null
     private var searchJob: Job? = null
 
+    /** ID-jevi omiljenih, za zvezdicu na posteru. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favoriteIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeFavorites(playlistId, kind)
+        }
+        .map { list -> list.mapTo(HashSet()) { it.id } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     fun open(series: Boolean) {
         kind = if (series) VodKind.SERIES else VodKind.MOVIES
+        openedKind.value = kind
+    }
+
+    fun toggleFavorite(item: VodItem) {
+        val isFavorite = item.id in favoriteIds.value
+        viewModelScope.launch { repository.toggleFavorite(kind, item, isFavorite) }
     }
 
     fun setQuery(text: String) {
