@@ -54,6 +54,7 @@ private enum class VodPanel { NONE, AUDIO, SUBTITLES }
 fun MobileVodPlayerScreen(
     start: (VodPlayerViewModel) -> Unit,
     onClose: () -> Unit,
+    onCastStarted: () -> Unit = {},
     viewModel: VodPlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -75,6 +76,7 @@ fun MobileVodPlayerScreen(
     KeepScreenOn()
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
+    val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
@@ -162,6 +164,7 @@ fun MobileVodPlayerScreen(
                     controlsVisible = false
                 },
                 onPip = rememberEnterPictureInPicture(),
+                onCast = cast,
                 bottom = {
                     val paused = playback.status == PlaybackStatus.PAUSED
                     PlayerTransportBar(

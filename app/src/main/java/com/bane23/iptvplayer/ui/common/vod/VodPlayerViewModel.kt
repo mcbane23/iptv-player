@@ -3,11 +3,14 @@ package com.bane23.iptvplayer.ui.common.vod
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bane23.iptvplayer.cast.CastMedia
+import com.bane23.iptvplayer.cast.CastVodItem
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ArchiveRepository
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
+import com.bane23.iptvplayer.domain.StreamSource
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.TrackOption
@@ -76,6 +79,7 @@ class VodPlayerViewModel @Inject constructor(
 
     private var item: Item? = null
     private var series: SeriesDetails? = null
+    private var source: StreamSource? = null
     private var started = false
     private var lastSavedAt = 0L
 
@@ -162,6 +166,18 @@ class VodPlayerViewModel @Inject constructor(
 
     fun togglePlayPause() = engine.togglePlayPause()
 
+    /** Ono što se gleda, u obliku za slanje na TV (cast), sa mestom do kog se stiglo. */
+    fun castMedia(): CastMedia? {
+        val current = source ?: return null
+        return CastMedia(
+            title = _ui.value.title,
+            urls = current.urls,
+            live = false,
+            positionMs = engine.positionMs,
+            vod = item?.let { CastVodItem(it.id, it.seriesId, it.title, it.poster, it.extension) },
+        )
+    }
+
     fun retry() = engine.retry()
 
     fun seekBy(deltaMs: Long) {
@@ -221,10 +237,11 @@ class VodPlayerViewModel @Inject constructor(
     /** [load] vraća izvor strima i zapamćenu poziciju (ako je ima). */
     private suspend fun play(
         startOver: Boolean,
-        load: suspend () -> Pair<com.bane23.iptvplayer.domain.StreamSource, Long?>,
+        load: suspend () -> Pair<StreamSource, Long?>,
     ) {
         try {
             val (source, savedPosition) = load()
+            this.source = source
             _ui.update { it.copy(sourceMissing = false) }
             engine.play(source, startPositionMs = if (startOver) 0 else savedPosition ?: 0)
         } catch (e: CancellationException) {

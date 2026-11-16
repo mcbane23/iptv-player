@@ -339,4 +339,18 @@
     <string name="trakt_error_expired">The code has expired. Try again.</string>
     <string name="trakt_error_denied">The sign-in was declined on Trakt.</string>
     <string name="trakt_sync_failed">Sync failed. It will be retried later.</string>
+    <string name="cast_button">Play on TV</string>
+    <string name="cast_pick_title">Play on TV</string>
+    <string name="cast_searching">Looking for devices…</string>
+    <string name="cast_search_hint">The phone and the Chromecast or TV must be on the same Wi-Fi network.</string>
+    <string name="cast_connecting">Connecting…</string>
+    <string name="cast_connect_failed">Could not connect. Try again.</string>
+    <string name="cast_no_source">This stream cannot be sent to the TV.</string>
+    <string name="cast_remote_title">Playing on TV</string>
+    <string name="cast_playing_on">Playing on: %1$s</string>
+    <string name="cast_loading">Loading on the TV…</string>
+    <string name="cast_failed">The device could not play this stream. Chromecast does not support every stream format.</string>
+    <string name="cast_stop">Stop and disconnect</string>
+    <string name="cast_volume_up">Volume up</string>
+    <string name="cast_volume_down">Volume down</string>
 </resources>

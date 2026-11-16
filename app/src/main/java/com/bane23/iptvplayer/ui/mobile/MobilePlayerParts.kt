@@ -57,6 +57,7 @@ fun MobilePlayerControls(
     onClose: () -> Unit,
     onLock: () -> Unit,
     onPip: (() -> Unit)?,
+    onCast: (() -> Unit)? = null,
     bottom: @Composable ColumnScope.() -> Unit,
     chips: @Composable RowScope.() -> Unit,
 ) {
@@ -76,6 +77,9 @@ fun MobilePlayerControls(
                     subtitle = subtitle,
                     modifier = Modifier.weight(1f),
                 )
+                if (onCast != null) {
+                    PlayerIconButton(AppIcons.Cast, stringResource(R.string.cast_button), onCast, backdrop = true)
+                }
                 if (onPip != null) {
                     PlayerIconButton(AppIcons.PictureInPicture, stringResource(R.string.player_pip), onPip, backdrop = true)
                 }

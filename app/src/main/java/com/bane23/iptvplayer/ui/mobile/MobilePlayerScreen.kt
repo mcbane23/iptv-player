@@ -95,6 +95,7 @@ fun MobilePlayerScreen(
     channelId: Long,
     categoryId: Long?,
     onClose: () -> Unit,
+    onCastStarted: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -102,6 +103,7 @@ fun MobilePlayerScreen(
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
+    val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
     var gestureHint by remember { mutableStateOf<String?>(null) }
@@ -203,6 +205,7 @@ fun MobilePlayerScreen(
                     nowNext = nowNext,
                     onFavorite = viewModel::toggleFavorite,
                     onPip = rememberEnterPictureInPicture(),
+                    onCast = cast,
                 )
             }
 
@@ -261,6 +264,7 @@ private fun LiveControls(
     nowNext: NowNext,
     onFavorite: () -> Unit,
     onPip: (() -> Unit)?,
+    onCast: (() -> Unit)?,
 ) {
     val channel = ui.channel
     val now by rememberNow()
@@ -271,6 +275,7 @@ private fun LiveControls(
         onClose = onClose,
         onLock = onLock,
         onPip = onPip,
+        onCast = onCast,
         bottom = {
             val program = nowNext.now
             val paused = playback.status == PlaybackStatus.PAUSED

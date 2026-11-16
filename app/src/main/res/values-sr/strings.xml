@@ -339,4 +339,18 @@
     <string name="trakt_error_expired">Kod je istekao. Pokušaj ponovo.</string>
     <string name="trakt_error_denied">Prijava je odbijena na Trakt-u.</string>
     <string name="trakt_sync_failed">Sinhronizacija nije uspela. Pokušaće ponovo kasnije.</string>
+    <string name="cast_button">Pusti na TV-u</string>
+    <string name="cast_pick_title">Pusti na TV-u</string>
+    <string name="cast_searching">Tražim uređaje…</string>
+    <string name="cast_search_hint">Telefon i Chromecast ili TV moraju biti na istoj Wi-Fi mreži.</string>
+    <string name="cast_connecting">Povezivanje…</string>
+    <string name="cast_connect_failed">Povezivanje nije uspelo. Pokušaj ponovo.</string>
+    <string name="cast_no_source">Ovaj strim ne može da se pošalje na TV.</string>
+    <string name="cast_remote_title">Pušta se na TV-u</string>
+    <string name="cast_playing_on">Pušta se na: %1$s</string>
+    <string name="cast_loading">Učitava se na TV-u…</string>
+    <string name="cast_failed">Uređaj ne može da pusti ovaj strim. Chromecast ne podržava sve formate strimova.</string>
+    <string name="cast_stop">Zaustavi i prekini vezu</string>
+    <string name="cast_volume_up">Pojačaj</string>
+    <string name="cast_volume_down">Utišaj</string>
 </resources>
