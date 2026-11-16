@@ -77,7 +77,7 @@ class HlsPlaylistTest {
 
     @Test
     fun `playlist text is recognized`() {
-        assertTrue(HlsPlaylist.isPlaylist("﻿#EXTM3U\n"))
+        assertTrue(HlsPlaylist.isPlaylist("\uFEFF#EXTM3U\n"))
         assertFalse(HlsPlaylist.isPlaylist("G@\u0000binary"))
     }
 }
