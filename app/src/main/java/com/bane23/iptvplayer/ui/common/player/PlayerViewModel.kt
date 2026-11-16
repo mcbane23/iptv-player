@@ -158,8 +158,11 @@ class PlayerViewModel @Inject constructor(
 
     fun previous() = step { neighbor(it, -1) }
 
-    /** Počinje snimanje kanala koji se gleda, ili ga zaustavlja ako se već snima. */
-    fun toggleRecording() {
+    /**
+     * Počinje snimanje kanala koji se gleda, ili ga zaustavlja ako se već snima. [stopAtMs] je vreme
+     * kad snimanje samo staje; null = dok ga korisnik ne zaustavi.
+     */
+    fun toggleRecording(stopAtMs: Long? = null) {
         val channel = _ui.value.channel ?: return
         if (isRecording.value) {
             recordings.stopChannel(channel.id)
@@ -167,7 +170,7 @@ class PlayerViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val error = recordings.start(channel.id, nowNext.value.now?.title)
+            val error = recordings.start(channel.id, nowNext.value.now?.title, stopAtMs)
             _recordingNotice.tryEmit(
                 when (error) {
                     null -> R.string.recording_started

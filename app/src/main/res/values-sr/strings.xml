@@ -409,4 +409,9 @@
     <string name="recording_location">Mesto čuvanja snimaka</string>
     <string name="recording_location_device">Memorija uređaja</string>
     <string name="recording_location_removable">SD kartica ili USB %1$d</string>
+    <string name="recording_duration_title">Koliko dugo da snima?</string>
+    <string name="recording_until_stopped">Dok ne zaustavim</string>
+    <string name="recording_until_program_end">Do kraja emisije (%1$s)</string>
+    <string name="recording_minutes">%1$d min</string>
+    <string name="recording_hours">%1$d h</string>
 </resources>

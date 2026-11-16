@@ -409,4 +409,9 @@
     <string name="recording_location">Save recordings to</string>
     <string name="recording_location_device">Device storage</string>
     <string name="recording_location_removable">SD card or USB %1$d</string>
+    <string name="recording_duration_title">Record for how long?</string>
+    <string name="recording_until_stopped">Until I stop it</string>
+    <string name="recording_until_program_end">Until the programme ends (%1$s)</string>
+    <string name="recording_minutes">%1$d min</string>
+    <string name="recording_hours">%1$d h</string>
 </resources>

@@ -359,7 +359,9 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       emisije; TV: OK na emisiji), a emisija koja je u toku snima se do svog kraja. Pokreće ga budilnik
       (AlarmManager, ne WorkManager, jer mora da krene tačno na vreme i iz pozadine); uređaj mora biti
       upaljen. Zakazana snimanja se vide i otkazuju na ekranu „Snimci”
-- [ ] Ručno zakazivanje (kanal, početak, kraj): čeka odluku vlasnika o obliku
+- [x] Ručno: vlasnik je 16. 11. 2026. izabrao trajanje u plejeru umesto pune forme. Dugme „Snimaj”
+      pita koliko dugo: dok ne zaustavim, do kraja emisije, 30 min, 1 h, 2 h ili 3 h. Puna forma
+      (kanal, datum, početak, kraj) se ne pravi dok ne zatreba za kanale bez vodiča
 - [x] Ekran „Snimci” (u Podešavanjima): puštanje, zaustavljanje, brisanje, prikaz zauzetog prostora
 - [x] Podešavanje mesta čuvanja (memorija uređaja, USB/SD) na ekranu „Snimci”, vidi se kad je priključena
       SD kartica ili USB; upozorenje ispod 2 GB slobodnog prostora, a ispod 300 MB snimanje ne kreće

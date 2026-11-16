@@ -91,3 +91,43 @@ fun TvTrackPanel(
     // Prazan spisak nema šta da primi fokus; zatvara se tasterom Nazad.
     LaunchedEffect(kind) { selectedFocus.tryRequestFocus() }
 }
+
+/** Kratak spisak izbora preko slike (npr. trajanje snimanja). OK bira i zatvara, Nazad samo zatvara. */
+@Composable
+fun TvChoicePanel(
+    title: String,
+    options: List<String>,
+    onSelect: (Int) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val firstFocus = remember { FocusRequester() }
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.32f)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+    ) {
+        item {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            )
+        }
+        items(options.size) { index ->
+            TvTextRow(
+                text = options[index],
+                onClick = {
+                    onSelect(index)
+                    onClose()
+                },
+                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            )
+        }
+    }
+    LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
+}

@@ -45,6 +45,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.recording.recordingChoices
 import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.PlaybackState
@@ -88,15 +89,20 @@ fun TvPlayerScreen(
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
-    val record = rememberRecordingToggle(isRecording, viewModel::toggleRecording)
     RecordingNotices(viewModel.recordingNotice)
     var overlay by remember { mutableStateOf(Overlay.INFO) }
     var channelList by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    // Izbor trajanja snimanja je otvoren.
+    var recordPanel by remember { mutableStateOf(false) }
+    // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
+    val record = rememberRecordingToggle(isRecording) {
+        if (isRecording) viewModel.toggleRecording() else recordPanel = true
+    }
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
-    val panelOpen = channelList || tracks != null
+    val panelOpen = channelList || tracks != null || recordPanel
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -105,6 +111,7 @@ fun TvPlayerScreen(
     BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
         when {
             tracks != null -> tracks = null
+            recordPanel -> recordPanel = false
             channelList -> channelList = false
             else -> overlay = Overlay.HIDDEN
         }
@@ -264,6 +271,17 @@ fun TvPlayerScreen(
                 onSelectAudio = viewModel::selectAudio,
                 onSelectText = viewModel::selectText,
                 onClose = { tracks = null },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+
+        if (recordPanel) {
+            val choices = recordingChoices(nowNext.now?.stopMs)
+            TvChoicePanel(
+                title = stringResource(R.string.recording_duration_title),
+                options = choices.map { it.label },
+                onSelect = { index -> viewModel.toggleRecording(choices[index].stopAtMs()) },
+                onClose = { recordPanel = false },
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }

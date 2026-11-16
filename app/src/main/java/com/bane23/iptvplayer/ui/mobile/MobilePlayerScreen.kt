@@ -66,6 +66,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.recording.recordingChoices
 import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.ui.common.guide.nextLine
@@ -89,7 +90,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES }
+private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -104,13 +105,17 @@ fun MobilePlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
-    val record = rememberRecordingToggle(isRecording, viewModel::toggleRecording)
     RecordingNotices(viewModel.recordingNotice)
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
+    // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
+    val record = rememberRecordingToggle(isRecording) {
+        if (isRecording) viewModel.toggleRecording() else panel = Panel.RECORD
+    }
+    val recordChoices = recordingChoices(nowNext.now?.stopMs)
     var gestureHint by remember { mutableStateOf<String?>(null) }
     var locked by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
@@ -244,6 +249,14 @@ fun MobilePlayerScreen(
             onSelect = { index ->
                 viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
             },
+            onDismiss = { panel = Panel.NONE },
+        )
+
+        Panel.RECORD -> TrackDialog(
+            title = stringResource(R.string.recording_duration_title),
+            options = recordChoices.map { it.label to false },
+            emptyText = null,
+            onSelect = { index -> viewModel.toggleRecording(recordChoices[index].stopAtMs()) },
             onDismiss = { panel = Panel.NONE },
         )
 

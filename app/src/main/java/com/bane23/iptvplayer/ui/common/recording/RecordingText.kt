@@ -108,3 +108,29 @@ fun rememberRecordingToggle(isRecording: Boolean, toggle: () -> Unit): () -> Uni
         }
     }
 }
+
+/** Jedno ponuđeno trajanje snimanja. [stopAtMs] računa vreme kraja u trenutku izbora; null = bez kraja. */
+class RecordingChoice(val label: String, val stopAtMs: () -> Long?)
+
+/**
+ * Trajanja koja nudi dugme „Snimaj”: dok se ne zaustavi, do kraja emisije koja je u toku
+ * ([programStopMs], ako se zna iz vodiča) i nekoliko stalnih trajanja.
+ */
+@Composable
+fun recordingChoices(programStopMs: Long?): List<RecordingChoice> {
+    val choices = mutableListOf(RecordingChoice(stringResource(R.string.recording_until_stopped)) { null })
+    if (programStopMs != null && programStopMs > System.currentTimeMillis()) {
+        choices += RecordingChoice(stringResource(R.string.recording_until_program_end, formatTime(programStopMs))) { programStopMs }
+    }
+    for (minutes in RECORDING_MINUTES) {
+        val label = if (minutes < 60) {
+            stringResource(R.string.recording_minutes, minutes)
+        } else {
+            stringResource(R.string.recording_hours, minutes / 60)
+        }
+        choices += RecordingChoice(label) { System.currentTimeMillis() + minutes * 60_000L }
+    }
+    return choices
+}
+
+private val RECORDING_MINUTES = listOf(30, 60, 120, 180)
