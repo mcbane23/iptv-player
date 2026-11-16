@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,10 +31,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import androidx.tv.material3.Button
+import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
+import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
@@ -41,11 +45,13 @@ import com.bane23.iptvplayer.ui.common.SkeletonLogo
 import com.bane23.iptvplayer.ui.common.SkeletonTextLines
 import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.draw.clip
@@ -65,7 +71,7 @@ import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
-private const val ALL_CHANNELS = 0L
+private const val ALL_CHANNELS = ChannelGroups.ALL
 
 /**
  * Uživo na TV-u, u tri kolone: kategorije (sa pretragom na vrhu), kanali izabrane kategorije
@@ -77,21 +83,36 @@ fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
     onSearch: () -> Unit,
+    onCategories: () -> Unit = {},
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
     previewViewModel: ChannelPreviewViewModel = hiltViewModel(),
+    playlistsViewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var selectedCategory by rememberSaveable { mutableStateOf(ALL_CHANNELS) }
-    var focusedCategory by remember { mutableStateOf(selectedCategory) }
+    val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
+    val playlistId = state.playlistId
+    // Kreće se od kategorije koja je bila otvorena prošli put. Ključevi vraćaju izbor na početak
+    // kad se lista učita i kad se promeni aktivna lista.
+    var selectedCategory by rememberSaveable(state.loading, playlistId) {
+        mutableStateOf(state.lastCategoryId ?: ALL_CHANNELS)
+    }
+    var focusedCategory by remember(state.loading, playlistId) { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
     val channelFocus = remember { FocusRequester() }
+    val categoryListState = rememberLazyListState()
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
-    var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
     // Kanal na kome je fokus, za logo i naziv u pregledu kad slike nema.
     var focusedChannel by remember { mutableStateOf<Channel?>(null) }
-    val playlistId = state.playlistId
     val now by rememberNow()
+    // Meni kategorije (dugi OK): sakrij, pomeri na vrh, uredi.
+    var menuCategory by remember { mutableStateOf<Category?>(null) }
+    // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
+    var pendingHide by remember { mutableStateOf<Long?>(null) }
+    var focusTargetId by remember { mutableStateOf<Long?>(null) }
+    val moveFocus = remember { FocusRequester() }
+    var movedToTop by remember { mutableIntStateOf(0) }
 
     // Pregled ne sme da drži vezu kad se izađe sa ekrana ili aplikacija ode u pozadinu.
     DisposableEffect(Unit) { onDispose { previewViewModel.stop() } }
@@ -107,6 +128,62 @@ fun TvLiveTvScreen(
         if (playlistId != null) {
             channelsViewModel.select(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS })
         }
+    }
+    // Izbor se pamti tek kad se korisnik zadrži na kategoriji, ne pri svakom prolasku preko nje.
+    LaunchedEffect(playlistId, selectedCategory, state.loading) {
+        if (playlistId != null && !state.loading) {
+            delay(REMEMBER_CATEGORY_DELAY_MS)
+            viewModel.rememberCategory(selectedCategory)
+        }
+    }
+    // Sakrivanje: fokus prvo pređe na susednu kategoriju, pa tek onda red nestane.
+    LaunchedEffect(pendingHide) {
+        val id = pendingHide ?: return@LaunchedEffect
+        var moved = false
+        var attempts = 0
+        while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            moved = moveFocus.tryRequestFocus()
+            attempts++
+        }
+        viewModel.hideCategory(id)
+        focusTargetId = null
+        pendingHide = null
+    }
+    LaunchedEffect(movedToTop) {
+        if (movedToTop > 0) {
+            // Kratka pauza da novi redosled stigne iz baze; kategorija (i fokus) je sada na vrhu.
+            delay(MOVE_SETTLE_MS)
+            runCatching { categoryListState.scrollToItem(0) }
+        }
+    }
+    menuCategory?.let { category ->
+        TvActionDialog(
+            title = category.name,
+            options = listOf(
+                stringResource(R.string.category_hide),
+                stringResource(R.string.category_move_top),
+                stringResource(R.string.categories_edit),
+            ),
+            onSelect = { option ->
+                when (option) {
+                    0 -> {
+                        val list = state.categories
+                        val index = list.indexOfFirst { it.id == category.id }
+                        focusTargetId = (list.getOrNull(index + 1) ?: list.getOrNull(index - 1))?.id ?: ALL_CHANNELS
+                        pendingHide = category.id
+                    }
+
+                    1 -> {
+                        viewModel.moveCategoryToTop(category.id)
+                        movedToTop++
+                    }
+
+                    else -> onCategories()
+                }
+            },
+            onClose = { menuCategory = null },
+        )
     }
 
     Column(
@@ -130,6 +207,23 @@ fun TvLiveTvScreen(
                     .weight(1f)
                     .padding(end = 24.dp),
             )
+            // Brza promena aktivne liste: OK prelazi na sledeću. Postoji samo kad lista ima više.
+            val all = playlists.playlists
+            val activeIndex = all.indexOfFirst { it.id == playlistId }
+            if (all.size > 1 && activeIndex >= 0) {
+                OutlinedButton(
+                    onClick = { playlistsViewModel.setActive(all[(activeIndex + 1) % all.size].id) },
+                    modifier = Modifier
+                        .padding(end = 24.dp)
+                        .widthIn(max = 360.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.playlist_switch, all[activeIndex].name),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             TvClock()
         }
 
@@ -177,6 +271,7 @@ fun TvLiveTvScreen(
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 LazyColumn(
+                    state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
                         .fillMaxHeight(),
@@ -224,7 +319,8 @@ fun TvLiveTvScreen(
                             selected = selectedCategory == ALL_CHANNELS,
                             onFocused = { focusedCategory = ALL_CHANNELS; lastChannelId = null },
                             onClick = { focusedCategory = ALL_CHANNELS },
-                            modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus),
+                            modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
+                                .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
                         )
                     }
                     items(state.categories, key = { it.id }) { category ->
@@ -234,7 +330,9 @@ fun TvLiveTvScreen(
                             selected = selectedCategory == category.id,
                             onFocused = { focusedCategory = category.id; lastChannelId = null },
                             onClick = { focusedCategory = category.id },
-                            modifier = focusTarget(selectedCategory == category.id, firstFocus),
+                            onLongClick = { menuCategory = category },
+                            modifier = focusTarget(selectedCategory == category.id, firstFocus)
+                                .then(focusTarget(focusTargetId == category.id, moveFocus)),
                         )
                     }
                 }
@@ -352,7 +450,19 @@ fun TvLiveTvScreen(
                             delay(FOCUS_RESTORE_STEP_MS)
                         }
                     }
-                    firstFocus.tryRequestFocus()
+                    // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
+                    val headerRows = if (state.recentCount > 0) 4 else 3
+                    val selectedRow = when (selectedCategory) {
+                        ChannelGroups.FAVORITES -> 1
+                        ChannelGroups.RECENT -> 2
+                        ALL_CHANNELS -> headerRows - 1
+                        else -> headerRows + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
+                    }
+                    runCatching { categoryListState.scrollToItem((selectedRow - 3).coerceAtLeast(0)) }
+                    repeat(FOCUS_RESTORE_ATTEMPTS) {
+                        if (firstFocus.tryRequestFocus()) return@LaunchedEffect
+                        delay(FOCUS_RESTORE_STEP_MS)
+                    }
                 }
             }
         }
@@ -367,6 +477,8 @@ private const val SKELETON_ROWS = 8
 private const val CATEGORY_FOCUS_DELAY_MS = 250L
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
+private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
+private const val MOVE_SETTLE_MS = 150L
 
 /** Zlatna zvezdica za omiljene kanale. */
 private val FavoriteGold = Color(0xFFFFD166)

@@ -1,6 +1,9 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -41,7 +46,17 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.VodSearch
 
 /** Stavka u izboru kategorije. [icon] se prikazuje ispred naziva (npr. zvezdica za omiljene). */
-data class PickerGroup(val key: String, val label: String, val icon: ImageVector? = null)
+data class PickerGroup(val key: String, val label: String, val icon: ImageVector? = null, val count: Int? = null)
+
+/**
+ * Radnje iz menija koji se otvara dugim pritiskom na kategoriju u spisku: sakrivanje, prebacivanje
+ * na vrh i odlazak na ekran za uređivanje svih kategorija.
+ */
+class CategoryActions(
+    val onHide: (key: String) -> Unit,
+    val onMoveToTop: (key: String) -> Unit,
+    val onManage: () -> Unit,
+)
 
 /**
  * Dugme sa izabranom kategorijom preko cele širine; dodir otvara spisak svih kategorija.
@@ -91,6 +106,7 @@ fun CategoryButton(
  * Spisak svih kategorija preko celog ekrana, sa poljem za pretragu na vrhu.
  * Izbor zatvara spisak.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryPickerDialog(
     title: String,
@@ -98,7 +114,9 @@ fun CategoryPickerDialog(
     selectedKey: String?,
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
+    actions: CategoryActions? = null,
 ) {
+    var menuFor by remember { mutableStateOf<String?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     val needle = remember(query) { VodSearch.normalize(query.trim()) }
     val shown = remember(groups, needle) {
@@ -136,10 +154,14 @@ fun CategoryPickerDialog(
                 LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 8.dp)) {
                     items(shown, key = { it.key }) { group ->
                         val selected = group.key == selectedKey
+                        Box {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onPick(group.key) }
+                                .combinedClickable(
+                                    onClick = { onPick(group.key) },
+                                    onLongClick = actions?.let { { menuFor = group.key } },
+                                )
                                 .padding(horizontal = 20.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -161,6 +183,15 @@ fun CategoryPickerDialog(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
                             )
+                            if (group.count != null) {
+                                Text(
+                                    text = group.count.toString(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(start = 12.dp),
+                                )
+                            }
                             if (selected) {
                                 Icon(
                                     imageVector = AppIcons.Check,
@@ -172,9 +203,46 @@ fun CategoryPickerDialog(
                                 )
                             }
                         }
+                        if (actions != null) {
+                            CategoryActionMenu(
+                                expanded = menuFor == group.key,
+                                actions = actions,
+                                key = group.key,
+                                onDismiss = { menuFor = null },
+                            )
+                        }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/** Meni kategorije (dugi pritisak): Sakrij, Pomeri na vrh, Uredi kategorije. */
+@Composable
+fun CategoryActionMenu(expanded: Boolean, actions: CategoryActions, key: String, onDismiss: () -> Unit) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.category_hide)) },
+            onClick = {
+                onDismiss()
+                actions.onHide(key)
+            },
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.category_move_top)) },
+            onClick = {
+                onDismiss()
+                actions.onMoveToTop(key)
+            },
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.categories_edit)) },
+            onClick = {
+                onDismiss()
+                actions.onManage()
+            },
+        )
     }
 }

@@ -15,6 +15,7 @@ import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.domain.Category
+import com.bane23.iptvplayer.domain.CategoryArrange
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.domain.StreamSource
@@ -46,6 +47,8 @@ class ChannelRepository @Inject constructor(
 
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
 
+    suspend fun activePlaylistIdNow(): Long? = settings.activePlaylistId.first()
+
     suspend fun playlistName(playlistId: Long): String? = playlistDao.getById(playlistId)?.name
 
     /** Vidljive kategorije. Kategorija koja je sada zaključana ima katanac ispred naziva. */
@@ -66,23 +69,35 @@ class ChannelRepository @Inject constructor(
 
     suspend fun setCategoryHidden(categoryId: Long, hidden: Boolean) = categoryDao.setHidden(categoryId, hidden)
 
-    /** Pomera kategoriju za jedno mesto gore ([delta] = -1) ili dole (+1) i pamti ceo redosled. */
-    suspend fun moveCategory(playlistId: Long, categoryId: Long, delta: Int) = db.withTransaction {
-        val ordered = categoryDao.getLive(playlistId).toMutableList()
-        val from = ordered.indexOfFirst { it.id == categoryId }
-        val to = from + delta
-        if (from < 0 || to !in ordered.indices) return@withTransaction
-        ordered.add(to, ordered.removeAt(from))
-        ordered.forEachIndexed { index, category ->
-            if (category.userOrder != index) categoryDao.setUserOrder(category.id, index)
+    suspend fun setAllCategoriesHidden(playlistId: Long, hidden: Boolean) =
+        categoryDao.setAllLiveHidden(playlistId, hidden)
+
+    /** Pamti ceo redosled kategorija; [orderedIds] su ID-jevi svih kategorija liste, redom prikaza. */
+    suspend fun setCategoryOrder(playlistId: Long, orderedIds: List<Long>) = db.withTransaction {
+        val current = categoryDao.getLive(playlistId).associate { it.id to it.userOrder }
+        orderedIds.forEachIndexed { index, id ->
+            if (id in current && current[id] != index) categoryDao.setUserOrder(id, index)
         }
     }
+
+    /** Prebacuje kategoriju na vrh spiska. */
+    suspend fun moveCategoryToTop(playlistId: Long, categoryId: Long) {
+        val ids = categoryDao.getLive(playlistId).map { it.id }
+        val index = ids.indexOf(categoryId)
+        if (index > 0) setCategoryOrder(playlistId, CategoryArrange.movedToTop(ids, index))
+    }
+
+    /** Kategorija otvorena poslednji put u Uživo (vidi `LiveTvViewModel`), ili null. */
+    suspend fun lastCategory(playlistId: Long): String? = settings.lastCategory(playlistId, SECTION_LIVE).first()
+
+    suspend fun setLastCategory(playlistId: Long, value: String) =
+        settings.setLastCategory(playlistId, SECTION_LIVE, value)
 
     /** Da li je lista Xtream nalog (takve liste imaju i filmove i serije). */
     fun observeIsXtream(playlistId: Long): Flow<Boolean> =
         playlistDao.observeById(playlistId).map { it?.type == PlaylistType.XTREAM }
 
-    fun observeChannelCount(playlistId: Long): Flow<Int> = channelDao.observeCountByPlaylist(playlistId)
+    fun observeChannelCount(playlistId: Long): Flow<Int> = channelDao.observeVisibleCount(playlistId)
 
     fun observeFavoriteCount(playlistId: Long): Flow<Int> = channelDao.observeFavoriteCount(playlistId)
 
@@ -227,5 +242,6 @@ class ChannelRepository @Inject constructor(
     private companion object {
         const val PAGE_SIZE = 60
         const val HISTORY_SIZE = 50
+        const val SECTION_LIVE = "live"
     }
 }

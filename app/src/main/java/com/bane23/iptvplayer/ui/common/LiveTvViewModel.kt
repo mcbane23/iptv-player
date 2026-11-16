@@ -9,6 +9,8 @@ import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
@@ -22,6 +24,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -39,6 +43,11 @@ data class LiveTvUiState(
     val recentCount: Int = 0,
     /** Lista je Xtream nalog, pa ima i filmove i serije. */
     val hasVod: Boolean = false,
+    /**
+     * Grupa koja je bila otvorena poslednji put (ID kategorije ili vrednost iz [ChannelGroups]),
+     * ili null ako se ne zna ili te kategorije više nema.
+     */
+    val lastCategoryId: Long? = null,
 )
 
 /** Kategorije aktivne liste. */
@@ -53,21 +62,28 @@ class LiveTvViewModel @Inject constructor(
             if (playlistId == null) {
                 flowOf(LiveTvUiState(loading = false))
             } else {
-                combine(
-                    repository.observeCategories(playlistId),
-                    repository.observeChannelCount(playlistId),
-                    repository.observeFavoriteCount(playlistId),
-                    repository.observeRecentCount(playlistId),
-                    repository.observeIsXtream(playlistId),
-                ) { categories, total, favorites, recent, xtream ->
-                    LiveTvUiState(
-                        loading = false,
-                        playlistId = playlistId,
-                        categories = categories,
-                        totalChannels = total,
-                        favoriteCount = favorites,
-                        recentCount = recent,
-                        hasVod = xtream,
+                flow<LiveTvUiState> {
+                    // Čita se jednom po listi: dok je ekran otvoren, izbor vodi sam ekran.
+                    val last = repository.lastCategory(playlistId)
+                    emitAll(
+                        combine(
+                            repository.observeCategories(playlistId),
+                            repository.observeChannelCount(playlistId),
+                            repository.observeFavoriteCount(playlistId),
+                            repository.observeRecentCount(playlistId),
+                            repository.observeIsXtream(playlistId),
+                        ) { categories, total, favorites, recent, xtream ->
+                            LiveTvUiState(
+                                loading = false,
+                                playlistId = playlistId,
+                                categories = categories,
+                                totalChannels = total,
+                                favoriteCount = favorites,
+                                recentCount = recent,
+                                hasVod = xtream,
+                                lastCategoryId = LastLiveCategory.resolve(last, categories, recent > 0),
+                            )
+                        },
                     )
                 }
             }
@@ -76,6 +92,59 @@ class LiveTvViewModel @Inject constructor(
 
     /** Kanal koji treba pustiti odmah pri startu aplikacije, ili null. */
     suspend fun channelToResume(): Long? = repository.channelToResume()
+
+    /** Pamti grupu koju je korisnik otvorio, da se Uživo sledeći put otvori na njoj. */
+    fun rememberCategory(groupId: Long) {
+        val current = state.value
+        val playlistId = current.playlistId ?: return
+        val token = LastLiveCategory.token(groupId, current.categories) ?: return
+        viewModelScope.launch { repository.setLastCategory(playlistId, token) }
+    }
+
+    /** Sakriva kategoriju; vraća se na ekranu „Uredi kategorije”. */
+    fun hideCategory(categoryId: Long) {
+        viewModelScope.launch { repository.setCategoryHidden(categoryId, true) }
+    }
+
+    fun moveCategoryToTop(categoryId: Long) {
+        val playlistId = state.value.playlistId ?: return
+        viewModelScope.launch { repository.moveCategoryToTop(playlistId, categoryId) }
+    }
+}
+
+/**
+ * Zapis poslednje otvorene grupe kanala. Kategorija se pamti po nazivu, jer se njen ID menja
+ * kad se lista osveži.
+ */
+object LastLiveCategory {
+    private const val FAVORITES = "fav"
+    private const val RECENT = "recent"
+    private const val ALL = "all"
+    private const val CATEGORY = "c:"
+
+    fun token(groupId: Long, categories: List<Category>): String? = when (groupId) {
+        ChannelGroups.FAVORITES -> FAVORITES
+        ChannelGroups.RECENT -> RECENT
+        ChannelGroups.ALL -> ALL
+        else -> categories.firstOrNull { it.id == groupId }?.let { CATEGORY + plainName(it.name) }
+    }
+
+    fun resolve(token: String?, categories: List<Category>, hasRecent: Boolean): Long? {
+        if (token == null) return null
+        return when {
+            token == FAVORITES -> ChannelGroups.FAVORITES
+            token == RECENT -> ChannelGroups.RECENT.takeIf { hasRecent }
+            token == ALL -> ChannelGroups.ALL
+            token.startsWith(CATEGORY) -> {
+                val name = token.removePrefix(CATEGORY)
+                categories.firstOrNull { plainName(it.name) == name }?.id
+            }
+            else -> null
+        }
+    }
+
+    /** Naziv bez katanca koji zaključana kategorija nosi ispred naziva. */
+    private fun plainName(name: String): String = name.removePrefix(LockRepository.LOCK_MARK)
 }
 
 /** Kanali jedne kategorije (ili cele liste), učitavani stranu po stranu. */
@@ -137,35 +206,6 @@ class SearchViewModel @Inject constructor(
 
     private companion object {
         const val SEARCH_DELAY_MS = 300L
-    }
-}
-
-data class CategoriesUiState(val playlistId: Long? = null, val categories: List<Category> = emptyList())
-
-/** Sakrivanje kategorija i promena njihovog redosleda. */
-@HiltViewModel
-class CategoriesViewModel @Inject constructor(
-    private val repository: ChannelRepository,
-) : ViewModel() {
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val state: StateFlow<CategoriesUiState> = repository.activePlaylistId
-        .flatMapLatest { playlistId ->
-            if (playlistId == null) {
-                flowOf(CategoriesUiState())
-            } else {
-                repository.observeAllCategories(playlistId).map { CategoriesUiState(playlistId, it) }
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesUiState())
-
-    fun setHidden(category: Category, hidden: Boolean) {
-        viewModelScope.launch { repository.setCategoryHidden(category.id, hidden) }
-    }
-
-    fun move(category: Category, delta: Int) {
-        val playlistId = state.value.playlistId ?: return
-        viewModelScope.launch { repository.moveCategory(playlistId, category.id, delta) }
     }
 }
 

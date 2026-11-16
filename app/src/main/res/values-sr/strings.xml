@@ -120,7 +120,7 @@
 
     <!-- Kategorije -->
     <string name="categories_manage_title">Kategorije</string>
-    <string name="categories_manage_hint">Sakrijte kategorije koje ne gledate i promenite im redosled. Ovo ostaje i posle osvežavanja liste.</string>
+    <string name="categories_manage_hint">Sakrijte kategorije koje ne gledate i promenite im redosled. Kanali sakrivenih kategorija ne izlaze ni u „Svi kanali” ni u pretrazi. Ovo ostaje i posle osvežavanja liste.</string>
     <string name="category_move_up">Pomeri gore</string>
     <string name="category_move_down">Pomeri dole</string>
     <string name="category_shown">Prikaži kategoriju</string>
@@ -470,4 +470,14 @@
     <string name="opensubtitles_page_intro">Unesite korisničko ime i lozinku naloga sa opensubtitles.com. Podaci idu pravo na vaš TV kroz kućnu mrežu.</string>
     <string name="opensubtitles_page_submit">Prijavi TV</string>
     <string name="opensubtitles_page_done_title">TV je prijavljen</string>
+    <string name="action_more">Još</string>
+    <string name="action_options">Opcije</string>
+    <string name="categories_show_all">Prikaži sve</string>
+    <string name="categories_hide_all">Sakrij sve</string>
+    <string name="categories_edit">Uredi kategorije</string>
+    <string name="category_move_top">Na vrh</string>
+    <string name="playlist_switch">Lista: %1$s</string>
+    <string name="playlists_select_hint">Dodirnite listu da je izaberete kao aktivnu.</string>
+    <string name="playlist_advanced_show">Napredna podešavanja</string>
+    <string name="playlist_advanced_hide">Sakrij napredna podešavanja</string>
 </resources>

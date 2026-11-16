@@ -1,6 +1,8 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +64,9 @@ fun MobileVodLandscape(
     favorites: List<VodItem>,
     watched: WatchedMarks,
     onSelectCategory: (VodCategory) -> Unit,
+    onHideCategory: (VodCategory) -> Unit,
+    onMoveCategoryToTop: (VodCategory) -> Unit,
+    onCategories: () -> Unit,
     onToggleFavorite: (VodItem) -> Unit,
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
@@ -73,6 +78,12 @@ fun MobileVodLandscape(
     val showContinue = continueChosen && continueItems.isNotEmpty()
     val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
     var filter by rememberSaveable { mutableStateOf("") }
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    val categoryActions = CategoryActions(
+        onHide = { key -> state.categories.firstOrNull { it.id == key }?.let(onHideCategory) },
+        onMoveToTop = { key -> state.categories.firstOrNull { it.id == key }?.let(onMoveCategoryToTop) },
+        onManage = onCategories,
+    )
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
     val selectedName = when {
@@ -119,14 +130,23 @@ fun MobileVodLandscape(
                 contentPadding = PaddingValues(bottom = 8.dp),
             ) {
                 items(shown, key = { it.id }) { category ->
-                    PaneRow(
-                        title = category.name,
-                        selected = !showContinue && category == state.selected,
-                        onClick = {
-                            continueChosen = false
-                            onSelectCategory(category)
-                        },
-                    )
+                    Box {
+                        PaneRow(
+                            title = category.name,
+                            selected = !showContinue && category == state.selected,
+                            onClick = {
+                                continueChosen = false
+                                onSelectCategory(category)
+                            },
+                            onLongClick = { menuFor = category.id },
+                        )
+                        CategoryActionMenu(
+                            expanded = menuFor == category.id,
+                            actions = categoryActions,
+                            key = category.id,
+                            onDismiss = { menuFor = null },
+                        )
+                    }
                 }
             }
         }
@@ -235,6 +255,7 @@ private fun PosterGrid(content: androidx.compose.foundation.lazy.grid.LazyGridSc
 }
 
 /** Red u levoj koloni: ikonica, naziv i, po želji, broj stavki ispod. Izabrani red je u akcentnoj boji. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PaneRow(
     title: String,
@@ -242,6 +263,7 @@ private fun PaneRow(
     onClick: () -> Unit,
     subtitle: String? = null,
     icon: ImageVector? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val content = if (selected) colors.onPrimary else colors.onSurface
@@ -250,7 +272,7 @@ private fun PaneRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(if (selected) colors.primary else colors.surfaceVariant.copy(alpha = 0.6f))
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

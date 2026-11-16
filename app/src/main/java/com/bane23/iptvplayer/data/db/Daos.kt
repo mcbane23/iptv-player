@@ -36,6 +36,18 @@ private const val RECENT_CHANNELS =
 /** Redosled kategorija: prvo ručno raspoređene, pa ostale po redosledu iz liste. */
 private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrder, cat.sortOrder"
 
+/**
+ * Uslov koji iz spiska „svi kanali” (`:categoryId` je null) izbacuje kanale sakrivenih kategorija.
+ * Kad je kategorija zadata, ne menja ništa.
+ */
+private const val VISIBLE_IN_ALL =
+    "AND (:categoryId IS NOT NULL OR NOT EXISTS(SELECT 1 FROM categories hc " +
+        "WHERE hc.id = ch.categoryId AND hc.hidden = 1))"
+
+/** Kanal nije u sakrivenoj kategoriji. */
+private const val NOT_HIDDEN =
+    "AND NOT EXISTS(SELECT 1 FROM categories hc WHERE hc.id = ch.categoryId AND hc.hidden = 1)"
+
 private const val CATEGORY_COUNT =
     "(SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = cat.playlistId AND ch.categoryId = cat.id) AS channelCount"
 
@@ -103,6 +115,9 @@ interface CategoryDao {
     @Query("UPDATE categories SET hidden = :hidden WHERE id = :id")
     suspend fun setHidden(id: Long, hidden: Boolean)
 
+    @Query("UPDATE categories SET hidden = :hidden WHERE playlistId = :playlistId AND type = 'LIVE'")
+    suspend fun setAllLiveHidden(playlistId: Long, hidden: Boolean)
+
     @Query("UPDATE categories SET userOrder = :order WHERE id = :id")
     suspend fun setUserOrder(id: Long, order: Int)
 
@@ -118,8 +133,9 @@ interface ChannelDao {
     @Query("SELECT COUNT(*) FROM channels WHERE playlistId = :playlistId")
     suspend fun countByPlaylist(playlistId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM channels WHERE playlistId = :playlistId")
-    fun observeCountByPlaylist(playlistId: Long): Flow<Int>
+    /** Broj kanala u spisku „svi kanali”: bez kanala sakrivenih kategorija. */
+    @Query("SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = :playlistId $NOT_HIDDEN")
+    fun observeVisibleCount(playlistId: Long): Flow<Int>
 
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun getById(id: Long): ChannelEntity?
@@ -130,7 +146,7 @@ interface ChannelDao {
     /** Kanali jedne kategorije, ili svi kanali liste kad je [categoryId] null. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) ORDER BY ch.sortOrder",
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL ORDER BY ch.sortOrder",
     )
     fun pagingSource(playlistId: Long, categoryId: Long?, now: Long): PagingSource<Int, ChannelWithFavorite>
 
@@ -143,7 +159,7 @@ interface ChannelDao {
     /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
-            "AND ch.name LIKE :pattern ESCAPE '\\' ORDER BY ch.name COLLATE NOCASE, ch.sortOrder",
+            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN ORDER BY ch.name COLLATE NOCASE, ch.sortOrder",
     )
     fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
 
@@ -167,34 +183,34 @@ interface ChannelDao {
 
     /** Redni broj kanala (od nule) unutar kategorije, odnosno cele liste. */
     @Query(
-        "SELECT COUNT(*) FROM channels WHERE playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR categoryId = :categoryId) AND sortOrder < :sortOrder",
+        "SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL AND ch.sortOrder < :sortOrder",
     )
     suspend fun positionOf(playlistId: Long, categoryId: Long?, sortOrder: Int): Int
 
     @Query(
-        "SELECT * FROM channels WHERE playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR categoryId = :categoryId) AND sortOrder > :sortOrder " +
-            "ORDER BY sortOrder LIMIT 1",
+        "SELECT ch.* FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL AND ch.sortOrder > :sortOrder " +
+            "ORDER BY ch.sortOrder LIMIT 1",
     )
     suspend fun next(playlistId: Long, categoryId: Long?, sortOrder: Int): ChannelEntity?
 
     @Query(
-        "SELECT * FROM channels WHERE playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR categoryId = :categoryId) AND sortOrder < :sortOrder " +
-            "ORDER BY sortOrder DESC LIMIT 1",
+        "SELECT ch.* FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL AND ch.sortOrder < :sortOrder " +
+            "ORDER BY ch.sortOrder DESC LIMIT 1",
     )
     suspend fun previous(playlistId: Long, categoryId: Long?, sortOrder: Int): ChannelEntity?
 
     @Query(
-        "SELECT * FROM channels WHERE playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY sortOrder LIMIT 1",
+        "SELECT ch.* FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL ORDER BY ch.sortOrder LIMIT 1",
     )
     suspend fun first(playlistId: Long, categoryId: Long?): ChannelEntity?
 
     @Query(
-        "SELECT * FROM channels WHERE playlistId = :playlistId " +
-            "AND (:categoryId IS NULL OR categoryId = :categoryId) ORDER BY sortOrder DESC LIMIT 1",
+        "SELECT ch.* FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND (:categoryId IS NULL OR ch.categoryId = :categoryId) $VISIBLE_IN_ALL ORDER BY ch.sortOrder DESC LIMIT 1",
     )
     suspend fun last(playlistId: Long, categoryId: Long?): ChannelEntity?
 

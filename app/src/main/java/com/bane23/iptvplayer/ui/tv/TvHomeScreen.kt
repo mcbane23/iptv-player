@@ -50,6 +50,7 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
+import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
@@ -79,7 +80,7 @@ fun TvHomeScreen(
     onAddPlaylist: () -> Unit,
     onAddFromPhone: () -> Unit,
     onEditPlaylist: (Long) -> Unit,
-    onCategories: () -> Unit,
+    onCategories: (CategorySection) -> Unit,
     onParental: () -> Unit,
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
@@ -100,6 +101,7 @@ fun TvHomeScreen(
     ExitOnDoubleBack(enabled = tab == TvTab.LIVE)
     val holder = rememberSaveableStateHolder()
     val playlistId = liveState.playlistId
+    val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
 
     var railFocused by remember { mutableStateOf(false) }
     // Bez animacije širine: animacija ponovo raspoređuje i crta meni sa senkom u svakom kadru,
@@ -126,6 +128,7 @@ fun TvHomeScreen(
                         onPlay = onPlay,
                         onManagePlaylists = { tab = TvTab.PLAYLISTS },
                         onSearch = onSearch,
+                        onCategories = { onCategories(CategorySection.LIVE) },
                         viewModel = liveTvViewModel,
                     )
 
@@ -134,6 +137,7 @@ fun TvHomeScreen(
                         series = false,
                         onOpen = { onOpenVod(it, false) },
                         onSearch = { onSearchVod(false) },
+                        onCategories = { onCategories(CategorySection.MOVIES) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-$playlistId"),
                     )
 
@@ -141,6 +145,7 @@ fun TvHomeScreen(
                         series = true,
                         onOpen = { onOpenVod(it, true) },
                         onSearch = { onSearchVod(true) },
+                        onCategories = { onCategories(CategorySection.SERIES) },
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-$playlistId"),
                     )
 
@@ -151,7 +156,7 @@ fun TvHomeScreen(
                     )
 
                     TvTab.SETTINGS -> TvSettingsScreen(
-                        onCategories = onCategories.takeIf { playlistId != null },
+                        onCategories = openLiveCategories.takeIf { playlistId != null },
                         onParental = onParental.takeIf { playlistId != null },
                         onTrakt = onTrakt.takeIf { isTraktConfigured },
                         onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
