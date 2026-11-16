@@ -159,6 +159,11 @@ data class WatchProgressEntity(
     val poster: String? = null,
     /** Nastavak fajla filma (mp4, mkv...); za epizode null. */
     val extension: String? = null,
+    /**
+     * Kad je film, odnosno epizoda, označen kao odgledan: sam pri gledanju do kraja ili ručno.
+     * null znači da nije odgledan (od verzije baze 8).
+     */
+    val watchedAt: Long? = null,
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */

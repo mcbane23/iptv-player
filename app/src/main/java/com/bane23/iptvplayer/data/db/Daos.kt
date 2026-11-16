@@ -339,6 +339,19 @@ interface WatchProgressDao {
             "ORDER BY w.updatedAt DESC LIMIT :limit",
     )
     fun observeContinueSeries(playlistId: Long, limit: Int): Flow<List<WatchProgressEntity>>
+
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
+    suspend fun getMany(playlistId: Long, kind: String, itemIds: List<Long>): List<WatchProgressEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(rows: List<WatchProgressEntity>)
+
+    @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
+    suspend fun deleteMany(playlistId: Long, kind: String, itemIds: List<Long>)
+
+    /** ID-jevi odgledanih filmova, odnosno epizoda, za kvačicu na posteru. */
+    @Query("SELECT itemId FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND watchedAt IS NOT NULL")
+    fun observeWatchedIds(playlistId: Long, kind: String): Flow<List<Long>>
 }
 
 @Dao

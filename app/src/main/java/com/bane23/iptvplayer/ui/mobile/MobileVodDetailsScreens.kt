@@ -24,6 +24,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -54,6 +55,7 @@ import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.vod.MovieViewModel
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.SeriesViewModel
+import com.bane23.iptvplayer.ui.common.vod.isSeasonWatched
 import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.statusText
@@ -102,6 +104,12 @@ fun MobileMovieScreen(
                     },
                     onPrimary = { onPlay(playExtension, progress?.resumable != true) },
                     onStartOver = { onPlay(playExtension, true) }.takeIf { progress?.resumable == true },
+                )
+            }
+            item {
+                WatchedButton(
+                    label = stringResource(if (progress?.watched == true) R.string.vod_mark_unwatched else R.string.vod_mark_watched),
+                    onClick = viewModel::toggleWatched,
                 )
             }
             if (state.loading) {
@@ -196,6 +204,17 @@ fun MobileSeriesScreen(
                             }
                         }
                     }
+                    state.selectedSeason?.let { season ->
+                        item(key = "season-watched") {
+                            WatchedButton(
+                                label = stringResource(
+                                    if (state.isSeasonWatched(season)) R.string.vod_mark_season_unwatched else R.string.vod_mark_season_watched,
+                                    season,
+                                ),
+                                onClick = { viewModel.toggleSeasonWatched(season) },
+                            )
+                        }
+                    }
                     items(state.episodes, key = { it.id }) { episode ->
                         val watched = state.progress[episode.id]
                         EpisodeRow(
@@ -203,6 +222,7 @@ fun MobileSeriesScreen(
                             progress = watched,
                             fallbackImage = state.poster,
                             onClick = { onPlay(episode.id, watched?.resumable != true) },
+                            onToggleWatched = { viewModel.toggleWatched(episode) },
                         )
                     }
                 }
@@ -310,6 +330,20 @@ private fun PlayButtons(primaryLabel: String, onPrimary: () -> Unit, onStartOver
     }
 }
 
+/** Dugme „Označi kao odgledano” (film ili cela sezona) preko cele širine. */
+@Composable
+private fun WatchedButton(label: String, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        ButtonIcon(AppIcons.Check)
+        Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 @Composable
 private fun ButtonIcon(icon: ImageVector) {
     Icon(
@@ -346,7 +380,13 @@ private fun Overview(plot: String?, credits: List<String>, maxLines: Int = Int.M
 
 /** Epizoda: sličica sa trakom odgledanog, naziv (najviše dva reda) i trajanje ili stanje gledanja. */
 @Composable
-private fun EpisodeRow(episode: Episode, progress: WatchProgress?, fallbackImage: String?, onClick: () -> Unit) {
+private fun EpisodeRow(
+    episode: Episode,
+    progress: WatchProgress?,
+    fallbackImage: String?,
+    onClick: () -> Unit,
+    onToggleWatched: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -422,6 +462,15 @@ private fun EpisodeRow(episode: Episode, progress: WatchProgress?, fallbackImage
                     )
                 }
             }
+        }
+        // Kvačica desno: označava epizodu kao odgledanu, odnosno poništava.
+        val watched = progress?.watched == true
+        IconButton(onClick = onToggleWatched) {
+            Icon(
+                imageVector = AppIcons.Check,
+                contentDescription = stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched),
+                tint = if (watched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            )
         }
     }
 }

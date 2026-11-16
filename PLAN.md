@@ -321,6 +321,15 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 Ideje dodate posle prvobitnog plana. Rade se posle Faze 8, redosled po želji vlasnika.
 Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
+**Odgledano i Trakt**
+
+- [x] Ručno označavanje filmova i epizoda kao odgledanih (i cele sezone), kvačica na posterima
+      filmova; gledanje do 95% označava samo (baza v8)
+- [ ] Trakt nalog: prijava kodom (trakt.tv/activate), slanje i preuzimanje odgledanog (obostrano).
+      Poklapanje preko `tmdb_id` iz panela, inače po nazivu i godini
+- [ ] Preko Trakt-a i nastavak gledanja između TV-a i telefona (pokriva stavku ispod, za ono što
+      Trakt prepozna)
+
 **Sinhronizacija gledanog sadržaja preko naloga**
 
 - [ ] Prijava nalogom (Google ili email) u podešavanjima, potpuno opciono

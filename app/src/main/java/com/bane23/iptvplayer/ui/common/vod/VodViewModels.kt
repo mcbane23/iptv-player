@@ -8,6 +8,7 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.repo.WatchProgress
+import com.bane23.iptvplayer.data.repo.WatchTarget
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
@@ -73,6 +74,14 @@ class VodBrowseViewModel @Inject constructor(
             if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeFavorites(playlistId, kind)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** ID-jevi odgledanih filmova, za kvačicu na posteru (serije je nemaju). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val watchedIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind != VodKind.MOVIES) flowOf(emptySet()) else repository.observeWatchedMovieIds(playlistId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** Dodaje film ili seriju u omiljene, odnosno uklanja (zvezdica na posteru). */
     fun toggleFavorite(item: VodItem) {
@@ -199,6 +208,13 @@ class MovieViewModel @Inject constructor(
         val item = VodItem(current.movieId, current.name, current.poster, rating = null, extension = current.extension)
         viewModelScope.launch { repository.toggleFavorite(VodKind.MOVIES, item, current.favorite) }
     }
+
+    /** Označava film kao odgledan, odnosno poništava oznaku. */
+    fun toggleWatched() {
+        val current = _state.value
+        val target = WatchTarget(current.movieId, current.name, current.poster, current.extension)
+        viewModelScope.launch { repository.setWatched(seriesId = null, listOf(target), watched = current.progress?.watched != true) }
+    }
 }
 
 data class SeriesUiState(
@@ -245,7 +261,7 @@ class SeriesViewModel @Inject constructor(
         val last = watched.firstOrNull()
         val resume = if (details == null || last == null) {
             null
-        } else if (last.finished) {
+        } else if (!last.resumable && last.finished) {
             details.episodeAfter(last.itemId)
         } else {
             details.episodes.firstOrNull { it.id == last.itemId }
@@ -291,6 +307,32 @@ class SeriesViewModel @Inject constructor(
         val item = VodItem(current.seriesId, current.name, current.poster, rating = null, extension = null)
         viewModelScope.launch { repository.toggleFavorite(VodKind.SERIES, item, current.favorite) }
     }
+
+    /** Označava epizodu kao odgledanu, odnosno poništava oznaku. */
+    fun toggleWatched(episode: Episode) {
+        val watched = state.value.progress[episode.id]?.watched != true
+        setWatched(listOf(episode), watched)
+    }
+
+    /** Cela sezona: ako su sve epizode odgledane, oznaka se skida, inače se sve označavaju. */
+    fun toggleSeasonWatched(season: Int) {
+        val current = state.value
+        val episodes = current.details?.seasons?.firstOrNull { it.number == season }?.episodes.orEmpty()
+        setWatched(episodes, watched = !current.isSeasonWatched(season))
+    }
+
+    private fun setWatched(episodes: List<Episode>, watched: Boolean) {
+        val current = state.value
+        val id = seriesId.value ?: return
+        val targets = episodes.map { WatchTarget(it.id, current.name, current.poster) }
+        viewModelScope.launch { repository.setWatched(id, targets, watched) }
+    }
+}
+
+/** Da li su sve epizode sezone odgledane. */
+fun SeriesUiState.isSeasonWatched(season: Int): Boolean {
+    val episodes = details?.seasons?.firstOrNull { it.number == season }?.episodes.orEmpty()
+    return episodes.isNotEmpty() && episodes.all { progress[it.id]?.watched == true }
 }
 
 data class VodSearchUiState(
@@ -330,6 +372,14 @@ class VodSearchViewModel @Inject constructor(
         kind = if (series) VodKind.SERIES else VodKind.MOVIES
         openedKind.value = kind
     }
+
+    /** ID-jevi odgledanih filmova, za kvačicu na posteru. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val watchedIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind != VodKind.MOVIES) flowOf(emptySet()) else repository.observeWatchedMovieIds(playlistId)
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     fun toggleFavorite(item: VodItem) {
         val isFavorite = item.id in favoriteIds.value
