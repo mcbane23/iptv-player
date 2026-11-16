@@ -28,6 +28,7 @@ import com.bane23.iptvplayer.ui.common.navigation.CastPlayback
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
+import com.bane23.iptvplayer.ui.common.navigation.OpenSubtitlesAccount
 import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
@@ -107,6 +108,7 @@ fun TvApp() {
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
+                    onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
                     onRecordings = { backStack.add(Recordings) },
                     onMultiView = { backStack.add(MultiView) },
                 )
@@ -208,6 +210,7 @@ fun TvApp() {
             }
             entry<ParentalControl> { TvParentalScreen() }
             entry<TraktAccount> { TvTraktScreen() }
+            entry<OpenSubtitlesAccount> { TvOpenSubtitlesScreen() }
             entry<Recordings> {
                 TvRecordingsScreen(onPlay = { id -> backStack.add(PlayRecording(id)) })
             }

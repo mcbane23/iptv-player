@@ -36,6 +36,8 @@ android {
         fun quoted(name: String) = "\"" + (providers.environmentVariable(name).orNull ?: "").trim().replace("\"", "") + "\""
         buildConfigField("String", "TRAKT_CLIENT_ID", quoted("TRAKT_CLIENT_ID"))
         buildConfigField("String", "TRAKT_CLIENT_SECRET", quoted("TRAKT_CLIENT_SECRET"))
+        // API ključ za OpenSubtitles (titlovi sa interneta), isto iz GitHub Secrets; bez njega se opcija ne prikazuje.
+        buildConfigField("String", "OPENSUBTITLES_API_KEY", quoted("OPENSUBTITLES_API_KEY"))
     }
 
     signingConfigs {

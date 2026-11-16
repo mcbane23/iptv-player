@@ -1,9 +1,11 @@
 package com.bane23.iptvplayer.player
 
 import android.content.Context
+import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
@@ -40,6 +42,15 @@ data class TrackOption(
     val selected: Boolean,
     /** Jezik zapisa (npr. "sr"), ako ga strim navodi. */
     val language: String? = null,
+)
+
+/** Titl iz fajla na uređaju (preuzet sa interneta), koji se dodaje uz strim. Format je SubRip (.srt). */
+data class ExternalSubtitle(
+    /** Jedinstvena oznaka, po kojoj se titl prepoznaje među zapisima. */
+    val id: String,
+    val uri: String,
+    val language: String?,
+    val label: String,
 )
 
 data class PlaybackState(
@@ -108,6 +119,12 @@ class PlayerEngine(
     /** Pozicija od koje sledeća priprema plejera treba da krene (samo kad je [seekable]). */
     private var resumePositionMs = 0L
 
+    /** Titlovi dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. */
+    private var externalSubtitles: List<ExternalSubtitle> = emptyList()
+
+    /** Dodat titl koji treba uključiti čim se pojavi među zapisima. */
+    private var pendingSubtitleId: String? = null
+
     val positionMs: Long get() = player.currentPosition.coerceAtLeast(0)
 
     /** Trajanje sadržaja, ili 0 dok nije poznato (i za kanale uživo). */
@@ -147,6 +164,10 @@ class PlayerEngine(
         retryJob?.cancel()
         seekable = startPositionMs != null
         resumePositionMs = startPositionMs ?: 0
+        if (source != this.source) {
+            externalSubtitles = emptyList()
+            pendingSubtitleId = null
+        }
         this.source = source
         urlIndex = 0
         attempts = 0
@@ -215,6 +236,23 @@ class PlayerEngine(
         }
     }
 
+    /**
+     * Dodaje titl iz fajla i uključuje ga. Sadržaj se priprema iznova (plejer ne ume da doda titl u
+     * hodu), pa se gledanje nastavlja sa istog mesta posle kratkog učitavanja.
+     */
+    fun addSubtitle(subtitle: ExternalSubtitle) {
+        if (source == null) return
+        retryJob?.cancel()
+        externalSubtitles = externalSubtitles.filterNot { it.id == subtitle.id } + subtitle
+        pendingSubtitleId = subtitle.id
+        rememberPosition()
+        if (_state.value.status == PlaybackStatus.FAILED) {
+            attempts = 0
+            _state.update { it.copy(status = PlaybackStatus.LOADING, failure = null, failureDetail = null) }
+        }
+        prepareCurrent()
+    }
+
     fun release() {
         retryJob?.cancel()
         player.removeListener(listener)
@@ -237,10 +275,23 @@ class PlayerEngine(
         }
         httpFactory.setUserAgent(current.userAgent)
         httpFactory.setDefaultRequestProperties(headers)
+        val item = MediaItem.Builder()
+            .setUri(url)
+            .setSubtitleConfigurations(
+                externalSubtitles.map { subtitle ->
+                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.uri))
+                        .setId(subtitle.id)
+                        .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                        .setLanguage(subtitle.language)
+                        .setLabel(subtitle.label)
+                        .build()
+                },
+            )
+            .build()
         if (seekable) {
-            player.setMediaItem(MediaItem.fromUri(url), resumePositionMs)
+            player.setMediaItem(item, resumePositionMs)
         } else {
-            player.setMediaItem(MediaItem.fromUri(url))
+            player.setMediaItem(item)
         }
         player.prepare()
         player.playWhenReady = true
@@ -310,6 +361,26 @@ class PlayerEngine(
     }
 
     private fun publishTracks(tracks: Tracks) {
+        // Tek dodat titl se uključuje čim ga plejer prijavi; izbor pokreće novi poziv sa uključenim titlom.
+        val pending = pendingSubtitleId
+        if (pending != null) {
+            tracks.groups.forEach { group ->
+                if (group.type != C.TRACK_TYPE_TEXT) return@forEach
+                for (trackIndex in 0 until group.length) {
+                    // Plejer ispred oznake spoljnog titla dodaje redni broj izvora ("1:oznaka").
+                    val id = group.getTrackFormat(trackIndex).id ?: continue
+                    if (group.isTrackSupported(trackIndex) && (id == pending || id.endsWith(":$pending"))) {
+                        pendingSubtitleId = null
+                        if (!group.isTrackSelected(trackIndex)) {
+                            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                                .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
+                                .build()
+                        }
+                    }
+                }
+            }
+        }
         val audio = ArrayList<TrackOption>()
         val text = ArrayList<TrackOption>()
         tracks.groups.forEachIndexed { groupIndex, group ->

@@ -7,6 +7,8 @@ import com.bane23.iptvplayer.data.crypto.KeystorePasswordCipher
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.Migrations
+import com.bane23.iptvplayer.data.subtitles.OpenSubtitlesApi
+import com.bane23.iptvplayer.data.subtitles.OpenSubtitlesJson
 import com.bane23.iptvplayer.data.trakt.TraktApi
 import com.bane23.iptvplayer.data.trakt.TraktJson
 import com.bane23.iptvplayer.data.xtream.XtreamApi
@@ -76,6 +78,28 @@ object AppModule {
         .addConverterFactory(TraktJson.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(TraktApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideOpenSubtitlesApi(client: OkHttpClient): OpenSubtitlesApi = Retrofit.Builder()
+        .baseUrl("https://api.opensubtitles.com/api/v1/")
+        .client(
+            client.newBuilder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder()
+                            .header("Api-Key", BuildConfig.OPENSUBTITLES_API_KEY)
+                            // OpenSubtitles traži naziv i verziju aplikacije; podrazumevani User-Agent odbija.
+                            .header("User-Agent", "Glowbox v${BuildConfig.VERSION_NAME}")
+                            .header("Accept", "application/json")
+                            .build(),
+                    )
+                }
+                .build(),
+        )
+        .addConverterFactory(OpenSubtitlesJson.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(OpenSubtitlesApi::class.java)
 }
 
 @Module

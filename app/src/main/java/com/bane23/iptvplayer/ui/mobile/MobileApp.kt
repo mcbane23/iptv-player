@@ -17,6 +17,7 @@ import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.CastRemote
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
+import com.bane23.iptvplayer.ui.common.navigation.OpenSubtitlesAccount
 import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
@@ -93,6 +94,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
+                    onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
                     onRecordings = { backStack.add(Recordings) },
                     onMultiView = { backStack.add(MultiView) },
                 )
@@ -221,6 +223,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<ParentalControl> {
                 MobileParentalScreen(onBack = { backStack.removeLastOrNull() })
+            }
+            entry<OpenSubtitlesAccount> {
+                MobileOpenSubtitlesScreen(onBack = { backStack.removeLastOrNull() })
             }
             entry<TraktAccount> {
                 MobileTraktScreen(onBack = { backStack.removeLastOrNull() })
