@@ -20,7 +20,7 @@ data class HlsPlaylist(
     companion object {
         const val DEFAULT_TARGET_SECONDS = 6
 
-        fun isPlaylist(text: String): Boolean = text.trimStart('﻿', ' ', '\n', '\r').startsWith("#EXTM3U")
+        fun isPlaylist(text: String): Boolean = text.trimStart('\uFEFF', ' ', '\n', '\r').startsWith("#EXTM3U")
 
         /** Čita HLS spisak. Relativne adrese se sastavljaju prema [baseUrl]. */
         fun parse(text: String, baseUrl: String): HlsPlaylist {
