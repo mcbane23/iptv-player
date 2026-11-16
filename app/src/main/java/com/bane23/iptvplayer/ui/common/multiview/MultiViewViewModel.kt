@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -64,6 +65,7 @@ class MultiViewViewModel @Inject constructor(
     val state: StateFlow<MultiViewUiState> = _state.asStateFlow()
 
     private val engines = arrayOfNulls<PlayerEngine>(MAX_TILES)
+    private val statusJobs = arrayOfNulls<Job>(MAX_TILES)
     private var playerSettings: PlayerSettings? = null
     private var foreground = false
 
@@ -158,6 +160,8 @@ class MultiViewViewModel @Inject constructor(
     }
 
     private fun clear(index: Int) {
+        statusJobs[index]?.cancel()
+        statusJobs[index] = null
         engines[index]?.release()
         engines[index] = null
         _state.update { state -> state.copy(tiles = state.tiles.replace(index) { MultiTile() }) }
@@ -166,9 +170,9 @@ class MultiViewViewModel @Inject constructor(
     private suspend fun engine(index: Int): PlayerEngine {
         engines[index]?.let { return it }
         val playerSettings = playerSettings ?: settings.playerSettings.first().also { playerSettings = it }
-        val engine = PlayerEngine(context, viewModelScope, playerSettings)
+        val engine = PlayerEngine(context, viewModelScope, playerSettings, shared = true)
         engines[index] = engine
-        viewModelScope.launch {
+        statusJobs[index] = viewModelScope.launch {
             engine.state.collect { playback ->
                 // Polje je u međuvremenu ispražnjeno: stanje starog plejera se više ne prikazuje.
                 if (engines[index] !== engine) return@collect

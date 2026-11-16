@@ -74,6 +74,11 @@ class PlayerEngine(
     context: Context,
     private val scope: CoroutineScope,
     settings: PlayerSettings = PlayerSettings(),
+    /**
+     * Plejer je jedan od više njih na ekranu (prikaz više kanala): drži mali bafer, da nekoliko
+     * plejera zajedno ne napuni memoriju uređaja.
+     */
+    private val shared: Boolean = false,
 ) {
 
     private val appContext = context.applicationContext
@@ -99,7 +104,7 @@ class PlayerEngine(
 
     val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
         .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory)))
-        .apply { loadControl(settings.buffer)?.let { setLoadControl(it) } }
+        .apply { (if (shared) sharedLoadControl() else loadControl(settings.buffer))?.let { setLoadControl(it) } }
         .build()
 
     private val _state = MutableStateFlow(PlaybackState())
@@ -131,7 +136,13 @@ class PlayerEngine(
     val durationMs: Long get() = player.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0
 
     private val listener = object : Player.Listener {
-        override fun onPlaybackStateChanged(playbackState: Int) = publishStatus()
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_ENDED && !seekable && source != null) {
+                reconnectLive()
+            } else {
+                publishStatus()
+            }
+        }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = publishStatus()
 
@@ -332,6 +343,25 @@ class PlayerEngine(
         }
     }
 
+    /**
+     * Server je uredno zatvorio vezu kanala uživo (npr. zbog ograničenja broja veza na nalogu).
+     * Plejer to vidi kao kraj sadržaja i stao bi na poslednjoj slici, pa se kanal pušta iznova.
+     */
+    private fun reconnectLive() {
+        attempts++
+        if (attempts <= MAX_ATTEMPTS) {
+            scheduleRetry(delayMs = RETRY_DELAY_MS * attempts)
+        } else {
+            _state.update {
+                it.copy(
+                    status = PlaybackStatus.FAILED,
+                    failure = PlaybackFailure.NETWORK,
+                    failureDetail = "Stream ended",
+                )
+            }
+        }
+    }
+
     /** Pamti dokle se stiglo, da se posle prekida ili povratka u aplikaciju nastavi odatle. */
     private fun rememberPosition() {
         if (seekable && player.currentPosition > 0) {
@@ -457,7 +487,14 @@ class PlayerEngine(
             .build()
     }
 
+    /** Mali bafer za prikaz više kanala: najviše oko 20 sekundi ili [SHARED_BUFFER_BYTES] po plejeru. */
+    private fun sharedLoadControl(): DefaultLoadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(10_000, 20_000, 1_500, 3_000)
+        .setTargetBufferBytes(SHARED_BUFFER_BYTES)
+        .build()
+
     private companion object {
+        const val SHARED_BUFFER_BYTES = 24 * 1024 * 1024
         const val MAX_ATTEMPTS = 3
         const val RETRY_DELAY_MS = 1_500L
     }
