@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -152,7 +155,10 @@ class GestureHintViewModel @Inject constructor(private val settings: SettingsSto
     }
 }
 
-/** Uputstvo za gestove (osvetljenje i jačina zvuka), samo pri prvom otvaranju plejera. */
+/**
+ * Uputstvo za gestove (osvetljenje i jačina zvuka), samo pri prvom otvaranju plejera. Nestaje samo
+ * posle nekoliko sekundi, a može i ranije da se zatvori dugmetom ili dodirom na poruku.
+ */
 @Composable
 fun BoxScope.FirstLaunchGestureHint(viewModel: GestureHintViewModel = hiltViewModel()) {
     val shown by viewModel.shown.collectAsStateWithLifecycle()
@@ -161,22 +167,37 @@ fun BoxScope.FirstLaunchGestureHint(viewModel: GestureHintViewModel = hiltViewMo
         if (shown == false) {
             visible = true
             viewModel.markShown()
+        }
+    }
+    // Odvojeno od čitanja podešavanja: upis "prikazano" ponovo pokreće gornji efekat, pa bi
+    // odbrojavanje u njemu bilo prekinuto i poruka bi ostala zauvek.
+    LaunchedEffect(visible) {
+        if (visible) {
             delay(GESTURE_GUIDE_MS)
             visible = false
         }
     }
     if (!visible) return
-    Text(
-        text = stringResource(R.string.gesture_guide),
-        color = Color.White,
-        style = MaterialTheme.typography.bodyLarge,
-        textAlign = TextAlign.Center,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .align(Alignment.Center)
             .padding(horizontal = 32.dp)
-            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-    )
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black.copy(alpha = 0.8f))
+            .clickable { visible = false }
+            .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.gesture_guide),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
+        TextButton(onClick = { visible = false }) {
+            Text(stringResource(R.string.action_close))
+        }
+    }
 }
 
-private const val GESTURE_GUIDE_MS = 5_000L
+private const val GESTURE_GUIDE_MS = 6_000L

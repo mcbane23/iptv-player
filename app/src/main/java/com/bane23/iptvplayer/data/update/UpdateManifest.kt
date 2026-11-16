@@ -5,11 +5,11 @@ import kotlinx.serialization.json.Json
 
 /**
  * Opis poslednjeg builda u javnom repou za APK-ove. CI ga objavljuje kao `iptv-player.json`
- * pored APK-a, u izdanju [UpdateSource.CHANNEL_TAG].
+ * pored APK-a, u izdanju izabranog kanala ([UpdateChannel]).
  */
 @Serializable
 data class UpdateManifest(
-    /** Raste sa svakim buildom (broj CI run-a). Novije je samo ono sa većim brojem. */
+    /** Raste sa svakim spajanjem u main, isto za oba kanala. Novije je samo ono sa većim brojem. */
     val versionCode: Long,
     val versionName: String,
     /** Ime APK fajla u istom izdanju. */

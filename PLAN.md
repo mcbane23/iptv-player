@@ -122,9 +122,9 @@ jer PR prikazuje rezultat push builda za isti commit). Dva posla rade paralelno:
 
 - **Test APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
   (keširanje), `./gradlew assembleDev`, na main-u upload APK-a kao artifact i objava pre-release-a.
-  Build `dev` je optimizovan kao izdanje (R8, nije debuggable), a potpisan stalnim debug ključem, pa se
-  instalira preko ranijih debug buildova bez gubitka podataka (odluka vlasnika 2026-11-16, debug build
-  je bio spor na slabijem TV-u)
+  Build `dev` je optimizovan kao izdanje (R8, nije debuggable; odluka vlasnika 2026-11-16, debug build
+  je bio spor na slabijem TV-u). Na main-u je potpisan istim ključem kao zvanična izdanja (odluka
+  vlasnika 2026-11-16), a na granama debug ključem
 - **Testovi i lint**: isti koraci za pripremu, `./gradlew testDebugUnitTest lintDebug`,
   upload izveštaja
 
@@ -133,8 +133,8 @@ CI je zelen tek kad oba posla prođu. Pre-release se objavljuje čim je APK goto
 APK artifact se čuva samo za build-ove sa `main`-a. Push na `main` dodatno
 objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Grane ne objavljuju APK
 (odluka vlasnika 2026-11-16, linkovi po grani su bili zbunjujući); na njima build i testovi
-služe samo kao provera. Ažuriranje iz aplikacije prati samo `main`. Za sada je APK
-**potpisan debug ključem**.
+služe samo kao provera. Ažuriranje iz aplikacije prati samo `main`. Objavljeni APK je
+**potpisan istim ključem kao zvanična izdanja**.
 
 **Ažuriranje iz aplikacije (urađeno, dev kanal):** CI APK sa `main`-a objavljuje i u
 poseban javni repo za APK-ove (`mcbane23/apps`, izdanje `iptv-player-dev`, fajlovi
@@ -315,19 +315,20 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 ### Faza 8: Izdanje
 
 - [x] Potvrđeni ime, akcentna boja, ikonica i TV baner
-- [ ] Keystore napravljen, secrets dodati, `release.yml` radi. `release.yml` pravi izdanje sam kad se
+- [x] Keystore napravljen, secrets dodati, `release.yml` radi. `release.yml` pravi izdanje sam kad se
       u main spoji nova verzija u `version.txt`; keystore i `RELEASE_*` secrets su dodati (vidi README).
 - [ ] R8/ProGuard pravila proverena na release buildu. R8 i smanjivanje resursa su uključeni i
       release build se pravi u CI-ju na svaki push; ostaje proba release APK-a na uređaju.
-- [x] Verzionisanje: dev buildovi iz broja CI run-a (`0.0.1-dev.N`), izdanja iz `version.txt`
-      (`1.2.3` daje oznaku `v1.2.3` i `versionCode` 1002003)
+- [x] Verzionisanje: ime izdanja iz `version.txt` (`1.2.3` daje oznaku `v1.2.3`), dev build ima
+      dodatak `-dev.N`. `versionCode` je isti račun za oba: 1 000 000 + broj commitova u main-u
 - [x] README: kako instalirati APK na telefon i na TV
-- [ ] Prvo izdanje `v1.0.0` u GitHub Releases
+- [x] Prvo izdanje `v1.0.0` u GitHub Releases (2026-11-16)
 - [x] Ažuriranje iz aplikacije: zvanična izdanja prate kanal `iptv-player` u javnom repou, dev
-      buildovi ostaju na `iptv-player-dev` (`UpdateSource.kt`, `release.yml`). Kanali se ne mešaju
-      jer su potpisani različitim ključevima.
-- [ ] Odluka: prelazak sa dev builda na izdanje traži brisanje aplikacije (drugi ključ), a time
-      se gube liste i favoriti na tom uređaju. Dogovoriti kako se to rešava pre `v1.0.0`.
+      buildovi ostaju na `iptv-player-dev` (`UpdateSource.kt`, `release.yml`).
+- [x] Prelazak između dev builda i izdanja bez brisanja (odluka vlasnika 2026-11-16): oba su
+      potpisana istim ključem i dele brojanje verzija, a kanal se bira u Podešavanjima („Verzija za
+      ažuriranje”). Prelazi se samo na noviji build. Dev buildovi stariji od ove promene (debug
+      ključ) traže jednokratno brisanje.
 
 ### Faza 9: Naknadne ideje
 

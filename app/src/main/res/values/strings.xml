@@ -306,6 +306,10 @@
     <string name="settings_about_header">About</string>
     <string name="update_check">Check for update</string>
     <string name="update_current_version">Installed version: %1$s</string>
+    <string name="update_channel">Update version</string>
+    <string name="update_channel_release">Official releases</string>
+    <string name="update_channel_dev">Test builds (dev)</string>
+    <string name="update_channel_summary">The app switches when the chosen version gets a build newer than the installed one. Playlists and settings stay.</string>
     <string name="update_title">App update</string>
     <string name="update_checking">Checking for a new version…</string>
     <string name="update_up_to_date">You have the latest version (%1$s).</string>

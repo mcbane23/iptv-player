@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.security.MessageDigest
@@ -19,7 +20,10 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.CacheControl
 import okhttp3.OkHttpClient
@@ -52,6 +56,7 @@ enum class UpdateError { NETWORK, BAD_FILE, INSTALL }
 class AppUpdater @Inject constructor(
     @ApplicationContext private val context: Context,
     private val client: OkHttpClient,
+    private val settings: SettingsStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
@@ -59,6 +64,24 @@ class AppUpdater @Inject constructor(
 
     private var job: Job? = null
     private var checkedOnStart = false
+
+    /** Kanal koji se prati: izbor iz podešavanja, ili kanal iz koga je ovaj build. */
+    val channel: Flow<UpdateChannel> =
+        settings.updateChannel.map { UpdateChannel.fromTag(it) ?: UpdateChannel.DEFAULT }
+
+    /** Kanal sa koga je pročitan poslednji opis; APK se preuzima sa istog. */
+    @Volatile
+    private var manifestChannel: UpdateChannel = UpdateChannel.DEFAULT
+
+    /** Korisnik je izabrao drugi kanal: odmah se proverava šta on nudi. */
+    fun setChannel(channel: UpdateChannel) {
+        job?.cancel()
+        job = scope.launch {
+            settings.setUpdateChannel(channel.tag)
+            apkFile.delete()
+            runCheck(userInitiated = true)
+        }
+    }
     private val apkFile: File get() = File(File(context.cacheDir, "update"), "update.apk")
 
     val installedVersionName: String
@@ -81,15 +104,20 @@ class AppUpdater @Inject constructor(
 
     fun check(userInitiated: Boolean) {
         if (job?.isActive == true) return
-        job = scope.launch {
-            if (userInitiated) _state.value = UpdateState.Checking
-            val manifest = runCatching { fetchManifest() }.getOrNull()
-            _state.value = when {
-                manifest == null -> if (userInitiated) UpdateState.Failed(UpdateError.NETWORK) else UpdateState.Idle
-                UpdateManifestParser.isNewer(manifest, installedVersionCode) -> UpdateState.Available(manifest)
-                userInitiated -> UpdateState.UpToDate
-                else -> UpdateState.Idle
-            }
+        job = scope.launch { runCheck(userInitiated) }
+    }
+
+    private suspend fun runCheck(userInitiated: Boolean) {
+        if (userInitiated) _state.value = UpdateState.Checking
+        val from = channel.first()
+        val manifest = runCatching { fetchManifest(from) }.getOrNull()
+        currentCoroutineContext().ensureActive()
+        manifestChannel = from
+        _state.value = when {
+            manifest == null -> if (userInitiated) UpdateState.Failed(UpdateError.NETWORK) else UpdateState.Idle
+            UpdateManifestParser.isNewer(manifest, installedVersionCode) -> UpdateState.Available(manifest)
+            userInitiated -> UpdateState.UpToDate
+            else -> UpdateState.Idle
         }
     }
 
@@ -146,9 +174,9 @@ class AppUpdater @Inject constructor(
         if (s is UpdateState.Installing) _state.value = UpdateState.Available(s.manifest)
     }
 
-    private fun fetchManifest(): UpdateManifest? {
+    private fun fetchManifest(from: UpdateChannel): UpdateManifest? {
         val request = Request.Builder()
-            .url(UpdateSource.manifestUrl)
+            .url(UpdateSource.manifestUrl(from))
             .cacheControl(CacheControl.FORCE_NETWORK)
             .build()
         client.newCall(request).execute().use { response ->
@@ -159,7 +187,7 @@ class AppUpdater @Inject constructor(
 
     private suspend fun download(manifest: UpdateManifest, file: File): Boolean {
         file.parentFile?.mkdirs()
-        val request = Request.Builder().url(UpdateSource.apkUrl(manifest)).build()
+        val request = Request.Builder().url(UpdateSource.apkUrl(manifestChannel, manifest)).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return false
             val body = response.body
