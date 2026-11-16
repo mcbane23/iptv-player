@@ -35,6 +35,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.Pin
 import com.bane23.iptvplayer.ui.common.lock.GateStatus
 import com.bane23.iptvplayer.ui.common.lock.LockItem
@@ -146,13 +147,13 @@ fun TvPinGate(
         GateStatus.CHECKING -> Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+                .glowBackground(MaterialTheme.colorScheme.primary),
         )
 
         GateStatus.LOCKED -> Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .glowBackground(MaterialTheme.colorScheme.primary)
                 .padding(horizontal = 48.dp, vertical = 27.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -180,7 +181,7 @@ fun TvParentalScreen(viewModel: ParentalViewModel = hiltViewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {

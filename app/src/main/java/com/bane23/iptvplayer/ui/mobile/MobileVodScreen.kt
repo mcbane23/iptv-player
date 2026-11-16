@@ -76,7 +76,8 @@ fun MobileVodScreen(
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
     val searchLabel = stringResource(if (series) R.string.search_series else R.string.search_movies)
 
-    Scaffold { padding ->
+    // Providno: pozadinu sa sjajem crta početni ekran.
+    Scaffold(containerColor = Color.Transparent) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

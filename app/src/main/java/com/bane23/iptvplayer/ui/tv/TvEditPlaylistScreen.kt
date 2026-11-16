@@ -25,6 +25,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.ui.common.EditPlaylistViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistFormFields
@@ -45,7 +46,7 @@ fun TvEditPlaylistScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             .verticalScroll(rememberScrollState())
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),

@@ -442,6 +442,8 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
       (detalji se traže kad fokus kratko stane); može da se isključi u Podešavanjima
 - [ ] Za kasnije: TV „Početna” sekcija sa redovima (Nastavi gledanje, Omiljeni kanali, Nedavno dodati
       filmovi). Veći posao, praktično nova sekcija; detalje dogovoriti pre početka
+- [x] Pozadina sa blagim sjajem akcentne boje gore levo (vlasnik izabrao varijantu B): svi ekrani
+      na TV-u (osim više kanala odjednom) i početni ekrani na telefonu
 
 ## 7. Testiranje
 
