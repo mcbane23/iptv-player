@@ -17,8 +17,8 @@ permissions:
   # write je potreban da bi build objavio pre-release sa APK-om
   contents: write
 
-# Dva posla rade paralelno: „apk” što pre pravi i objavljuje APK, „provere” radi testove i lint.
-# CI je zelen tek kad oba prođu.
+# Tri posla rade paralelno: „apk” što pre pravi i objavljuje APK, „provere” radi testove i lint,
+# „release” proverava da release build (R8) prolazi. CI je zelen tek kad sva tri prođu.
 jobs:
   apk:
     name: Debug APK
@@ -135,3 +135,22 @@ jobs:
             app/build/reports/
             app/build/test-results/
           if-no-files-found: ignore
+
+  # Zvanična izdanja pravi release.yml (samo na oznaku v*). Ovde se samo proverava da R8 i smanjivanje
+  # resursa prolaze, da se greška ne otkrije tek na dan izdanja. APK je nepotpisan i ne objavljuje se.
+  release:
+    name: Release build (R8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Release build
+        run: ./gradlew assembleRelease
