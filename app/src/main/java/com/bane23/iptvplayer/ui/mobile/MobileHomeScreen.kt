@@ -154,6 +154,8 @@ fun MobileHomeScreen(
             // Po izboru u podešavanjima sadržaj ide i ispod isečka za kameru (samo sistemske trake se poštuju).
             contentWindowInsets = if (underCutout) WindowInsets.systemBars else WindowInsets.safeDrawing,
             containerColor = Color.Transparent,
+            // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
+            contentColor = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
         ) { padding ->
             Row(
@@ -177,6 +179,8 @@ fun MobileHomeScreen(
     Scaffold(
         // Blag sjaj akcentne boje gore levo; ekrani u karticama su providni da se vidi.
         containerColor = Color.Transparent,
+        // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
+        contentColor = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
         bottomBar = {
             Column {

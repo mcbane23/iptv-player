@@ -83,7 +83,7 @@ fun MobileSettingsScreen(
     var languageOpen by remember { mutableStateOf(false) }
 
     // Providno: pozadinu sa sjajem crta početni ekran.
-    Scaffold(containerColor = Color.Transparent) { padding ->
+    Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
