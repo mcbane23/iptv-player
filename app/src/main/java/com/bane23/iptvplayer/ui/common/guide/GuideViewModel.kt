@@ -4,7 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.epg.GuideLayout
+import com.bane23.iptvplayer.data.recording.RecordingRepository
+import com.bane23.iptvplayer.data.recording.RecordingStartError
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.EpgStatus
@@ -14,14 +18,19 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /** Jedna ćelija u redu vodiča: emisija, ili praznina kad je [program] null. */
 data class GuideCell(val program: Program?, val weight: Float)
@@ -30,6 +39,25 @@ data class GuideCell(val program: Program?, val weight: Float)
 data class GuideSelection(val channel: Channel, val program: Program?) {
     /** Kanal ima arhivu, pa prošle emisije mogu da se pogledaju. */
     val hasArchive: Boolean get() = channel.archiveDays != null
+}
+
+/** Šta je zakazano za snimanje i šta se upravo snima, za oznake u vodiču. */
+data class GuideRecordings(
+    /** Zakazana snimanja: ključ emisije ([key]) i ID snimka. */
+    val scheduled: Map<String, Long> = emptyMap(),
+    /** Kanali koji se upravo snimaju. */
+    val activeChannels: Set<Long> = emptySet(),
+) {
+    /** Emisija je zakazana za snimanje, ili je u toku na kanalu koji se snima. */
+    fun marks(channel: Channel, program: Program, now: Long): Boolean =
+        key(channel, program.startMs) in scheduled ||
+            (channel.id in activeChannels && program.startMs <= now && program.stopMs > now)
+
+    companion object {
+        fun key(channel: Channel, startMs: Long): String = key(channel.playlistId, channel.stableKey, startMs)
+
+        fun key(playlistId: Long, channelKey: String, startMs: Long): String = "$playlistId|$channelKey|$startMs"
+    }
 }
 
 data class GuideUiState(
@@ -43,6 +71,7 @@ data class GuideUiState(
 class GuideViewModel @Inject constructor(
     private val channels: ChannelRepository,
     private val epg: EpgRepository,
+    private val recorder: RecordingRepository,
 ) : ViewModel() {
 
     private data class Scope(val playlistId: Long, val categoryId: Long?)
@@ -61,6 +90,56 @@ class GuideViewModel @Inject constructor(
     val status: StateFlow<EpgStatus> = scope.filterNotNull()
         .flatMapLatest { epg.observeStatus(it.playlistId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EpgStatus())
+
+    val recordings: StateFlow<GuideRecordings> = combine(recorder.recordings, recorder.active) { rows, active ->
+        GuideRecordings(
+            scheduled = rows.filter { it.status == RecordingEntity.STATUS_SCHEDULED }
+                .associate { GuideRecordings.key(it.playlistId, it.channelKey, it.startedAt) to it.id },
+            activeChannels = active.map { it.channelId }.toSet(),
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GuideRecordings())
+
+    private val _recordingNotice = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+
+    /** Kratka poruka o snimanju (tekst iz `strings.xml`). */
+    val recordingNotice: SharedFlow<Int> = _recordingNotice.asSharedFlow()
+
+    /** Emisija može da se snimi ili zakaže: još nije završena. */
+    fun canRecord(program: Program?): Boolean = program != null && program.stopMs > System.currentTimeMillis()
+
+    /**
+     * Emisija koja je u toku snima se odmah, do svog kraja; buduća se zakazuje. Ako se već snima
+     * ili je zakazana, snimanje se zaustavlja, odnosno otkazuje.
+     */
+    fun toggleRecording(channel: Channel, program: Program) {
+        val now = System.currentTimeMillis()
+        if (program.stopMs <= now) return
+        val state = recordings.value
+        val scheduledId = state.scheduled[GuideRecordings.key(channel, program.startMs)]
+        viewModelScope.launch {
+            when {
+                scheduledId != null -> {
+                    recorder.delete(scheduledId)
+                    _recordingNotice.tryEmit(R.string.recording_schedule_cancelled)
+                }
+                program.startMs <= now && channel.id in state.activeChannels -> {
+                    recorder.stopChannel(channel.id)
+                    _recordingNotice.tryEmit(R.string.recording_stopped)
+                }
+                else -> {
+                    val error = recorder.schedule(channel.id, program.title, program.startMs, program.stopMs)
+                    _recordingNotice.tryEmit(
+                        when (error) {
+                            null -> if (program.startMs <= now) R.string.recording_started else R.string.recording_scheduled
+                            RecordingStartError.NO_SPACE -> R.string.recording_no_space
+                            RecordingStartError.NO_STORAGE -> R.string.recording_no_storage
+                            RecordingStartError.NO_SOURCE -> R.string.recording_failed
+                        },
+                    )
+                }
+            }
+        }
+    }
 
     fun open(playlistId: Long, categoryId: Long?) {
         scope.value = Scope(playlistId, categoryId)

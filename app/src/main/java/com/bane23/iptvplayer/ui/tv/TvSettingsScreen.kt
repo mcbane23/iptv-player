@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +37,7 @@ import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
+import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.work.Autostart
 
@@ -47,6 +50,7 @@ fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
     onTrakt: (() -> Unit)? = null,
+    onRecordings: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -118,6 +122,17 @@ fun TvSettingsScreen(
                         text = stringResource(R.string.trakt_title),
                         trailing = "›",
                         onClick = onTrakt,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
+                if (onRecordings != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.recordings_title),
+                        trailing = "›",
+                        onClick = onRecordings,
                         onFocused = {
                             focusedChoice = null
                             openChoice = null
@@ -231,32 +246,48 @@ fun TvSettingsScreen(
             }
 
             val open = openChoice
-            if (open != null) {
-                val choice = choices[open]
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(0.45f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    contentPadding = PaddingValues(bottom = 27.dp),
-                ) {
-                    itemsIndexed(choice.options) { index, option ->
-                        TvTextRow(
-                            text = option,
-                            trailing = if (index == choice.selected) "✓" else null,
-                            selected = index == choice.selected,
-                            onClick = {
-                                choice.onSelect(index)
-                                // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
-                                rowFocus[open].tryRequestFocus()
-                                openChoice = null
-                            },
-                            modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
-                        )
+            // Probni titl se vidi dok je fokus na podešavanju izgleda titlova ili se bira njegova vrednost.
+            val showPreview = (open ?: focusedChoice)?.let { choices.getOrNull(it)?.subtitleLook } == true
+            Column(
+                modifier = Modifier
+                    .weight(0.45f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (open != null) {
+                    val choice = choices[open]
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        contentPadding = PaddingValues(bottom = 27.dp),
+                    ) {
+                        itemsIndexed(choice.options) { index, option ->
+                            TvTextRow(
+                                text = option,
+                                trailing = if (index == choice.selected) "✓" else null,
+                                selected = index == choice.selected,
+                                onClick = {
+                                    choice.onSelect(index)
+                                    // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
+                                    rowFocus[open].tryRequestFocus()
+                                    openChoice = null
+                                },
+                                modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
+                            )
+                        }
                     }
+                    // Fokus prelazi na vrednosti čim se otvore; Nazad ili levo ga vraća na podešavanja.
+                    LaunchedEffect(open) { optionFocus.tryRequestFocus() }
                 }
-                // Fokus prelazi na vrednosti čim se otvore; Nazad ili levo ga vraća na podešavanja.
-                LaunchedEffect(open) { optionFocus.tryRequestFocus() }
+                if (open == null) Spacer(modifier = Modifier.weight(1f))
+                if (showPreview) {
+                    SubtitlePreview(
+                        settings = playerSettings,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 27.dp),
+                    )
+                }
             }
         }
     }

@@ -35,6 +35,8 @@ data class Channel(
     val nowStopMs: Long? = null,
     /** Koliko dana unazad kanal ima arhivu (catch-up), ili null ako je nema. */
     val archiveDays: Int? = null,
+    /** Ključ kanala koji ostaje isti i posle osvežavanja liste. */
+    val stableKey: String = "",
 ) {
     /** Koliki deo tekuće emisije je prošao u trenutku [nowMs] (0 do 1), ili null bez vodiča. */
     fun nowProgress(nowMs: Long): Float? {

@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.bane23.iptvplayer.cast.CastMedia
+import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.recording.RecordingRepository
+import com.bane23.iptvplayer.data.recording.RecordingStartError
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.LockRepository
@@ -22,10 +25,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
@@ -64,6 +71,7 @@ class PlayerViewModel @Inject constructor(
     private val epg: EpgRepository,
     private val settings: SettingsStore,
     private val locks: LockRepository,
+    private val recordings: RecordingRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -88,6 +96,16 @@ class PlayerViewModel @Inject constructor(
         .distinctUntilChangedBy { it?.id }
         .flatMapLatest { channel -> if (channel == null) flowOf(false) else repository.observeFavorite(channel) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Da li se kanal koji se gleda upravo snima. */
+    val isRecording: StateFlow<Boolean> = combine(_ui.map { it.channel?.id }, recordings.active) { id, active ->
+        id != null && active.any { it.channelId == id }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    private val _recordingNotice = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+
+    /** Kratka poruka o snimanju (tekst iz `strings.xml`): počelo, zaustavljeno ili zašto ne može. */
+    val recordingNotice: SharedFlow<Int> = _recordingNotice.asSharedFlow()
 
     /** Šta je na kanalu sada i šta sledi; osvežava se dok se kanal gleda. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -139,6 +157,30 @@ class PlayerViewModel @Inject constructor(
     fun next() = step { neighbor(it, 1) }
 
     fun previous() = step { neighbor(it, -1) }
+
+    /**
+     * Počinje snimanje kanala koji se gleda, ili ga zaustavlja ako se već snima. [stopAtMs] je vreme
+     * kad snimanje samo staje; null = dok ga korisnik ne zaustavi.
+     */
+    fun toggleRecording(stopAtMs: Long? = null) {
+        val channel = _ui.value.channel ?: return
+        if (isRecording.value) {
+            recordings.stopChannel(channel.id)
+            _recordingNotice.tryEmit(R.string.recording_stopped)
+            return
+        }
+        viewModelScope.launch {
+            val error = recordings.start(channel.id, nowNext.value.now?.title, stopAtMs)
+            _recordingNotice.tryEmit(
+                when (error) {
+                    null -> R.string.recording_started
+                    RecordingStartError.NO_SPACE -> R.string.recording_no_space
+                    RecordingStartError.NO_STORAGE -> R.string.recording_no_storage
+                    RecordingStartError.NO_SOURCE -> R.string.recording_failed
+                },
+            )
+        }
+    }
 
     fun toggleFavorite() {
         val channel = _ui.value.channel ?: return

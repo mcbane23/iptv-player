@@ -351,10 +351,21 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 
 **Snimanje sadržaja**
 
-- [ ] Snimanje kanala koji se trenutno gleda (dugme u plejeru), snimak se čuva na uređaju
-- [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
-- [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
-- [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+- [x] Snimanje kanala koji se trenutno gleda (dugme „Snimaj” u plejeru), snimak se čuva na uređaju.
+      Vlasnik je 16. 11. 2026. izabrao posebnu vezu za snimanje: snima se i kad se promeni kanal ili
+      zatvori plejer (servis u pozadini), ali uz gledanje nalog troši dve veze kod provajdera.
+      MPEG-TS se prepisuje kako stiže, HLS deo po deo; šifrovan i fMP4 HLS se ne snima (baza v11)
+- [x] Zakazano snimanje iz TV vodiča (EPG): buduća emisija se zakazuje (telefon: dugme u detaljima
+      emisije; TV: OK na emisiji), a emisija koja je u toku snima se do svog kraja. Pokreće ga budilnik
+      (AlarmManager, ne WorkManager, jer mora da krene tačno na vreme i iz pozadine); uređaj mora biti
+      upaljen. Zakazana snimanja se vide i otkazuju na ekranu „Snimci”
+- [x] Ručno: vlasnik je 16. 11. 2026. izabrao trajanje u plejeru umesto pune forme. Dugme „Snimaj”
+      pita koliko dugo: dok ne zaustavim, do kraja emisije, 30 min, 1 h, 2 h ili 3 h. Puna forma
+      (kanal, datum, početak, kraj) se ne pravi dok ne zatreba za kanale bez vodiča
+- [x] Ekran „Snimci” (u Podešavanjima): puštanje, zaustavljanje, brisanje, prikaz zauzetog prostora
+- [x] Podešavanje mesta čuvanja (memorija uređaja, USB/SD) na ekranu „Snimci”, vidi se kad je priključena
+      SD kartica ili USB; upozorenje ispod 2 GB slobodnog prostora, a ispod 300 MB snimanje ne kreće
+      i ono koje traje staje. Na USB/SD se piše u folder aplikacije (bez dozvola)
 
 **Cast sa telefona na TV**
 
@@ -378,7 +389,7 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 
 - [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna)
-- [ ] Pregled izgleda titlova u samim podešavanjima (za sada se izmena vidi u plejeru)
+- [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
 
 ## 7. Testiranje
 

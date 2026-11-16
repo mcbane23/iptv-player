@@ -16,8 +16,9 @@ import androidx.room.RoomDatabase
         TraktWatchedEntity::class,
         TraktPendingEntity::class,
         TraktPlaybackPendingEntity::class,
+        RecordingEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,4 +31,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun watchProgressDao(): WatchProgressDao
     abstract fun vodFavoriteDao(): VodFavoriteDao
     abstract fun traktDao(): TraktDao
+    abstract fun recordingDao(): RecordingDao
 }

@@ -65,6 +65,9 @@ import androidx.media3.common.Player
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.recording.recordingChoices
+import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.ui.common.guide.nextLine
 import com.bane23.iptvplayer.ui.common.guide.formatTime
@@ -87,7 +90,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES }
+private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -101,11 +104,18 @@ fun MobilePlayerScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
+    RecordingNotices(viewModel.recordingNotice)
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
+    // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
+    val record = rememberRecordingToggle(isRecording) {
+        if (isRecording) viewModel.toggleRecording() else panel = Panel.RECORD
+    }
+    val recordChoices = recordingChoices(nowNext.now?.stopMs)
     var gestureHint by remember { mutableStateOf<String?>(null) }
     var locked by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
@@ -204,6 +214,8 @@ fun MobilePlayerScreen(
                     isFavorite = isFavorite,
                     nowNext = nowNext,
                     onFavorite = viewModel::toggleFavorite,
+                    isRecording = isRecording,
+                    onRecord = record,
                     onPip = rememberEnterPictureInPicture(),
                     onCast = cast,
                 )
@@ -240,6 +252,14 @@ fun MobilePlayerScreen(
             onDismiss = { panel = Panel.NONE },
         )
 
+        Panel.RECORD -> TrackDialog(
+            title = stringResource(R.string.recording_duration_title),
+            options = recordChoices.map { it.label to false },
+            emptyText = null,
+            onSelect = { index -> viewModel.toggleRecording(recordChoices[index].stopAtMs()) },
+            onDismiss = { panel = Panel.NONE },
+        )
+
         else -> Unit
     }
 }
@@ -263,6 +283,8 @@ private fun LiveControls(
     isFavorite: Boolean,
     nowNext: NowNext,
     onFavorite: () -> Unit,
+    isRecording: Boolean,
+    onRecord: () -> Unit,
     onPip: (() -> Unit)?,
     onCast: (() -> Unit)?,
 ) {
@@ -337,6 +359,11 @@ private fun LiveControls(
                     label = stringResource(R.string.category_favorites),
                     active = isFavorite,
                     onClick = onFavorite,
+                )
+                PlayerChip(
+                    label = stringResource(if (isRecording) R.string.recording_chip_active else R.string.recording_chip),
+                    active = isRecording,
+                    onClick = onRecord,
                 )
             }
         },

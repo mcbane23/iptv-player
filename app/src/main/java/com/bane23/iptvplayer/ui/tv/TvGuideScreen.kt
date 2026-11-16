@@ -47,7 +47,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.guide.GuideCell
 import com.bane23.iptvplayer.ui.common.guide.GuideSelection
+import com.bane23.iptvplayer.ui.common.guide.GuideRecordings
 import com.bane23.iptvplayer.ui.common.guide.GuideViewModel
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
@@ -74,6 +76,8 @@ fun TvGuideScreen(
     LaunchedEffect(playlistId, categoryId) { viewModel.open(playlistId, categoryId) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
+    val recordings by viewModel.recordings.collectAsStateWithLifecycle()
+    RecordingNotices(viewModel.recordingNotice)
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val firstFocus = remember { FocusRequester() }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
@@ -135,6 +139,7 @@ fun TvGuideScreen(
                         windowStart = ui.windowStart,
                         reloadKey = status.refreshedAt,
                         now = now,
+                        recordings = recordings,
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
                         onArchive = { onArchive(channel.id) },
@@ -148,7 +153,7 @@ fun TvGuideScreen(
             }
         }
 
-        SelectionPanel(ui.selection)
+        SelectionPanel(ui.selection, recordings)
     }
     LaunchedEffect(Unit) {
         firstFocus.tryRequestFocus()
@@ -164,6 +169,7 @@ private fun GuideRow(
     windowStart: Long,
     reloadKey: Long?,
     now: Long,
+    recordings: GuideRecordings,
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
     onArchive: () -> Unit,
@@ -208,14 +214,20 @@ private fun GuideRow(
         val lastIndex = cells.lastIndex
         cells.forEachIndexed { index, cell ->
             val program = cell.program
+            val marked = program != null && recordings.marks(channel, program, now)
             GuideBox(
-                text = program?.title.orEmpty(),
+                text = if (marked) "● ${program?.title.orEmpty()}" else program?.title.orEmpty(),
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
                 onFocused = {
                     onFocused()
                     viewModel.select(channel, program)
                 },
-                onClick = if (hasArchive && program != null && program.stopMs <= now) onArchive else onPlay,
+                // Buduća emisija se zakazuje za snimanje (ili otkazuje); ostalo pušta kanal, odnosno arhivu.
+                onClick = when {
+                    program != null && program.startMs > now -> ({ viewModel.toggleRecording(channel, program) })
+                    hasArchive && program != null && program.stopMs <= now -> onArchive
+                    else -> onPlay
+                },
                 modifier = Modifier
                     .weight(cell.weight)
                     .onPreviewKeyEvent { event ->
@@ -274,7 +286,7 @@ private fun GuideBox(
 
 /** Detalji emisije koja ima fokus. Visina je stalna, da se mreža ne pomera dok se lista. */
 @Composable
-private fun SelectionPanel(selection: GuideSelection?) {
+private fun SelectionPanel(selection: GuideSelection?, recordings: GuideRecordings) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -284,11 +296,24 @@ private fun SelectionPanel(selection: GuideSelection?) {
         if (selection == null) return@Column
         val program = selection.program
         // Kod kanala sa arhivom piše šta OK radi na emisiji koja je završena.
+        val now = System.currentTimeMillis()
         val archiveHint = stringResource(R.string.archive_hint_tv).takeIf {
-            selection.hasArchive && program != null && program.stopMs <= System.currentTimeMillis()
+            selection.hasArchive && program != null && program.stopMs <= now
+        }
+        // Kod buduće emisije piše šta OK radi: zakazuje snimanje ili ga otkazuje.
+        val recordHint = if (program != null && program.startMs > now) {
+            stringResource(
+                if (recordings.marks(selection.channel, program, now)) {
+                    R.string.recording_hint_cancel_tv
+                } else {
+                    R.string.recording_hint_schedule_tv
+                },
+            )
+        } else {
+            null
         }
         Text(
-            text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint).joinToString(" · "),
+            text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint, recordHint).joinToString(" · "),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

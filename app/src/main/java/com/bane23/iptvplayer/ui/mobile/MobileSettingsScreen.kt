@@ -51,6 +51,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 
 /** Podešavanja aplikacije na telefonu. */
@@ -61,6 +62,7 @@ fun MobileSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
     onTrakt: (() -> Unit)? = null,
+    onRecordings: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -79,7 +81,7 @@ fun MobileSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
-            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null) {
+            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onRecordings != null) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
                         SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
@@ -92,6 +94,9 @@ fun MobileSettingsScreen(
                     }
                     if (onTrakt != null) {
                         SettingsLinkRow(AppIcons.Check, stringResource(R.string.trakt_title), onTrakt)
+                    }
+                    if (onRecordings != null) {
+                        SettingsLinkRow(AppIcons.Record, stringResource(R.string.recordings_title), onRecordings)
                     }
                 }
             }
@@ -157,6 +162,13 @@ fun MobileSettingsScreen(
                         )
                     }
                 }
+                // Probni titl: odmah pokazuje izabranu veličinu, položaj i pozadinu.
+                SubtitlePreview(
+                    settings = playerSettings,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
             }
             Text(
                 text = stringResource(R.string.settings_player_note),

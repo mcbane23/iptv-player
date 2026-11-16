@@ -9,6 +9,18 @@
     <!-- Android 14+: sledeće ažuriranje može bez potvrde kad je aplikacija već instalirala sebe. -->
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
+    <!-- Snimanje kanala traje i kad aplikacija nije na ekranu (obaveštenje sa dugmetom za zaustavljanje). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Snimanje ne sme da stane kad se ekran ugasi. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Zakazano snimanje kreće tačno na vreme (budilnik). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+
     <!-- Pokretanje pri paljenju uređaja (isključeno dok ga korisnik ne uključi u podešavanjima). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Od Androida 10 aplikacija sme sama da se otvori posle paljenja samo uz ovu dozvolu. -->
@@ -63,6 +75,18 @@
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="com.bane23.iptvplayer.cast.CastOptionsProvider" />
 
+        <service
+            android:name=".data.recording.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Recording a live TV stream chosen by the user to a local file" />
+        </service>
+
+        <receiver
+            android:name=".data.recording.RecordingAlarmReceiver"
+            android:exported="false" />
         <receiver
             android:name=".work.BootReceiver"
             android:exported="false">

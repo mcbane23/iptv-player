@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.cast.CastMedia
 import com.bane23.iptvplayer.cast.CastVodItem
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.repo.ArchiveRepository
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.xtream.Episode
@@ -56,6 +57,7 @@ class VodPlayerViewModel @Inject constructor(
     private val repository: VodRepository,
     private val settings: SettingsStore,
     private val archive: ArchiveRepository,
+    private val recordings: RecordingRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -139,6 +141,21 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
+    /** Snimak kanala sa uređaja. Pozicija se ne pamti, pa uvek kreće od početka. */
+    fun startRecording(recordingId: Long) {
+        if (started) return
+        started = true
+        viewModelScope.launch {
+            play(startOver = true) {
+                val recording = recordings.get(recordingId) ?: throw java.io.IOException("No recording")
+                _ui.update { it.copy(title = recording.title) }
+                val file = java.io.File(recording.path)
+                if (!file.exists()) throw java.io.IOException("No file")
+                StreamSource(listOf(android.net.Uri.fromFile(file).toString()), null, null) to null
+            }
+        }
+    }
+
     fun startEpisode(seriesId: Long, episodeId: Long, startOver: Boolean) {
         if (started) return
         started = true
@@ -175,6 +192,8 @@ class VodPlayerViewModel @Inject constructor(
     /** Ono što se gleda, u obliku za slanje na TV (cast), sa mestom do kog se stiglo. */
     fun castMedia(): CastMedia? {
         val current = source ?: return null
+        // Snimak sa uređaja nema adresu koju bi TV mogao da otvori.
+        if (current.urls.all { it.startsWith("file:") }) return null
         return CastMedia(
             title = _ui.value.title,
             urls = current.urls,

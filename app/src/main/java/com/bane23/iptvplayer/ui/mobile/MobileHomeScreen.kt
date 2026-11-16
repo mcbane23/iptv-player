@@ -73,6 +73,7 @@ fun MobileHomeScreen(
     onCategories: () -> Unit,
     onParental: () -> Unit,
     onTrakt: () -> Unit,
+    onRecordings: () -> Unit,
     onMultiView: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
@@ -131,6 +132,7 @@ fun MobileHomeScreen(
                         onCategories = onCategories.takeIf { liveState.playlistId != null },
                         onParental = onParental.takeIf { liveState.playlistId != null },
                         onTrakt = onTrakt.takeIf { isTraktConfigured },
+                        onRecordings = onRecordings,
                     )
                 }
             }
