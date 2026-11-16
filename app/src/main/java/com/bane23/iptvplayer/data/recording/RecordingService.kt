@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.bane23.iptvplayer.MainActivity
@@ -35,6 +36,9 @@ class RecordingService : Service() {
 
     /** Servis sme da se ugasi tek pošto je pokazao obaveštenje (sistem to traži od svakog pokretanja). */
     private var foreground = false
+
+    /** Drži procesor budnim dok se snima, i kad je ekran ugašen. */
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -66,6 +70,11 @@ class RecordingService : Service() {
         }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(recordings.active.value), type)
         foreground = true
+        if (wakeLock == null) {
+            wakeLock = getSystemService(PowerManager::class.java)
+                ?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "iptvplayer:recording")
+                ?.also { it.acquire(MAX_WAKE_MS) }
+        }
         if (intent?.action == ACTION_STOP) recordings.stopAll()
         if (recordings.active.value.isEmpty()) {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -75,6 +84,8 @@ class RecordingService : Service() {
     }
 
     override fun onDestroy() {
+        wakeLock?.let { if (it.isHeld) it.release() }
+        wakeLock = null
         scope.cancel()
         super.onDestroy()
     }
@@ -102,6 +113,9 @@ class RecordingService : Service() {
     private companion object {
         const val CHANNEL_ID = "recording"
         const val NOTIFICATION_ID = 41
+
+        /** Najduže držanje procesora budnim; duže snimanje od ovoga se ne očekuje. */
+        const val MAX_WAKE_MS = 12 * 60 * 60 * 1000L
         const val ACTION_STOP = "com.bane23.iptvplayer.recording.STOP"
     }
 }

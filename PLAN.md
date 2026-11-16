@@ -355,7 +355,11 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       Vlasnik je 16. 11. 2026. izabrao posebnu vezu za snimanje: snima se i kad se promeni kanal ili
       zatvori plejer (servis u pozadini), ali uz gledanje nalog troši dve veze kod provajdera.
       MPEG-TS se prepisuje kako stiže, HLS deo po deo; šifrovan i fMP4 HLS se ne snima (baza v11)
-- [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
+- [x] Zakazano snimanje iz TV vodiča (EPG): buduća emisija se zakazuje (telefon: dugme u detaljima
+      emisije; TV: OK na emisiji), a emisija koja je u toku snima se do svog kraja. Pokreće ga budilnik
+      (AlarmManager, ne WorkManager, jer mora da krene tačno na vreme i iz pozadine); uređaj mora biti
+      upaljen. Zakazana snimanja se vide i otkazuju na ekranu „Snimci”
+- [ ] Ručno zakazivanje (kanal, početak, kraj): čeka odluku vlasnika o obliku
 - [x] Ekran „Snimci” (u Podešavanjima): puštanje, zaustavljanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
 

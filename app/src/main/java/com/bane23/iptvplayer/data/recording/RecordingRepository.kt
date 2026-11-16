@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Snimanje koje je u toku. */
@@ -53,6 +55,7 @@ class RecordingRepository @Inject constructor(
     private val channelDao = db.channelDao()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = mutableMapOf<Long, Job>()
+    private val startLock = Mutex()
 
     private val _active = MutableStateFlow<List<ActiveRecording>>(emptyList())
 
@@ -62,18 +65,85 @@ class RecordingRepository @Inject constructor(
     val recordings: Flow<List<RecordingEntity>> = dao.observeAll()
 
     init {
-        // Snimanja koja je prekinulo gašenje aplikacije ili uređaja ostaju kao završeni snimci.
-        scope.launch {
-            for (row in dao.byStatus(RecordingEntity.STATUS_RECORDING)) {
-                if (synchronized(jobs) { row.id in jobs }) continue
-                val size = File(row.path).length()
-                if (size > 0) {
-                    dao.finish(row.id, RecordingEntity.STATUS_DONE, RecordingEntity.ERROR_STREAM, File(row.path).lastModified(), size)
-                } else {
-                    File(row.path).delete()
-                    dao.delete(row.id)
-                }
+        scope.launch { restore() }
+    }
+
+    /**
+     * Posle pokretanja aplikacije (i posle paljenja uređaja, kad sistem pokrene aplikaciju): snimanja koja je prekinulo gašenje ostaju kao završeni
+     * snimci, a zakazana ponovo dobijaju budilnik (ili kreću odmah ako im je vreme već počelo).
+     */
+    private suspend fun restore() = withContext(Dispatchers.IO) {
+        for (row in dao.byStatus(RecordingEntity.STATUS_RECORDING)) {
+            if (synchronized(jobs) { row.id in jobs }) continue
+            val file = File(row.path)
+            val size = file.length()
+            if (size > 0) {
+                dao.finish(row.id, RecordingEntity.STATUS_DONE, RecordingEntity.ERROR_STREAM, file.lastModified(), size)
+            } else {
+                file.delete()
+                dao.delete(row.id)
             }
+        }
+        val now = System.currentTimeMillis()
+        for (row in dao.byStatus(RecordingEntity.STATUS_SCHEDULED)) {
+            if (row.startedAt <= now) startScheduled(row.id) else RecordingAlarms.set(context, row.id, row.startedAt)
+        }
+    }
+
+    /**
+     * Zakazuje snimanje emisije od [startMs] do [stopMs]. Ako je emisija već počela, snimanje kreće odmah.
+     */
+    suspend fun schedule(channelId: Long, title: String, startMs: Long, stopMs: Long): RecordingStartError? =
+        withContext(Dispatchers.IO) {
+            if (startMs <= System.currentTimeMillis()) return@withContext start(channelId, title, stopMs)
+            val channel = channelDao.getById(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
+            val id = dao.insert(
+                RecordingEntity(
+                    playlistId = channel.playlistId,
+                    channelKey = channel.stableKey,
+                    channelName = channel.name,
+                    title = title.ifBlank { channel.name },
+                    path = "",
+                    startedAt = startMs,
+                    stopAtMs = stopMs,
+                    status = RecordingEntity.STATUS_SCHEDULED,
+                ),
+            )
+            RecordingAlarms.set(context, id, startMs)
+            null
+        }
+
+    /** Pokreće zakazano snimanje (budilnik, ili otvaranje aplikacije posle zakazanog vremena). */
+    suspend fun startScheduled(id: Long) = withContext(Dispatchers.IO) {
+        // Budilnik i otvaranje aplikacije mogu da stignu u isto vreme; snimanje sme da krene samo jednom.
+        startLock.withLock { startScheduledLocked(id) }
+    }
+
+    private suspend fun startScheduledLocked(id: Long) {
+        val row = dao.getById(id) ?: return
+        if (row.status != RecordingEntity.STATUS_SCHEDULED) return
+        val now = System.currentTimeMillis()
+        suspend fun fail(error: String) = dao.finish(id, RecordingEntity.STATUS_FAILED, error, now, 0)
+        val stopAt = row.stopAtMs
+        if (stopAt != null && now >= stopAt) return fail(RecordingEntity.ERROR_MISSED)
+        val channel = channelDao.byStableKey(row.playlistId, row.channelKey)
+            ?: return fail(RecordingEntity.ERROR_NO_CHANNEL)
+        val source = channels.streamSource(channel.id) ?: return fail(RecordingEntity.ERROR_NO_CHANNEL)
+        val dir = directory()?.takeIf { it.usableSpace >= MIN_FREE_BYTES } ?: return fail(RecordingEntity.ERROR_SPACE)
+        val file = File(dir, fileName(row.channelName, now))
+        dao.markRecording(id, file.absolutePath, now)
+        launchJob(ActiveRecording(id, channel.id, row.channelName), file, source, stopAt)
+    }
+
+    private fun launchJob(entry: ActiveRecording, file: File, source: com.bane23.iptvplayer.domain.StreamSource, stopAtMs: Long?) {
+        synchronized(jobs) {
+            _active.update { it + entry }
+            jobs[entry.id] = scope.launch { run(entry.id, file, source, stopAtMs) }
+        }
+        try {
+            ContextCompat.startForegroundService(context, Intent(context, RecordingService::class.java))
+        } catch (_: IllegalStateException) {
+            // Sistem nije dozvolio servis iz pozadine: snima se dok aplikacija ostane živa.
         }
     }
 
@@ -102,12 +172,7 @@ class RecordingRepository @Inject constructor(
                     status = RecordingEntity.STATUS_RECORDING,
                 ),
             )
-            val entry = ActiveRecording(id, channelId, channel.name)
-            synchronized(jobs) {
-                _active.update { it + entry }
-                jobs[id] = scope.launch { run(id, file, source, stopAtMs) }
-            }
-            ContextCompat.startForegroundService(context, Intent(context, RecordingService::class.java))
+            launchJob(ActiveRecording(id, channelId, channel.name), file, source, stopAtMs)
             null
         }
 
@@ -171,7 +236,8 @@ class RecordingRepository @Inject constructor(
         job?.cancel()
         job?.join()
         val row = dao.getById(id) ?: return@withContext
-        File(row.path).delete()
+        RecordingAlarms.cancel(context, id)
+        if (row.path.isNotEmpty()) File(row.path).delete()
         dao.delete(id)
     }
 

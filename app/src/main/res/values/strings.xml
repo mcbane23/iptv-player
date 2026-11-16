@@ -395,4 +395,14 @@
     <string name="recording_delete_confirm">Press again to delete</string>
     <string name="recording_channel">Recording</string>
     <string name="recording_notification_title">Recording in progress</string>
+    <string name="recording_schedule">Schedule recording</string>
+    <string name="recording_schedule_cancel">Cancel recording</string>
+    <string name="recording_scheduled">Recording scheduled</string>
+    <string name="recording_schedule_cancelled">Scheduled recording cancelled</string>
+    <string name="recording_scheduled_label">Scheduled</string>
+    <string name="recording_until">until %1$s</string>
+    <string name="recording_hint_schedule_tv">OK schedules a recording</string>
+    <string name="recording_hint_cancel_tv">● Recording scheduled, OK cancels it</string>
+    <string name="recording_error_missed">Missed: the device was off or asleep</string>
+    <string name="recording_error_channel">The channel is no longer in the playlist</string>
 </resources>

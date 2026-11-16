@@ -13,6 +13,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Snimanje ne sme da stane kad se ekran ugasi. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Zakazano snimanje kreće tačno na vreme (budilnik). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
 
     <!-- Pokretanje pri paljenju uređaja (isključeno dok ga korisnik ne uključi u podešavanjima). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -77,6 +84,9 @@
                 android:value="Recording a live TV stream chosen by the user to a local file" />
         </service>
 
+        <receiver
+            android:name=".data.recording.RecordingAlarmReceiver"
+            android:exported="false" />
         <receiver
             android:name=".work.BootReceiver"
             android:exported="false">

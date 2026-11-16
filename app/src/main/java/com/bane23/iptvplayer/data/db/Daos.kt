@@ -124,6 +124,9 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun getById(id: Long): ChannelEntity?
 
+    @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND stableKey = :stableKey LIMIT 1")
+    suspend fun byStableKey(playlistId: Long, stableKey: String): ChannelEntity?
+
     /** Kanali jedne kategorije, ili svi kanali liste kad je [categoryId] null. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +
@@ -431,6 +434,9 @@ interface RecordingDao {
 
     @Insert
     suspend fun insert(recording: RecordingEntity): Long
+
+    @Query("UPDATE recordings SET status = 'recording', path = :path, startedAt = :startedAt WHERE id = :id")
+    suspend fun markRecording(id: Long, path: String, startedAt: Long)
 
     @Query("UPDATE recordings SET sizeBytes = :sizeBytes WHERE id = :id")
     suspend fun setSize(id: Long, sizeBytes: Long)

@@ -39,7 +39,10 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.guide.GuideCell
 import com.bane23.iptvplayer.ui.common.guide.GuideSelection
+import com.bane23.iptvplayer.ui.common.guide.GuideRecordings
 import com.bane23.iptvplayer.ui.common.guide.GuideViewModel
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
@@ -61,6 +64,8 @@ fun MobileGuideScreen(
     LaunchedEffect(playlistId, categoryId) { viewModel.open(playlistId, categoryId) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
+    val recordings by viewModel.recordings.collectAsStateWithLifecycle()
+    RecordingNotices(viewModel.recordingNotice)
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val now = System.currentTimeMillis()
 
@@ -112,6 +117,7 @@ fun MobileGuideScreen(
                             reloadKey = status.refreshedAt,
                             now = now,
                             selection = ui.selection,
+                            recordings = recordings,
                             viewModel = viewModel,
                         )
                     } else {
@@ -121,8 +127,22 @@ fun MobileGuideScreen(
             }
 
             ui.selection?.let { selection ->
+                val program = selection.program
+                val marked = program != null && recordings.marks(selection.channel, program, now)
+                val record = rememberRecordingToggle(isRecording = marked) {
+                    if (program != null) viewModel.toggleRecording(selection.channel, program)
+                }
                 SelectionPanel(
                     selection = selection,
+                    // Snimanje se nudi za emisiju koja još nije završena.
+                    recordLabel = when {
+                        program == null || program.stopMs <= now -> null
+                        marked && program.startMs > now -> stringResource(R.string.recording_schedule_cancel)
+                        marked -> stringResource(R.string.recording_stop)
+                        program.startMs > now -> stringResource(R.string.recording_schedule)
+                        else -> stringResource(R.string.recording_chip)
+                    },
+                    onRecord = record,
                     onPlay = { onPlay(selection.channel.id) },
                     onArchive = { onArchive(selection.channel.id) },
                     onClose = viewModel::clearSelection,
@@ -139,6 +159,7 @@ private fun GuideRow(
     reloadKey: Long?,
     now: Long,
     selection: GuideSelection?,
+    recordings: GuideRecordings,
     viewModel: GuideViewModel,
 ) {
     val cells by produceState(emptyList<GuideCell>(), channel.id, windowStart, reloadKey) {
@@ -188,7 +209,7 @@ private fun GuideRow(
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = program.title,
+                            text = if (recordings.marks(channel, program, now)) "● ${program.title}" else program.title,
                             style = MaterialTheme.typography.bodySmall,
                             color = textColor,
                             maxLines = 2,
@@ -214,7 +235,14 @@ private fun EmptyCell(modifier: Modifier, onClick: () -> Unit) {
 
 /** Detalji izabrane emisije, dugme za gledanje kanala i, ako kanal ima arhivu, ulaz u nju. */
 @Composable
-private fun SelectionPanel(selection: GuideSelection, onPlay: () -> Unit, onArchive: () -> Unit, onClose: () -> Unit) {
+private fun SelectionPanel(
+    selection: GuideSelection,
+    recordLabel: String?,
+    onRecord: () -> Unit,
+    onPlay: () -> Unit,
+    onArchive: () -> Unit,
+    onClose: () -> Unit,
+) {
     val program = selection.program
     Surface(tonalElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -254,6 +282,9 @@ private fun SelectionPanel(selection: GuideSelection, onPlay: () -> Unit, onArch
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+                if (recordLabel != null) {
+                    TextButton(onClick = onRecord) { Text(recordLabel, maxLines = 1) }
+                }
                 if (selection.hasArchive) {
                     TextButton(onClick = onArchive) { Text(stringResource(R.string.archive_title)) }
                 }

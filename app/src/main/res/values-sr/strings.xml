@@ -395,4 +395,14 @@
     <string name="recording_delete_confirm">Pritisni ponovo za brisanje</string>
     <string name="recording_channel">Snimanje</string>
     <string name="recording_notification_title">Snimanje je u toku</string>
+    <string name="recording_schedule">Zakaži snimanje</string>
+    <string name="recording_schedule_cancel">Otkaži snimanje</string>
+    <string name="recording_scheduled">Snimanje je zakazano</string>
+    <string name="recording_schedule_cancelled">Zakazano snimanje je otkazano</string>
+    <string name="recording_scheduled_label">Zakazano</string>
+    <string name="recording_until">do %1$s</string>
+    <string name="recording_hint_schedule_tv">OK zakazuje snimanje</string>
+    <string name="recording_hint_cancel_tv">● Snimanje je zakazano, OK ga otkazuje</string>
+    <string name="recording_error_missed">Propušteno: uređaj je bio ugašen ili uspavan</string>
+    <string name="recording_error_channel">Kanala više nema u listi</string>
 </resources>

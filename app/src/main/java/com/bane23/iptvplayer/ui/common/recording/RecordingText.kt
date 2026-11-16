@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.recording.RecordingStorage
+import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import java.text.DateFormat
 import java.util.Date
@@ -33,6 +34,10 @@ fun RecordingEntity.details(): String {
             parts += Formatter.formatShortFileSize(context, sizeBytes)
         }
         RecordingEntity.STATUS_FAILED -> parts += stringResource(errorText())
+        RecordingEntity.STATUS_SCHEDULED -> {
+            parts += stringResource(R.string.recording_scheduled_label)
+            stopAtMs?.let { parts += stringResource(R.string.recording_until, formatTime(it)) }
+        }
         else -> {
             endedAt?.let { parts += formatDuration(it - startedAt) }
             parts += Formatter.formatShortFileSize(context, sizeBytes)
@@ -45,6 +50,8 @@ fun RecordingEntity.details(): String {
 private fun RecordingEntity.errorText(): Int = when (error) {
     RecordingEntity.ERROR_SPACE -> R.string.recording_error_space
     RecordingEntity.ERROR_UNSUPPORTED -> R.string.recording_error_unsupported
+    RecordingEntity.ERROR_MISSED -> R.string.recording_error_missed
+    RecordingEntity.ERROR_NO_CHANNEL -> R.string.recording_error_channel
     else -> if (status == RecordingEntity.STATUS_FAILED) R.string.recording_error_failed else R.string.recording_error_interrupted
 }
 

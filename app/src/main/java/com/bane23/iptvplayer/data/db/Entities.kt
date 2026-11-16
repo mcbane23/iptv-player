@@ -320,17 +320,25 @@ data class RecordingEntity(
     /** Kad snimanje samo staje (zakazano); null = dok ga korisnik ne zaustavi. */
     val stopAtMs: Long? = null,
     val sizeBytes: Long = 0,
-    /** [STATUS_RECORDING], [STATUS_DONE] ili [STATUS_FAILED]. */
+    /** [STATUS_SCHEDULED], [STATUS_RECORDING], [STATUS_DONE] ili [STATUS_FAILED]. */
     val status: String,
-    /** Zašto je snimanje stalo pre vremena ([ERROR_STREAM], [ERROR_SPACE], [ERROR_UNSUPPORTED]), ili null. */
+    /** Zašto je snimanje stalo pre vremena ili nije ni krenulo ([ERROR_STREAM], [ERROR_SPACE], ...), ili null. */
     val error: String? = null,
 ) {
     companion object {
+        /** Zakazano: [startedAt] je vreme kad treba da krene, a [stopAtMs] kad staje. */
+        const val STATUS_SCHEDULED = "scheduled"
         const val STATUS_RECORDING = "recording"
         const val STATUS_DONE = "done"
         const val STATUS_FAILED = "failed"
         const val ERROR_STREAM = "stream"
         const val ERROR_SPACE = "space"
         const val ERROR_UNSUPPORTED = "unsupported"
+
+        /** Uređaj je bio ugašen ili aplikacija nije smela da se pokrene u zakazano vreme. */
+        const val ERROR_MISSED = "missed"
+
+        /** Kanala više nema u listi. */
+        const val ERROR_NO_CHANNEL = "channel"
     }
 }

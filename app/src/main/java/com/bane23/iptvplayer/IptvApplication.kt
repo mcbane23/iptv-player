@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer
 
 import android.app.Application
+import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.trakt.TraktTokenStore
 import com.bane23.iptvplayer.work.EpgScheduler
 import com.bane23.iptvplayer.work.TraktScheduler
@@ -18,6 +19,10 @@ class IptvApplication : Application() {
 
     @Inject
     lateinit var traktTokens: TraktTokenStore
+
+    /** Čim se napravi, vraća budilnike zakazanih snimanja (ne preživljavaju gašenje uređaja). */
+    @Inject
+    lateinit var recordings: RecordingRepository
 
     override fun onCreate() {
         super.onCreate()
