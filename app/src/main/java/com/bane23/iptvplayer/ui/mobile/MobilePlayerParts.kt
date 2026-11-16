@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Kontrole plejera na telefonu, raspoređene isto kao na TV-u: gore nazad, naslov i dugmad
- * (slika u slici, zaključavanje), u sredini veliko dugme za puštanje, dole traka i red dugmadi.
+ * (slika u slici, zaključavanje), a sve ostalo dole: dugme za puštanje, traka i red dugmadi.
  */
 @Composable
 fun MobilePlayerControls(
@@ -58,7 +58,6 @@ fun MobilePlayerControls(
     onClose: () -> Unit,
     onLock: () -> Unit,
     onPip: (() -> Unit)?,
-    center: @Composable RowScope.() -> Unit,
     bottom: @Composable ColumnScope.() -> Unit,
     chips: @Composable RowScope.() -> Unit,
 ) {
@@ -86,13 +85,6 @@ fun MobilePlayerControls(
                 PlayerIconButton(AppIcons.Lock, stringResource(R.string.player_lock), onLock)
             }
         }
-
-        Row(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalArrangement = Arrangement.spacedBy(32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = center,
-        )
 
         Box(modifier = Modifier.align(Alignment.BottomStart)) {
             PlayerScrim(top = false, modifier = Modifier.matchParentSize())

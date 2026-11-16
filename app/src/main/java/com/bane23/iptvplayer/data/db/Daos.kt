@@ -315,3 +315,21 @@ interface WatchProgressDao {
     )
     fun observeContinueSeries(playlistId: Long, limit: Int): Flow<List<WatchProgressEntity>>
 }
+
+@Dao
+interface VodFavoriteDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(favorite: VodFavoriteEntity)
+
+    @Query("DELETE FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun delete(playlistId: Long, kind: String, itemId: Long)
+
+    /** Omiljeni filmovi, odnosno serije, liste; poslednje dodat prvi. */
+    @Query("SELECT * FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind ORDER BY addedAt DESC")
+    fun observe(playlistId: Long, kind: String): Flow<List<VodFavoriteEntity>>
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId)",
+    )
+    fun observeIsFavorite(playlistId: Long, kind: String, itemId: Long): Flow<Boolean>
+}

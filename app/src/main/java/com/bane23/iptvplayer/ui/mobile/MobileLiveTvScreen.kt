@@ -9,14 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -69,6 +65,7 @@ fun MobileLiveTvScreen(
     val playlistId = state.playlistId
     // Izabrani čip; null dok korisnik ništa ne izabere (tada omiljeni ako ih ima, inače svi kanali).
     var chosen by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val groups = buildList {
         add(ChannelGroups.FAVORITES)
         if (state.recentCount > 0) add(ChannelGroups.RECENT)
@@ -129,43 +126,32 @@ fun MobileLiveTvScreen(
                 }
 
                 else -> {
-                    val chipState = rememberLazyListState()
-                    LazyRow(
-                        state = chipState,
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item(key = ChannelGroups.FAVORITES) {
-                            GroupChip(
-                                label = stringResource(R.string.category_favorites),
-                                selected = selected == ChannelGroups.FAVORITES,
-                                onClick = { chosen = ChannelGroups.FAVORITES },
-                                leadingStar = true,
-                            )
-                        }
-                        if (state.recentCount > 0) {
-                            item(key = ChannelGroups.RECENT) {
-                                GroupChip(
-                                    label = stringResource(R.string.category_recent),
-                                    selected = selected == ChannelGroups.RECENT,
-                                    onClick = { chosen = ChannelGroups.RECENT },
-                                )
-                            }
-                        }
-                        item(key = ALL_CHANNELS) {
-                            GroupChip(
-                                label = stringResource(R.string.category_all),
-                                selected = selected == ALL_CHANNELS,
-                                onClick = { chosen = ALL_CHANNELS },
-                            )
-                        }
-                        items(state.categories, key = { it.id }) { category ->
-                            GroupChip(
-                                label = category.name,
-                                selected = selected == category.id,
-                                onClick = { chosen = category.id },
-                            )
-                        }
+                    val favoritesLabel = stringResource(R.string.category_favorites)
+                    val recentLabel = stringResource(R.string.category_recent)
+                    val allLabel = stringResource(R.string.category_all)
+                    val pickerGroups = buildList {
+                        add(PickerGroup(ChannelGroups.FAVORITES.toString(), favoritesLabel, AppIcons.Star))
+                        if (state.recentCount > 0) add(PickerGroup(ChannelGroups.RECENT.toString(), recentLabel))
+                        add(PickerGroup(ALL_CHANNELS.toString(), allLabel))
+                        state.categories.forEach { add(PickerGroup(it.id.toString(), it.name)) }
+                    }
+                    val selectedGroup = pickerGroups.firstOrNull { it.key == selected.toString() }
+                    CategoryButton(
+                        label = selectedGroup?.label ?: allLabel,
+                        icon = selectedGroup?.icon,
+                        onClick = { pickerOpen = true },
+                    )
+                    if (pickerOpen) {
+                        CategoryPickerDialog(
+                            title = stringResource(R.string.nav_live),
+                            groups = pickerGroups,
+                            selectedKey = selected.toString(),
+                            onPick = { key ->
+                                pickerOpen = false
+                                chosen = key.toLong()
+                            },
+                            onDismiss = { pickerOpen = false },
+                        )
                     }
 
                     val channels = channelsViewModel.channels.collectAsLazyPagingItems()
@@ -207,33 +193,6 @@ fun MobileLiveTvScreen(
             }
         }
     }
-}
-
-/** Čip kategorije. Naziv se skraćuje ako je predugačak, da čipovi ostanu pregledni. */
-@Composable
-private fun GroupChip(label: String, selected: Boolean, onClick: () -> Unit, leadingStar: Boolean = false) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 180.dp),
-            )
-        },
-        leadingIcon = if (leadingStar) {
-            { Icon(AppIcons.Star, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
-        } else {
-            null
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-    )
 }
 
 /** Naziv aktivne liste u zaglavlju; ako lista ima više, dodir otvara izbor druge liste. */

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -16,8 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,6 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
+import com.bane23.iptvplayer.data.repo.VodCategory
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,6 +54,10 @@ fun MobileVodScreen(
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
+    val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+    var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    val favoritesLabel = stringResource(R.string.category_favorites)
+    val showingFavorites = state.selected?.id == FAVORITES_ID
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
     val searchLabel = stringResource(if (series) R.string.search_series else R.string.search_movies)
 
@@ -99,28 +105,23 @@ fun MobileVodScreen(
                         }
                     }
                     item(key = "categories", span = { GridItemSpan(maxLineSpan) }) {
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(state.categories, key = { it.id }) { category ->
-                                FilterChip(
-                                    selected = category == state.selected,
-                                    onClick = { viewModel.selectCategory(category) },
-                                    label = {
-                                        Text(
-                                            text = category.name,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.widthIn(max = 180.dp),
-                                        )
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    ),
-                                )
-                            }
-                        }
+                        CategoryButton(
+                            label = if (showingFavorites) favoritesLabel else state.selected?.name ?: stringResource(R.string.vod_category),
+                            icon = if (showingFavorites) AppIcons.Star else null,
+                            onClick = { pickerOpen = true },
+                            // Mreža već ima bočne margine.
+                            horizontalPadding = 0.dp,
+                        )
                     }
                     when {
+                        showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
+                            Message(stringResource(R.string.vod_favorites_empty))
+                        }
+
+                        showingFavorites -> items(favorites, key = { it.id }) { item ->
+                            PosterTile(name = item.name, poster = item.poster, onClick = { onOpen(item) })
+                        }
+
                         state.loadingItems -> item(span = { GridItemSpan(maxLineSpan) }) {
                             Message(stringResource(R.string.vod_loading))
                         }
@@ -140,6 +141,21 @@ fun MobileVodScreen(
                 }
             }
         }
+    }
+
+    if (pickerOpen) {
+        CategoryPickerDialog(
+            title = title,
+            groups = listOf(PickerGroup(FAVORITES_ID, favoritesLabel, AppIcons.Star)) +
+                state.categories.map { PickerGroup(it.id, it.name) },
+            selectedKey = state.selected?.id,
+            onPick = { key ->
+                pickerOpen = false
+                val category = state.categories.firstOrNull { it.id == key } ?: VodCategory(FAVORITES_ID, favoritesLabel)
+                viewModel.selectCategory(category)
+            },
+            onDismiss = { pickerOpen = false },
+        )
     }
 }
 

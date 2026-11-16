@@ -12,8 +12,9 @@ import androidx.room.RoomDatabase
         HistoryEntity::class,
         EpgProgramEntity::class,
         WatchProgressEntity::class,
+        VodFavoriteEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,4 +25,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun epgDao(): EpgDao
     abstract fun watchProgressDao(): WatchProgressDao
+    abstract fun vodFavoriteDao(): VodFavoriteDao
 }

@@ -44,7 +44,9 @@ import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerScrim
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
-import com.bane23.iptvplayer.ui.common.player.PlayerTime
+import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
+import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
@@ -197,14 +199,20 @@ fun TvVodPlayerScreen(
                 PlayerScrim(top = true, modifier = Modifier.matchParentSize())
                 val season = ui.season
                 val episode = ui.episode
-                PlayerTitle(
-                    title = ui.title,
-                    subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
-                    large = true,
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TitleBackIcon()
+                    PlayerTitle(
+                        title = ui.title,
+                        subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
+                        large = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
 
             Box(modifier = Modifier.align(Alignment.BottomStart)) {
@@ -215,54 +223,55 @@ fun TvVodPlayerScreen(
                         .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        PlayerIconButton(
-                            icon = AppIcons.Rewind,
-                            description = stringResource(R.string.vod_seek_back),
-                            onClick = { viewModel.seekBy(-SEEK_STEP_MS) },
-                        )
-                        val paused = playback.status == PlaybackStatus.PAUSED
-                        PlayerIconButton(
-                            icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                            description = stringResource(
-                                when {
-                                    failed -> R.string.player_retry
-                                    paused -> R.string.player_play
-                                    else -> R.string.player_pause
-                                },
-                            ),
-                            onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
-                            primary = true,
-                            modifier = Modifier.focusRequester(playFocus),
-                        )
-                        PlayerIconButton(
-                            icon = AppIcons.Forward,
-                            description = stringResource(R.string.vod_seek_forward),
-                            onClick = { viewModel.seekBy(SEEK_STEP_MS) },
-                        )
-                        PlayerTime(ui.positionMs, modifier = Modifier.padding(start = 8.dp))
+                    val paused = playback.status == PlaybackStatus.PAUSED
+                    PlayerTransportBar(
+                        startLabel = formatDuration(ui.positionMs),
+                        endLabel = formatDuration(ui.durationMs),
+                        leading = {
+                            PlayerIconButton(
+                                icon = AppIcons.Rewind,
+                                description = stringResource(R.string.vod_seek_back),
+                                onClick = { viewModel.seekBy(-SEEK_STEP_MS) },
+                            )
+                            PlayerIconButton(
+                                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                                description = stringResource(
+                                    when {
+                                        failed -> R.string.player_retry
+                                        paused -> R.string.player_play
+                                        else -> R.string.player_pause
+                                    },
+                                ),
+                                onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                                primary = true,
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .focusRequester(playFocus),
+                            )
+                        },
+                        trailing = {
+                            PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                            PlayerIconButton(
+                                icon = AppIcons.Forward,
+                                description = stringResource(R.string.vod_seek_forward),
+                                onClick = { viewModel.seekBy(SEEK_STEP_MS) },
+                            )
+                            if (ui.hasNext) {
+                                PlayerIconButton(
+                                    icon = AppIcons.Next,
+                                    description = stringResource(R.string.vod_next_episode),
+                                    onClick = viewModel::next,
+                                )
+                            }
+                        },
+                    ) { barModifier ->
                         PlayerSeekBar(
                             positionMs = ui.positionMs,
                             durationMs = ui.durationMs,
                             onSeekTo = viewModel::seekTo,
                             onSeekBy = viewModel::seekBy,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 8.dp)
-                                .focusRequester(seekFocus),
+                            modifier = barModifier.focusRequester(seekFocus),
                         )
-                        PlayerTime(ui.durationMs)
-                        if (ui.hasNext) {
-                            PlayerIconButton(
-                                icon = AppIcons.Next,
-                                description = stringResource(R.string.vod_next_episode),
-                                onClick = viewModel::next,
-                                modifier = Modifier.padding(start = 8.dp),
-                            )
-                        }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlayerChip(

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -100,4 +101,17 @@ fun TvTextRow(
 fun FocusRequester.tryRequestFocus(): Boolean {
     val result: Any? = runCatching { requestFocus() }.getOrNull()
     return result != null && result != false
+}
+
+/** Strelica ispred naslova u plejeru. Samo podseća da taster Nazad zatvara plejer; ne prima fokus. */
+@Composable
+fun TitleBackIcon() {
+    androidx.tv.material3.Icon(
+        imageVector = com.bane23.iptvplayer.ui.common.icons.AppIcons.Back,
+        contentDescription = null,
+        tint = Color.White,
+        modifier = Modifier
+            .padding(end = 16.dp)
+            .size(28.dp),
+    )
 }

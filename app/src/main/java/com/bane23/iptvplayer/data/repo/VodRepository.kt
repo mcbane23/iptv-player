@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.data.repo
 
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
+import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.db.WatchProgressEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.xtream.MovieDetails
@@ -82,6 +83,7 @@ class VodRepository @Inject constructor(
 ) {
     private val playlistDao = db.playlistDao()
     private val progressDao = db.watchProgressDao()
+    private val favoriteDao = db.vodFavoriteDao()
 
     private class Session(
         val playlistId: Long,
@@ -251,6 +253,37 @@ class VodRepository @Inject constructor(
         }
     }
 
+    /** Omiljeni filmovi, odnosno serije, liste; poslednje dodat prvi. */
+    fun observeFavorites(playlistId: Long, kind: VodKind): Flow<List<VodItem>> =
+        favoriteDao.observe(playlistId, kind.favoriteKind).map { list ->
+            list.map { VodItem(id = it.itemId, name = it.name, poster = it.poster, rating = null, extension = it.extension) }
+        }
+
+    fun observeIsFavorite(playlistId: Long, kind: VodKind, itemId: Long): Flow<Boolean> =
+        favoriteDao.observeIsFavorite(playlistId, kind.favoriteKind, itemId)
+
+    /** Dodaje film ili seriju u omiljene, odnosno uklanja ako je već tamo. */
+    suspend fun toggleFavorite(kind: VodKind, item: VodItem, favorite: Boolean) = withContext(Dispatchers.IO) {
+        val playlistId = settings.activePlaylistId.first() ?: return@withContext
+        if (favorite) {
+            favoriteDao.delete(playlistId, kind.favoriteKind, item.id)
+        } else {
+            favoriteDao.insert(
+                VodFavoriteEntity(
+                    playlistId = playlistId,
+                    kind = kind.favoriteKind,
+                    itemId = item.id,
+                    name = item.name,
+                    poster = item.poster,
+                    extension = item.extension,
+                    addedAt = System.currentTimeMillis(),
+                ),
+            )
+        }
+    }
+
+    private val VodKind.favoriteKind: String get() = if (this == VodKind.MOVIES) KIND_MOVIE else KIND_SERIES
+
     private suspend fun session(): Session {
         val playlistId = settings.activePlaylistId.first() ?: throw VodUnavailableException()
         val playlist = playlistDao.getById(playlistId) ?: throw VodUnavailableException()
@@ -294,6 +327,7 @@ class VodRepository @Inject constructor(
     private companion object {
         const val KIND_MOVIE = "movie"
         const val KIND_EPISODE = "episode"
+        const val KIND_SERIES = "series"
 
         /** Oznaka za spisak bez kategorije (svi filmovi, odnosno sve serije). */
         const val ALL_CATEGORIES = ""

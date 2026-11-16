@@ -45,6 +45,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.guide.formatTime
@@ -52,7 +53,10 @@ import com.bane23.iptvplayer.ui.common.guide.nextLine
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
+import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
+import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.PlayerScrim
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
@@ -223,7 +227,8 @@ fun TvPlayerScreen(
             LiveControls(
                 ui = ui,
                 nowNext = nowNext,
-                textEnabled = playback.textEnabled,
+                playback = playback,
+                viewModel = viewModel,
                 isFavorite = isFavorite,
                 firstChipFocus = firstChipFocus,
                 onChannels = { channelList = true },
@@ -264,7 +269,8 @@ fun TvPlayerScreen(
 private fun LiveControls(
     ui: PlayerUiState,
     nowNext: NowNext,
-    textEnabled: Boolean,
+    playback: PlaybackState,
+    viewModel: PlayerViewModel,
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
     onChannels: () -> Unit,
@@ -278,14 +284,20 @@ private fun LiveControls(
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.align(Alignment.TopStart)) {
             PlayerScrim(top = true, modifier = Modifier.matchParentSize())
-            PlayerTitle(
-                title = listOfNotNull(channel.number?.toString(), channel.name).joinToString("  "),
-                subtitle = nowNext.now?.title,
-                large = true,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TitleBackIcon()
+                PlayerTitle(
+                    title = listOfNotNull(channel.number?.toString(), channel.name).joinToString("  "),
+                    subtitle = nowNext.now?.title,
+                    large = true,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         Box(modifier = Modifier.align(Alignment.BottomStart)) {
@@ -296,18 +308,48 @@ private fun LiveControls(
                     .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                nowNext.now?.let { program ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = formatTime(program.startMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                        val length = (program.stopMs - program.startMs).coerceAtLeast(1)
-                        PlayerProgress(
-                            fraction = (now - program.startMs).toFloat() / length,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp),
+                val program = nowNext.now
+                val paused = playback.status == PlaybackStatus.PAUSED
+                val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
+                PlayerTransportBar(
+                    startLabel = program?.let { formatTime(it.startMs) },
+                    endLabel = program?.let { formatTime(it.stopMs) },
+                    leading = {
+                        PlayerIconButton(
+                            icon = AppIcons.Previous,
+                            description = stringResource(R.string.player_previous),
+                            onClick = viewModel::previous,
                         )
-                        Text(text = formatTime(program.stopMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
-                    }
+                        PlayerIconButton(
+                            icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                            description = stringResource(
+                                when {
+                                    failed -> R.string.player_retry
+                                    paused -> R.string.player_play
+                                    else -> R.string.player_pause
+                                },
+                            ),
+                            onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                            primary = true,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .focusRequester(firstChipFocus),
+                        )
+                    },
+                    trailing = {
+                        PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                        PlayerIconButton(
+                            icon = AppIcons.Next,
+                            description = stringResource(R.string.player_next),
+                            onClick = viewModel::next,
+                        )
+                    },
+                ) { barModifier ->
+                    val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
+                    PlayerProgress(
+                        fraction = if (program != null && length != null) (now - program.startMs).toFloat() / length else 0f,
+                        modifier = barModifier,
+                    )
                 }
                 nowNext.nextLine()?.let { line ->
                     Text(
@@ -323,12 +365,11 @@ private fun LiveControls(
                         label = stringResource(R.string.player_channels),
                         icon = AppIcons.ChannelList,
                         onClick = onChannels,
-                        modifier = Modifier.focusRequester(firstChipFocus),
                     )
                     PlayerChip(
                         label = stringResource(R.string.player_subtitles),
                         icon = AppIcons.Subtitles,
-                        active = textEnabled,
+                        active = playback.textEnabled,
                         onClick = onSubtitles,
                     )
                     PlayerChip(label = stringResource(R.string.player_audio), icon = AppIcons.Audio, onClick = onAudio)

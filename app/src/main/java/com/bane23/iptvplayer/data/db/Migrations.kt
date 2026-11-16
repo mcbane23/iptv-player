@@ -28,5 +28,21 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6)
+    /** Verzija 7: omiljeni filmovi i serije. */
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `vod_favorites` (`playlistId` INTEGER NOT NULL, `kind` TEXT NOT NULL, " +
+                    "`itemId` INTEGER NOT NULL, `name` TEXT NOT NULL, `poster` TEXT, `extension` TEXT, " +
+                    "`addedAt` INTEGER NOT NULL, PRIMARY KEY(`playlistId`, `kind`, `itemId`), " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_vod_favorites_playlistId_kind_addedAt` " +
+                    "ON `vod_favorites` (`playlistId`, `kind`, `addedAt`)",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
 }
