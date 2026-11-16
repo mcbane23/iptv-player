@@ -304,4 +304,15 @@
     <string name="settings_seek_step">Seek step</string>
     <string name="settings_seek_step_summary">How far the forward and back buttons skip in a movie or episode. On TV, holding the arrow speeds up seeking.</string>
     <string name="seek_step_seconds">%1$d s</string>
+    <string name="settings_subtitle_size">Subtitle size</string>
+    <string name="settings_subtitle_position">Subtitle position</string>
+    <string name="settings_subtitle_background">Black subtitle background</string>
+    <string name="settings_subtitle_look_summary">How subtitles look in the player. Changes apply right away.</string>
+    <string name="subtitle_size_small">Small</string>
+    <string name="subtitle_size_normal">Medium</string>
+    <string name="subtitle_size_large">Large</string>
+    <string name="subtitle_size_xlarge">Very large</string>
+    <string name="subtitle_position_low">At the bottom</string>
+    <string name="subtitle_position_middle">A bit higher</string>
+    <string name="subtitle_position_high">High</string>
 </resources>

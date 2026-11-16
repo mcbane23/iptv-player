@@ -12,6 +12,12 @@ enum class DecoderMode {
     SOFTWARE,
 }
 
+/** Veličina slova titlova, kao deo visine slike. */
+enum class SubtitleSize(val fraction: Float) { SMALL(0.04f), NORMAL(0.0533f), LARGE(0.07f), XLARGE(0.09f) }
+
+/** Položaj titlova: koliko su podignuti od dna slike, kao deo njene visine. */
+enum class SubtitlePosition(val bottomFraction: Float) { LOW(0.08f), MIDDLE(0.18f), HIGH(0.3f) }
+
 /** Podešavanja plejera. Važe za kanale, filmove i serije, na telefonu i TV-u. */
 data class PlayerSettings(
     val buffer: BufferSize = BufferSize.NORMAL,
@@ -22,6 +28,10 @@ data class PlayerSettings(
     val subtitleLanguage: String = "",
     /** Za koliko sekundi dugmad napred i nazad premotaju film ili epizodu. */
     val seekStepSeconds: Int = DEFAULT_SEEK_STEP_SECONDS,
+    /** Crna pozadina iza titlova; bez nje slova imaju samo crnu ivicu. */
+    val subtitleBackground: Boolean = true,
+    val subtitleSize: SubtitleSize = SubtitleSize.NORMAL,
+    val subtitlePosition: SubtitlePosition = SubtitlePosition.LOW,
 ) {
     companion object {
         const val DEFAULT_SEEK_STEP_SECONDS = 10

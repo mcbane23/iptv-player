@@ -358,8 +358,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Titlovi**
 
-- [ ] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
-      veličina slova i položaj na ekranu (visina od dna), sa pregledom
+- [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
+      veličina slova i položaj na ekranu (visina od dna)
+- [ ] Pregled izgleda titlova u samim podešavanjima (za sada se izmena vidi u plejeru)
 
 ## 7. Testiranje
 

@@ -304,4 +304,15 @@
     <string name="settings_seek_step">Korak premotavanja</string>
     <string name="settings_seek_step_summary">Za koliko dugmad napred i nazad premotaju film ili epizodu. Na TV-u držanje strelice ubrzava premotavanje.</string>
     <string name="seek_step_seconds">%1$d s</string>
+    <string name="settings_subtitle_size">Veličina titlova</string>
+    <string name="settings_subtitle_position">Položaj titlova</string>
+    <string name="settings_subtitle_background">Crna pozadina titlova</string>
+    <string name="settings_subtitle_look_summary">Izgled titlova u plejeru. Izmena važi odmah.</string>
+    <string name="subtitle_size_small">Mala</string>
+    <string name="subtitle_size_normal">Srednja</string>
+    <string name="subtitle_size_large">Velika</string>
+    <string name="subtitle_size_xlarge">Vrlo velika</string>
+    <string name="subtitle_position_low">Pri dnu</string>
+    <string name="subtitle_position_middle">Malo više</string>
+    <string name="subtitle_position_high">Visoko</string>
 </resources>
