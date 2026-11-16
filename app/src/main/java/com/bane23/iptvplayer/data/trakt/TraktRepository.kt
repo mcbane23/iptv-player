@@ -199,13 +199,36 @@ class TraktRepository @Inject constructor(
     }
 
     private suspend fun pull(auth: String) {
-        val movies = api.watchedMovies(auth)
-        val shows = api.watchedShows(auth)
+        val movies = allPages(MOVIES_PAGE) { page -> api.watchedMovies(auth, page, MOVIES_PAGE) }
+        val shows = allPages(SHOWS_PAGE) { page -> api.watchedShows(auth, page, SHOWS_PAGE) }
         val rows: List<TraktWatchedEntity> = TraktPayloads.watchedRows(movies, shows, System.currentTimeMillis())
         db.withTransaction {
             dao.clearWatched()
             dao.insertWatched(rows)
         }
+    }
+
+    /**
+     * Sve strane jednog spiska sa naloga. Staje kad zaglavlje kaže da je strana poslednja, kad strana
+     * dođe prazna ili ne donese ništa novo (Trakt za stranu preko kraja ume da ponovi već poslato).
+     */
+    private suspend fun <T> allPages(limit: Int, load: suspend (page: Int) -> retrofit2.Response<List<T>>): List<T> {
+        val all = LinkedHashSet<T>()
+        for (page in 1..MAX_PAGES) {
+            val response = load(page)
+            if (!response.isSuccessful) throw HttpException(response)
+            val items = response.body().orEmpty()
+            val before = all.size
+            all.addAll(items)
+            if (items.isEmpty() || all.size == before) break
+            val pageCount = response.headers()["X-Pagination-Page-Count"]?.toIntOrNull()
+            if (pageCount != null) {
+                if (page >= pageCount) break
+            } else if (items.size < limit) {
+                break
+            }
+        }
+        return all.toList()
     }
 
     /** Šalje pozicije prekinutog gledanja (za nastavak na drugom uređaju). */
@@ -300,6 +323,13 @@ class TraktRepository @Inject constructor(
         val CLIENT_SECRET: String? = BuildConfig.TRAKT_CLIENT_SECRET.ifEmpty { null }
 
         const val LEGACY_REDIRECT = "urn:ietf:wg:oauth:2.0:oob"
+
+        /** Najviše stavki po strani koje Trakt dozvoljava: 250, odnosno 100 kad se traže i epizode. */
+        const val MOVIES_PAGE = 250
+        const val SHOWS_PAGE = 100
+
+        /** Granica za svaki slučaj, da greška u straničenju ne vrti zahteve unedogled. */
+        const val MAX_PAGES = 200
 
         /** Token se osvežava dan pre isteka. */
         const val REFRESH_BEFORE_MS = 24 * 60 * 60 * 1000L
