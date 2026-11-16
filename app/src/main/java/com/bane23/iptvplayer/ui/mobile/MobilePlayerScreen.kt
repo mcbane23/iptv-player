@@ -1,22 +1,15 @@
 package com.bane23.iptvplayer.ui.mobile
 
-import android.app.Activity
 import android.app.PictureInPictureParams
-import android.content.Context
-import android.media.AudioManager
 import android.os.Build
 import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,17 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -85,9 +75,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
-import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
-import kotlin.math.abs
 
 private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD }
 
@@ -115,7 +103,9 @@ fun MobilePlayerScreen(
         if (isRecording) viewModel.toggleRecording() else panel = Panel.RECORD
     }
     val recordChoices = recordingChoices(nowNext.now?.stopMs)
-    var gestureHint by remember { mutableStateOf<String?>(null) }
+    val levels = rememberPlayerLevels()
+    // Dodir na bočnim trakama odlaže sklanjanje kontrola.
+    var sliderTouches by remember { mutableIntStateOf(0) }
     var locked by remember { mutableStateOf(false) }
     var infoVisible by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
@@ -128,16 +118,10 @@ fun MobilePlayerScreen(
     AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
 
     // Kontrole se same sklanjaju posle nekoliko sekundi gledanja.
-    LaunchedEffect(controlsVisible, panel, playback.status) {
+    LaunchedEffect(controlsVisible, panel, playback.status, sliderTouches) {
         if (controlsVisible && panel == Panel.NONE && playback.status == PlaybackStatus.PLAYING) {
             delay(CONTROLS_TIMEOUT_MS)
             controlsVisible = false
-        }
-    }
-    LaunchedEffect(gestureHint) {
-        if (gestureHint != null) {
-            delay(GESTURE_HINT_MS)
-            gestureHint = null
         }
     }
     BackHandler(enabled = panel != Panel.NONE) { panel = Panel.NONE }
@@ -162,8 +146,7 @@ fun MobilePlayerScreen(
                         else -> controlsVisible = !controlsVisible
                     }
                 })
-            }
-            .then(if (locked) Modifier else Modifier.volumeBrightnessDrag { gestureHint = it }),
+            },
     ) {
         VideoSurface(
             player = viewModel.player,
@@ -183,9 +166,6 @@ fun MobilePlayerScreen(
                         .padding(horizontal = 32.dp),
                 )
             }
-
-            gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
-            FirstLaunchGestureHint()
 
             // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
             if (infoVisible && panel != Panel.CHANNELS) {
@@ -231,6 +211,7 @@ fun MobilePlayerScreen(
                     onPip = rememberEnterPictureInPicture(),
                     onCast = cast,
                 )
+                PlayerSideSliders(levels) { sliderTouches++ }
             }
 
             if (panel == Panel.CHANNELS) {
@@ -461,111 +442,6 @@ internal fun TrackDialog(
 
 // ---------------------------------------------------------------------------------------------
 
-/** Menja jačinu zvuka i osvetljenje ekrana; vraća novu vrednost u procentima. */
-private class PlayerGestures(private val activity: Activity?, private val audio: AudioManager) {
-    private val maxVolume = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-    private var volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
-    private var brightness = activity?.window?.attributes?.screenBrightness?.takeIf { it >= 0f } ?: 0.5f
-
-    fun changeVolume(delta: Float): Int {
-        volume = (volume + delta).coerceIn(0f, 1f)
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, (volume * maxVolume).roundToInt(), 0)
-        return (volume * 100).roundToInt()
-    }
-
-    fun changeBrightness(delta: Float): Int {
-        brightness = (brightness + delta).coerceIn(0.01f, 1f)
-        activity?.window?.let { window ->
-            window.attributes = window.attributes.apply { screenBrightness = brightness }
-        }
-        return (brightness * 100).roundToInt()
-    }
-
-    /** Vraća osvetljenje na sistemsko kad se plejer zatvori. */
-    fun restoreBrightness() {
-        activity?.window?.let { window ->
-            window.attributes = window.attributes.apply { screenBrightness = -1f }
-        }
-    }
-}
-
-/**
- * Prevlačenje gore-dole: leva polovina ekrana menja osvetljenje, desna jačinu zvuka. Računa se samo
- * potez koji je krenuo uspravno; vodoravan potez (npr. sistemski gest Nazad) ne menja ništa, kao ni
- * potez koji počne uz samu levu ili desnu ivicu ekrana.
- */
-@Composable
-internal fun Modifier.volumeBrightnessDrag(onHint: (String) -> Unit): Modifier {
-    val volumeText = stringResource(R.string.gesture_volume)
-    val brightnessText = stringResource(R.string.gesture_brightness)
-    val gestures = rememberPlayerGestures()
-    return pointerInput(gestures) {
-        val edge = GESTURE_EDGE.toPx()
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            if (down.position.x < edge || down.position.x > size.width - edge) return@awaitEachGesture
-            val leftSide = down.position.x < size.width / 2
-            var moved = Offset.Zero
-            var vertical = false
-            while (true) {
-                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                if (!change.pressed) break
-                val step = change.positionChange()
-                if (!vertical) {
-                    // Smer se odlučuje jednom, čim prst pređe prag; posle toga se više ne menja.
-                    moved += step
-                    if (moved.getDistance() < viewConfiguration.touchSlop) continue
-                    if (abs(moved.y) < abs(moved.x) * VERTICAL_RATIO) break
-                    vertical = true
-                }
-                change.consume()
-                val delta = -step.y / size.height
-                onHint(
-                    if (leftSide) {
-                        "$brightnessText ${gestures.changeBrightness(delta)}%"
-                    } else {
-                        "$volumeText ${gestures.changeVolume(delta)}%"
-                    },
-                )
-            }
-        }
-    }
-}
-
-/** Pojas uz levu i desnu ivicu u kome se potezi ne računaju, jer odatle kreće sistemski gest Nazad. */
-private val GESTURE_EDGE = 32.dp
-
-/** Koliko puta pomeraj gore-dole mora biti veći od pomeraja levo-desno da bi se potez računao kao uspravan. */
-private const val VERTICAL_RATIO = 1.5f
-
-/** Kratka poruka sa novom vrednošću zvuka ili osvetljenja. */
-@Composable
-internal fun GestureHint(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        color = Color.White,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = modifier
-            .safeDrawingPadding()
-            .padding(top = 72.dp)
-            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    )
-}
-
-@Composable
-private fun rememberPlayerGestures(): PlayerGestures {
-    val activity = LocalActivity.current
-    val context = LocalContext.current
-    val gestures = remember(activity) {
-        PlayerGestures(activity, context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
-    }
-    DisposableEffect(gestures) {
-        onDispose { gestures.restoreBrightness() }
-    }
-    return gestures
-}
-
 /** Sakriva sistemske trake dok je plejer na ekranu. */
 @Composable
 internal fun ImmersiveMode() {
@@ -633,4 +509,3 @@ private fun pipParams(autoEnter: Boolean): PictureInPictureParams {
 }
 
 private const val CONTROLS_TIMEOUT_MS = 4_000L
-private const val GESTURE_HINT_MS = 1_200L

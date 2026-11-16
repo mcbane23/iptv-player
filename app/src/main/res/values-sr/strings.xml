@@ -89,7 +89,6 @@
     <string name="gesture_brightness">Osvetljenje</string>
     <string name="player_lock">Zaključaj ekran</string>
     <string name="player_unlock">Otključaj</string>
-    <string name="gesture_guide">Prevuci gore ili dole: levo menja osvetljenje, desno jačinu zvuka</string>
     <string name="playback_loading">Učitavanje…</string>
     <string name="playback_retrying">Veza je prekinuta, pokušavam ponovo…</string>
     <string name="playback_error_network">Kanal ne može da se pusti. Proverite internet vezu.</string>
