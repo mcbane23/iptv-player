@@ -21,6 +21,8 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import com.bane23.iptvplayer.domain.StreamSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -117,8 +119,16 @@ class PlayerEngine(
             },
         )
 
+    /**
+     * Mnogi TV strimovi (MPEG-TS) retko šalju pune ključne slike (IDR), a redovno obične I slike.
+     * Kad slika zaostane za zvukom, plejer preskače do sledeće ključne slike; sa ovim se i I slika
+     * računa kao ključna, pa se slika vraća brže umesto da stoji dok zvuk ide.
+     */
+    private val extractorsFactory = DefaultExtractorsFactory()
+        .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES)
+
     val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
-        .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory)))
+        .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory), extractorsFactory))
         .apply { (if (shared) sharedLoadControl() else loadControl(settings.buffer))?.let { setLoadControl(it) } }
         .build()
 
