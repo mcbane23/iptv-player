@@ -255,6 +255,9 @@
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Pretraga kanala</string>
     <string name="settings_tv_preview">Pregled kanala</string>
+    <string name="settings_under_cutout">Cela širina ekrana</string>
+    <string name="settings_under_cutout_summary">Kad je telefon položen, sadržaj ide do ivice ekrana, i ispod kamere</string>
+    <string name="vod_total">Ukupno: %1$d</string>
     <string name="settings_tv_vod_preview">Opis filma i serije iznad postera</string>
     <string name="vod_continue_watching">Nastavi gledanje</string>
     <string name="search_movies">Pretraga filmova</string>

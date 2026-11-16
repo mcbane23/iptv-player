@@ -91,6 +91,7 @@ fun TvVodScreen(
     var continueChosen by rememberSaveable { mutableStateOf(true) }
     val showContinue = continueChosen && continueItems.isNotEmpty()
     val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
+    var categoryFilter by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -136,71 +137,77 @@ fun TvVodScreen(
             state.categories.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                LazyColumn(
+                // Levo: pretraga, Favoriti i „Nastavi gledanje” stoje zakačeni na vrhu, a ispod njih
+                // polje za filtriranje i kategorije koje se skroluju.
+                Column(
                     modifier = Modifier
                         .weight(0.28f)
                         .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    item(key = "search") {
-                        TvListRow(onClick = onSearch, modifier = Modifier.padding(bottom = 8.dp)) { color ->
-                            Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                            Text(
-                                text = stringResource(if (series) R.string.search_series else R.string.search_movies),
-                                color = color,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 12.dp),
-                            )
-                        }
+                    TvListRow(onClick = onSearch) { color ->
+                        Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = stringResource(if (series) R.string.search_series else R.string.search_movies),
+                            color = color,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
                     }
+                    PinnedRow(
+                        icon = AppIcons.Star,
+                        title = favoritesLabel,
+                        subtitle = stringResource(R.string.vod_total, favorites.size),
+                        selected = showFavorites,
+                        onClick = {
+                            lastItemId = null
+                            continueChosen = false
+                            viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                        },
+                        modifier = if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier,
+                    )
                     if (continueItems.isNotEmpty()) {
-                        item(key = "continue") {
+                        PinnedRow(
+                            icon = AppIcons.Play,
+                            title = stringResource(R.string.vod_continue_watching),
+                            subtitle = stringResource(R.string.vod_total, continueItems.size),
+                            selected = showContinue,
+                            onClick = {
+                                lastItemId = null
+                                continueChosen = true
+                            },
+                            modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
+                        )
+                    }
+                    TvFilterField(
+                        value = categoryFilter,
+                        onChange = { categoryFilter = it },
+                        placeholder = stringResource(R.string.search_categories),
+                        modifier = Modifier.padding(vertical = 6.dp),
+                    )
+                    val shownCategories = remember(state.categories, categoryFilter) {
+                        val text = categoryFilter.trim()
+                        if (text.isEmpty()) state.categories else state.categories.filter { it.name.contains(text, ignoreCase = true) }
+                    }
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        items(shownCategories, key = { it.id }) { category ->
+                            val selected = !showContinue && category == state.selected
                             TvTextRow(
-                                text = stringResource(R.string.vod_continue_watching),
-                                selected = showContinue,
+                                text = category.name,
+                                selected = selected,
                                 onClick = {
                                     lastItemId = null
-                                    continueChosen = true
+                                    continueChosen = false
+                                    viewModel.selectCategory(category)
                                 },
-                                modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
+                                modifier = if (selected) Modifier.focusRequester(firstFocus) else Modifier,
                             )
                         }
-                    }
-                    item(key = "favorites") {
-                        TvListRow(
-                            selected = showFavorites,
-                            onClick = {
-                                lastItemId = null
-                                continueChosen = false
-                                viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
-                            },
-                            modifier = if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier,
-                        ) { color ->
-                            Icon(AppIcons.Star, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                            Text(
-                                text = favoritesLabel,
-                                color = color,
-                                style = MaterialTheme.typography.bodyLarge,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 12.dp),
-                            )
-                        }
-                    }
-                    items(state.categories, key = { it.id }) { category ->
-                        val selected = !showContinue && category == state.selected
-                        TvTextRow(
-                            text = category.name,
-                            selected = selected,
-                            onClick = {
-                                lastItemId = null
-                                continueChosen = false
-                                viewModel.selectCategory(category)
-                            },
-                            modifier = if (selected) Modifier.focusRequester(firstFocus) else Modifier,
-                        )
                     }
                 }
                 Column(
@@ -297,6 +304,36 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
         contentPadding = PaddingValues(12.dp),
         content = content,
     )
+}
+
+/** Zakačen red levo (Favoriti, „Nastavi gledanje”): ikonica, naziv i broj stavki ispod. */
+@Composable
+private fun PinnedRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TvListRow(onClick = onClick, selected = selected, modifier = modifier) { color ->
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = title,
+                color = color,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = subtitle,
+                color = color.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 /** Obrisi postera dok se kategorija učitava; nisu fokusirani, pa fokus ostaje u kategorijama. */

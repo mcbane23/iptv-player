@@ -1,6 +1,8 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
@@ -75,6 +77,23 @@ fun MobileVodScreen(
     val showingFavorites = state.selected?.id == FAVORITES_ID
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
     val searchLabel = stringResource(if (series) R.string.search_series else R.string.search_movies)
+
+    if (onBack == null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        // Položen telefon: kategorije levo, posteri desno.
+        MobileVodLandscape(
+            series = series,
+            state = state,
+            continueItems = continueItems,
+            favorites = favorites,
+            watched = watched,
+            onSelectCategory = viewModel::selectCategory,
+            onToggleFavorite = viewModel::toggleFavorite,
+            onOpen = onOpen,
+            onSearch = onSearch,
+            onRetry = { if (state.categoriesFailed) viewModel.loadCategories() else viewModel.retryItems() },
+        )
+        return
+    }
 
     // Providno: pozadinu sa sjajem crta početni ekran.
     Scaffold(containerColor = Color.Transparent) { padding ->

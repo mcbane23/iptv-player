@@ -72,6 +72,7 @@ fun MobileSettingsScreen(
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
+    val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
@@ -115,6 +116,12 @@ fun MobileSettingsScreen(
                     summary = stringResource(R.string.settings_resume_last_summary),
                     checked = resumeLastChannel,
                     onChange = viewModel::setResumeLastChannel,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_under_cutout),
+                    summary = stringResource(R.string.settings_under_cutout_summary),
+                    checked = drawUnderCutout,
+                    onChange = viewModel::setDrawUnderCutout,
                 )
                 Row(
                     modifier = Modifier
