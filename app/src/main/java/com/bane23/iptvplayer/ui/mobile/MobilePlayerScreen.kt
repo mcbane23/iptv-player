@@ -58,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
@@ -71,6 +72,8 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
+import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
@@ -178,6 +181,7 @@ fun MobilePlayerScreen(
                 LiveControls(
                     ui = ui,
                     playback = playback,
+                    player = viewModel.player,
                     onClose = onClose,
                     onLock = {
                         locked = true
@@ -238,6 +242,7 @@ fun MobilePlayerScreen(
 private fun LiveControls(
     ui: PlayerUiState,
     playback: PlaybackState,
+    player: Player,
     onClose: () -> Unit,
     onLock: () -> Unit,
     onPrevious: () -> Unit,
@@ -262,37 +267,38 @@ private fun LiveControls(
         onClose = onClose,
         onLock = onLock,
         onPip = onPip,
-        center = {
-            PlayerIconButton(AppIcons.Previous, stringResource(R.string.player_previous), onPrevious, size = 52.dp)
-            val paused = playback.status == PlaybackStatus.PAUSED
-            PlayerIconButton(
-                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                description = stringResource(
-                    when {
-                        failed -> R.string.player_retry
-                        paused -> R.string.player_play
-                        else -> R.string.player_pause
-                    },
-                ),
-                onClick = if (failed) onRetry else onPlayPause,
-                primary = true,
-                size = 68.dp,
-            )
-            PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext, size = 52.dp)
-        },
         bottom = {
-            nowNext.now?.let { program ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = formatTime(program.startMs), color = Color.White, style = MaterialTheme.typography.bodySmall)
-                    val length = (program.stopMs - program.startMs).coerceAtLeast(1)
-                    PlayerProgress(
-                        fraction = (now - program.startMs).toFloat() / length,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp),
+            val program = nowNext.now
+            val paused = playback.status == PlaybackStatus.PAUSED
+            PlayerTransportBar(
+                startLabel = program?.let { formatTime(it.startMs) },
+                endLabel = program?.let { formatTime(it.stopMs) },
+                leading = {
+                    PlayerIconButton(AppIcons.Previous, stringResource(R.string.player_previous), onPrevious)
+                    PlayerIconButton(
+                        icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                        description = stringResource(
+                            when {
+                                failed -> R.string.player_retry
+                                paused -> R.string.player_play
+                                else -> R.string.player_pause
+                            },
+                        ),
+                        onClick = if (failed) onRetry else onPlayPause,
+                        primary = true,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
-                    Text(text = formatTime(program.stopMs), color = Color.White, style = MaterialTheme.typography.bodySmall)
-                }
+                },
+                trailing = {
+                    PlayerResolution(player, modifier = Modifier.padding(end = 8.dp))
+                    PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext)
+                },
+            ) { barModifier ->
+                val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
+                PlayerProgress(
+                    fraction = if (program != null && length != null) (now - program.startMs).toFloat() / length else 0f,
+                    modifier = barModifier,
+                )
             }
             nowNext.nextLine()?.let { line ->
                 Text(

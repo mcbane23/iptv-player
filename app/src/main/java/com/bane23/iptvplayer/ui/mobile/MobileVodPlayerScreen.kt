@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +33,9 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
-import com.bane23.iptvplayer.ui.common.player.PlayerTime
+import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
+import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -157,54 +158,54 @@ fun MobileVodPlayerScreen(
                     controlsVisible = false
                 },
                 onPip = rememberEnterPictureInPicture(),
-                center = {
-                    PlayerIconButton(
-                        icon = AppIcons.Rewind,
-                        description = stringResource(R.string.vod_seek_back),
-                        onClick = {
-                            viewModel.seekBy(-SEEK_STEP_MS)
-                            activity++
-                        },
-                        size = 52.dp,
-                    )
-                    val paused = playback.status == PlaybackStatus.PAUSED
-                    PlayerIconButton(
-                        icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                        description = stringResource(
-                            when {
-                                failed -> R.string.player_retry
-                                paused -> R.string.player_play
-                                else -> R.string.player_pause
-                            },
-                        ),
-                        onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
-                        primary = true,
-                        size = 68.dp,
-                    )
-                    PlayerIconButton(
-                        icon = AppIcons.Forward,
-                        description = stringResource(R.string.vod_seek_forward),
-                        onClick = {
-                            viewModel.seekBy(SEEK_STEP_MS)
-                            activity++
-                        },
-                        size = 52.dp,
-                    )
-                },
                 bottom = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        PlayerTime(preview ?: ui.positionMs)
+                    val paused = playback.status == PlaybackStatus.PAUSED
+                    PlayerTransportBar(
+                        startLabel = formatDuration(preview ?: ui.positionMs),
+                        endLabel = formatDuration(ui.durationMs),
+                        leading = {
+                            PlayerIconButton(
+                                icon = AppIcons.Rewind,
+                                description = stringResource(R.string.vod_seek_back),
+                                onClick = {
+                                    viewModel.seekBy(-SEEK_STEP_MS)
+                                    activity++
+                                },
+                            )
+                            PlayerIconButton(
+                                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                                description = stringResource(
+                                    when {
+                                        failed -> R.string.player_retry
+                                        paused -> R.string.player_play
+                                        else -> R.string.player_pause
+                                    },
+                                ),
+                                onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                                primary = true,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        },
+                        trailing = {
+                            PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                            PlayerIconButton(
+                                icon = AppIcons.Forward,
+                                description = stringResource(R.string.vod_seek_forward),
+                                onClick = {
+                                    viewModel.seekBy(SEEK_STEP_MS)
+                                    activity++
+                                },
+                            )
+                        },
+                    ) { barModifier ->
                         PlayerSeekBar(
                             positionMs = ui.positionMs,
                             durationMs = ui.durationMs,
                             onSeekTo = viewModel::seekTo,
                             onSeekBy = viewModel::seekBy,
                             onPreview = { preview = it },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 12.dp),
+                            modifier = barModifier,
                         )
-                        PlayerTime(ui.durationMs)
                     }
                 },
                 chips = {

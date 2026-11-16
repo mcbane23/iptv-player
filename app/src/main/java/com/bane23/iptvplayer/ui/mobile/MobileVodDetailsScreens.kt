@@ -88,6 +88,8 @@ fun MobileMovieScreen(
                     poster = state.poster,
                     meta = details?.metaLine(),
                     status = progress?.statusText(),
+                    favorite = state.favorite,
+                    onFavorite = viewModel::toggleFavorite,
                     onBack = onBack,
                 )
             }
@@ -145,6 +147,8 @@ fun MobileSeriesScreen(
                     poster = state.poster,
                     meta = details?.metaLine(),
                     status = null,
+                    favorite = state.favorite,
+                    onFavorite = viewModel::toggleFavorite,
                     onBack = onBack,
                 )
             }
@@ -212,7 +216,15 @@ fun MobileSeriesScreen(
  * dugme nazad, mali poster, naziv i kratki podaci.
  */
 @Composable
-private fun DetailsHeader(title: String, poster: String?, meta: String?, status: String?, onBack: () -> Unit) {
+private fun DetailsHeader(
+    title: String,
+    poster: String?,
+    meta: String?,
+    status: String?,
+    favorite: Boolean,
+    onFavorite: () -> Unit,
+    onBack: () -> Unit,
+) {
     val background = MaterialTheme.colorScheme.background
     Box(modifier = Modifier.fillMaxWidth()) {
         if (!poster.isNullOrBlank()) {
@@ -231,8 +243,14 @@ private fun DetailsHeader(title: String, poster: String?, meta: String?, status:
                 .background(Brush.verticalGradient(listOf(background.copy(alpha = 0.3f), background))),
         )
         Column {
-            Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
                 ToolbarIcon(AppIcons.Back, stringResource(R.string.action_back), onBack)
+                FavoriteButton(favorite = favorite, onClick = onFavorite)
             }
             Row(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),

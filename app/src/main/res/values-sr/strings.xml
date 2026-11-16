@@ -241,4 +241,8 @@
     <string name="search_movies">Pretraga filmova</string>
     <string name="search_series">Pretraga serija</string>
     <string name="search_empty_vod">Ništa ne odgovara pretrazi.</string>
+    <string name="search_categories">Pretraži kategorije</string>
+    <string name="search_empty_categories">Nijedna kategorija ne odgovara</string>
+    <string name="vod_favorites_empty">Još nema omiljenih. Dodaj ih zvezdicom u detaljima.</string>
+    <string name="vod_category">Kategorija</string>
 </resources>

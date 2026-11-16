@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.common.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 
 /*
  * Delovi kontrola plejera koje dele telefon i TV, da bi oba plejera izgledala isto:
@@ -109,6 +115,13 @@ fun PlayerIconButton(
             .size(size)
             .clip(CircleShape)
             .background(background)
+            .then(
+                if (primary && !focused) {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                } else {
+                    Modifier
+                },
+            )
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -299,4 +312,81 @@ fun PlayerProgress(fraction: Float, modifier: Modifier = Modifier) {
                 .background(MaterialTheme.colorScheme.primary),
         )
     }
+}
+
+/**
+ * Donja traka plejera, ista na TV-u i telefonu: levo dugmad ([leading]), pa vreme, traka i vreme,
+ * pa desno ostalo ([trailing]). Na uskom ekranu (telefon uspravno) traka sa vremenima ide u svoj
+ * red iznad dugmadi, da ostane dovoljno duga.
+ */
+@Composable
+fun PlayerTransportBar(
+    startLabel: String?,
+    endLabel: String?,
+    leading: @Composable RowScope.() -> Unit,
+    trailing: @Composable RowScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    bar: @Composable (Modifier) -> Unit,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        if (maxWidth >= 600.dp) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                leading()
+                TimeLabel(startLabel, Modifier.padding(start = 12.dp))
+                bar(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp),
+                )
+                TimeLabel(endLabel, Modifier.padding(end = 12.dp))
+                trailing()
+            }
+        } else {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TimeLabel(startLabel)
+                    bar(
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                    )
+                    TimeLabel(endLabel)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    leading()
+                    Spacer(modifier = Modifier.weight(1f))
+                    trailing()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeLabel(text: String?, modifier: Modifier = Modifier) {
+    if (text == null) return
+    Text(text = text, color = Color.White, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = modifier)
+}
+
+/** Rezolucija slike koja se trenutno pušta (npr. 1920×1080), ili ništa dok se ne zna. */
+@Composable
+fun PlayerResolution(player: Player, modifier: Modifier = Modifier) {
+    var size by remember(player) { mutableStateOf(player.videoSize) }
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                size = videoSize
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
+    }
+    if (size.width <= 0 || size.height <= 0) return
+    Text(
+        text = "${size.width}×${size.height}",
+        color = Color.White.copy(alpha = 0.7f),
+        style = MaterialTheme.typography.bodySmall,
+        maxLines = 1,
+        modifier = modifier,
+    )
 }

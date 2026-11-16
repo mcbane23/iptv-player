@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -65,6 +66,20 @@ class VodBrowseViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Omiljeni filmovi, odnosno serije, aktivne liste. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favorites: StateFlow<List<VodItem>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeFavorites(playlistId, kind)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Dodaje film ili seriju u omiljene, odnosno uklanja (zvezdica na posteru). */
+    fun toggleFavorite(item: VodItem) {
+        val isFavorite = favorites.value.any { it.id == item.id }
+        viewModelScope.launch { repository.toggleFavorite(kind, item, isFavorite) }
+    }
+
     fun open(series: Boolean) {
         if (opened) return
         opened = true
@@ -90,6 +105,12 @@ class VodBrowseViewModel @Inject constructor(
     }
 
     fun selectCategory(category: VodCategory) {
+        if (category.id == FAVORITES_ID) {
+            // Omiljeni su u bazi i stižu kroz [favorites], pa nema šta da se učitava.
+            itemsJob?.cancel()
+            _state.update { it.copy(selected = category, items = emptyList(), loadingItems = false, itemsFailed = false) }
+            return
+        }
         _state.update { it.copy(selected = category, items = emptyList(), loadingItems = true, itemsFailed = false) }
         itemsJob?.cancel()
         itemsJob = viewModelScope.launch {
@@ -114,6 +135,9 @@ class VodBrowseViewModel @Inject constructor(
     }
 }
 
+/** Oznaka za grupu „Omiljeni” među kategorijama (pravi ID-jevi kategorija nikad nisu ovakvi). */
+const val FAVORITES_ID = "__favorites"
+
 data class MovieUiState(
     val movieId: Long = 0,
     val name: String = "",
@@ -122,6 +146,7 @@ data class MovieUiState(
     val loading: Boolean = true,
     val details: MovieDetails? = null,
     val progress: WatchProgress? = null,
+    val favorite: Boolean = false,
 )
 
 /** Detalji jednog filma. Ako detalji ne mogu da se učitaju, film i dalje može da se pusti. */
@@ -162,6 +187,17 @@ class MovieViewModel @Inject constructor(
                 .flatMapLatest { repository.observeMovieProgress(it, movieId) }
                 .collect { progress -> _state.update { it.copy(progress = progress) } }
         }
+        viewModelScope.launch {
+            repository.activePlaylistId.filterNotNull()
+                .flatMapLatest { repository.observeIsFavorite(it, VodKind.MOVIES, movieId) }
+                .collect { favorite -> _state.update { it.copy(favorite = favorite) } }
+        }
+    }
+
+    fun toggleFavorite() {
+        val current = _state.value
+        val item = VodItem(current.movieId, current.name, current.poster, rating = null, extension = current.extension)
+        viewModelScope.launch { repository.toggleFavorite(VodKind.MOVIES, item, current.favorite) }
     }
 }
 
@@ -177,6 +213,7 @@ data class SeriesUiState(
     val progress: Map<Long, WatchProgress> = emptyMap(),
     /** Epizoda od koje se nastavlja gledanje: poslednje gledana, ili sledeća ako je ta odgledana. */
     val resumeEpisode: Episode? = null,
+    val favorite: Boolean = false,
 ) {
     val episodes: List<Episode>
         get() = details?.seasons?.firstOrNull { it.number == selectedSeason }?.episodes.orEmpty()
@@ -197,7 +234,13 @@ class SeriesViewModel @Inject constructor(
             if (playlistId == null || id == null) flowOf(emptyList()) else repository.observeSeriesProgress(playlistId, id)
         }
 
-    val state: StateFlow<SeriesUiState> = combine(base, progress) { current, watched ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val favorite = combine(repository.activePlaylistId, seriesId) { playlistId, id -> playlistId to id }
+        .flatMapLatest { (playlistId, id) ->
+            if (playlistId == null || id == null) flowOf(false) else repository.observeIsFavorite(playlistId, VodKind.SERIES, id)
+        }
+
+    val state: StateFlow<SeriesUiState> = combine(base, progress, favorite) { current, watched, isFavorite ->
         val details = current.details
         val last = watched.firstOrNull()
         val resume = if (details == null || last == null) {
@@ -208,6 +251,7 @@ class SeriesViewModel @Inject constructor(
             details.episodes.firstOrNull { it.id == last.itemId }
         }
         current.copy(
+            favorite = isFavorite,
             progress = watched.associateBy { it.itemId },
             resumeEpisode = resume,
             // Dok korisnik sam ne izabere sezonu, prikazuje se ona u kojoj je stao.
@@ -241,6 +285,12 @@ class SeriesViewModel @Inject constructor(
     }
 
     fun selectSeason(number: Int) = base.update { it.copy(selectedSeason = number) }
+
+    fun toggleFavorite() {
+        val current = state.value
+        val item = VodItem(current.seriesId, current.name, current.poster, rating = null, extension = null)
+        viewModelScope.launch { repository.toggleFavorite(VodKind.SERIES, item, current.favorite) }
+    }
 }
 
 data class VodSearchUiState(
@@ -263,11 +313,27 @@ class VodSearchViewModel @Inject constructor(
     val state: StateFlow<VodSearchUiState> = _state.asStateFlow()
 
     private var kind = VodKind.MOVIES
+    private val openedKind = MutableStateFlow<VodKind?>(null)
     private var all: List<Pair<String, VodItem>>? = null
     private var searchJob: Job? = null
 
+    /** ID-jevi omiljenih, za zvezdicu na posteru. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favoriteIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
+        .flatMapLatest { (playlistId, kind) ->
+            if (playlistId == null || kind == null) flowOf(emptyList()) else repository.observeFavorites(playlistId, kind)
+        }
+        .map { list -> list.mapTo(HashSet()) { it.id } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     fun open(series: Boolean) {
         kind = if (series) VodKind.SERIES else VodKind.MOVIES
+        openedKind.value = kind
+    }
+
+    fun toggleFavorite(item: VodItem) {
+        val isFavorite = item.id in favoriteIds.value
+        viewModelScope.launch { repository.toggleFavorite(kind, item, isFavorite) }
     }
 
     fun setQuery(text: String) {

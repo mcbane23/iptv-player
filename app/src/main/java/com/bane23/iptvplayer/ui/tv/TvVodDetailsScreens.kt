@@ -109,6 +109,11 @@ fun TvMovieScreen(
                             Text(stringResource(R.string.vod_play))
                         }
                     }
+                    // Dugme ostaje isto, menja se samo ikonica i natpis, da fokus ne pobegne.
+                    OutlinedButton(onClick = viewModel::toggleFavorite) {
+                        ButtonIcon(if (state.favorite) AppIcons.Star else AppIcons.StarOutline)
+                        Text(stringResource(if (state.favorite) R.string.favorite_remove else R.string.favorite_add))
+                    }
                 }
                 if (state.loading) {
                     Text(
@@ -233,6 +238,24 @@ fun TvSeriesScreen(
                                     modifier = Modifier
                                         .focusRequester(firstFocus)
                                         .padding(bottom = 8.dp),
+                                )
+                            }
+                        }
+                        item(key = "favorite") {
+                            TvListRow(onClick = viewModel::toggleFavorite, modifier = Modifier.padding(bottom = 8.dp)) { color ->
+                                Icon(
+                                    imageVector = if (state.favorite) AppIcons.Star else AppIcons.StarOutline,
+                                    contentDescription = null,
+                                    tint = color,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Text(
+                                    text = stringResource(R.string.category_favorites),
+                                    color = color,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(start = 12.dp),
                                 )
                             }
                         }

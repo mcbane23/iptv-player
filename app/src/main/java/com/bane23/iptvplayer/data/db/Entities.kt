@@ -220,3 +220,30 @@ data class CategoryWithCount(
     @Embedded val category: CategoryEntity,
     @ColumnInfo(name = "channelCount") val channelCount: Int,
 )
+
+/** Omiljeni film ili serija. Naziv i poster se čuvaju da bi se spisak prikazao bez servera. */
+@Entity(
+    tableName = "vod_favorites",
+    primaryKeys = ["playlistId", "kind", "itemId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "kind", "addedAt")],
+)
+data class VodFavoriteEntity(
+    val playlistId: Long,
+    /** "movie" ili "series". */
+    val kind: String,
+    /** Xtream ID filma, odnosno serije. */
+    val itemId: Long,
+    val name: String,
+    val poster: String?,
+    /** Nastavak fajla filma; za serije null. */
+    val extension: String?,
+    val addedAt: Long,
+)

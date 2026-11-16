@@ -2,7 +2,8 @@ package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -41,8 +45,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
@@ -62,6 +68,9 @@ fun TvVodScreen(
     LaunchedEffect(series) { viewModel.open(series) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
+    val favorites by viewModel.favorites.collectAsStateWithLifecycle()
+    val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
+    val favoritesLabel = stringResource(R.string.category_favorites)
     val firstFocus = remember { FocusRequester() }
     val posterFocus = remember { FocusRequester() }
     // Poster na kome je fokus bio poslednji put, da se posle povratka iz detalja nastavi odatle.
@@ -69,6 +78,7 @@ fun TvVodScreen(
     // „Nastavi gledanje” je prikazano dok korisnik ne izabere neku kategoriju.
     var continueChosen by rememberSaveable { mutableStateOf(true) }
     val showContinue = continueChosen && continueItems.isNotEmpty()
+    val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
 
     Column(
         modifier = Modifier
@@ -130,6 +140,27 @@ fun TvVodScreen(
                             )
                         }
                     }
+                    item(key = "favorites") {
+                        TvListRow(
+                            selected = showFavorites,
+                            onClick = {
+                                lastItemId = null
+                                continueChosen = false
+                                viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                            },
+                            modifier = if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier,
+                        ) { color ->
+                            Icon(AppIcons.Star, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                            Text(
+                                text = favoritesLabel,
+                                color = color,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
                     items(state.categories, key = { it.id }) { category ->
                         val selected = !showContinue && category == state.selected
                         TvTextRow(
@@ -163,6 +194,22 @@ fun TvVodScreen(
                             }
                         }
 
+                        showFavorites && favorites.isEmpty() -> Note(stringResource(R.string.vod_favorites_empty))
+
+                        showFavorites -> PosterGrid {
+                            items(favorites, key = { it.id }) { item ->
+                                PosterCard(
+                                    name = item.name,
+                                    poster = item.poster,
+                                    // Odavde se ne uklanja dugim pritiskom: poster bi nestao zajedno sa fokusom.
+                                    favorite = true,
+                                    onClick = { onOpen(item) },
+                                    onFocused = { lastItemId = item.id },
+                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                )
+                            }
+                        }
+
                         state.selected == null -> Note(stringResource(R.string.vod_pick_category))
                         state.loadingItems -> Note(stringResource(R.string.vod_loading))
                         state.itemsFailed -> Note(stringResource(R.string.vod_load_failed))
@@ -173,6 +220,8 @@ fun TvVodScreen(
                                 PosterCard(
                                     name = item.name,
                                     poster = item.poster,
+                                    favorite = item.id in favoriteIds,
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
@@ -212,7 +261,8 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 
-/** Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji. */
+/** Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji, omiljeni imaju zvezdicu u uglu. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PosterCard(
     name: String,
@@ -221,6 +271,8 @@ fun PosterCard(
     onFocused: () -> Unit,
     modifier: Modifier = Modifier,
     progress: Float? = null,
+    favorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(10.dp)
@@ -231,10 +283,26 @@ fun PosterCard(
                 focused = it.isFocused
             }
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
-            .clickable(onClick = onClick)
+            // Dug pritisak na OK dodaje u omiljene, odnosno uklanja.
+            .combinedClickable(onClick = onClick, onLongClick = onToggleFavorite)
             .padding(5.dp),
     ) {
-        Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
+        Box {
+            Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
+            if (favorite) {
+                Icon(
+                    imageVector = AppIcons.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFFFD166),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(26.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .padding(4.dp),
+                )
+            }
+        }
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
