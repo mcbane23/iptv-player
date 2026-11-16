@@ -34,8 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -48,53 +49,52 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 
 /*
- * Delovi kontrola plejera koje dele telefon i TV, da bi oba plejera izgledala isto:
- * naslov gore, traka sa vremenom i dugmad dole. Na TV-u se fokusirani element vidi kao bela
- * pozadina sa tamnim sadržajem (kao u bočnom meniju), na telefonu se dugmad samo dodiruju.
+ * Delovi kontrola plejera koje dele telefon i TV, da bi oba plejera izgledala isto: gore nazad i
+ * naslov u tamnom okviru, dole jedna zaobljena traka (dugmad, vreme, traka napretka, rezolucija),
+ * a ispod nje red dugmadi sa nazivom. Sve stoji na tamnim poluprovidnim pločicama sa tankim
+ * okvirom, bez zatamnjenja cele slike. Na TV-u fokusirano dugme dobija prsten u boji teme.
  */
 
 private val FocusedContent = Color(0xFF0E1216)
-private val ChipBackground = Color.White.copy(alpha = 0.14f)
+private val PanelBackground = Color.Black.copy(alpha = 0.6f)
+private val PanelBorder = Color.White.copy(alpha = 0.16f)
+private val ChipShape = RoundedCornerShape(12.dp)
 
-/** Zatamnjenje gore i dole, da se tekst i dugmad vide preko svetle slike. */
-@Composable
-fun PlayerScrim(modifier: Modifier = Modifier, top: Boolean) {
-    val colors = listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent)
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Brush.verticalGradient(if (top) colors else colors.reversed())),
-    )
-}
+/** Tamna poluprovidna pločica sa tankim okvirom, podloga za sve kontrole plejera. */
+private fun Modifier.playerPanel(shape: Shape): Modifier =
+    background(PanelBackground, shape).border(1.dp, PanelBorder, shape)
 
-/** Naslov i, po želji, red ispod njega (epizoda, emisija koja je sada). */
+/**
+ * Naslov u tamnom okviru, u jednom redu. [subtitle] (emisija koja je sada) ide iza naslova.
+ * Okvir je širok koliko i tekst, a [modifier] određuje najveći prostor koji sme da zauzme.
+ */
 @Composable
 fun PlayerTitle(title: String, subtitle: String?, modifier: Modifier = Modifier, large: Boolean = false) {
-    Column(modifier = modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.CenterStart) {
         Text(
-            text = title,
+            text = if (subtitle.isNullOrBlank()) title else "$title  ·  $subtitle",
             color = Color.White,
-            style = if (large) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+            style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .playerPanel(ChipShape)
+                .padding(horizontal = if (large) 18.dp else 14.dp, vertical = if (large) 11.dp else 9.dp),
         )
-        if (!subtitle.isNullOrBlank()) {
-            Text(
-                text = subtitle,
-                color = Color.White.copy(alpha = 0.8f),
-                style = if (large) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 }
 
-/** Okruglo dugme sa ikonicom; [primary] je veće dugme za puštanje i pauzu. */
+/**
+ * Okruglo dugme sa ikonicom. [primary] ima veću ikonicu (puštanje i pauza), a [backdrop] tamni
+ * krug iza ikonice, za dugmad koja stoje sama preko slike (nazad, zaključavanje). U fokusu dugme
+ * poraste i dobije prsten u boji teme.
+ */
 @Composable
 fun PlayerIconButton(
     icon: ImageVector,
@@ -102,26 +102,30 @@ fun PlayerIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
-    size: Dp = if (primary) 56.dp else 44.dp,
+    backdrop: Boolean = false,
+    size: Dp = 48.dp,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val background = when {
-        focused -> Color.White
-        primary -> ChipBackground
-        else -> Color.Transparent
-    }
+    val scale = if (focused) 1.2f else 1f
     Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
-            .background(background)
+            .zIndex(if (focused) 1f else 0f)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .then(
-                if (primary && !focused) {
-                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                } else {
-                    Modifier
+                when {
+                    focused -> Modifier
+                        .background(Color.Black.copy(alpha = 0.85f), CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+
+                    backdrop -> Modifier.playerPanel(CircleShape)
+                    else -> Modifier
                 },
             )
+            .clip(CircleShape)
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -129,8 +133,8 @@ fun PlayerIconButton(
         Icon(
             imageVector = icon,
             contentDescription = description,
-            tint = if (focused) FocusedContent else Color.White,
-            modifier = Modifier.size(if (primary) 32.dp else 26.dp),
+            tint = Color.White,
+            modifier = Modifier.size(if (primary) 30.dp else 24.dp),
         )
     }
 }
@@ -141,7 +145,6 @@ fun PlayerChip(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
     active: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -150,29 +153,24 @@ fun PlayerChip(
         active -> MaterialTheme.colorScheme.primary
         else -> Color.White
     }
-    Row(
+    Box(
         modifier = modifier
             .height(40.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (focused) Color.White else ChipBackground)
+            .then(if (focused) Modifier.background(Color.White, ChipShape) else Modifier.playerPanel(ChipShape))
+            .clip(ChipShape)
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        if (icon != null) {
-            Icon(imageVector = icon, contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
-        }
         Text(
             text = label,
             color = content,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .padding(start = if (icon != null) 8.dp else 0.dp)
-                .widthIn(max = 220.dp),
+            modifier = Modifier.widthIn(max = 220.dp),
         )
     }
 }
@@ -315,9 +313,9 @@ fun PlayerProgress(fraction: Float, modifier: Modifier = Modifier) {
 }
 
 /**
- * Donja traka plejera, ista na TV-u i telefonu: levo dugmad ([leading]), pa vreme, traka i vreme,
- * pa desno ostalo ([trailing]). Na uskom ekranu (telefon uspravno) traka sa vremenima ide u svoj
- * red iznad dugmadi, da ostane dovoljno duga.
+ * Donja traka plejera, ista na TV-u i telefonu: jedna zaobljena pločica u kojoj su levo dugmad
+ * ([leading]), pa vreme, traka i vreme, pa desno ostalo ([trailing]). Na uskom ekranu (telefon
+ * uspravno) traka sa vremenima ide u svoj red iznad dugmadi, da ostane dovoljno duga.
  */
 @Composable
 fun PlayerTransportBar(
@@ -330,9 +328,14 @@ fun PlayerTransportBar(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         if (maxWidth >= 600.dp) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .playerPanel(RoundedCornerShape(percent = 50))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 leading()
-                TimeLabel(startLabel, Modifier.padding(start = 12.dp))
+                TimeLabel(startLabel, Modifier.padding(start = 8.dp))
                 bar(
                     Modifier
                         .weight(1f)
@@ -342,8 +345,12 @@ fun PlayerTransportBar(
                 trailing()
             }
         } else {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(
+                modifier = Modifier
+                    .playerPanel(RoundedCornerShape(28.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     TimeLabel(startLabel)
                     bar(
                         Modifier
@@ -365,7 +372,14 @@ fun PlayerTransportBar(
 @Composable
 private fun TimeLabel(text: String?, modifier: Modifier = Modifier) {
     if (text == null) return
-    Text(text = text, color = Color.White, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = modifier)
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+        modifier = modifier,
+    )
 }
 
 /** Rezolucija slike koja se trenutno pušta (npr. 1920×1080), ili ništa dok se ne zna. */
@@ -384,8 +398,9 @@ fun PlayerResolution(player: Player, modifier: Modifier = Modifier) {
     if (size.width <= 0 || size.height <= 0) return
     Text(
         text = "${size.width}×${size.height}",
-        color = Color.White.copy(alpha = 0.7f),
-        style = MaterialTheme.typography.bodySmall,
+        color = Color.White,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
         maxLines = 1,
         modifier = modifier,
     )

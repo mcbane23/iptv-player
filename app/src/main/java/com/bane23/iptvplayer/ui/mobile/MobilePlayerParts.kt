@@ -37,7 +37,6 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
-import com.bane23.iptvplayer.ui.common.player.PlayerScrim
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -63,36 +62,33 @@ fun MobilePlayerControls(
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.align(Alignment.TopStart)) {
-            PlayerScrim(top = true, modifier = Modifier.matchParentSize())
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .safeDrawingPadding()
-                    .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 24.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PlayerIconButton(AppIcons.Back, stringResource(R.string.action_back), onClose)
+                PlayerIconButton(AppIcons.Back, stringResource(R.string.action_back), onClose, backdrop = true)
                 PlayerTitle(
                     title = title,
                     subtitle = subtitle,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp),
+                    modifier = Modifier.weight(1f),
                 )
                 if (onPip != null) {
-                    PlayerIconButton(AppIcons.PictureInPicture, stringResource(R.string.player_pip), onPip)
+                    PlayerIconButton(AppIcons.PictureInPicture, stringResource(R.string.player_pip), onPip, backdrop = true)
                 }
-                PlayerIconButton(AppIcons.Lock, stringResource(R.string.player_lock), onLock)
+                PlayerIconButton(AppIcons.Lock, stringResource(R.string.player_lock), onLock, backdrop = true)
             }
         }
 
         Box(modifier = Modifier.align(Alignment.BottomStart)) {
-            PlayerScrim(top = false, modifier = Modifier.matchParentSize())
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .safeDrawingPadding()
-                    .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 bottom()
@@ -115,6 +111,8 @@ fun BoxScope.LockedOverlay(visible: Boolean, onUnlock: () -> Unit) {
         description = stringResource(R.string.player_unlock),
         onClick = onUnlock,
         primary = true,
+        backdrop = true,
+        size = 56.dp,
         modifier = Modifier
             .align(Alignment.TopCenter)
             .safeDrawingPadding()

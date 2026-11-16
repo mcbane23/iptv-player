@@ -2,7 +2,9 @@ package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -106,12 +108,20 @@ fun FocusRequester.tryRequestFocus(): Boolean {
 /** Strelica ispred naslova u plejeru. Samo podseća da taster Nazad zatvara plejer; ne prima fokus. */
 @Composable
 fun TitleBackIcon() {
-    androidx.tv.material3.Icon(
-        imageVector = com.bane23.iptvplayer.ui.common.icons.AppIcons.Back,
-        contentDescription = null,
-        tint = Color.White,
+    val shape = androidx.compose.foundation.shape.CircleShape
+    Box(
         modifier = Modifier
-            .padding(end = 16.dp)
-            .size(28.dp),
-    )
+            .padding(end = 12.dp)
+            .size(48.dp)
+            .background(Color.Black.copy(alpha = 0.6f), shape)
+            .border(1.dp, Color.White.copy(alpha = 0.16f), shape),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.tv.material3.Icon(
+            imageVector = com.bane23.iptvplayer.ui.common.icons.AppIcons.Back,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(24.dp),
+        )
+    }
 }
