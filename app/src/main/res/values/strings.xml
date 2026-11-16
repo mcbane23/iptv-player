@@ -167,6 +167,10 @@
     <string name="vod_season">Season %1$d</string>
     <string name="vod_episode_label">S%1$d E%2$d</string>
     <string name="vod_watched">Watched</string>
+    <string name="vod_mark_watched">Mark as watched</string>
+    <string name="vod_mark_unwatched">Mark as unwatched</string>
+    <string name="vod_mark_season_watched">Mark season %1$d as watched</string>
+    <string name="vod_mark_season_unwatched">Mark season %1$d as unwatched</string>
     <string name="vod_progress">%1$s of %2$s</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>

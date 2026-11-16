@@ -166,6 +166,10 @@
     <string name="vod_season">Sezona %1$d</string>
     <string name="vod_episode_label">S%1$d E%2$d</string>
     <string name="vod_watched">Odgledano</string>
+    <string name="vod_mark_watched">Označi kao odgledano</string>
+    <string name="vod_mark_unwatched">Poništi odgledano</string>
+    <string name="vod_mark_season_watched">Označi sezonu %1$d kao odgledanu</string>
+    <string name="vod_mark_season_unwatched">Poništi odgledanu sezonu %1$d</string>
     <string name="vod_progress">%1$s od %2$s</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>

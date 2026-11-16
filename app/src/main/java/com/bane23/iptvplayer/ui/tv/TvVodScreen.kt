@@ -70,6 +70,7 @@ fun TvVodScreen(
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
+    val watchedIds by viewModel.watchedIds.collectAsStateWithLifecycle()
     val favoritesLabel = stringResource(R.string.category_favorites)
     val firstFocus = remember { FocusRequester() }
     val posterFocus = remember { FocusRequester() }
@@ -203,6 +204,7 @@ fun TvVodScreen(
                                     poster = item.poster,
                                     // Odavde se ne uklanja dugim pritiskom: poster bi nestao zajedno sa fokusom.
                                     favorite = true,
+                                    watched = item.id in watchedIds,
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
@@ -221,6 +223,7 @@ fun TvVodScreen(
                                     name = item.name,
                                     poster = item.poster,
                                     favorite = item.id in favoriteIds,
+                                    watched = item.id in watchedIds,
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     onClick = { onOpen(item) },
                                     onFocused = { lastItemId = item.id },
@@ -261,7 +264,10 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 
-/** Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji, omiljeni imaju zvezdicu u uglu. */
+/**
+ * Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji, omiljeni imaju zvezdicu
+ * u desnom, a odgledani kvačicu u levom gornjem uglu.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PosterCard(
@@ -272,6 +278,7 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     progress: Float? = null,
     favorite: Boolean = false,
+    watched: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -288,7 +295,7 @@ fun PosterCard(
             .padding(5.dp),
     ) {
         Box {
-            Poster(url = poster, progress = progress, modifier = Modifier.fillMaxWidth())
+            Poster(url = poster, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite) {
                 Icon(
                     imageVector = AppIcons.Star,

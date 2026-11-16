@@ -14,7 +14,7 @@ import androidx.room.RoomDatabase
         WatchProgressEntity::class,
         VodFavoriteEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

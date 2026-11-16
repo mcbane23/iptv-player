@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.data.repo
 
+import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
@@ -42,19 +43,29 @@ data class VodItem(
     val extension: String?,
 )
 
-/** Zapamćena pozicija gledanja filma ili epizode. */
-data class WatchProgress(val itemId: Long, val positionMs: Long, val durationMs: Long) {
-    /** Odgledano skoro do kraja: nema smisla nuditi nastavak. */
-    val finished: Boolean get() = durationMs > 0 && positionMs >= durationMs * FINISHED_PERCENT / 100
+/**
+ * Zapamćena pozicija gledanja filma ili epizode. [watched] je oznaka „odgledano”: postavi se sama
+ * kad se pogleda do kraja ([FINISHED_PERCENT]) ili je korisnik postavi ručno.
+ */
+data class WatchProgress(val itemId: Long, val positionMs: Long, val durationMs: Long, val watched: Boolean = false) {
+    /** Odgledano: kvačica i, kod serija, nastavak od sledeće epizode. */
+    val finished: Boolean get() = watched
 
-    /** Vredi ponuditi nastavak (nije na samom početku ni na kraju). */
-    val resumable: Boolean get() = positionMs >= MIN_RESUME_MS && !finished
+    /** Vredi ponuditi nastavak: gledanje je počelo, a nije stiglo do kraja (i kad se odgledano gleda ponovo). */
+    val resumable: Boolean get() = positionMs >= MIN_RESUME_MS && !reachedEnd(positionMs, durationMs)
 
     companion object {
         const val FINISHED_PERCENT = 95
         const val MIN_RESUME_MS = 30_000L
+
+        /** Da li je pozicija stigla do kraja (95%), posle čega se film ili epizoda smatra odgledanim. */
+        fun reachedEnd(positionMs: Long, durationMs: Long): Boolean =
+            durationMs > 0 && positionMs * 100 >= durationMs * FINISHED_PERCENT
     }
 }
+
+/** Film ili epizoda koja se ručno označava kao odgledana. [title] i [poster] su filma, odnosno serije. */
+data class WatchTarget(val itemId: Long, val title: String?, val poster: String?, val extension: String? = null)
 
 /**
  * Stavka reda „Nastavi gledanje”: film ([seriesId] null) ili serija sa poslednje gledanom epizodom.
@@ -78,7 +89,7 @@ class VodUnavailableException : IOException("Playlist has no movies or series")
  */
 @Singleton
 class VodRepository @Inject constructor(
-    db: AppDatabase,
+    private val db: AppDatabase,
     private val settings: SettingsStore,
     private val api: XtreamApi,
     private val cipher: PasswordCipher,
@@ -293,22 +304,86 @@ class VodRepository @Inject constructor(
         if (durationMs <= 0) return
         writeScope.launch {
             val playlistId = settings.activePlaylistId.first() ?: return@launch
-            progressDao.upsert(
-                WatchProgressEntity(
-                    playlistId = playlistId,
-                    kind = if (seriesId == null) KIND_MOVIE else KIND_EPISODE,
-                    itemId = itemId,
-                    seriesId = seriesId ?: 0,
-                    positionMs = positionMs,
-                    durationMs = durationMs,
-                    updatedAt = System.currentTimeMillis(),
-                    title = title,
-                    poster = poster,
-                    extension = extension,
-                ),
-            )
+            val kind = if (seriesId == null) KIND_MOVIE else KIND_EPISODE
+            db.withTransaction {
+                val now = System.currentTimeMillis()
+                // Oznaka „odgledano” ostaje i kad se film gleda ponovo; nova se dobija gledanjem do kraja.
+                val watchedAt = progressDao.get(playlistId, kind, itemId)?.watchedAt
+                    ?: now.takeIf { WatchProgress.reachedEnd(positionMs, durationMs) }
+                progressDao.upsert(
+                    WatchProgressEntity(
+                        playlistId = playlistId,
+                        kind = kind,
+                        itemId = itemId,
+                        seriesId = seriesId ?: 0,
+                        positionMs = positionMs,
+                        durationMs = durationMs,
+                        updatedAt = now,
+                        title = title,
+                        poster = poster,
+                        extension = extension,
+                        watchedAt = watchedAt,
+                    ),
+                )
+            }
         }
     }
+
+    /**
+     * Ručno označava filmove, odnosno epizode jedne serije ([seriesId] null za film), kao odgledane
+     * ili poništava oznaku. Epizode idu redom kojim se gledaju, da bi nastavak serije krenuo posle
+     * poslednje označene.
+     */
+    suspend fun setWatched(seriesId: Long?, targets: List<WatchTarget>, watched: Boolean) = withContext(Dispatchers.IO) {
+        if (targets.isEmpty()) return@withContext
+        val playlistId = settings.activePlaylistId.first() ?: return@withContext
+        val kind = if (seriesId == null) KIND_MOVIE else KIND_EPISODE
+        val ids = targets.map { it.itemId }
+        db.withTransaction {
+            val existing = progressDao.getMany(playlistId, kind, ids).associateBy { it.itemId }
+            if (watched) {
+                val now = System.currentTimeMillis()
+                val rows = targets.mapIndexed { index, target ->
+                    existing[target.itemId]?.let { row ->
+                        // Već odgledano ostaje kako jeste. Započeto se računa kao pogledano do kraja,
+                        // da ne bi nudilo nastavak i da bi serija krenula od sledeće epizode.
+                        if (row.watchedAt != null) row else row.copy(watchedAt = now, positionMs = row.durationMs)
+                    } ?: WatchProgressEntity(
+                        playlistId = playlistId,
+                        kind = kind,
+                        itemId = target.itemId,
+                        seriesId = seriesId ?: 0,
+                        positionMs = 0,
+                        durationMs = 0,
+                        // Nikad gledano: vreme je redni broj, pa je ovo starije od svega stvarno gledanog,
+                        // a među označenim epizodama poslednja je ona koja je poslednja i po redu.
+                        updatedAt = index.toLong(),
+                        // Bez naziva, da ručno označeno ne upadne u red „Nastavi gledanje”.
+                        title = null,
+                        poster = null,
+                        extension = target.extension,
+                        watchedAt = now,
+                    )
+                }
+                progressDao.upsertAll(rows)
+            } else {
+                // Ono što nikad nije ni puštano briše se; inače se skida oznaka, a gledanje do kraja
+                // vraća na početak, da film ne bi odmah ponovo bio odgledan.
+                val (neverPlayed, played) = existing.values.partition { it.durationMs <= 0 }
+                if (neverPlayed.isNotEmpty()) progressDao.deleteMany(playlistId, kind, neverPlayed.map { it.itemId })
+                if (played.isNotEmpty()) progressDao.upsertAll(
+                    played.map { row ->
+                        val position = if (WatchProgress.reachedEnd(row.positionMs, row.durationMs)) 0 else row.positionMs
+                        row.copy(watchedAt = null, positionMs = position)
+                    },
+                )
+            }
+        }
+    }
+
+    /** ID-jevi odgledanih filmova aktivne liste, za kvačicu na posteru. */
+    fun observeWatchedMovieIds(playlistId: Long): Flow<Set<Long>> =
+        progressDao.observeWatchedIds(playlistId, KIND_MOVIE).map { it.toSet() }
 
     /** Omiljeni filmovi, odnosno serije, liste; poslednje dodat prvi. */
     fun observeFavorites(playlistId: Long, kind: VodKind): Flow<List<VodItem>> =
@@ -372,7 +447,7 @@ class VodRepository @Inject constructor(
         return if (value <= 0.0) null else ((value * 10).toInt() / 10.0).toString()
     }
 
-    private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs)
+    private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs, watched = watchedAt != null)
 
     private suspend fun <V : Any> ConcurrentHashMap<String, V>.getOrPutSuspending(key: String, load: suspend () -> V): V {
         this[key]?.let { return it }

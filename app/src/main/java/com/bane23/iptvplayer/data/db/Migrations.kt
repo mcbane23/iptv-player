@@ -44,5 +44,19 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7)
+    /**
+     * 7 → 8: oznaka „odgledano”. Ono što je već pogledano do kraja (95%) dobija oznaku odmah,
+     * sa vremenom poslednjeg gledanja.
+     */
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE watch_progress ADD COLUMN watchedAt INTEGER")
+            db.execSQL(
+                "UPDATE watch_progress SET watchedAt = updatedAt " +
+                    "WHERE durationMs > 0 AND positionMs * 100 >= durationMs * 95",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 }

@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -49,11 +51,13 @@ import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.vod.MovieViewModel
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.SeriesViewModel
+import com.bane23.iptvplayer.ui.common.vod.isSeasonWatched
 import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.statusText
 
 /** Detalji filma na TV-u. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TvMovieScreen(
     movieId: Long,
@@ -92,7 +96,12 @@ fun TvMovieScreen(
                 state.progress?.statusText()?.let { status ->
                     Text(text = status, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+                // Dugmad prelaze u drugi red kad ne stanu (dugi natpisi), da se tekst ne preklapa.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(vertical = 8.dp),
+                ) {
                     val progress = state.progress
                     if (progress != null && progress.resumable) {
                         Button(onClick = { onPlay(playExtension, false) }, modifier = Modifier.focusRequester(firstFocus)) {
@@ -113,6 +122,11 @@ fun TvMovieScreen(
                     OutlinedButton(onClick = viewModel::toggleFavorite) {
                         ButtonIcon(if (state.favorite) AppIcons.Star else AppIcons.StarOutline)
                         Text(stringResource(if (state.favorite) R.string.favorite_remove else R.string.favorite_add))
+                    }
+                    val watched = state.progress?.watched == true
+                    OutlinedButton(onClick = viewModel::toggleWatched) {
+                        ButtonIcon(AppIcons.Check)
+                        Text(stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched))
                     }
                 }
                 if (state.loading) {
@@ -276,6 +290,34 @@ fun TvSeriesScreen(
                             .fillMaxHeight(),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
+                        state.selectedSeason?.let { season ->
+                            item(key = "season-watched") {
+                                // Isti red ostaje i posle izbora, menja se samo natpis, da fokus ne pobegne.
+                                val seasonWatched = state.isSeasonWatched(season)
+                                TvListRow(
+                                    onClick = { viewModel.toggleSeasonWatched(season) },
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                ) { color ->
+                                    Icon(
+                                        imageVector = AppIcons.Check,
+                                        contentDescription = null,
+                                        tint = color,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = stringResource(
+                                            if (seasonWatched) R.string.vod_mark_season_unwatched else R.string.vod_mark_season_watched,
+                                            season,
+                                        ),
+                                        color = color,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(start = 12.dp),
+                                    )
+                                }
+                            }
+                        }
                         items(state.episodes, key = { it.id }) { episode ->
                             val progress = state.progress[episode.id]
                             EpisodeRow(
@@ -283,6 +325,8 @@ fun TvSeriesScreen(
                                 progress = progress,
                                 fallbackImage = state.poster,
                                 onClick = { onPlay(episode.id, progress?.resumable != true) },
+                                // Dug pritisak na OK označava epizodu kao odgledanu, odnosno poništava.
+                                onLongClick = { viewModel.toggleWatched(episode) },
                             )
                         }
                     }
@@ -343,8 +387,14 @@ private fun ButtonIcon(icon: ImageVector) {
 
 /** Epizoda: sličica sa trakom odgledanog, naziv i, desno, trajanje ili stanje gledanja. */
 @Composable
-private fun EpisodeRow(episode: Episode, progress: WatchProgress?, fallbackImage: String?, onClick: () -> Unit) {
-    TvListRow(onClick = onClick) { color ->
+private fun EpisodeRow(
+    episode: Episode,
+    progress: WatchProgress?,
+    fallbackImage: String?,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    TvListRow(onClick = onClick, onLongClick = onLongClick) { color ->
         Box(
             modifier = Modifier
                 .width(112.dp)
