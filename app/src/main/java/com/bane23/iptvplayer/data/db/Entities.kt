@@ -284,3 +284,20 @@ data class TraktPendingEntity(
     val watched: Boolean,
     val createdAt: Long,
 )
+
+/**
+ * Pozicija gledanja koja još nije poslata na Trakt (za nastavak na drugom uređaju). Za svaku
+ * stavku čuva se samo poslednja.
+ */
+@Entity(tableName = "trakt_playback_pending", primaryKeys = ["playlistId", "kind", "itemId"])
+data class TraktPlaybackPendingEntity(
+    val playlistId: Long,
+    /** "movie" ili "episode". */
+    val kind: String,
+    val itemId: Long,
+    /** Serija kojoj epizoda pripada; 0 za film. */
+    val seriesId: Long,
+    /** Odgledani deo u procentima (0 do 100). */
+    val progress: Float,
+    val createdAt: Long,
+)

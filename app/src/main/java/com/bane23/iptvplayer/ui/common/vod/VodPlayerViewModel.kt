@@ -196,7 +196,7 @@ class VodPlayerViewModel @Inject constructor(
     fun onForeground() = engine.resume()
 
     fun onBackground() {
-        saveProgress()
+        saveProgress(stopped = true)
         engine.stop()
     }
 
@@ -235,7 +235,8 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
-    private fun saveProgress(finished: Boolean = false) {
+    /** [stopped]: gledanje je prekinuto (izlaz iz plejera ili aplikacije), pa pozicija ide i na Trakt. */
+    private fun saveProgress(finished: Boolean = false, stopped: Boolean = false) {
         val current = item ?: return
         val duration = engine.durationMs
         if (duration <= 0) return
@@ -249,11 +250,12 @@ class VodPlayerViewModel @Inject constructor(
             title = current.title,
             poster = current.poster,
             extension = current.extension,
+            stopped = stopped,
         )
     }
 
     override fun onCleared() {
-        saveProgress()
+        saveProgress(stopped = true)
         engine.release()
     }
 

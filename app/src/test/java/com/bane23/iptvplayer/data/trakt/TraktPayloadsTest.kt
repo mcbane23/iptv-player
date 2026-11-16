@@ -71,4 +71,27 @@ class TraktPayloadsTest {
     fun `time is sent in utc`() {
         assertEquals("1970-01-01T00:00:01.000Z", TraktPayloads.isoTime(1000))
     }
+
+    @Test
+    fun `playback from the account is read`() {
+        val items = TraktJson.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(PlaybackItem.serializer()),
+            """[{"progress":42.5,"paused_at":"2026-01-01T10:00:00.000Z","id":1,"type":"movie","movie":{"ids":{"tmdb":55}}},
+               {"progress":10,"paused_at":"2026-01-01T11:00:00Z","type":"episode",
+                "episode":{"season":2,"number":3,"ids":{"tmdb":999}},"show":{"ids":{"tmdb":9}}},
+               {"progress":5,"type":"movie","movie":{"ids":{"trakt":3}}}]""",
+        )
+        assertEquals(TraktKey.movie(55), TraktPayloads.playbackKey(items[0]))
+        assertEquals(TraktKey.episode(9, 2, 3), TraktPayloads.playbackKey(items[1]))
+        assertNull(TraktPayloads.playbackKey(items[2]))
+        assertEquals(1767261600000L, TraktPayloads.parseTime(items[0].pausedAt))
+        assertEquals(1767265200000L, TraktPayloads.parseTime(items[1].pausedAt))
+        assertNull(TraktPayloads.parseTime(null))
+    }
+
+    @Test
+    fun `scrobble body for an episode names the show and the episode`() {
+        val json = TraktJson.encodeToString(ScrobbleBody.serializer(), TraktPayloads.scrobble(TraktKey.episode(9, 1, 2), 33.5f))
+        assertEquals("""{"show":{"ids":{"tmdb":9}},"episode":{"season":1,"number":2},"progress":33.5}""", json)
+    }
 }

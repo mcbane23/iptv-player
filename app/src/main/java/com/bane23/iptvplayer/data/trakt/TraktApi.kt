@@ -36,6 +36,14 @@ interface TraktApi {
     @POST("sync/history")
     suspend fun addHistory(@Header("Authorization") auth: String, @Body body: HistoryBody): Response<Unit>
 
+    /** Pamti dokle se stiglo (za nastavak na drugom uređaju); ne označava kao odgledano. */
+    @POST("scrobble/pause")
+    suspend fun scrobblePause(@Header("Authorization") auth: String, @Body body: ScrobbleBody): Response<Unit>
+
+    /** Započeti filmovi i epizode sa svih uređaja. */
+    @GET("sync/playback")
+    suspend fun playback(@Header("Authorization") auth: String): List<PlaybackItem>
+
     @POST("sync/history/remove")
     suspend fun removeHistory(@Header("Authorization") auth: String, @Body body: HistoryBody): Response<Unit>
 }

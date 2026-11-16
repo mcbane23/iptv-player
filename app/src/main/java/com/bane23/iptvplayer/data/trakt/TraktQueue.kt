@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.data.trakt
 
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.TraktPendingEntity
+import com.bane23.iptvplayer.data.db.TraktPlaybackPendingEntity
 import com.bane23.iptvplayer.work.TraktScheduler
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +24,13 @@ class TraktQueue @Inject constructor(
         if (itemIds.isEmpty() || !tokens.isAvailable || !tokens.isSignedIn()) return
         val now = System.currentTimeMillis()
         dao.addPending(itemIds.map { TraktPendingEntity(0, playlistId, kind, it, seriesId, watched, now) })
+        scheduler.syncSoon()
+    }
+
+    /** Gledanje je prekinuto na [progress] procenata: pozicija ide na Trakt, za nastavak na drugom uređaju. */
+    suspend fun playbackChanged(playlistId: Long, kind: String, itemId: Long, seriesId: Long, progress: Float) {
+        if (!tokens.isAvailable || !tokens.isSignedIn()) return
+        dao.setPlayback(TraktPlaybackPendingEntity(playlistId, kind, itemId, seriesId, progress, System.currentTimeMillis()))
         scheduler.syncSoon()
     }
 

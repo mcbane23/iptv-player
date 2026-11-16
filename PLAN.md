@@ -328,8 +328,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [x] Trakt nalog: prijava kodom (trakt.tv/activate), slanje i preuzimanje odgledanog (obostrano).
       Poklapanje preko TMDB ID-ja iz panela; bez njega stavka ne ide na Trakt (baza v9).
       `TRAKT_CLIENT_ID` je u GitHub Secrets; Client Secret nije potreban (PKCE)
-- [ ] Preko Trakt-a i nastavak gledanja između TV-a i telefona (pokriva stavku ispod, za ono što
-      Trakt prepozna)
+- [x] Preko Trakt-a i nastavak gledanja između TV-a i telefona (pokriva stavku ispod, za ono što
+      Trakt prepozna): pozicija ide na Trakt kad se plejer zatvori, a pri sinhronizaciji se
+      preuzima novija pozicija sa drugog uređaja (baza v10)
 
 **Sinhronizacija gledanog sadržaja preko naloga**
 
