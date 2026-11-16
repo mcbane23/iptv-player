@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -71,6 +74,11 @@ fun TvApp() {
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
+        // Bez prelaza između ekrana: podrazumevani je pretapanje od 700 ms, u kome se crtaju oba ekrana.
+        // Na slabijim TV uređajima to se oseća kao kašnjenje posle svakog OK i Nazad.
+        transitionSpec = { NoTransition },
+        popTransitionSpec = { NoTransition },
+        predictivePopTransitionSpec = { NoTransition },
         entryProvider = entryProvider {
             entry<LiveTv> {
                 val liveTvViewModel: LiveTvViewModel = hiltViewModel()
@@ -224,3 +232,6 @@ fun TvApp() {
     )
     }
 }
+
+/** Ekran se menja odmah, bez animacije. */
+private val NoTransition = ContentTransform(EnterTransition.None, ExitTransition.None)
