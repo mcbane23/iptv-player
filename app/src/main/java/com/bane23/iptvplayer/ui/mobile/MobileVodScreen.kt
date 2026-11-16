@@ -197,8 +197,8 @@ fun MobileVodScreen(
     if (pickerOpen) {
         CategoryPickerDialog(
             title = title,
-            groups = listOf(PickerGroup(FAVORITES_ID, favoritesLabel, AppIcons.Star)) +
-                state.categories.map { PickerGroup(it.id, it.name) },
+            // Favoriti imaju svoj čip, pa su u spisku samo prave kategorije.
+            groups = state.categories.map { PickerGroup(it.id, it.name) },
             selectedKey = state.selected?.id,
             onPick = { key ->
                 pickerOpen = false

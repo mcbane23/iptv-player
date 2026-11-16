@@ -129,15 +129,8 @@ fun MobileLiveTvScreen(
                 )
 
                 else -> {
-                    val favoritesLabel = stringResource(R.string.category_favorites)
-                    val recentLabel = stringResource(R.string.category_recent)
-                    val allLabel = stringResource(R.string.category_all)
-                    val pickerGroups = buildList {
-                        add(PickerGroup(ChannelGroups.FAVORITES.toString(), favoritesLabel, AppIcons.Star))
-                        if (state.recentCount > 0) add(PickerGroup(ChannelGroups.RECENT.toString(), recentLabel))
-                        add(PickerGroup(ALL_CHANNELS.toString(), allLabel))
-                        state.categories.forEach { add(PickerGroup(it.id.toString(), it.name)) }
-                    }
+                    // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
+                    val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name) }
                     QuickGroupChips(
                         selected = selected,
                         showRecent = state.recentCount > 0,

@@ -432,6 +432,7 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] Telefon, Uživo: čipovi Favoriti, Nedavno, Svi i čip „Kategorije” (nosi naziv izabrane kategorije)
       umesto jednog dugmeta sa spiskom
 - [x] Telefon, Filmovi i Serije: iste prečice, čip Favoriti i čip „Kategorije” (nosi naziv izabrane)
+- [x] Spisak kategorija na telefonu ima samo prave kategorije; Favoriti, Nedavno i Svi su samo čipovi
 - [x] Telefon u landscape-u (van plejera): kartice u uskoj traci levo umesto donje trake, a kanali
       u Uživo u dve kolone. Filmovi i serije već imaju više postera u redu
 - [x] TV: poster u fokusu je malo veći (bez animacije) i ima podlogu, da se fokus jasno vidi
