@@ -24,7 +24,8 @@ fun OpenSubtitlesLoginFields(
     onUsername: (String) -> Unit,
     password: String,
     onPassword: (String) -> Unit,
-    enabled: Boolean,
+    /** Dok traje prijava polja se samo zaključavaju: isključeno polje menja izgled i pomera tekst. */
+    readOnly: Boolean,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -33,7 +34,7 @@ fun OpenSubtitlesLoginFields(
             value = username,
             onValueChange = onUsername,
             label = { Text(stringResource(R.string.field_username)) },
-            enabled = enabled,
+            readOnly = readOnly,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
@@ -46,7 +47,7 @@ fun OpenSubtitlesLoginFields(
             value = password,
             onValueChange = onPassword,
             label = { Text(stringResource(R.string.field_password)) },
-            enabled = enabled,
+            readOnly = readOnly,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,

@@ -69,7 +69,7 @@ fun MobileOpenSubtitlesScreen(onBack: () -> Unit, viewModel: OpenSubtitlesViewMo
                         onUsername = { username = it },
                         password = password,
                         onPassword = { password = it },
-                        enabled = !state.signingIn,
+                        readOnly = state.signingIn,
                         onDone = { viewModel.signIn(username, password) },
                     )
                     Button(

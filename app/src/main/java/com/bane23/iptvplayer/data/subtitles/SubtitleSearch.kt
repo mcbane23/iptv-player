@@ -22,6 +22,21 @@ data class SubtitleResult(
     val machineTranslated: Boolean,
 )
 
+/** Titl izabran za jedan film ili epizodu, kako se pamti na uređaju. */
+@kotlinx.serialization.Serializable
+data class SavedSubtitle(val fileId: Long, val language: String, val name: String)
+
+/** Spisak zapamćenih izbora; ključ je lista + vrsta + ID filma ili epizode (vidi [SubtitleSearch.savedKey]). */
+@kotlinx.serialization.Serializable
+data class SavedSubtitles(val items: Map<String, SavedSubtitle> = emptyMap()) {
+    fun with(key: String, subtitle: SavedSubtitle) = SavedSubtitles(items + (key to subtitle))
+
+    fun without(key: String) = if (key in items) SavedSubtitles(items - key) else this
+
+    /** Izbacuje izbore čiji fajl više ne postoji ([existing] su ID-jevi fajlova na uređaju). */
+    fun onlyWith(existing: Set<Long>) = SavedSubtitles(items.filterValues { it.fileId in existing })
+}
+
 /** Čista logika pretrage titlova: sređivanje naziva, izbor jezika i redosled rezultata. */
 object SubtitleSearch {
 
@@ -99,6 +114,10 @@ object SubtitleSearch {
             }.thenBy { it.machineTranslated }.thenByDescending { it.downloads },
         )
     }
+
+    /** Ključ pod kojim se pamti izbor titla za film ili epizodu jedne liste. */
+    fun savedKey(playlistId: Long, itemId: Long, episode: Boolean): String =
+        "$playlistId/${if (episode) "e" else "m"}/$itemId"
 
     private val SOUTH_SLAVIC = listOf("sr", "hr", "bs")
 }

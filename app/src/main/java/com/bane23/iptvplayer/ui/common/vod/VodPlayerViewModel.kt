@@ -99,6 +99,9 @@ class VodPlayerViewModel @Inject constructor(
     val online: StateFlow<OnlineSubtitlesState> = _online.asStateFlow()
     private var onlineJob: Job? = null
 
+    /** Naziv titla sa interneta koji je uključen za ono što se gleda (zapamćen ili upravo preuzet). */
+    private var savedSubtitleName: String? = null
+
     /**
      * Ono što se trenutno gleda; [seriesId] je null za film. [title], [poster] i [extension] se pamte
      * uz poziciju, za red „Nastavi gledanje” (za epizodu su to naziv i poster serije).
@@ -282,6 +285,13 @@ class VodPlayerViewModel @Inject constructor(
 
     fun selectText(option: TrackOption?) {
         engine.selectText(option)
+        // Isključeni titlovi ili drugi zapis: zapamćeni titl sa interneta se više ne uključuje sam.
+        val savedName = savedSubtitleName
+        val current = item
+        if (savedName != null && current != null && (option == null || !option.label.startsWith(savedName))) {
+            savedSubtitleName = null
+            viewModelScope.launch { subtitles.forget(current.id, episode = current.seriesId != null) }
+        }
         if (option == null) {
             viewModelScope.launch { settings.setSubtitleLanguage("") }
         } else {
@@ -330,6 +340,9 @@ class VodPlayerViewModel @Inject constructor(
                         label = result.name,
                     ),
                 )
+                // Izbor se pamti: sledeći put kad se ovo pusti, titl je već uključen.
+                savedSubtitleName = result.name
+                item?.let { subtitles.remember(it.id, episode = it.seriesId != null, result = result) }
                 _online.update { it.copy(downloadingId = null, appliedId = result.fileId, remaining = downloaded.remaining) }
             } catch (e: SubtitleException) {
                 _online.update { it.copy(downloadingId = null, failure = e.failure) }
@@ -388,7 +401,23 @@ class VodPlayerViewModel @Inject constructor(
             val (source, savedPosition) = load()
             this.source = source
             _ui.update { it.copy(sourceMissing = false) }
-            engine.play(source, startPositionMs = if (startOver) 0 else savedPosition ?: 0)
+            // Titl sa interneta izabran ranije za ovaj film ili epizodu uključuje se sam, iz fajla na uređaju.
+            val saved = item?.let { subtitles.saved(it.id, episode = it.seriesId != null) }
+            savedSubtitleName = saved?.first?.name
+            engine.play(
+                source,
+                startPositionMs = if (startOver) 0 else savedPosition ?: 0,
+                subtitles = saved?.let { (subtitle, file) ->
+                    listOf(
+                        ExternalSubtitle(
+                            id = "os-${subtitle.fileId}",
+                            uri = android.net.Uri.fromFile(file).toString(),
+                            language = subtitle.language.ifEmpty { null },
+                            label = subtitle.name,
+                        ),
+                    )
+                } ?: emptyList(),
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
