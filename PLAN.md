@@ -115,13 +115,15 @@ Nadogradnja aplikacije ne sme da obriše liste, favorite ni istoriju: od verzije
 U cloud okruženju Claude Code-a pristup Google i Maven serverima može biti blokiran,
 pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions.**
 
-**`.github/workflows/build.yml`** (pokreće se na svaki push i pull request):
+**`.github/workflows/build.yml`** (pokreće se na svaki push; poseban pull_request build ne postoji,
+jer PR prikazuje rezultat push builda za isti commit). Dva posla rade paralelno:
 
-1. checkout
-2. `actions/setup-java` (Temurin, JDK 17 ili noviji, prema zahtevu Android Gradle plugina)
-3. `gradle/actions/setup-gradle` (keširanje)
-4. `./gradlew testDebugUnitTest lintDebug assembleDebug`
-5. upload debug APK-a kao artifact
+- **Debug APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
+  (keširanje), `./gradlew assembleDebug`, upload APK-a kao artifact, objava `dev-latest`
+- **Testovi i lint**: isti koraci za pripremu, `./gradlew testDebugUnitTest lintDebug`,
+  upload izveštaja
+
+CI je zelen tek kad oba posla prođu. `dev-latest` se objavljuje čim je APK gotov, ne čeka testove.
 
 APK artifact se pravi na **svaki** CI build, ne samo za release. Svaki push dodatno
 objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Za sada je APK
