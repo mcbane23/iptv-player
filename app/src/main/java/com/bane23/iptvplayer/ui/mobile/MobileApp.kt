@@ -25,6 +25,7 @@ import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SendToTv
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
+import com.bane23.iptvplayer.ui.common.navigation.VodSearch
 
 /**
  * Koren UI-ja za telefon. [sendTarget] je adresa TV-a kada je aplikacija otvorena linkom sa
@@ -72,6 +73,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                             backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
+                    onSearchVod = { series -> backStack.add(VodSearch(series)) },
                     onPlaylists = { backStack.add(Playlists) },
                     onCategories = { backStack.add(ManageCategories) },
                 )
@@ -100,6 +102,19 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onClose = { backStack.removeLastOrNull() },
                 )
             }
+            entry<VodSearch> { key ->
+                MobileVodSearchScreen(
+                    series = key.series,
+                    onOpen = { item ->
+                        if (key.series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
             entry<MovieDetails> { key ->
                 MobileMovieScreen(
                     movieId = key.movieId,
@@ -107,7 +122,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     poster = key.poster,
                     extension = key.extension,
                     onPlay = { extension, startOver ->
-                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver))
+                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
                     },
                     onBack = { backStack.removeLastOrNull() },
                 )
@@ -125,7 +140,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<PlayMovie> { key ->
                 MobileVodPlayerScreen(
-                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver) },
+                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
                     onClose = { backStack.removeLastOrNull() },
                 )
             }

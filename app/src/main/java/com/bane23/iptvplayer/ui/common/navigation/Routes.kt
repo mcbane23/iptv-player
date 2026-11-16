@@ -35,11 +35,21 @@ data class SeriesDetails(val seriesId: Long, val name: String, val poster: Strin
 
 /** Plejer za film. [startOver] zanemaruje zapamćenu poziciju. */
 @Serializable
-data class PlayMovie(val movieId: Long, val name: String, val extension: String, val startOver: Boolean) : NavKey
+data class PlayMovie(
+    val movieId: Long,
+    val name: String,
+    val extension: String,
+    val startOver: Boolean,
+    val poster: String? = null,
+) : NavKey
 
 /** Plejer za epizodu serije. */
 @Serializable
 data class PlayEpisode(val seriesId: Long, val episodeId: Long, val startOver: Boolean) : NavKey
+
+/** Pretraga filmova ([series] = false) ili serija kroz sve kategorije aktivne liste. */
+@Serializable
+data class VodSearch(val series: Boolean) : NavKey
 
 /** Dodavanje liste sa telefona preko QR koda. Koristi se na TV-u. */
 @Serializable

@@ -236,4 +236,8 @@
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Pretraga kanala</string>
     <string name="settings_tv_preview">Pregled kanala</string>
+    <string name="vod_continue_watching">Nastavi gledanje</string>
+    <string name="search_movies">Pretraga filmova</string>
+    <string name="search_series">Pretraga serija</string>
+    <string name="search_empty_vod">Ništa ne odgovara pretrazi.</string>
 </resources>

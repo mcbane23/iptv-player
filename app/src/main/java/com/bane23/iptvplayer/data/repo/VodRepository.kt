@@ -47,11 +47,24 @@ data class WatchProgress(val itemId: Long, val positionMs: Long, val durationMs:
     /** Vredi ponuditi nastavak (nije na samom početku ni na kraju). */
     val resumable: Boolean get() = positionMs >= MIN_RESUME_MS && !finished
 
-    private companion object {
+    companion object {
         const val FINISHED_PERCENT = 95
         const val MIN_RESUME_MS = 30_000L
     }
 }
+
+/**
+ * Stavka reda „Nastavi gledanje”: film ([seriesId] null) ili serija sa poslednje gledanom epizodom.
+ * [id] je ID filma, odnosno serije; [progress] je deo koji je odgledan (0 do 1).
+ */
+data class ContinueItem(
+    val id: Long,
+    val name: String,
+    val poster: String?,
+    val extension: String?,
+    val progress: Float,
+    val isSeries: Boolean,
+)
 
 /** Lista nije Xtream nalog, pa nema filmove i serije. */
 class VodUnavailableException : IOException("Playlist has no movies or series")
@@ -100,7 +113,7 @@ class VodRepository @Inject constructor(
         val session = session()
         itemCache.getOrPutSuspending("${session.playlistId}/$kind/$categoryId") {
             if (kind == VodKind.MOVIES) {
-                api.vodStreams(session.api(XtreamUrls.ACTION_VOD_STREAMS, "category_id", categoryId), session.userAgent)
+                api.vodStreams(session.listUrl(XtreamUrls.ACTION_VOD_STREAMS, categoryId), session.userAgent)
                     .mapNotNull { stream ->
                         val id = stream.streamId?.toLongOrNull() ?: return@mapNotNull null
                         VodItem(
@@ -112,7 +125,7 @@ class VodRepository @Inject constructor(
                         )
                     }
             } else {
-                api.series(session.api(XtreamUrls.ACTION_SERIES, "category_id", categoryId), session.userAgent)
+                api.series(session.listUrl(XtreamUrls.ACTION_SERIES, categoryId), session.userAgent)
                     .mapNotNull { series ->
                         val id = series.seriesId?.toLongOrNull() ?: return@mapNotNull null
                         VodItem(
@@ -172,8 +185,52 @@ class VodRepository @Inject constructor(
 
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
 
-    /** Pamti poziciju gledanja. [seriesId] je null za film. Ne čeka da se upis završi. */
-    fun saveProgress(itemId: Long, seriesId: Long?, positionMs: Long, durationMs: Long) {
+    /** Filmovi, odnosno serije, koje je korisnik počeo da gleda; poslednje gledano prvo. */
+    fun observeContinue(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>> {
+        val rows = if (kind == VodKind.MOVIES) {
+            progressDao.observeContinueMovies(
+                playlistId,
+                WatchProgress.MIN_RESUME_MS,
+                WatchProgress.FINISHED_PERCENT,
+                CONTINUE_LIMIT,
+            )
+        } else {
+            progressDao.observeContinueSeries(playlistId, CONTINUE_LIMIT)
+        }
+        return rows.map { list ->
+            list.map { row ->
+                val isSeries = kind == VodKind.SERIES
+                ContinueItem(
+                    id = if (isSeries) row.seriesId else row.itemId,
+                    name = row.title.orEmpty(),
+                    poster = row.poster,
+                    extension = row.extension,
+                    progress = if (row.durationMs > 0) (row.positionMs.toFloat() / row.durationMs).coerceIn(0f, 1f) else 0f,
+                    isSeries = isSeries,
+                )
+            }
+        }
+    }
+
+    /**
+     * Svi filmovi, odnosno sve serije liste, za pretragu kroz sve kategorije.
+     * Učitava se jednim zahtevom (bez kategorije) i čuva u memoriji kao i spiskovi kategorija.
+     */
+    suspend fun allItems(kind: VodKind): List<VodItem> = items(kind, ALL_CATEGORIES)
+
+    /**
+     * Pamti poziciju gledanja. [seriesId] je null za film. [title] i [poster] su naziv i poster filma,
+     * odnosno serije, za red „Nastavi gledanje”. Ne čeka da se upis završi.
+     */
+    fun saveProgress(
+        itemId: Long,
+        seriesId: Long?,
+        positionMs: Long,
+        durationMs: Long,
+        title: String? = null,
+        poster: String? = null,
+        extension: String? = null,
+    ) {
         if (durationMs <= 0) return
         writeScope.launch {
             val playlistId = settings.activePlaylistId.first() ?: return@launch
@@ -186,6 +243,9 @@ class VodRepository @Inject constructor(
                     positionMs = positionMs,
                     durationMs = durationMs,
                     updatedAt = System.currentTimeMillis(),
+                    title = title,
+                    poster = poster,
+                    extension = extension,
                 ),
             )
         }
@@ -206,6 +266,10 @@ class VodRepository @Inject constructor(
         }
         return Session(playlistId, server, username, password, playlist.userAgent)
     }
+
+    /** Spisak jedne kategorije, ili cele liste kad je [categoryId] [ALL_CATEGORIES]. */
+    private fun Session.listUrl(action: String, categoryId: String): String =
+        if (categoryId == ALL_CATEGORIES) api(action) else api(action, "category_id", categoryId)
 
     private fun Session.api(action: String): String = XtreamUrls.playerApi(server, username, password, action)
 
@@ -230,5 +294,11 @@ class VodRepository @Inject constructor(
     private companion object {
         const val KIND_MOVIE = "movie"
         const val KIND_EPISODE = "episode"
+
+        /** Oznaka za spisak bez kategorije (svi filmovi, odnosno sve serije). */
+        const val ALL_CATEGORIES = ""
+
+        /** Najviše stavki u redu „Nastavi gledanje”. */
+        const val CONTINUE_LIMIT = 20
     }
 }

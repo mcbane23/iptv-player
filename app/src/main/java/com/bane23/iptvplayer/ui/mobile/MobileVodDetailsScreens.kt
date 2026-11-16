@@ -1,39 +1,55 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.repo.WatchProgress
+import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.XtreamVodParser
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.vod.MovieViewModel
 import com.bane23.iptvplayer.ui.common.vod.Poster
@@ -42,7 +58,7 @@ import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.statusText
 
-/** Detalji filma na telefonu. */
+/** Detalji filma na telefonu: zaglavlje sa posterom, dugmad za puštanje, opis i ekipa. */
 @Composable
 fun MobileMovieScreen(
     movieId: Long,
@@ -57,87 +73,52 @@ fun MobileMovieScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val details = state.details
     val playExtension = state.extension ?: XtreamVodParser.DEFAULT_EXTENSION
+    val progress = state.progress
 
     Scaffold { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
+                .padding(padding),
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                Text(stringResource(R.string.action_back))
+            item {
+                DetailsHeader(
+                    title = state.name.ifEmpty { name },
+                    poster = state.poster,
+                    meta = details?.metaLine(),
+                    status = progress?.statusText(),
+                    onBack = onBack,
+                )
             }
-            Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Poster(url = state.poster, modifier = Modifier.width(120.dp))
-                Column(modifier = Modifier.padding(start = 16.dp)) {
-                    Text(text = state.name.ifEmpty { name }, style = MaterialTheme.typography.titleLarge)
-                    details?.metaLine()?.takeIf { it.isNotEmpty() }?.let { meta ->
-                        Text(
-                            text = meta,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                    state.progress?.statusText()?.let { status ->
-                        Text(
-                            text = status,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                }
-            }
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                val progress = state.progress
-                if (progress != null && progress.resumable) {
-                    Button(onClick = { onPlay(playExtension, false) }) {
-                        Text(stringResource(R.string.vod_resume_from, formatDuration(progress.positionMs)))
-                    }
-                    OutlinedButton(onClick = { onPlay(playExtension, true) }) {
-                        Text(stringResource(R.string.vod_start_over))
-                    }
-                } else {
-                    Button(onClick = { onPlay(playExtension, true) }) { Text(stringResource(R.string.vod_play)) }
-                }
+            item {
+                PlayButtons(
+                    primaryLabel = if (progress?.resumable == true) {
+                        stringResource(R.string.vod_resume_from, formatDuration(progress.positionMs))
+                    } else {
+                        stringResource(R.string.vod_play)
+                    },
+                    onPrimary = { onPlay(playExtension, progress?.resumable != true) },
+                    onStartOver = { onPlay(playExtension, true) }.takeIf { progress?.resumable == true },
+                )
             }
             if (state.loading) {
-                Text(
-                    text = stringResource(R.string.vod_loading),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
+                item { Message(stringResource(R.string.vod_loading)) }
             }
-            details?.plot?.let { plot ->
-                Text(
-                    text = plot,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
-            val credits = listOfNotNull(
-                details?.director?.let { stringResource(R.string.vod_director, it) },
-                details?.cast?.let { stringResource(R.string.vod_cast, it) },
-            )
-            for (line in credits) {
-                Text(
-                    text = line,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            item {
+                Overview(
+                    plot = details?.plot,
+                    credits = listOfNotNull(
+                        details?.director?.let { stringResource(R.string.vod_director, it) },
+                        details?.cast?.let { stringResource(R.string.vod_cast, it) },
+                    ),
                 )
             }
         }
     }
 }
 
-/** Detalji serije na telefonu: opis, sezone i epizode. */
+/** Detalji serije na telefonu: zaglavlje, nastavak gledanja, sezone kao čipovi i spisak epizoda. */
 @Composable
 fun MobileSeriesScreen(
     seriesId: Long,
@@ -156,128 +137,271 @@ fun MobileSeriesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             item {
-                TextButton(onClick = onBack, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                    Text(stringResource(R.string.action_back))
-                }
-                Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Poster(url = state.poster, modifier = Modifier.width(120.dp))
-                    Column(modifier = Modifier.padding(start = 16.dp)) {
-                        Text(text = state.name.ifEmpty { name }, style = MaterialTheme.typography.titleLarge)
-                        details?.metaLine()?.takeIf { it.isNotEmpty() }?.let { meta ->
-                            Text(
-                                text = meta,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                        details?.plot?.let { plot ->
-                            Text(
-                                text = plot,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 6,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 8.dp),
-                            )
-                        }
-                    }
-                }
+                DetailsHeader(
+                    title = state.name.ifEmpty { name },
+                    poster = state.poster,
+                    meta = details?.metaLine(),
+                    status = null,
+                    onBack = onBack,
+                )
             }
 
             when {
-                state.loading -> item {
-                    Text(
-                        text = stringResource(R.string.vod_loading),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
-
-                state.failed -> item {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(text = stringResource(R.string.vod_load_failed), color = MaterialTheme.colorScheme.error)
-                        Button(onClick = viewModel::load) { Text(stringResource(R.string.player_retry)) }
-                    }
-                }
-
+                state.loading -> item { Message(stringResource(R.string.vod_loading)) }
+                state.failed -> item { Failure(onRetry = viewModel::load) }
                 details == null || details.seasons.isEmpty() -> item {
-                    Text(
-                        text = stringResource(R.string.vod_no_episodes),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
-                    )
+                    Overview(plot = details?.plot, credits = emptyList())
+                    Message(stringResource(R.string.vod_no_episodes))
                 }
 
                 else -> {
-                    state.resumeEpisode?.let { episode ->
-                        item {
+                    item {
+                        val episode = state.resumeEpisode ?: details.seasons.first().episodes.firstOrNull()
+                        if (episode != null) {
                             val resumable = state.progress[episode.id]?.resumable == true
-                            Button(
-                                onClick = { onPlay(episode.id, !resumable) },
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                            ) {
-                                Text(stringResource(R.string.vod_continue_episode, episode.label()))
-                            }
+                            PlayButtons(
+                                primaryLabel = if (state.resumeEpisode != null) {
+                                    stringResource(R.string.vod_continue_episode, episode.label())
+                                } else {
+                                    stringResource(R.string.vod_play)
+                                },
+                                onPrimary = { onPlay(episode.id, !resumable) },
+                                onStartOver = { onPlay(episode.id, true) }.takeIf { resumable },
+                            )
                         }
                     }
+                    item { Overview(plot = details.plot, credits = emptyList(), maxLines = 4) }
                     item {
-                        Row(
-                            modifier = Modifier
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            for (season in details.seasons) {
-                                val label = stringResource(R.string.vod_season, season.number)
-                                if (season.number == state.selectedSeason) {
-                                    FilledTonalButton(onClick = {}) { Text(label) }
-                                } else {
-                                    OutlinedButton(onClick = { viewModel.selectSeason(season.number) }) { Text(label) }
-                                }
+                            items(details.seasons, key = { it.number }) { season ->
+                                FilterChip(
+                                    selected = season.number == state.selectedSeason,
+                                    onClick = { viewModel.selectSeason(season.number) },
+                                    label = { Text(stringResource(R.string.vod_season, season.number)) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                )
                             }
                         }
                     }
                     items(state.episodes, key = { it.id }) { episode ->
-                        val progress = state.progress[episode.id]
-                        Column(
-                            modifier = Modifier.clickable { onPlay(episode.id, progress?.resumable != true) },
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "${episode.number}. ${episode.title}",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    progress?.statusText()?.let { status ->
-                                        Text(
-                                            text = status,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                }
-                                episode.durationSeconds?.let { seconds ->
-                                    Text(
-                                        text = formatDuration(seconds * 1000),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(start = 12.dp),
-                                    )
-                                }
-                            }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                        }
+                        val watched = state.progress[episode.id]
+                        EpisodeRow(
+                            episode = episode,
+                            progress = watched,
+                            fallbackImage = state.poster,
+                            onClick = { onPlay(episode.id, watched?.resumable != true) },
+                        )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Zaglavlje detalja: poster preko cele širine, zatamnjen i izbledeo u pozadinu, a preko njega
+ * dugme nazad, mali poster, naziv i kratki podaci.
+ */
+@Composable
+private fun DetailsHeader(title: String, poster: String?, meta: String?, status: String?, onBack: () -> Unit) {
+    val background = MaterialTheme.colorScheme.background
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (!poster.isNullOrBlank()) {
+            AsyncImage(
+                model = poster,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .matchParentSize()
+                    .alpha(0.35f),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Brush.verticalGradient(listOf(background.copy(alpha = 0.3f), background))),
+        )
+        Column {
+            Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
+                ToolbarIcon(AppIcons.Back, stringResource(R.string.action_back), onBack)
+            }
+            Row(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Poster(url = poster, modifier = Modifier.width(112.dp))
+                Column(modifier = Modifier.padding(start = 16.dp)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    meta?.takeIf { it.isNotEmpty() }?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                    status?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Glavno dugme (Pusti / Nastavi) preko cele širine i, kad ima smisla, „Od početka” ispod. */
+@Composable
+private fun PlayButtons(primaryLabel: String, onPrimary: () -> Unit, onStartOver: (() -> Unit)?) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth()) {
+            ButtonIcon(AppIcons.Play)
+            Text(text = primaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (onStartOver != null) {
+            OutlinedButton(onClick = onStartOver, modifier = Modifier.fillMaxWidth()) {
+                ButtonIcon(AppIcons.Previous)
+                Text(text = stringResource(R.string.vod_start_over), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ButtonIcon(icon: ImageVector) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        modifier = Modifier
+            .padding(end = ButtonDefaults.IconSpacing)
+            .size(ButtonDefaults.IconSize),
+    )
+}
+
+/** Opis i ekipa. */
+@Composable
+private fun Overview(plot: String?, credits: List<String>, maxLines: Int = Int.MAX_VALUE) {
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+        plot?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = maxLines,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        for (line in credits) {
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp),
+            )
+        }
+    }
+}
+
+/** Epizoda: sličica sa trakom odgledanog, naziv (najviše dva reda) i trajanje ili stanje gledanja. */
+@Composable
+private fun EpisodeRow(episode: Episode, progress: WatchProgress?, fallbackImage: String?, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(128.dp)
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFF22262E)),
+        ) {
+            val image = episode.image ?: fallbackImage
+            if (!image.isNullOrBlank()) {
+                AsyncImage(
+                    model = image,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            val fraction = progress?.takeIf { it.durationMs > 0 }?.let { it.positionMs.toFloat() / it.durationMs }
+            if (progress != null && fraction != null && progress.positionMs > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                            .fillMaxHeight()
+                            .background(Color.White.copy(alpha = 0.85f)),
+                    )
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        ) {
+            Text(
+                text = "${episode.number}. ${episode.title}",
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val status = progress?.statusText()
+            val duration = episode.durationSeconds?.takeIf { it > 0 }?.let { formatDuration(it * 1000) }
+            (status ?: duration)?.let {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                    if (progress?.finished == true) {
+                        Icon(
+                            imageVector = AppIcons.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .size(14.dp),
+                        )
+                    }
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (status != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }

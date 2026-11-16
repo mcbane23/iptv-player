@@ -56,8 +56,17 @@ class VodPlayerViewModel @Inject constructor(
     private val _ui = MutableStateFlow(VodPlayerUiState())
     val ui: StateFlow<VodPlayerUiState> = _ui.asStateFlow()
 
-    /** Ono što se trenutno gleda; [seriesId] je null za film. */
-    private data class Item(val id: Long, val seriesId: Long?)
+    /**
+     * Ono što se trenutno gleda; [seriesId] je null za film. [title], [poster] i [extension] se pamte
+     * uz poziciju, za red „Nastavi gledanje” (za epizodu su to naziv i poster serije).
+     */
+    private data class Item(
+        val id: Long,
+        val seriesId: Long?,
+        val title: String?,
+        val poster: String?,
+        val extension: String?,
+    )
 
     private var item: Item? = null
     private var series: SeriesDetails? = null
@@ -88,10 +97,10 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
-    fun startMovie(movieId: Long, name: String, extension: String, startOver: Boolean) {
+    fun startMovie(movieId: Long, name: String, extension: String, startOver: Boolean, poster: String? = null) {
         if (started) return
         started = true
-        item = Item(movieId, seriesId = null)
+        item = Item(movieId, seriesId = null, title = name, poster = poster, extension = extension)
         _ui.update { it.copy(title = name) }
         viewModelScope.launch {
             play(startOver) {
@@ -173,7 +182,7 @@ class VodPlayerViewModel @Inject constructor(
     }
 
     private suspend fun playEpisode(seriesId: Long, details: SeriesDetails, episode: Episode, startOver: Boolean) {
-        item = Item(episode.id, seriesId)
+        item = Item(episode.id, seriesId, title = details.name, poster = details.poster, extension = null)
         _ui.update {
             it.copy(
                 title = listOfNotNull(details.name, episode.title).joinToString(" · "),
@@ -213,7 +222,15 @@ class VodPlayerViewModel @Inject constructor(
         if (duration <= 0) return
         lastSavedAt = System.currentTimeMillis()
         val position = if (finished) duration else engine.positionMs
-        repository.saveProgress(current.id, current.seriesId, position, duration)
+        repository.saveProgress(
+            itemId = current.id,
+            seriesId = current.seriesId,
+            positionMs = position,
+            durationMs = duration,
+            title = current.title,
+            poster = current.poster,
+            extension = current.extension,
+        )
     }
 
     override fun onCleared() {
