@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jednobojna verzija ikonice za teme ikonica (Android 13+): plamen sa rupom u obliku znaka za puštanje. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M54,22C64,36 78,46 78,62A24,24 0,0 1,30 62C30,52 36,46 40,40C42,48 46,50 48,50C46,40 48,30 54,22ZM47.5,53.5L64.5,64L47.5,74.5Z" />
+</vector>

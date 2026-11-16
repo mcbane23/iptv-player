@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Privremeni TV baner (320x180dp). Konačni baner se pravi pre Faze 8. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <size android:width="320dp" android:height="180dp" />
-            <solid android:color="@color/accent" />
-        </shape>
-    </item>
-    <item
-        android:width="180dp"
-        android:height="180dp"
-        android:gravity="center"
-        android:drawable="@drawable/ic_launcher_foreground" />
-</layer-list>
+<!-- TV baner 320x180dp: plamen i naziv „Ember” (slova su pretvorena u putanje, font Inter Bold, OFL). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0" android:startY="0"
+                android:endX="320" android:endY="180">
+                <item android:offset="0" android:color="#FF1C232B" />
+                <item android:offset="1" android:color="@color/background" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <group android:translateX="10" android:translateY="36">
+        <path android:pathData="M54,22C64,36 78,46 78,62A24,24 0,0 1,30 62C30,52 36,46 40,40C42,48 46,50 48,50C46,40 48,30 54,22Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="54" android:startY="22"
+                    android:endX="54" android:endY="86">
+                    <item android:offset="0" android:color="#FFFFD180" />
+                    <item android:offset="0.55" android:color="@color/accent" />
+                    <item android:offset="1" android:color="#FFFF7A2F" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path
+            android:fillColor="@color/background"
+            android:strokeColor="@color/background"
+            android:strokeWidth="3"
+            android:strokeLineJoin="round"
+            android:pathData="M49,55L63,64L49,73Z" />
+    </group>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M113.56 108H139.9V101.33H121.6V91.44H138.48V84.88H121.6V75.38H139.85V68.71H113.56ZM146.18 108H154.09V90.18C154.09 86.64 156.22 84.69 159.02 84.69C161.71 84.69 163.6 86.54 163.6 89.41V108H171.25V89.86C171.25 86.77 173.1 84.69 176.1 84.69C178.77 84.69 180.77 86.3 180.77 89.62V108H188.71V88.12C188.71 81.71 184.7 78.07 179.29 78.07C175.23 78.07 171.49 80.16 169.83 84.69C168.46 80.21 166 78.07 162.23 78.07C158.7 78.07 155.4 79.95 153.82 84.24L153.51 78.52H146.18ZM211.96 108.5C218.76 108.5 223.96 103.12 223.96 93.31C223.96 83.24 218.55 78.15 212.01 78.15C207 78.15 204.68 81.13 203.6 83.48H203.37V68.71H195.46V108H203.23V103.28H203.6C204.71 105.65 207.14 108.5 211.96 108.5ZM209.54 102.15C205.5 102.15 203.18 98.61 203.18 93.29C203.18 87.93 205.48 84.48 209.54 84.48C213.68 84.48 215.86 88.12 215.86 93.29C215.86 98.48 213.65 102.15 209.54 102.15ZM242.81 108.58C249.67 108.58 254.36 105.39 255.81 100.49L248.64 99.14C247.79 101.41 245.71 102.62 242.94 102.62C238.96 102.62 236.27 100.14 236.09 95.32H256.26V93.1C256.26 83.03 250.12 78.15 242.42 78.15C233.79 78.15 228.26 84.32 228.26 93.42C228.26 102.73 233.79 108.58 242.81 108.58ZM236.14 90.36C236.46 86.72 238.72 84.11 242.5 84.11C246.16 84.11 248.24 86.51 248.64 90.36ZM261.66 108H269.57V91.23C269.57 87.57 272.24 85.06 275.88 85.06C277.04 85.06 278.59 85.25 279.3 85.46V78.39C278.59 78.23 277.56 78.13 276.75 78.13C273.42 78.13 270.71 80.02 269.63 83.66H269.31V78.52H261.66Z" />
+    <path
+        android:fillColor="@color/accent"
+        android:pathData="M114,120h34a2.5,2.5 0,0 1,0 5h-34a2.5,2.5 0,0 1,0 -5z" />
+</vector>

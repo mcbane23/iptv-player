@@ -53,9 +53,11 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 
 ## 3. Otvorene odluke (pitati vlasnika pre nego što zatrebaju)
 
-- [ ] **Ime aplikacije.** Za sada ostaje radni naziv „IPTV Player”. Konačno ime potvrditi pre Faze 8.
-- [ ] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
-      (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica se bira pre Faze 8.
+- [x] **Ime aplikacije.** Rešeno 16. 11. 2026: „Ember” (može se promeniti kasnije). Paket
+      (`applicationId`) ostaje isti, da nadogradnja ne obriše podatke.
+- [x] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
+      (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica rešena 16. 11. 2026: plamen
+      sa prelivom i izrezanim znakom za puštanje na tamnoj pozadini; TV baner je plamen + „Ember”.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 - [x] **Sinhronizacija preko naloga (Faza 9).** Rešeno 16. 11. 2026: sopstvena prijava
       (Google ili email) nije potrebna. Odgledano i pozicija gledanja idu preko korisnikovog
@@ -309,7 +311,7 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 
 ### Faza 8: Izdanje
 
-- [ ] Potvrđeni ime, akcentna boja, ikonica i TV baner
+- [x] Potvrđeni ime, akcentna boja, ikonica i TV baner
 - [ ] Keystore napravljen, secrets dodati, `release.yml` radi
 - [ ] R8/ProGuard pravila proverena na release buildu
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
