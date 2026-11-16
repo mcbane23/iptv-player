@@ -255,6 +255,7 @@
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Pretraga kanala</string>
     <string name="settings_tv_preview">Pregled kanala</string>
+    <string name="settings_tv_vod_preview">Opis filma i serije iznad postera</string>
     <string name="vod_continue_watching">Nastavi gledanje</string>
     <string name="search_movies">Pretraga filmova</string>
     <string name="search_series">Pretraga serija</string>

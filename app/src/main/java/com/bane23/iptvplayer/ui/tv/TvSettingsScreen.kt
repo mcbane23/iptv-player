@@ -59,6 +59,7 @@ fun TvSettingsScreen(
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
+    val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -157,6 +158,15 @@ fun TvSettingsScreen(
                     text = stringResource(R.string.settings_tv_preview),
                     checked = channelPreview,
                     onClick = { viewModel.setTvChannelPreview(!channelPreview) },
+                    onFocused = {
+                        focusedChoice = null
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
+                    text = stringResource(R.string.settings_tv_vod_preview),
+                    checked = vodPreview,
+                    onClick = { viewModel.setTvVodPreview(!vodPreview) },
                     onFocused = {
                         focusedChoice = null
                         openChoice = null
