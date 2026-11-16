@@ -5,7 +5,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLocale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.R
@@ -36,7 +36,7 @@ fun SubtitleFailure.message(): Int = when (this) {
 @Composable
 fun SubtitleResult.languageName(): String {
     if (language.isEmpty()) return "?"
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
     val name = Locale.forLanguageTag(language).getDisplayName(locale)
     return name.ifEmpty { language }.replaceFirstChar { it.titlecase(locale) }
 }
