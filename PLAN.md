@@ -373,6 +373,8 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       koja otvara „Snimci”
 - [x] Dugmad ispod trake u plejeru imaju ikonice; na telefonu u portretu ostaje samo ikonica (red
       staje u širinu ekrana), u landscape-u i na TV-u ikonica i naziv
+- [x] Podešavanja uključeno/isključeno su prekidači (telefon i TV): OK ili dodir menja stanje odmah,
+      bez spiska vrednosti
 
 **Cast sa telefona na TV**
 

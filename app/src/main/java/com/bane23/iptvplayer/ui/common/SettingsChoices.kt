@@ -18,9 +18,17 @@ data class SettingChoice(
     val selected: Int,
     /** Utiče na izgled titlova, pa se uz njega prikazuje probni titl. */
     val subtitleLook: Boolean = false,
+    /** Podešavanje uključeno/isključeno: prikazuje se kao prekidač. Prva vrednost znači uključeno. */
+    val toggle: Boolean = false,
     val onSelect: (Int) -> Unit,
 ) {
     val value: String get() = options.getOrElse(selected) { "" }
+
+    /** Za [toggle]: da li je uključeno. */
+    val checked: Boolean get() = selected == 0
+
+    /** Za [toggle]: prelazi u drugo stanje. */
+    fun flip() = onSelect(if (checked) 1 else 0)
 }
 
 /** Jezici koji se nude za zvuk i titlove (ISO 639-1). Nazivi se prikazuju na jeziku uređaja. */
@@ -118,6 +126,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             options = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off)),
             selected = if (settings.subtitleBackground) 0 else 1,
             subtitleLook = true,
+            toggle = true,
             onSelect = { viewModel.setSubtitleBackground(it == 0) },
         ),
     )

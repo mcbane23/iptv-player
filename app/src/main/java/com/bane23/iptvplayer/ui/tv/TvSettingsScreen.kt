@@ -147,7 +147,7 @@ fun TvSettingsScreen(
                 )
                 TvTextRow(
                     text = stringResource(R.string.settings_resume_last),
-                    trailing = stringResource(if (resumeLastChannel) R.string.setting_on else R.string.setting_off),
+                    checked = resumeLastChannel,
                     onClick = { viewModel.setResumeLastChannel(!resumeLastChannel) },
                     onFocused = {
                         focusedChoice = null
@@ -157,7 +157,7 @@ fun TvSettingsScreen(
                 )
                 TvTextRow(
                     text = stringResource(R.string.settings_tv_preview),
-                    trailing = stringResource(if (channelPreview) R.string.setting_on else R.string.setting_off),
+                    checked = channelPreview,
                     onClick = { viewModel.setTvChannelPreview(!channelPreview) },
                     onFocused = {
                         focusedChoice = null
@@ -166,7 +166,7 @@ fun TvSettingsScreen(
                 )
                 TvTextRow(
                     text = stringResource(R.string.settings_autostart),
-                    trailing = stringResource(if (autostart) R.string.setting_on else R.string.setting_off),
+                    checked = autostart,
                     onClick = {
                         val enable = !autostart
                         viewModel.setAutostart(enable)
@@ -210,9 +210,11 @@ fun TvSettingsScreen(
                 choices.forEachIndexed { index, choice ->
                     TvTextRow(
                         text = choice.title,
-                        trailing = choice.value,
+                        trailing = choice.value.takeIf { !choice.toggle },
+                        checked = choice.checked.takeIf { choice.toggle },
                         selected = openChoice == index,
-                        onClick = { openChoice = index },
+                        // Prekidač se menja odmah; ostala podešavanja otvaraju spisak vrednosti.
+                        onClick = { if (choice.toggle) choice.flip() else openChoice = index },
                         onFocused = {
                             focusedChoice = index
                             if (openChoice != index) openChoice = null
