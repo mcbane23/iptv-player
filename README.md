@@ -51,23 +51,29 @@ i dozvoli joj instalaciju iz nepoznatih izvora.
 
 ## Novo izdanje
 
-Jednom, pre prvog izdanja, napravi ključ za potpis i sačuvaj ga na sigurnom mestu (i kopiju van
-računara). Ako se ključ izgubi, nova izdanja više ne mogu da se instaliraju preko starih.
+Jednom, pre prvog izdanja, pravi se ključ za potpis. Sačuvaj ga na sigurnom mestu (i kopiju van
+računara), zajedno sa lozinkom. Ako se ključ izgubi, nova izdanja više ne mogu da se instaliraju
+preko starih.
+
+**Bez alata na računaru (samo pregledač):**
+
+1. U repou, **Settings → Secrets and variables → Actions**, dodaj secret `RELEASE_KEYSTORE_PASSWORD`
+   sa lozinkom po izboru (najmanje 8 znakova). Zapiši je.
+2. **Actions → Napravi ključ za potpis → Run workflow.**
+3. Kad se završi, na dnu stranice preuzmi artifact `ember-kljuc-za-potpis` (briše se posle jednog
+   dana). U ZIP-u su `ember-release.jks` (ključ, njega čuvaš) i `RELEASE_KEYSTORE_BASE64.txt`.
+4. Ceo sadržaj tekstualnog fajla nalepi u novi secret `RELEASE_KEYSTORE_BASE64`.
+
+**Sa `keytool`-om (dolazi uz JDK):**
 
 ```
-keytool -genkeypair -v -keystore ember-release.jks -alias ember \
+keytool -genkeypair -v -keystore ember-release.jks -storetype PKCS12 -alias ember \
   -keyalg RSA -keysize 4096 -validity 10000
 base64 -w0 ember-release.jks
 ```
 
-U repou, **Settings → Secrets and variables → Actions**, dodaj:
-
-| Secret | Vrednost |
-| --- | --- |
-| `RELEASE_KEYSTORE_BASE64` | ispis komande `base64` |
-| `RELEASE_KEYSTORE_PASSWORD` | lozinka keystore-a |
-| `RELEASE_KEY_ALIAS` | `ember` |
-| `RELEASE_KEY_PASSWORD` | lozinka ključa |
+Zatim dodaj secrets `RELEASE_KEYSTORE_BASE64` (ispis komande `base64`) i `RELEASE_KEYSTORE_PASSWORD`.
+Ako ključ nema ime `ember` ili ima posebnu lozinku, dodaj i `RELEASE_KEY_ALIAS` i `RELEASE_KEY_PASSWORD`.
 
 Ključ i lozinke nikad ne idu u repo. Izdanje se zatim pravi oznakom na `main`-u:
 

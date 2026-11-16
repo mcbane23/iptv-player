@@ -7,8 +7,8 @@ name: Release
 # Potrebni GitHub Secrets (nikad u repou):
 #   RELEASE_KEYSTORE_BASE64    keystore fajl kao base64 (base64 -w0 ember-release.jks)
 #   RELEASE_KEYSTORE_PASSWORD  lozinka keystore-a
-#   RELEASE_KEY_ALIAS          ime ključa
-#   RELEASE_KEY_PASSWORD       lozinka ključa
+#   RELEASE_KEY_ALIAS          ime ključa (nije obavezno, podrazumevano „ember”)
+#   RELEASE_KEY_PASSWORD       lozinka ključa (nije obavezno, podrazumevano ista kao lozinka keystore-a)
 #   APK_REPO_TOKEN             pisanje u javni repo (isti kao u build.yml)
 on:
   push:
@@ -53,12 +53,19 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          for NAME in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+          for NAME in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD; do
             if [ -z "${!NAME}" ]; then
               echo "Secret $NAME ne postoji. Izdanje se ne pravi bez ključa za potpis."
               exit 1
             fi
           done
+          # Maska važi i kad vrednost ne dolazi iz secreta nego iz podrazumevane.
+          KEY_PASSWORD="${RELEASE_KEY_PASSWORD:-$RELEASE_KEYSTORE_PASSWORD}"
+          echo "::add-mask::$KEY_PASSWORD"
+          {
+            echo "RELEASE_KEY_ALIAS=${RELEASE_KEY_ALIAS:-ember}"
+            echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
           printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
@@ -72,8 +79,6 @@ jobs:
       - name: Testovi i release APK
         env:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
         run: ./gradlew testDebugUnitTest assembleRelease
