@@ -58,7 +58,7 @@ class TraktViewModel @Inject constructor(
         loginJob?.cancel()
         local.update { it.copy(login = TraktLogin.Starting, message = null) }
         loginJob = viewModelScope.launch {
-            val code = try {
+            val pending = try {
                 trakt.startLogin()
             } catch (e: CancellationException) {
                 throw e
@@ -66,8 +66,8 @@ class TraktViewModel @Inject constructor(
                 local.update { it.copy(login = TraktLogin.Idle, message = R.string.trakt_error_network) }
                 return@launch
             }
-            local.update { it.copy(login = TraktLogin.Waiting(code)) }
-            val message = when (trakt.awaitLogin(code)) {
+            local.update { it.copy(login = TraktLogin.Waiting(pending.code)) }
+            val message = when (trakt.awaitLogin(pending)) {
                 TraktLoginResult.SUCCESS -> null
                 TraktLoginResult.EXPIRED -> R.string.trakt_error_expired
                 TraktLoginResult.DENIED -> R.string.trakt_error_denied

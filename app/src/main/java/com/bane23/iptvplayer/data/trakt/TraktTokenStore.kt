@@ -17,8 +17,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-/** Da li je APK napravljen sa ključevima Trakt aplikacije (GitHub Secrets); bez njih Trakt se ne prikazuje. */
-val isTraktConfigured: Boolean = BuildConfig.TRAKT_CLIENT_ID.isNotEmpty() && BuildConfig.TRAKT_CLIENT_SECRET.isNotEmpty()
+/**
+ * Da li je APK napravljen sa Client ID-jem Trakt aplikacije (GitHub Secrets); bez njega Trakt se ne
+ * prikazuje. Client Secret nije obavezan: nove Trakt aplikacije ga nemaju (prijava preko PKCE).
+ */
+val isTraktConfigured: Boolean = BuildConfig.TRAKT_CLIENT_ID.isNotEmpty()
 
 private val Context.traktDataStore: DataStore<Preferences> by preferencesDataStore(name = "trakt")
 

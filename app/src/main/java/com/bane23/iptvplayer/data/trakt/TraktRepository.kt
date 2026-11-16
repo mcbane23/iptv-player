@@ -59,16 +59,23 @@ class TraktRepository @Inject constructor(
     fun watchedEpisodes(showTmdbId: Long): Flow<Set<Pair<Int, Int>>> =
         dao.observeWatchedEpisodes(showTmdbId).map { rows -> rows.mapTo(HashSet()) { it.season to it.episode } }
 
-    suspend fun startLogin(): DeviceCode = withContext(Dispatchers.IO) { api.deviceCode(DeviceCodeRequest(CLIENT_ID)) }
+    /** Prijava koja je u toku: kod za korisnika i PKCE tajna koja ide uz preuzimanje tokena. */
+    class PendingLogin(val code: DeviceCode, internal val verifier: String)
+
+    suspend fun startLogin(): PendingLogin = withContext(Dispatchers.IO) {
+        val verifier = Pkce.newVerifier()
+        PendingLogin(api.deviceCode(DeviceCodeRequest(CLIENT_ID, Pkce.challenge(verifier))), verifier)
+    }
 
     /** Čeka da korisnik odobri kod na trakt.tv/activate. Prekida se otkazivanjem korutine. */
-    suspend fun awaitLogin(code: DeviceCode): TraktLoginResult = withContext(Dispatchers.IO) {
+    suspend fun awaitLogin(login: PendingLogin): TraktLoginResult = withContext(Dispatchers.IO) {
+        val code = login.code
         var intervalMs = code.interval.coerceAtLeast(1) * 1000
         val deadline = System.currentTimeMillis() + code.expiresIn * 1000
         while (System.currentTimeMillis() < deadline) {
             delay(intervalMs)
             val response = try {
-                api.deviceToken(DeviceTokenRequest(code.deviceCode, CLIENT_ID, CLIENT_SECRET))
+                api.deviceToken(DeviceTokenRequest(code.deviceCode, CLIENT_ID, login.verifier, CLIENT_SECRET))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: IOException) {
@@ -209,7 +216,11 @@ class TraktRepository @Inject constructor(
     private suspend fun authorization(): String? {
         val session = tokens.session() ?: return null
         if (session.expiresAtMs - System.currentTimeMillis() > REFRESH_BEFORE_MS) return bearer(session.accessToken)
-        val response = api.refreshToken(RefreshTokenRequest(session.refreshToken, CLIENT_ID, CLIENT_SECRET))
+        var response = api.refreshToken(RefreshTokenRequest(session.refreshToken, CLIENT_ID, CLIENT_SECRET, LEGACY_REDIRECT))
+        if (response.code() == 400) {
+            // Aplikacije bez Client Secret-a nemaju ni redirect adresu za prijavu kodom; probati bez nje.
+            response = api.refreshToken(RefreshTokenRequest(session.refreshToken, CLIENT_ID, CLIENT_SECRET))
+        }
         val token = response.body()
         return when {
             response.isSuccessful && token != null -> {
@@ -234,7 +245,10 @@ class TraktRepository @Inject constructor(
 
     private companion object {
         val CLIENT_ID: String = BuildConfig.TRAKT_CLIENT_ID
-        val CLIENT_SECRET: String = BuildConfig.TRAKT_CLIENT_SECRET
+        /** Samo starije Trakt aplikacije imaju Client Secret; inače se ne šalje. */
+        val CLIENT_SECRET: String? = BuildConfig.TRAKT_CLIENT_SECRET.ifEmpty { null }
+
+        const val LEGACY_REDIRECT = "urn:ietf:wg:oauth:2.0:oob"
 
         /** Token se osvežava dan pre isteka. */
         const val REFRESH_BEFORE_MS = 24 * 60 * 60 * 1000L

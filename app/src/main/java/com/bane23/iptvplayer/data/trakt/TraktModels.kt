@@ -15,8 +15,13 @@ val TraktJson: Json = Json {
     coerceInputValues = true
 }
 
+/** PKCE: [codeChallenge] je SHA-256 nasumične tajne koja se šalje tek pri preuzimanju tokena. */
 @Serializable
-data class DeviceCodeRequest(@SerialName("client_id") val clientId: String)
+data class DeviceCodeRequest(
+    @SerialName("client_id") val clientId: String,
+    @SerialName("code_challenge") val codeChallenge: String,
+    @SerialName("code_challenge_method") val codeChallengeMethod: String = "S256",
+)
 
 /** Kod koji korisnik unosi na trakt.tv/activate. */
 @Serializable
@@ -28,19 +33,21 @@ data class DeviceCode(
     val interval: Long = 5,
 )
 
+/** Nove Trakt aplikacije nemaju Client Secret; tada se ne šalje ([clientSecret] null). */
 @Serializable
 data class DeviceTokenRequest(
     val code: String,
     @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String,
+    @SerialName("code_verifier") val codeVerifier: String,
+    @SerialName("client_secret") val clientSecret: String? = null,
 )
 
 @Serializable
 data class RefreshTokenRequest(
     @SerialName("refresh_token") val refreshToken: String,
     @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String,
-    @SerialName("redirect_uri") val redirectUri: String = "urn:ietf:wg:oauth:2.0:oob",
+    @SerialName("client_secret") val clientSecret: String? = null,
+    @SerialName("redirect_uri") val redirectUri: String? = null,
     @SerialName("grant_type") val grantType: String = "refresh_token",
 )
 
@@ -48,7 +55,7 @@ data class RefreshTokenRequest(
 data class RevokeRequest(
     val token: String,
     @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String,
+    @SerialName("client_secret") val clientSecret: String? = null,
 )
 
 @Serializable

@@ -37,7 +37,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      # Ključevi Trakt aplikacije (GitHub Secrets) ugrađuju se u APK. Bez njih Trakt se ne prikazuje.
+      # Ključevi Trakt aplikacije (GitHub Secrets) ugrađuju se u APK. Bez Client ID-ja Trakt se ne prikazuje;
+      # Client Secret nije obavezan (nove Trakt aplikacije ga nemaju).
       - name: Debug APK
         env:
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
