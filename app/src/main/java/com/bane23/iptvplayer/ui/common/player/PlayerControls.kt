@@ -63,7 +63,7 @@ import androidx.media3.common.VideoSize
 private val FocusedContent = Color(0xFF0E1216)
 private val PanelBackground = Color.Black.copy(alpha = 0.6f)
 private val PanelBorder = Color.White.copy(alpha = 0.16f)
-private val ChipShape = RoundedCornerShape(12.dp)
+private val ChipShape = RoundedCornerShape(10.dp)
 
 /** Tamna poluprovidna pločica sa tankim okvirom, podloga za sve kontrole plejera. */
 private fun Modifier.playerPanel(shape: Shape): Modifier =
@@ -155,22 +155,22 @@ fun PlayerChip(
     }
     Box(
         modifier = modifier
-            .height(40.dp)
+            .height(32.dp)
             .then(if (focused) Modifier.background(Color.White, ChipShape) else Modifier.playerPanel(ChipShape))
             .clip(ChipShape)
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             color = content,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 220.dp),
+            modifier = Modifier.widthIn(max = 180.dp),
         )
     }
 }
