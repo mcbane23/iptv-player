@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.ui.common.recording.RecordingsViewModel
 import com.bane23.iptvplayer.ui.common.recording.details
@@ -58,7 +59,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {

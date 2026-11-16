@@ -233,6 +233,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAutostart(enabled) }
     }
 
+    val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setTvVodPreview(enabled: Boolean) {
+        viewModelScope.launch { settings.setTvVodPreview(enabled) }
+    }
+
     fun setTvChannelPreview(enabled: Boolean) {
         viewModelScope.launch { settings.setTvChannelPreview(enabled) }
     }

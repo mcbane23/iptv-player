@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -80,7 +81,8 @@ fun MobileSettingsScreen(
     val language = AppLocale.get(context)
     var languageOpen by remember { mutableStateOf(false) }
 
-    Scaffold { padding ->
+    // Providno: pozadinu sa sjajem crta početni ekran.
+    Scaffold(containerColor = Color.Transparent) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

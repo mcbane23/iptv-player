@@ -56,6 +56,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[TV_CHANNEL_PREVIEW] = enabled }
     }
 
+    /** Da li Filmovi i Serije na TV-u iznad postera prikazuju opis filma ili serije na kojoj je fokus. */
+    val tvVodPreview: Flow<Boolean> =
+        dataStore.data.map { it[TV_VOD_PREVIEW] ?: true }.distinctUntilChanged()
+
+    suspend fun setTvVodPreview(enabled: Boolean) {
+        dataStore.edit { it[TV_VOD_PREVIEW] = enabled }
+    }
+
     /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
     val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
 
@@ -201,6 +209,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
+        val TV_VOD_PREVIEW = booleanPreferencesKey("tv_vod_preview")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")

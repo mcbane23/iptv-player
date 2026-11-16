@@ -48,6 +48,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -70,8 +71,12 @@ fun TvVodScreen(
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
     viewModel: VodBrowseViewModel = hiltViewModel(),
+    // Filmovi i serije imaju odvojen opis (isti broj može biti i film i serija).
+    previewViewModel: TvVodPreviewViewModel = hiltViewModel(key = "vod-preview-$series"),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
+    val previewEnabled by previewViewModel.enabled.collectAsStateWithLifecycle()
+    val preview by previewViewModel.preview.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
@@ -90,7 +95,7 @@ fun TvVodScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -203,6 +208,7 @@ fun TvVodScreen(
                         .weight(0.72f)
                         .fillMaxHeight(),
                 ) {
+                    if (previewEnabled) TvVodPreviewHeader(preview = preview)
                     when {
                         showContinue -> PosterGrid {
                             items(continueItems, key = { it.id }) { item ->
@@ -211,7 +217,10 @@ fun TvVodScreen(
                                     poster = item.poster,
                                     progress = item.progress,
                                     onClick = { onOpen(item.toVodItem()) },
-                                    onFocused = { lastItemId = item.id },
+                                    onFocused = {
+                                        lastItemId = item.id
+                                        previewViewModel.focus(item.toVodItem(), series)
+                                    },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
                                 )
                             }
@@ -228,7 +237,10 @@ fun TvVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onClick = { onOpen(item) },
-                                    onFocused = { lastItemId = item.id },
+                                    onFocused = {
+                                        lastItemId = item.id
+                                        previewViewModel.focus(item, series)
+                                    },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
                                 )
                             }
@@ -248,7 +260,10 @@ fun TvVodScreen(
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     onClick = { onOpen(item) },
-                                    onFocused = { lastItemId = item.id },
+                                    onFocused = {
+                                        lastItemId = item.id
+                                        previewViewModel.focus(item, series)
+                                    },
                                     modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
                                 )
                             }

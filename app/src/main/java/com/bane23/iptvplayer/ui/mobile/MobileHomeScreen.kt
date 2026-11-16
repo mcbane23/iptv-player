@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
@@ -144,7 +145,11 @@ fun MobileHomeScreen(
 
     if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
         // U landscape-u je visina dragocena: kartice idu u usku traku levo, a ne u donju traku.
-        Scaffold(contentWindowInsets = WindowInsets.safeDrawing) { padding ->
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing,
+            containerColor = Color.Transparent,
+            modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
+        ) { padding ->
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -162,6 +167,9 @@ fun MobileHomeScreen(
     }
 
     Scaffold(
+        // Blag sjaj akcentne boje gore levo; ekrani u karticama su providni da se vidi.
+        containerColor = Color.Transparent,
+        modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
         bottomBar = {
             Column {
                 recordingBar()

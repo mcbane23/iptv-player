@@ -38,6 +38,7 @@ import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
@@ -59,6 +60,7 @@ fun TvSettingsScreen(
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
+    val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -80,7 +82,7 @@ fun TvSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -157,6 +159,15 @@ fun TvSettingsScreen(
                     text = stringResource(R.string.settings_tv_preview),
                     checked = channelPreview,
                     onClick = { viewModel.setTvChannelPreview(!channelPreview) },
+                    onFocused = {
+                        focusedChoice = null
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
+                    text = stringResource(R.string.settings_tv_vod_preview),
+                    checked = vodPreview,
+                    onClick = { viewModel.setTvVodPreview(!vodPreview) },
                     onFocused = {
                         focusedChoice = null
                         openChoice = null

@@ -437,6 +437,13 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] TV: poster u fokusu je malo veći (bez animacije) i ima podlogu, da se fokus jasno vidi
 - [x] TV, pregled kanala: kad slike nema (pregled isključen, kanal zaključan), veliki logo i naziv kanala
 - [x] Prazna stanja i greške su ista svuda: ikonica, kratak tekst i, gde ima smisla, dugme
+- [x] Vlasnik je preskočio red nedavno gledanih kanala (čip „Nedavno” radi isti posao)
+- [x] TV, Filmovi i Serije: iznad postera naziv, kratki podaci i opis filma ili serije u fokusu
+      (detalji se traže kad fokus kratko stane); može da se isključi u Podešavanjima
+- [ ] Za kasnije: TV „Početna” sekcija sa redovima (Nastavi gledanje, Omiljeni kanali, Nedavno dodati
+      filmovi). Veći posao, praktično nova sekcija; detalje dogovoriti pre početka
+- [x] Pozadina sa blagim sjajem akcentne boje gore levo (vlasnik izabrao varijantu B): svi ekrani
+      na TV-u (osim više kanala odjednom) i početni ekrani na telefonu
 
 ## 7. Testiranje
 

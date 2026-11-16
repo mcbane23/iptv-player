@@ -28,6 +28,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.vod.VodSearchViewModel
 
@@ -47,7 +48,7 @@ fun TvVodSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .glowBackground(MaterialTheme.colorScheme.primary)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
