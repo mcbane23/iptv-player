@@ -81,7 +81,11 @@ fun RecordingLocation.label(index: Int): String {
 fun RecordingNotices(notices: Flow<Int>) {
     val context = LocalContext.current
     LaunchedEffect(notices) {
-        notices.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        notices.collect {
+            // Upozorenje je duže od obične poruke, pa ostaje duže na ekranu.
+            val length = if (it == R.string.recording_started_single_stream) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+            Toast.makeText(context, it, length).show()
+        }
     }
 }
 

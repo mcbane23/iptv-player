@@ -9,6 +9,7 @@ import androidx.paging.cachedIn
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.LockRepository
+import com.bane23.iptvplayer.data.repo.PlaylistRepository
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.player.PlaybackStatus
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -53,7 +55,15 @@ data class MultiViewUiState(
     val picker: MultiPicker? = null,
     /** Na poljima se ispisuju dekoder, rezolucija i ispuštene slike (podešavanje). */
     val showInfo: Boolean = false,
-)
+    /** Koliko strimova nalog sme da gleda istovremeno, ili null kad se ne zna. */
+    val connectionLimit: Int? = null,
+) {
+    /** Broj polja u kojima je kanal. */
+    val channelCount: Int get() = tiles.count { it.channel != null }
+
+    /** Pušteno je više kanala nego što nalog dozvoljava. */
+    val overLimit: Boolean get() = connectionLimit != null && channelCount > connectionLimit
+}
 
 /**
  * Prikaz više kanala odjednom. Svako polje ima svoj plejer; zvuk ide samo sa aktivnog polja.
@@ -64,6 +74,7 @@ class MultiViewViewModel @Inject constructor(
     private val repository: ChannelRepository,
     private val settings: SettingsStore,
     private val locks: LockRepository,
+    private val playlists: PlaylistRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(MultiViewUiState())
     val state: StateFlow<MultiViewUiState> = _state.asStateFlow()
@@ -74,6 +85,12 @@ class MultiViewViewModel @Inject constructor(
     private var foreground = false
 
     init {
+        viewModelScope.launch {
+            repository.activePlaylistId.collectLatest { id ->
+                val limit = id?.let { playlists.maxConnections(it) }
+                _state.update { it.copy(connectionLimit = limit) }
+            }
+        }
         viewModelScope.launch {
             settings.playerSettings.collect { current -> _state.update { it.copy(showInfo = current.showStreamInfo) } }
         }

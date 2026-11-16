@@ -86,6 +86,25 @@ class PlaylistRepository @Inject constructor(
             }
         }
 
+    /**
+     * Koliko strimova Xtream nalog liste sme da gleda istovremeno. Pita server; vraća null kad lista
+     * nije Xtream nalog, kad server ne odgovori ili kad taj podatak ne navodi.
+     */
+    suspend fun maxConnections(id: Long): Int? = withContext(Dispatchers.IO) {
+        try {
+            val playlist = playlistDao.getById(id) ?: return@withContext null
+            val server = XtreamUrls.normalizeServer(playlist.source) ?: return@withContext null
+            val username = playlist.username ?: return@withContext null
+            val password = cipher.decrypt(playlist.passwordEncrypted ?: return@withContext null)
+            xtreamApi.account(XtreamUrls.playerApi(server, username, password), playlist.userAgent)
+                .userInfo?.maxConnections
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun getPlaylist(id: Long): Playlist? = withContext(Dispatchers.IO) {
         val p = playlistDao.getById(id) ?: return@withContext null
         Playlist(

@@ -298,6 +298,10 @@
     <string name="multiview_two">2 channels</string>
     <string name="multiview_four">4 channels</string>
     <string name="multiview_add">+ Add channel</string>
+    <plurals name="multiview_connection_limit">
+        <item quantity="one">Your provider account allows %1$d stream at a time. More channels at once may stutter or stop.</item>
+        <item quantity="other">Your provider account allows %1$d streams at a time. More channels at once may stutter or stop.</item>
+    </plurals>
     <string name="multiview_pick">Choose a channel</string>
     <string name="multiview_failed">Channel is not working. Press to try again.</string>
 
@@ -400,6 +404,7 @@
     <string name="recordings_empty">No recordings yet. Start one with the Record button in the channel player.</string>
     <string name="recording_chip">Record</string>
     <string name="recording_chip_active">Recording</string>
+    <string name="recording_started_single_stream">Recording started. Your account allows one stream at a time, so playback or the recording may stutter or stop.</string>
     <string name="recording_started">Recording started</string>
     <string name="recording_stopped">Recording stopped</string>
     <string name="recording_no_space">Not enough free space to record</string>
