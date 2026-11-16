@@ -105,7 +105,7 @@ class CastRemoteViewModel @Inject constructor(
     fun previous() = step(-1)
 
     fun stop() {
-        saveProgress(sender.state.value)
+        saveProgress(sender.state.value, stopped = true)
         sender.stop()
     }
 
@@ -152,7 +152,8 @@ class CastRemoteViewModel @Inject constructor(
         return channels.getChannel(ids[(index + delta).mod(ids.size)])
     }
 
-    private fun saveProgress(current: CastState) {
+    /** [stopped]: slanje je prekinuto, pa pozicija ide i na Trakt. */
+    private fun saveProgress(current: CastState, stopped: Boolean = false) {
         val item = current.media?.vod ?: return
         if (current.durationMs <= 0 || current.positionMs <= 0) return
         lastSavedAt = System.currentTimeMillis()
@@ -164,6 +165,7 @@ class CastRemoteViewModel @Inject constructor(
             title = item.title,
             poster = item.poster,
             extension = item.extension,
+            stopped = stopped,
         )
     }
 

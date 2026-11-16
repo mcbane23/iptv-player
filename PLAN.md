@@ -57,9 +57,9 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 - [ ] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
       (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica se bira pre Faze 8.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
-- [ ] **Sinhronizacija preko naloga (Faza 9).** Gde se čuvaju podaci (npr. korisnikov
-      Google Drive, sopstveni server ili nešto treće), koji nalog (Google, email) i šta se
-      sinhronizuje. Mora ostati besplatno i bez praćenja, a lozinke lista ne smeju na tuđi server.
+- [x] **Sinhronizacija preko naloga (Faza 9).** Rešeno 16. 11. 2026: sopstvena prijava
+      (Google ili email) nije potrebna. Odgledano i pozicija gledanja idu preko korisnikovog
+      Trakt naloga; favoriti i liste ostaju samo na uređaju (prenos telefon→TV iz Faze 7).
 
 ## 4. Arhitektura
 
@@ -336,10 +336,11 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Sinhronizacija gledanog sadržaja preko naloga**
 
-- [ ] Prijava nalogom (Google ili email) u podešavanjima, potpuno opciono
-- [ ] Sinhronizacija pozicije gledanja: film ili serija započeti na TV-u nastavljaju se
-      na telefonu od istog mesta, i obrnuto
-- [ ] Odlučiti šta se još sinhronizuje (favoriti, istorija, liste) i gde se podaci čuvaju
+Vlasnik je 16. 11. 2026. odlučio da sopstvena prijava (Google ili email) nije potrebna, pa je
+ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
+
+- [x] Sinhronizacija pozicije gledanja: film ili serija započeti na TV-u nastavljaju se
+      na telefonu od istog mesta, i obrnuto (preko Trakt-a, za ono što Trakt prepozna)
 
 **Premotavanje strima**
 
