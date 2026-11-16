@@ -14,6 +14,7 @@ import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.PlayerSettings
+import com.bane23.iptvplayer.player.VideoInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -37,6 +38,7 @@ data class MultiTile(
     val channel: Channel? = null,
     val player: Player? = null,
     val status: PlaybackStatus = PlaybackStatus.IDLE,
+    val video: VideoInfo = VideoInfo(),
 )
 
 /** Izbor kanala za polje [slot]: prvo kategorija, pa kanal. */
@@ -49,6 +51,8 @@ data class MultiViewUiState(
     /** Polje čiji se zvuk čuje. */
     val active: Int = 0,
     val picker: MultiPicker? = null,
+    /** Na poljima se ispisuju dekoder, rezolucija i ispuštene slike (podešavanje). */
+    val showInfo: Boolean = false,
 )
 
 /**
@@ -68,6 +72,12 @@ class MultiViewViewModel @Inject constructor(
     private val statusJobs = arrayOfNulls<Job>(MAX_TILES)
     private var playerSettings: PlayerSettings? = null
     private var foreground = false
+
+    init {
+        viewModelScope.launch {
+            settings.playerSettings.collect { current -> _state.update { it.copy(showInfo = current.showStreamInfo) } }
+        }
+    }
 
     /** Kategorije aktivne liste za izbor kanala (zaključane nose katanac u nazivu). */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -176,7 +186,7 @@ class MultiViewViewModel @Inject constructor(
             engine.state.collect { playback ->
                 // Polje je u međuvremenu ispražnjeno: stanje starog plejera se više ne prikazuje.
                 if (engines[index] !== engine) return@collect
-                _state.update { state -> state.copy(tiles = state.tiles.replace(index) { it.copy(status = playback.status) }) }
+                _state.update { state -> state.copy(tiles = state.tiles.replace(index) { it.copy(status = playback.status, video = playback.video) }) }
             }
         }
         return engine

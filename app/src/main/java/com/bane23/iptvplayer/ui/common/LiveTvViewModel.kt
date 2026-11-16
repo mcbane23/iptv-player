@@ -187,6 +187,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setSubtitleBackground(enabled) }
     }
 
+    fun setShowStreamInfo(enabled: Boolean) {
+        viewModelScope.launch { settings.setShowStreamInfo(enabled) }
+    }
+
     fun setSubtitleSize(size: com.bane23.iptvplayer.player.SubtitleSize) {
         viewModelScope.launch { settings.setSubtitleSize(size) }
     }

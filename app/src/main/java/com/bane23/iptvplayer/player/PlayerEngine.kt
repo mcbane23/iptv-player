@@ -10,12 +10,14 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -53,6 +55,18 @@ data class ExternalSubtitle(
     val label: String,
 )
 
+/** Tehnički podaci o slici koja se trenutno pušta. */
+data class VideoInfo(
+    /** Naziv dekodera slike, ili null dok nije pokrenut. */
+    val decoder: String? = null,
+    /** Dekoder radi softverski (na procesoru), a ne preko hardvera uređaja. */
+    val software: Boolean = false,
+    val width: Int = 0,
+    val height: Int = 0,
+    /** Koliko je slika ispušteno od puštanja, jer uređaj nije stigao da ih prikaže. */
+    val droppedFrames: Int = 0,
+)
+
 data class PlaybackState(
     val status: PlaybackStatus = PlaybackStatus.IDLE,
     val failure: PlaybackFailure? = null,
@@ -63,6 +77,7 @@ data class PlaybackState(
     val textEnabled: Boolean = false,
     /** Sadržaj je odgledan do kraja (samo za filmove i epizode). */
     val ended: Boolean = false,
+    val video: VideoInfo = VideoInfo(),
 )
 
 /**
@@ -157,10 +172,31 @@ class PlayerEngine(
         override fun onTracksChanged(tracks: Tracks) = publishTracks(tracks)
 
         override fun onPlayerError(error: PlaybackException) = handleError(error)
+
+        override fun onVideoSizeChanged(videoSize: VideoSize) {
+            if (videoSize.width == 0 || videoSize.height == 0) return
+            _state.update { it.copy(video = it.video.copy(width = videoSize.width, height = videoSize.height)) }
+        }
+    }
+
+    private val analyticsListener = object : AnalyticsListener {
+        override fun onVideoDecoderInitialized(
+            eventTime: AnalyticsListener.EventTime,
+            decoderName: String,
+            initializedTimestampMs: Long,
+            initializationDurationMs: Long,
+        ) {
+            _state.update { it.copy(video = it.video.copy(decoder = decoderName, software = isSoftwareDecoder(decoderName))) }
+        }
+
+        override fun onDroppedVideoFrames(eventTime: AnalyticsListener.EventTime, droppedFrames: Int, elapsedMs: Long) {
+            _state.update { it.copy(video = it.video.copy(droppedFrames = it.video.droppedFrames + droppedFrames)) }
+        }
     }
 
     init {
         player.addListener(listener)
+        player.addAnalyticsListener(analyticsListener)
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
             .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
@@ -271,6 +307,7 @@ class PlayerEngine(
     fun release() {
         retryJob?.cancel()
         player.removeListener(listener)
+        player.removeAnalyticsListener(analyticsListener)
         player.release()
     }
 
@@ -467,6 +504,12 @@ class PlayerEngine(
         -> PlaybackFailure.UNSUPPORTED
 
         else -> PlaybackFailure.UNKNOWN
+    }
+
+    /** Softverski dekoderi samog Androida; sve ostalo su dekoderi proizvođača uređaja. */
+    private fun isSoftwareDecoder(name: String): Boolean {
+        val lower = name.lowercase()
+        return lower.startsWith("omx.google.") || lower.startsWith("c2.android.") || lower.contains(".sw.")
     }
 
     private fun describe(error: PlaybackException): String {

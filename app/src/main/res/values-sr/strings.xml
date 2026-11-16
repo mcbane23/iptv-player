@@ -335,6 +335,11 @@
     <string name="settings_subtitle_size">Veličina titlova</string>
     <string name="settings_subtitle_position">Položaj titlova</string>
     <string name="settings_subtitle_background">Crna pozadina titlova</string>
+    <string name="settings_stream_info">Podaci o strimu u prikazu više kanala</string>
+    <string name="settings_stream_info_summary">Na svakom polju ispisuje dekoder, rezoluciju i broj ispuštenih slika. Pomaže da se otkrije zašto kanal secka.</string>
+    <string name="stream_info_hardware">HW</string>
+    <string name="stream_info_software">SW</string>
+    <string name="stream_info_dropped">ispušteno %1$d</string>
     <string name="subtitle_preview_text">Ovako će izgledati titlovi</string>
     <string name="settings_subtitle_look_summary">Izgled titlova u plejeru. Izmena važi odmah.</string>
     <string name="subtitle_size_small">Mala</string>

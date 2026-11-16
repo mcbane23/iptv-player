@@ -337,6 +337,11 @@
     <string name="settings_subtitle_size">Subtitle size</string>
     <string name="settings_subtitle_position">Subtitle position</string>
     <string name="settings_subtitle_background">Black subtitle background</string>
+    <string name="settings_stream_info">Stream info in multi-view</string>
+    <string name="settings_stream_info_summary">Shows the decoder, resolution and dropped frames on each tile. Helps find out why a channel stutters.</string>
+    <string name="stream_info_hardware">HW</string>
+    <string name="stream_info_software">SW</string>
+    <string name="stream_info_dropped">dropped %1$d</string>
     <string name="subtitle_preview_text">This is how subtitles will look</string>
     <string name="settings_subtitle_look_summary">How subtitles look in the player. Changes apply right away.</string>
     <string name="subtitle_size_small">Small</string>
