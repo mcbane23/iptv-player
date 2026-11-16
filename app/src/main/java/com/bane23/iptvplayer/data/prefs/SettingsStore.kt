@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
@@ -59,6 +60,32 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[AUTOSTART] = enabled }
     }
 
+    /** Zapis PIN-a roditeljske zaštite (vidi `Pin.hash`), ili null ako PIN nije postavljen. */
+    val pinRecord: Flow<String?> = dataStore.data.map { it[PIN_RECORD] }.distinctUntilChanged()
+
+    /** Čuva novi zapis PIN-a; null uklanja PIN i sva zaključavanja. */
+    suspend fun setPinRecord(record: String?) {
+        dataStore.edit { prefs ->
+            if (record == null) {
+                prefs.remove(PIN_RECORD)
+                prefs.remove(LOCKED_CATEGORIES)
+            } else {
+                prefs[PIN_RECORD] = record
+            }
+        }
+    }
+
+    /** Ključevi zaključanih kategorija (vidi `CategoryLocks`). */
+    val lockedCategories: Flow<Set<String>> =
+        dataStore.data.map { it[LOCKED_CATEGORIES] ?: emptySet() }.distinctUntilChanged()
+
+    suspend fun setCategoryLocked(key: String, locked: Boolean) {
+        dataStore.edit { prefs ->
+            val current = prefs[LOCKED_CATEGORIES] ?: emptySet()
+            prefs[LOCKED_CATEGORIES] = if (locked) current + key else current - key
+        }
+    }
+
     /** Uputstvo za gestove u plejeru na telefonu je već prikazano (prikazuje se samo prvi put). */
     val gestureHintShown: Flow<Boolean> =
         dataStore.data.map { it[GESTURE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -101,6 +128,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val AUTOSTART = booleanPreferencesKey("autostart")
+        val PIN_RECORD = stringPreferencesKey("pin_record")
+        val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
