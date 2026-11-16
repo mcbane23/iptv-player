@@ -404,4 +404,16 @@ interface TraktDao {
 
     @Query("DELETE FROM trakt_watched")
     suspend fun clearWatched()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun setPlayback(row: TraktPlaybackPendingEntity)
+
+    @Query("SELECT * FROM trakt_playback_pending ORDER BY createdAt")
+    suspend fun pendingPlayback(): List<TraktPlaybackPendingEntity>
+
+    @Query("DELETE FROM trakt_playback_pending WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun deletePlayback(playlistId: Long, kind: String, itemId: Long)
+
+    @Query("DELETE FROM trakt_playback_pending")
+    suspend fun clearPlayback()
 }

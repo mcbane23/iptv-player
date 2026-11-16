@@ -307,6 +307,7 @@ class VodRepository @Inject constructor(
         title: String? = null,
         poster: String? = null,
         extension: String? = null,
+        stopped: Boolean = false,
     ) {
         if (durationMs <= 0) return
         writeScope.launch {
@@ -335,8 +336,67 @@ class VodRepository @Inject constructor(
                 previous == null && watchedAt != null
             }
             if (newlyWatched) trakt.changed(playlistId, kind, listOf(itemId), seriesId ?: 0, watched = true)
+            // Prekinuto pre kraja: pozicija ide na Trakt, da se nastavi na drugom uređaju.
+            if (stopped && positionMs >= WatchProgress.MIN_RESUME_MS && !WatchProgress.reachedEnd(positionMs, durationMs)) {
+                val percent = (positionMs * 100f / durationMs).coerceIn(0f, 100f)
+                trakt.playbackChanged(playlistId, kind, itemId, seriesId ?: 0, percent)
+            }
         }
     }
+
+    /**
+     * Pozicija sa Trakt naloga (gledano na drugom uređaju): [progress] je procenat, [pausedAtMs]
+     * vreme prekida. Upisuje se samo ako je novija od ovde zapamćene i stvarno drugačija.
+     * Film, odnosno serija, traži se po TMDB ID-ju u spisku aktivne liste.
+     */
+    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long) = withContext(Dispatchers.IO) {
+        val playlistId = session().playlistId
+        val isMovie = key.kind == TraktKey.MOVIE
+        val target: RemoteTarget = if (isMovie) {
+            val item = allItems(VodKind.MOVIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
+            RemoteTarget(item.id, null, item.name, item.poster, item.extension) {
+                movie(item.id).durationSeconds
+            }
+        } else {
+            val show = allItems(VodKind.SERIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
+            val details = series(show.id)
+            val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode }
+                ?: return@withContext
+            RemoteTarget(episode.id, show.id, details.name ?: show.name, show.poster ?: details.poster, null) {
+                episode.durationSeconds
+            }
+        }
+        val kind = if (isMovie) KIND_MOVIE else KIND_EPISODE
+        val existing = progressDao.get(playlistId, kind, target.itemId)
+        if (existing != null && existing.updatedAt >= pausedAtMs) return@withContext
+        val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return@withContext
+        val positionMs = (durationMs * progress / 100).toLong()
+        if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return@withContext
+        progressDao.upsert(
+            WatchProgressEntity(
+                playlistId = playlistId,
+                kind = kind,
+                itemId = target.itemId,
+                seriesId = target.seriesId ?: 0,
+                positionMs = positionMs,
+                durationMs = durationMs,
+                updatedAt = pausedAtMs,
+                title = target.title,
+                poster = target.poster,
+                extension = target.extension,
+                watchedAt = existing?.watchedAt,
+            ),
+        )
+    }
+
+    private class RemoteTarget(
+        val itemId: Long,
+        val seriesId: Long?,
+        val title: String?,
+        val poster: String?,
+        val extension: String?,
+        val durationSeconds: suspend () -> Long?,
+    )
 
     /**
      * Ručno označava filmove, odnosno epizode jedne serije ([seriesId] null za film), kao odgledane
@@ -506,6 +566,9 @@ class VodRepository @Inject constructor(
 
         /** Oznaka za spisak bez kategorije (svi filmovi, odnosno sve serije). */
         const val ALL_CATEGORIES = ""
+
+        /** Razlika pozicija za koju se ne menja zapamćeno (zaokruživanje procenta na Trakt-u). */
+        const val SAME_POSITION_MS = 30_000L
 
         /** Najviše stavki u redu „Nastavi gledanje”. */
         const val CONTINUE_LIMIT = 20

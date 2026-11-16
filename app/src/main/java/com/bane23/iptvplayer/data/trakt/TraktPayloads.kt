@@ -69,6 +69,37 @@ object TraktPayloads {
             .values
             .sortedBy { it.id }
 
+    /** Telo za `scrobble/pause`. */
+    fun scrobble(key: TraktKey, progress: Float): ScrobbleBody =
+        if (key.kind == TraktKey.MOVIE) {
+            ScrobbleBody(movie = TraktMedia(TraktIds(key.tmdbId)), progress = progress)
+        } else {
+            ScrobbleBody(show = TraktMedia(TraktIds(key.tmdbId)), episode = ScrobbleEpisode(key.season, key.episode), progress = progress)
+        }
+
+    /** Ključ započetog gledanja sa naloga, ili null kad nema TMDB ID. */
+    fun playbackKey(item: PlaybackItem): TraktKey? {
+        item.movie?.ids?.tmdb?.let { return TraktKey.movie(it) }
+        val show = item.show?.ids?.tmdb ?: return null
+        val episode = item.episode ?: return null
+        return TraktKey.episode(show, episode.season, episode.number)
+    }
+
+    /** Vreme iz Trakt odgovora (`2026-11-16T09:30:00.000Z`) u milisekundama, ili null. */
+    fun parseTime(text: String?): Long? {
+        if (text.isNullOrBlank()) return null
+        for (pattern in listOf("yyyy-MM-dd'T'HH:mm:ss.SSSX", "yyyy-MM-dd'T'HH:mm:ssX")) {
+            val format = SimpleDateFormat(pattern, Locale.US)
+            format.timeZone = TimeZone.getTimeZone("UTC")
+            try {
+                return format.parse(text)?.time
+            } catch (_: java.text.ParseException) {
+                // Probati sledeći oblik.
+            }
+        }
+        return null
+    }
+
     /** Vreme u obliku koji Trakt očekuje, npr. `2026-11-16T09:30:00.000Z`. */
     fun isoTime(millis: Long): String {
         val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)

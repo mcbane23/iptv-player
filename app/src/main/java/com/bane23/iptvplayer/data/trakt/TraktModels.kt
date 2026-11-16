@@ -124,3 +124,26 @@ data class HistoryEpisode(
     val number: Int,
     @SerialName("watched_at") val watchedAt: String? = null,
 )
+
+/** Telo za `scrobble/pause`: film ([movie]) ili epizoda ([show] i [episode]) i odgledani procenat. */
+@Serializable
+data class ScrobbleBody(
+    val movie: TraktMedia? = null,
+    val show: TraktMedia? = null,
+    val episode: ScrobbleEpisode? = null,
+    val progress: Float,
+)
+
+@Serializable
+data class ScrobbleEpisode(val season: Int, val number: Int)
+
+/** Započeto gledanje sa naloga (`sync/playback`). */
+@Serializable
+data class PlaybackItem(
+    val progress: Float = 0f,
+    @SerialName("paused_at") val pausedAt: String? = null,
+    val type: String? = null,
+    val movie: TraktMedia? = null,
+    val show: TraktMedia? = null,
+    val episode: ScrobbleEpisode? = null,
+)

@@ -133,6 +133,7 @@ class TraktRepository @Inject constructor(
         db.withTransaction {
             dao.clearWatched()
             dao.clearPending()
+            dao.clearPlayback()
         }
     }
 
@@ -142,7 +143,9 @@ class TraktRepository @Inject constructor(
             try {
                 val auth = authorization() ?: return@withLock TraktSyncResult.NOT_SIGNED_IN
                 push(auth)
+                pushPlayback(auth)
                 pull(auth)
+                pullPlayback(auth)
                 tokens.setLastSync(System.currentTimeMillis())
                 TraktSyncResult.DONE
             } catch (e: CancellationException) {
@@ -155,7 +158,8 @@ class TraktRepository @Inject constructor(
                 } else {
                     TraktSyncResult.FAILED
                 }
-            } catch (_: IOException) {
+            } catch (_: Exception) {
+                // Mreža, Trakt ili neočekivan odgovor: pokušava se ponovo kasnije.
                 TraktSyncResult.FAILED
             }
         }
@@ -204,12 +208,59 @@ class TraktRepository @Inject constructor(
         }
     }
 
+    /** Šalje pozicije prekinutog gledanja (za nastavak na drugom uređaju). */
+    private suspend fun pushPlayback(auth: String) {
+        val activePlaylistId = settings.activePlaylistId.first()
+        for (row in dao.pendingPlayback()) {
+            if (row.playlistId != activePlaylistId) continue
+            val key = try {
+                resolve(row.kind, row.itemId, row.seriesId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IOException) {
+                continue
+            }
+            if (key != null) {
+                val response = api.scrobblePause(auth, TraktPayloads.scrobble(key, row.progress))
+                // 401 i 429 se ponavljaju kasnije; ostale greške (npr. 409, već poslato) se ne ponavljaju.
+                if (response.code() == 401 || response.code() == 429 || response.code() >= 500) throw HttpException(response)
+            }
+            dao.deletePlayback(row.playlistId, row.kind, row.itemId)
+        }
+    }
+
+    /** Preuzima pozicije sa drugih uređaja koje su novije od poslednje primenjene. */
+    private suspend fun pullPlayback(auth: String) {
+        val since = tokens.lastPlaybackMs()
+        val items = api.playback(auth)
+            .mapNotNull { item -> TraktPayloads.parseTime(item.pausedAt)?.let { it to item } }
+            .filter { (pausedAt, _) -> pausedAt > since }
+            .sortedBy { it.first }
+        if (items.isEmpty()) return
+        var applied = since
+        for ((pausedAt, item) in items) {
+            val key = TraktPayloads.playbackKey(item) ?: continue
+            try {
+                vod.applyRemoteProgress(key, item.progress, pausedAt)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IOException) {
+                // Panel trenutno ne odgovara: ova i novije pozicije čekaju sledeću sinhronizaciju.
+                break
+            }
+            applied = pausedAt
+        }
+        if (applied > since) tokens.setLastPlaybackMs(applied)
+    }
+
     /** TMDB ključ promene, ili null kad ga panel ne šalje. */
-    private suspend fun resolve(change: TraktPendingEntity): TraktKey? =
-        if (change.kind == TraktKey.MOVIE) {
-            vod.movieTmdbId(change.itemId)?.let { TraktKey.movie(it) }
+    private suspend fun resolve(change: TraktPendingEntity): TraktKey? = resolve(change.kind, change.itemId, change.seriesId)
+
+    private suspend fun resolve(kind: String, itemId: Long, seriesId: Long): TraktKey? =
+        if (kind == TraktKey.MOVIE) {
+            vod.movieTmdbId(itemId)?.let { TraktKey.movie(it) }
         } else {
-            vod.episodeTraktKey(change.seriesId, change.itemId)
+            vod.episodeTraktKey(seriesId, itemId)
         }
 
     /** Zaglavlje sa tokenom; token se osvežava kad je blizu isteka. Null kad prijave nema. */

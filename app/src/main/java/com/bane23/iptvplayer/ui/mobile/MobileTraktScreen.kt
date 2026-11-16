@@ -1,5 +1,10 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +41,8 @@ import com.bane23.iptvplayer.ui.common.trakt.formatSyncTime
 @Composable
 fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     Scaffold { padding ->
         Column(
@@ -82,8 +92,20 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
+                            // Dodir na kod ga kopira.
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClickLabel = stringResource(R.string.trakt_copy_code)) {
+                                    copyCode(context, login.code.userCode)
+                                },
                         )
+                        // Otvara stranicu za aktivaciju u pregledaču, a kod ide u privremenu memoriju da se samo nalepi.
+                        Button(
+                            onClick = { openActivation(context, uriHandler, login.code.verificationUrl, login.code.userCode) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.trakt_open_activation))
+                        }
                         QrCode(
                             content = login.code.verificationUrl,
                             modifier = Modifier
@@ -118,4 +140,19 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
             }
         }
     }
+}
+
+/** Kopira kod i otvara stranicu za aktivaciju; ako pregledača nema, ostaje samo kopiran kod. */
+private fun openActivation(context: Context, uriHandler: UriHandler, url: String, code: String) {
+    copyCode(context, code)
+    try {
+        uriHandler.openUri(url)
+    } catch (_: Exception) {
+        // Nema aplikacije koja otvara linkove; kod je kopiran, a adresa piše na ekranu.
+    }
+}
+
+private fun copyCode(context: Context, code: String) {
+    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Trakt", code))
+    Toast.makeText(context, R.string.trakt_code_copied, Toast.LENGTH_SHORT).show()
 }

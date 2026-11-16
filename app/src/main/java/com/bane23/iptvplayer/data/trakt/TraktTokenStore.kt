@@ -75,6 +75,13 @@ class TraktTokenStore @Inject constructor(
         dataStore.edit { it[LAST_SYNC] = millis }
     }
 
+    /** Vreme najnovije pozicije sa naloga koja je već primenjena ovde. */
+    suspend fun lastPlaybackMs(): Long = dataStore.data.first()[LAST_PLAYBACK] ?: 0
+
+    suspend fun setLastPlaybackMs(millis: Long) {
+        dataStore.edit { it[LAST_PLAYBACK] = millis }
+    }
+
     suspend fun clear() {
         dataStore.edit { it.clear() }
     }
@@ -85,5 +92,6 @@ class TraktTokenStore @Inject constructor(
         val EXPIRES = longPreferencesKey("expires_at")
         val USERNAME = stringPreferencesKey("username")
         val LAST_SYNC = longPreferencesKey("last_sync")
+        val LAST_PLAYBACK = longPreferencesKey("last_playback")
     }
 }
