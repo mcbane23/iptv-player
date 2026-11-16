@@ -440,6 +440,8 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] Vlasnik je preskočio red nedavno gledanih kanala (čip „Nedavno” radi isti posao)
 - [x] TV, Filmovi i Serije: iznad postera naziv, kratki podaci i opis filma ili serije u fokusu
       (detalji se traže kad fokus kratko stane); može da se isključi u Podešavanjima
+- [ ] Za kasnije: TV „Početna” sekcija sa redovima (Nastavi gledanje, Omiljeni kanali, Nedavno dodati
+      filmovi). Veći posao, praktično nova sekcija; detalje dogovoriti pre početka
 
 ## 7. Testiranje
 
