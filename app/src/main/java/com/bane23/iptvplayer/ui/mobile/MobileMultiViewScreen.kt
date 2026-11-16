@@ -16,13 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,16 +44,19 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
 import com.bane23.iptvplayer.ui.common.multiview.MultiViewViewModel
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import kotlinx.coroutines.delay
 
 /**
- * Više kanala odjednom na telefonu: 2 ili 4 polja. Dodir bira polje čiji se zvuk čuje, drugi dodir
- * na isto polje otvara kanal preko celog ekrana, a dug pritisak menja kanal u polju.
+ * Više kanala odjednom na telefonu: 2 ili 4 polja preko celog ekrana. Dodir na polje bira čiji se
+ * zvuk čuje i pokazuje opcije preko slike (nazad, broj polja, ceo ekran, promena kanala); opcije
+ * se same sklone posle nekoliko sekundi.
  */
 @Composable
 fun MobileMultiViewScreen(
@@ -56,8 +66,13 @@ fun MobileMultiViewScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val picker = state.picker
+    var controls by remember { mutableStateOf(true) }
+    // Raste pri svakom dodiru, da se odbrojavanje do sklanjanja opcija krene ispočetka.
+    var touches by remember { mutableIntStateOf(0) }
+    val anyChannel = state.tiles.any { it.channel != null }
 
     KeepScreenOn()
+    ImmersiveMode()
     DisposableEffect(Unit) {
         viewModel.onForeground()
         onDispose { viewModel.onBackground() }
@@ -70,73 +85,124 @@ fun MobileMultiViewScreen(
         Picker(picker, viewModel)
         return
     }
+    // Dok nijedan kanal nije izabran, opcije ostaju na ekranu, da se vidi kako se izlazi i bira.
+    LaunchedEffect(controls, touches, anyChannel) {
+        if (controls && anyChannel) {
+            delay(CONTROLS_TIMEOUT_MS)
+            controls = false
+        }
+    }
 
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            SectionTopBar(title = stringResource(R.string.multiview_title), onBack = onBack) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+    ) {
+        val landscape = maxWidth > maxHeight
+
+        @Composable
+        fun tile(index: Int, modifier: Modifier) {
+            val tile = state.tiles[index]
+            Tile(
+                tile = tile,
+                active = state.active == index,
+                modifier = modifier,
+                onClick = {
+                    touches++
+                    if (tile.channel == null) {
+                        viewModel.openPicker(index)
+                    } else if (state.active == index && controls) {
+                        controls = false
+                    } else {
+                        viewModel.setActive(index)
+                        controls = true
+                    }
+                },
+                onLongClick = { viewModel.openPicker(index) },
+            )
+        }
+
+        if (state.count == 2 && !landscape) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                tile(0, Modifier.weight(1f))
+                tile(1, Modifier.weight(1f))
+            }
+        } else {
+            val rows = if (state.count == 2) listOf(listOf(0, 1)) else listOf(listOf(0, 1), listOf(2, 3))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                rows.forEach { row ->
+                    Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        row.forEach { index -> tile(index, Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+
+        if (controls) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.65f))
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(AppIcons.Back, contentDescription = stringResource(R.string.action_back), tint = Color.White)
+                }
+                Text(
+                    text = stringResource(R.string.multiview_title),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
                 listOf(2 to R.string.multiview_two, MultiViewViewModel.MAX_TILES to R.string.multiview_four).forEach { (count, label) ->
-                    TextButton(onClick = { viewModel.setCount(count) }) {
+                    TextButton(
+                        onClick = {
+                            touches++
+                            viewModel.setCount(count)
+                        },
+                    ) {
                         Text(
                             text = stringResource(label),
-                            color = if (state.count == count) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                            color = if (state.count == count) MaterialTheme.colorScheme.primary else Color.White,
                         )
                     }
                 }
             }
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black),
-            ) {
-                val landscape = maxWidth > maxHeight
-
-                @Composable
-                fun tile(index: Int, modifier: Modifier) {
-                    val tile = state.tiles[index]
-                    Tile(
-                        tile = tile,
-                        active = state.active == index,
-                        modifier = modifier,
-                        onClick = {
-                            val channel = tile.channel
-                            when {
-                                channel == null -> viewModel.openPicker(index)
-                                tile.status == PlaybackStatus.FAILED -> viewModel.retry(index)
-                                state.active == index -> onOpen(channel.id)
-                                else -> viewModel.setActive(index)
-                            }
-                        },
-                        onLongClick = { viewModel.openPicker(index) },
+            val activeChannel = state.tiles[state.active].channel
+            if (activeChannel != null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.65f))
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = activeChannel.name,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
-                }
-
-                if (state.count == 2 && !landscape) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        tile(0, Modifier.weight(1f))
-                        tile(1, Modifier.weight(1f))
+                    TextButton(onClick = { viewModel.openPicker(state.active) }) {
+                        Text(stringResource(R.string.multiview_change), color = Color.White)
                     }
-                } else {
-                    val rows = if (state.count == 2) listOf(listOf(0, 1)) else listOf(listOf(0, 1), listOf(2, 3))
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        rows.forEach { row ->
-                            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                row.forEach { index -> tile(index, Modifier.weight(1f)) }
-                            }
-                        }
+                    TextButton(onClick = { onOpen(activeChannel.id) }) {
+                        Text(stringResource(R.string.multiview_fullscreen), color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
         }
     }
 }
+
+private const val CONTROLS_TIMEOUT_MS = 4_000L
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

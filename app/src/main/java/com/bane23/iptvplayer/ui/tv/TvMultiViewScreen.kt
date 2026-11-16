@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +29,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,14 +53,16 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 
 /**
- * Više kanala odjednom na TV-u: 2 ili 4 polja. Zvuk ide sa polja koje ima fokus, OK ga otvara
- * preko celog ekrana (na praznom polju bira kanal), a dug pritisak na OK menja kanal u polju.
+ * Više kanala odjednom na TV-u: 2 ili 4 polja preko celog ekrana. Zvuk ide sa polja koje ima
+ * fokus, a OK otvara opcije preko slike (ceo ekran, promena kanala, broj polja).
  */
 @Composable
 fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val tileFocus = remember { List(MultiViewViewModel.MAX_TILES) { FocusRequester() } }
     val picker = state.picker
+    // Polje za koje su opcije otvorene, ili null.
+    var menu by remember { mutableStateOf<Int?>(null) }
 
     KeepScreenOn()
     DisposableEffect(Unit) {
@@ -64,85 +71,142 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
     }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
-    BackHandler(enabled = picker != null) { viewModel.pickerBack() }
+    BackHandler(enabled = picker != null || menu != null) {
+        if (picker != null) viewModel.pickerBack() else menu = null
+    }
 
     if (picker != null) {
         Picker(picker, viewModel)
         return
     }
-    // Posle izbora kanala (i pri otvaranju ekrana) fokus ide na aktivno polje.
-    LaunchedEffect(Unit) { tileFocus[state.active].tryRequestFocus() }
+    // Pri otvaranju ekrana i posle zatvaranja opcija ili izbora kanala fokus ide na aktivno polje.
+    LaunchedEffect(menu == null) {
+        if (menu == null) tileFocus[state.active].tryRequestFocus()
+    }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .background(Color.Black),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf(2 to R.string.multiview_two, MultiViewViewModel.MAX_TILES to R.string.multiview_four).forEach { (count, label) ->
-                Box(modifier = Modifier.padding(0.dp)) {
-                    TvCountButton(stringResource(label), selected = state.count == count) { viewModel.setCount(count) }
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            val rows = if (state.count == 2) listOf(listOf(0, 1)) else listOf(listOf(0, 1), listOf(2, 3))
+            rows.forEach { row ->
+                Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    row.forEach { index ->
+                        Tile(
+                            tile = state.tiles[index],
+                            modifier = Modifier
+                                .weight(1f)
+                                .focusRequester(tileFocus[index]),
+                            onFocused = { viewModel.setActive(index) },
+                            onClick = { menu = index },
+                            onLongClick = { viewModel.openPicker(index) },
+                        )
+                    }
                 }
             }
-            Text(
-                text = stringResource(R.string.multiview_hint_tv),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 12.dp),
-            )
         }
-        val rows = if (state.count == 2) listOf(listOf(0, 1)) else listOf(listOf(0, 1), listOf(2, 3))
-        rows.forEach { row ->
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { index ->
-                    val tile = state.tiles[index]
-                    Tile(
-                        tile = tile,
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(tileFocus[index]),
-                        onFocused = { viewModel.setActive(index) },
-                        onClick = {
-                            val channel = tile.channel
-                            when {
-                                channel == null -> viewModel.openPicker(index)
-                                tile.status == PlaybackStatus.FAILED -> viewModel.retry(index)
-                                else -> onOpen(channel.id)
-                            }
-                        },
-                        onLongClick = { viewModel.openPicker(index) },
-                    )
-                }
-            }
+        menu?.let { index ->
+            TileMenu(
+                tile = state.tiles[index],
+                count = state.count,
+                onOpen = { channelId ->
+                    menu = null
+                    onOpen(channelId)
+                },
+                onPick = {
+                    menu = null
+                    viewModel.openPicker(index)
+                },
+                onRetry = {
+                    menu = null
+                    viewModel.retry(index)
+                },
+                onCount = { count ->
+                    menu = null
+                    viewModel.setCount(count)
+                },
+            )
         }
     }
 }
 
+/**
+ * Opcije jednog polja, preko slike. Nazad ih zatvara. Strelice se obrađuju ovde, da fokus ne
+ * pobegne sa opcija na polja iza njih.
+ */
 @Composable
-private fun TvCountButton(label: String, selected: Boolean, onClick: () -> Unit) {
-    var focused by remember { mutableStateOf(false) }
-    val colors = MaterialTheme.colorScheme
-    Text(
-        text = label,
-        color = if (focused) colors.onPrimary else Color.White,
-        style = MaterialTheme.typography.labelLarge,
-        modifier = Modifier
-            .background(
-                when {
-                    focused -> colors.primary
-                    selected -> Color.White.copy(alpha = 0.25f)
-                    else -> Color.White.copy(alpha = 0.08f)
+private fun TileMenu(
+    tile: MultiTile,
+    count: Int,
+    onOpen: (Long) -> Unit,
+    onPick: () -> Unit,
+    onRetry: () -> Unit,
+    onCount: (Int) -> Unit,
+) {
+    val channel = tile.channel
+    val check = "\u2713"
+    val options = buildList<Triple<String, String?, () -> Unit>> {
+        if (channel == null) {
+            add(Triple(stringResource(R.string.multiview_pick), null, onPick))
+        } else {
+            if (tile.status == PlaybackStatus.FAILED) add(Triple(stringResource(R.string.player_retry), null, onRetry))
+            add(Triple(stringResource(R.string.multiview_fullscreen), null) { onOpen(channel.id) })
+            add(Triple(stringResource(R.string.multiview_change), null, onPick))
+        }
+        add(Triple(stringResource(R.string.multiview_two), check.takeIf { count == 2 }) { onCount(2) })
+        add(
+            Triple(stringResource(R.string.multiview_four), check.takeIf { count == MultiViewViewModel.MAX_TILES }) {
+                onCount(MultiViewViewModel.MAX_TILES)
+            },
+        )
+    }
+    val focus = remember(options.size) { List(options.size) { FocusRequester() } }
+    var selected by remember(options.size) { mutableStateOf(0) }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.36f)
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                .padding(12.dp)
+                .onPreviewKeyEvent { event ->
+                    val step = when (event.nativeKeyEvent.keyCode) {
+                        AndroidKeyEvent.KEYCODE_DPAD_UP -> -1
+                        AndroidKeyEvent.KEYCODE_DPAD_DOWN -> 1
+                        AndroidKeyEvent.KEYCODE_DPAD_LEFT, AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> 0
+                        else -> return@onPreviewKeyEvent false
+                    }
+                    if (step != 0 && event.type == KeyEventType.KeyDown) {
+                        selected = (selected + step).coerceIn(0, options.lastIndex)
+                        focus[selected].tryRequestFocus()
+                    }
+                    true
                 },
-                androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            )
-            .onFocusChanged { focused = it.isFocused }
-            .combinedClickableCompat(onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    )
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            if (channel != null) {
+                Text(
+                    text = channel.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                )
+            }
+            options.forEachIndexed { index, (label, trailing, action) ->
+                TvTextRow(
+                    text = label,
+                    trailing = trailing,
+                    onClick = action,
+                    modifier = Modifier.focusRequester(focus[index]),
+                )
+            }
+        }
+    }
+    LaunchedEffect(Unit) { focus[0].tryRequestFocus() }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
