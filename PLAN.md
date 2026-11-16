@@ -423,6 +423,8 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       titlove ili izabere drugi zapis. API ključ stiže iz GitHub Secrets
       (`OPENSUBTITLES_API_KEY`); bez njega se opcija ne prikazuje. Prijava na korisnikov nalog
       (Podešavanja → OpenSubtitles) nije obavezna, a daje veći dnevni broj preuzimanja
+- [x] Prijava na OpenSubtitles preko telefona: ekran naloga na TV-u prikazuje QR kod, telefon u istoj mreži
+      otvori stranicu sa TV-a i tamo se unesu korisničko ime i lozinka (isti mehanizam kao dodavanje liste)
 
 **Brzina na slabijim TV uređajima**
 
