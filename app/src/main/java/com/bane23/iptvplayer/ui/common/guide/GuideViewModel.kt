@@ -27,7 +27,10 @@ import kotlinx.coroutines.flow.update
 data class GuideCell(val program: Program?, val weight: Float)
 
 /** Emisija koju je korisnik izabrao (dodirom ili fokusom), sa kanalom na kom je. */
-data class GuideSelection(val channel: Channel, val program: Program?)
+data class GuideSelection(val channel: Channel, val program: Program?) {
+    /** Kanal ima arhivu, pa prošle emisije mogu da se pogledaju. */
+    val hasArchive: Boolean get() = channel.archiveDays != null
+}
 
 data class GuideUiState(
     /** Početak prikazanog vremenskog prozora. */

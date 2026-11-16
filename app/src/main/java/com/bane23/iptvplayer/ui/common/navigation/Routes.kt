@@ -59,6 +59,20 @@ data object PairPlaylist : NavKey
 @Serializable
 data class SendToTv(val target: String) : NavKey
 
+/** Arhiva kanala: spisak emisija koje su prošle i mogu da se pogledaju. */
+@Serializable
+data class ChannelArchive(val channelId: Long) : NavKey
+
+/** Plejer za emisiju iz arhive. [startToken] je početak po satu Xtream servera (za M3U null). */
+@Serializable
+data class PlayArchive(
+    val channelId: Long,
+    val startMs: Long,
+    val stopMs: Long,
+    val title: String,
+    val startToken: String?,
+) : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey

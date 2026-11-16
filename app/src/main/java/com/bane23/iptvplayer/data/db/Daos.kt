@@ -198,7 +198,7 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND number = :number ORDER BY sortOrder LIMIT 1")
     suspend fun byNumber(playlistId: Long, number: Int): ChannelEntity?
 
-    @Query("SELECT id, name, tvgId FROM channels WHERE playlistId = :playlistId")
+    @Query("SELECT id, name, tvgId, catchupType FROM channels WHERE playlistId = :playlistId")
     suspend fun epgRows(playlistId: Long): List<ChannelEpgRow>
 
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id IN (:ids)")
@@ -236,8 +236,33 @@ interface EpgDao {
     @Query("DELETE FROM epg_programs WHERE playlistId = :playlistId AND generation = :generation")
     suspend fun deleteGeneration(playlistId: Long, generation: Long)
 
-    @Query("DELETE FROM epg_programs WHERE stopMs < :cutoff")
-    suspend fun deleteEndedBefore(cutoff: Long)
+    /** Početak najranije emisije kanala u datom učitavanju, ili null ako ih nema. */
+    @Query(
+        "SELECT MIN(startMs) FROM epg_programs WHERE playlistId = :playlistId AND channelKey = :channelKey " +
+            "AND generation = :generation",
+    )
+    suspend fun firstStart(playlistId: Long, channelKey: String, generation: Long): Long?
+
+    /**
+     * Stare emisije kanala koje su počele pre [before] prelaze u novo učitavanje, da ih ono ne
+     * obriše. Tako se za kanale sa arhivom čuva i prošlost koje u novom vodiču više nema.
+     */
+    @Query(
+        "UPDATE epg_programs SET generation = :generation WHERE playlistId = :playlistId " +
+            "AND channelKey = :channelKey AND generation != :generation AND startMs < :before",
+    )
+    suspend fun adoptEarlier(playlistId: Long, channelKey: String, generation: Long, before: Long)
+
+    /**
+     * Briše emisije završene pre [cutoff]. Za kanale sa arhivom iz M3U liste emisije se čuvaju
+     * duže, do [archiveCutoff], jer se spisak arhive pravi iz sačuvanog vodiča.
+     */
+    @Query(
+        "DELETE FROM epg_programs WHERE stopMs < :cutoff AND (stopMs < :archiveCutoff OR NOT EXISTS (" +
+            "SELECT 1 FROM channels c WHERE c.playlistId = epg_programs.playlistId " +
+            "AND c.epgKey = epg_programs.channelKey AND c.catchupType IS NOT NULL AND c.catchupType != 'xtream'))",
+    )
+    suspend fun deleteEndedBefore(cutoff: Long, archiveCutoff: Long)
 }
 
 @Dao

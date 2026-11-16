@@ -162,7 +162,7 @@ data class WatchProgressEntity(
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
-data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?)
+data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?, val catchupType: String? = null)
 
 /** Kanal koji je korisnik označio kao omiljen. */
 @Entity(

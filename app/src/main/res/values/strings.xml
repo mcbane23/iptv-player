@@ -249,4 +249,8 @@
     <string name="settings_autostart_summary">The app opens by itself when the TV box is switched on.</string>
     <string name="settings_autostart_permission">One more step: allow “Display over other apps” for this app in the system settings. Without it Android does not let the app open by itself.</string>
     <string name="settings_autostart_manual">Allow “Display over other apps” for this app by hand: system Settings, Apps, Special app access. Without it Android does not let the app open by itself.</string>
+    <string name="archive_title">Archive</string>
+    <string name="archive_empty">There are no past programs for this channel yet. The archive list is built from the TV guide.</string>
+    <string name="archive_failed">The archive list could not be loaded.</string>
+    <string name="archive_hint_tv">OK opens the archive</string>
 </resources>
