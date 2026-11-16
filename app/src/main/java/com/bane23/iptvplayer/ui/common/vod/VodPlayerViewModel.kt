@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.repo.ArchiveRepository
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
@@ -46,6 +47,7 @@ class VodPlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val repository: VodRepository,
     private val settings: SettingsStore,
+    private val archive: ArchiveRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -106,6 +108,19 @@ class VodPlayerViewModel @Inject constructor(
             play(startOver) {
                 val start = repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs
                 repository.movieSource(movieId, extension) to start
+            }
+        }
+    }
+
+    /** Emisija iz arhive kanala. Pozicija se ne pamti, pa uvek kreće od početka. */
+    fun startArchive(channelId: Long, startMs: Long, stopMs: Long, title: String, startToken: String?) {
+        if (started) return
+        started = true
+        _ui.update { it.copy(title = title) }
+        viewModelScope.launch {
+            play(startOver = true) {
+                val source = archive.source(channelId, startMs, stopMs, startToken) ?: throw java.io.IOException("No archive")
+                source to null
             }
         }
     }

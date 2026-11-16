@@ -33,6 +33,8 @@ data class Channel(
     /** Početak i kraj te emisije (ms), za traku koliko je odmakla. */
     val nowStartMs: Long? = null,
     val nowStopMs: Long? = null,
+    /** Koliko dana unazad kanal ima arhivu (catch-up), ili null ako je nema. */
+    val archiveDays: Int? = null,
 ) {
     /** Koliki deo tekuće emisije je prošao u trenutku [nowMs] (0 do 1), ili null bez vodiča. */
     fun nowProgress(nowMs: Long): Float? {
@@ -49,6 +51,18 @@ data class Program(
     val stopMs: Long,
     val title: String,
     val description: String?,
+)
+
+/**
+ * Emisija koja je prošla i može da se pogleda iz arhive. [startToken] je početak po satu Xtream
+ * servera, potreban za link arhive; za M3U liste je null.
+ */
+data class ArchiveProgram(
+    val startMs: Long,
+    val stopMs: Long,
+    val title: String,
+    val description: String?,
+    val startToken: String? = null,
 )
 
 /** Šta je na kanalu sada i šta sledi. */

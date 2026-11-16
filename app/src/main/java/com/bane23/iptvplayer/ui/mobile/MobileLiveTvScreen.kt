@@ -56,6 +56,7 @@ fun MobileLiveTvScreen(
     onManagePlaylists: () -> Unit,
     onSearch: () -> Unit,
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
+    onMultiView: () -> Unit,
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
     playlistsViewModel: PlaylistsViewModel = hiltViewModel(),
@@ -100,6 +101,7 @@ fun MobileLiveTvScreen(
                 }
                 if (playlistId != null) {
                     ToolbarIcon(AppIcons.Guide, stringResource(R.string.guide_title)) { onGuide(playlistId, categoryId) }
+                    ToolbarIcon(AppIcons.MultiView, stringResource(R.string.multiview_title), onMultiView)
                     ToolbarIcon(AppIcons.Search, stringResource(R.string.action_search), onSearch)
                 }
             }

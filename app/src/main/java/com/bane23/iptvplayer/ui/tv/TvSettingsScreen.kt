@@ -19,9 +19,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -29,6 +32,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
+import com.bane23.iptvplayer.work.Autostart
 
 /**
  * Podešavanja aplikacije na TV-u: levo spisak podešavanja, desno vrednosti onog koje je izabrano.
@@ -37,11 +41,19 @@ import com.bane23.iptvplayer.ui.common.playerSettingChoices
 @Composable
 fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
+    onParental: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
+    val autostart by viewModel.autostart.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Dozvola se menja u sistemskim podešavanjima, pa se proverava pri svakom povratku na ekran.
+    var autostartAllowed by remember { mutableStateOf(Autostart.isAllowed(context)) }
+    // Uređaj nema sistemski ekran za dozvolu (neki TV-i), pa korisnik dobija uputstvo.
+    var permissionScreenMissing by remember { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { autostartAllowed = Autostart.isAllowed(context) }
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
     val firstFocus = remember { FocusRequester() }
@@ -81,6 +93,17 @@ fun TvSettingsScreen(
                         },
                     )
                 }
+                if (onParental != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.parental_title),
+                        trailing = "›",
+                        onClick = onParental,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
                 Text(
                     text = stringResource(R.string.settings_general_header),
                     style = MaterialTheme.typography.titleMedium,
@@ -103,6 +126,21 @@ fun TvSettingsScreen(
                     onClick = { viewModel.setTvChannelPreview(!channelPreview) },
                     onFocused = {
                         focusedChoice = null
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
+                    text = stringResource(R.string.settings_autostart),
+                    trailing = stringResource(if (autostart) R.string.setting_on else R.string.setting_off),
+                    onClick = {
+                        val enable = !autostart
+                        viewModel.setAutostart(enable)
+                        if (enable && !autostartAllowed) {
+                            permissionScreenMissing = !Autostart.openPermissionScreen(context)
+                        }
+                    },
+                    onFocused = {
+                        focusedChoice = AUTOSTART_ROW
                         openChoice = null
                     },
                 )
@@ -135,8 +173,17 @@ fun TvSettingsScreen(
                     )
                 }
                 Text(
-                    text = focusedChoice?.let { choices[it].summary }
-                        ?: stringResource(R.string.settings_resume_last_summary),
+                    text = when (val focused = focusedChoice) {
+                        null -> stringResource(R.string.settings_resume_last_summary)
+                        AUTOSTART_ROW -> stringResource(
+                            when {
+                                !autostart || autostartAllowed -> R.string.settings_autostart_summary
+                                permissionScreenMissing -> R.string.settings_autostart_manual
+                                else -> R.string.settings_autostart_permission
+                            },
+                        )
+                        else -> choices[focused].summary
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp),
@@ -181,3 +228,6 @@ fun TvSettingsScreen(
     }
     LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
 }
+
+/** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
+private const val AUTOSTART_ROW = -1

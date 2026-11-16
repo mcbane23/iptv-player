@@ -269,14 +269,17 @@ Redosled unutar faze po želji vlasnika.
 - [x] Pamćenje izbora titlova: ako je korisnik uključio titlove (i izabrao jezik), oni se
       sami uključuju pri sledećem puštanju, bez ponovnog biranja (pamti se jezik, pa titl bez
       oznake jezika ne može da se zapamti)
-- [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
-- [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
+- [x] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`): ulaz je iz TV vodiča, ekran
+      „Arhiva” prikazuje prošle emisije kanala po danima. Za Xtream spisak daje server; za M3U se pravi
+      iz sačuvanog vodiča (čuva se do 7 dana unazad za kanale sa arhivom)
+- [x] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod
   aplikacija na telefonu šalje sve liste, omiljene kanale, uređenje kategorija i podešavanja pravo na TV
-- [ ] Prikaz više kanala odjednom (multi-view)
-- [ ] Automatsko pokretanje pri paljenju uređaja (TV box)
+- [x] Prikaz više kanala odjednom (multi-view): 2 ili 4 polja na TV-u i telefonu, zvuk sa izabranog polja
+- [x] Automatsko pokretanje pri paljenju uređaja (TV box): prekidač u podešavanjima na TV-u; od Androida 10
+      traži i sistemsku dozvolu „Prikaz preko drugih aplikacija”
 
 ### Novi izgled (UI revamp)
 

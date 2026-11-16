@@ -42,6 +42,7 @@ object AppIcons {
     )
     val Guide by icon("M3 5h18v2H3zM3 11h7v2H3zm9 0h9v2h-9zM3 17h5v2H3zm7 0h11v2H10z")
     val Playlists by icon("M19 9H2v2h17V9zm0-4H2v2h17V5zM2 15h13v-2H2v2zm15-2v6l5-3-5-3z")
+    val MultiView by icon("M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z")
     val Categories by icon("M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z")
     val ChannelList by icon(
         "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",

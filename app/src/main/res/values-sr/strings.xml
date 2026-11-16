@@ -245,6 +245,36 @@
     <string name="search_empty_categories">Nijedna kategorija ne odgovara</string>
     <string name="vod_favorites_empty">Još nema omiljenih. Dodaj ih zvezdicom u detaljima.</string>
     <string name="vod_category">Kategorija</string>
+    <string name="settings_autostart">Pokreni pri paljenju uređaja</string>
+    <string name="settings_autostart_summary">Aplikacija se sama otvara kad se TV box upali.</string>
+    <string name="settings_autostart_permission">Još jedan korak: u sistemskim podešavanjima dozvolite ovoj aplikaciji „Prikaz preko drugih aplikacija”. Bez toga Android ne da aplikaciji da se sama otvori.</string>
+    <string name="settings_autostart_manual">Ručno dozvolite ovoj aplikaciji „Prikaz preko drugih aplikacija”: sistemska Podešavanja, Aplikacije, Poseban pristup. Bez toga Android ne da aplikaciji da se sama otvori.</string>
+    <string name="archive_title">Arhiva</string>
+    <string name="archive_empty">Za ovaj kanal još nema prošlih emisija. Spisak arhive se pravi iz TV vodiča.</string>
+    <string name="archive_failed">Spisak arhive nije mogao da se učita.</string>
+    <string name="archive_hint_tv">OK otvara arhivu</string>
+    <string name="parental_title">Roditeljska zaštita</string>
+    <string name="parental_intro">Postavi PIN od četiri cifre. Posle toga biraš kategorije koje se otvaraju tek posle unosa PIN-a.</string>
+    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem, a njihov sadržaj traži PIN. Unet PIN važi dok se aplikacija ne zatvori.</string>
+    <string name="parental_lock_again">Zaključaj ponovo</string>
+    <string name="parental_change_pin">Promeni PIN</string>
+    <string name="parental_remove_pin">Ukloni PIN i sva zaključavanja</string>
+    <string name="parental_locked">Zaključano</string>
+    <string name="parental_unlocked">Slobodno</string>
+    <string name="pin_enter">Unesi PIN</string>
+    <string name="pin_new">Unesi novi PIN</string>
+    <string name="pin_repeat">Ponovi novi PIN</string>
+    <string name="pin_wrong">Pogrešan PIN</string>
+    <string name="pin_mismatch">PIN-ovi se ne poklapaju, pokušaj ponovo</string>
+    <string name="pin_locked_title">Zaključan sadržaj</string>
+    <string name="pin_hint_tv">Cifre unesi tasterima na daljinskom ili izaberi na ekranu.</string>
+    <string name="multiview_title">Više kanala</string>
+    <string name="multiview_two">2 kanala</string>
+    <string name="multiview_four">4 kanala</string>
+    <string name="multiview_add">+ Dodaj kanal</string>
+    <string name="multiview_pick">Izaberi kanal</string>
+    <string name="multiview_failed">Kanal ne radi. Pritisni za novi pokušaj.</string>
+    <string name="multiview_hint_tv">Zvuk ide sa označenog polja. OK: ceo ekran. Drži OK: promeni kanal.</string>
 
     <!-- Ažuriranje aplikacije -->
     <string name="settings_about_header">O aplikaciji</string>

@@ -7,6 +7,11 @@
     <!-- Android 14+: sledeće ažuriranje može bez potvrde kad je aplikacija već instalirala sebe. -->
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
+    <!-- Pokretanje pri paljenju uređaja (isključeno dok ga korisnik ne uključi u podešavanjima). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Od Androida 10 aplikacija sme sama da se otvori posle paljenja samo uz ovu dozvolu. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Jedan APK za telefon i TV: ni ekran na dodir ni leanback nisu obavezni. -->
     <uses-feature
         android:name="android.hardware.touchscreen"
@@ -51,6 +56,14 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".work.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name=".data.update.InstallResultReceiver"
             android:exported="false" />

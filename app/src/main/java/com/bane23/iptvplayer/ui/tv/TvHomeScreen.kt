@@ -76,6 +76,8 @@ fun TvHomeScreen(
     onAddFromPhone: () -> Unit,
     onEditPlaylist: (Long) -> Unit,
     onCategories: () -> Unit,
+    onParental: () -> Unit,
+    onMultiView: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(TvTab.LIVE) }
@@ -136,6 +138,7 @@ fun TvHomeScreen(
 
                     TvTab.SETTINGS -> TvSettingsScreen(
                         onCategories = onCategories.takeIf { playlistId != null },
+                        onParental = onParental.takeIf { playlistId != null },
                     )
                 }
             }
@@ -173,6 +176,12 @@ fun TvHomeScreen(
                     label = stringResource(R.string.guide_title),
                     expanded = railFocused,
                     onClick = { onGuide(playlistId) },
+                )
+                RailItem(
+                    icon = AppIcons.MultiView,
+                    label = stringResource(R.string.multiview_title),
+                    expanded = railFocused,
+                    onClick = onMultiView,
                 )
             }
             if (liveState.hasVod) {

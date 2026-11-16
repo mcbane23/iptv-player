@@ -245,6 +245,36 @@
     <string name="search_empty_categories">No category matches</string>
     <string name="vod_favorites_empty">No favorites yet. Add one with the star in the details.</string>
     <string name="vod_category">Category</string>
+    <string name="settings_autostart">Start when the device turns on</string>
+    <string name="settings_autostart_summary">The app opens by itself when the TV box is switched on.</string>
+    <string name="settings_autostart_permission">One more step: allow “Display over other apps” for this app in the system settings. Without it Android does not let the app open by itself.</string>
+    <string name="settings_autostart_manual">Allow “Display over other apps” for this app by hand: system Settings, Apps, Special app access. Without it Android does not let the app open by itself.</string>
+    <string name="archive_title">Archive</string>
+    <string name="archive_empty">There are no past programs for this channel yet. The archive list is built from the TV guide.</string>
+    <string name="archive_failed">The archive list could not be loaded.</string>
+    <string name="archive_hint_tv">OK opens the archive</string>
+    <string name="parental_title">Parental control</string>
+    <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
+    <string name="parental_hint">Locked categories stay visible with a padlock, and their content asks for the PIN. An entered PIN stays valid until the app is closed.</string>
+    <string name="parental_lock_again">Lock again</string>
+    <string name="parental_change_pin">Change PIN</string>
+    <string name="parental_remove_pin">Remove PIN and all locks</string>
+    <string name="parental_locked">Locked</string>
+    <string name="parental_unlocked">Open</string>
+    <string name="pin_enter">Enter PIN</string>
+    <string name="pin_new">Enter a new PIN</string>
+    <string name="pin_repeat">Repeat the new PIN</string>
+    <string name="pin_wrong">Wrong PIN</string>
+    <string name="pin_mismatch">The PINs do not match, try again</string>
+    <string name="pin_locked_title">Locked content</string>
+    <string name="pin_hint_tv">Type the digits on the remote or pick them on screen.</string>
+    <string name="multiview_title">Multi-view</string>
+    <string name="multiview_two">2 channels</string>
+    <string name="multiview_four">4 channels</string>
+    <string name="multiview_add">+ Add channel</string>
+    <string name="multiview_pick">Choose a channel</string>
+    <string name="multiview_failed">Channel is not working. Press to try again.</string>
+    <string name="multiview_hint_tv">Sound comes from the highlighted tile. OK: full screen. Hold OK: change channel.</string>
 
     <!-- Ažuriranje aplikacije -->
     <string name="settings_about_header">About</string>

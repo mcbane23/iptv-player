@@ -13,11 +13,16 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
+import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
+import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
+import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.MultiView
 import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
 import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
@@ -76,6 +81,8 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onSearchVod = { series -> backStack.add(VodSearch(series)) },
                     onPlaylists = { backStack.add(Playlists) },
                     onCategories = { backStack.add(ManageCategories) },
+                    onParental = { backStack.add(ParentalControl) },
+                    onMultiView = { backStack.add(MultiView) },
                 )
             }
             entry<Search> {
@@ -92,15 +99,39 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     playlistId = key.playlistId,
                     categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
+                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
+            entry<ChannelArchive> { key ->
+                MobilePinGate(LockTarget.Channel(key.channelId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileArchiveScreen(
+                        channelId = key.channelId,
+                        onPlay = { program ->
+                            backStack.add(
+                                PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
+                            )
+                        },
+                        onBack = { backStack.removeLastOrNull() },
+                    )
+                }
+            }
+            entry<PlayArchive> { key ->
+                MobilePinGate(LockTarget.Channel(key.channelId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileVodPlayerScreen(
+                        start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
+            }
             entry<Player> { key ->
-                MobilePlayerScreen(
-                    channelId = key.channelId,
-                    categoryId = key.categoryId,
-                    onClose = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Channel(key.channelId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobilePlayerScreen(
+                        channelId = key.channelId,
+                        categoryId = key.categoryId,
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<VodSearch> { key ->
                 MobileVodSearchScreen(
@@ -116,42 +147,59 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 )
             }
             entry<MovieDetails> { key ->
-                MobileMovieScreen(
-                    movieId = key.movieId,
-                    name = key.name,
-                    poster = key.poster,
-                    extension = key.extension,
-                    onPlay = { extension, startOver ->
-                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
-                    },
-                    onBack = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Vod(series = false, itemId = key.movieId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileMovieScreen(
+                        movieId = key.movieId,
+                        name = key.name,
+                        poster = key.poster,
+                        extension = key.extension,
+                        onPlay = { extension, startOver ->
+                            backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
+                        },
+                        onBack = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<SeriesDetails> { key ->
-                MobileSeriesScreen(
-                    seriesId = key.seriesId,
-                    name = key.name,
-                    poster = key.poster,
-                    onPlay = { episodeId, startOver ->
-                        backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
-                    },
-                    onBack = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Vod(series = true, itemId = key.seriesId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileSeriesScreen(
+                        seriesId = key.seriesId,
+                        name = key.name,
+                        poster = key.poster,
+                        onPlay = { episodeId, startOver ->
+                            backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                        },
+                        onBack = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<PlayMovie> { key ->
-                MobileVodPlayerScreen(
-                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
-                    onClose = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Vod(series = false, itemId = key.movieId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileVodPlayerScreen(
+                        start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<PlayEpisode> { key ->
-                MobileVodPlayerScreen(
-                    start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
-                    onClose = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Vod(series = true, itemId = key.seriesId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileVodPlayerScreen(
+                        start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<SendToTv> { key ->
                 MobileSendToTvScreen(target = key.target, onClose = { backStack.removeLastOrNull() })
+            }
+            entry<MultiView> {
+                MobileMultiViewScreen(
+                    onOpen = { channelId -> backStack.add(Player(channelId, null)) },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<ParentalControl> {
+                MobileParentalScreen(onBack = { backStack.removeLastOrNull() })
             }
             entry<Playlists> {
                 MobilePlaylistsScreen(

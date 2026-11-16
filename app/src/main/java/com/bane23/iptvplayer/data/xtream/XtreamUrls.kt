@@ -68,6 +68,28 @@ object XtreamUrls {
         .build()
         .toString()
 
+    /**
+     * Link za gledanje emisije iz arhive kanala. [startToken] je početak po satu servera
+     * (`2026-01-31:20-00`), a [durationMinutes] trajanje emisije.
+     */
+    fun timeshift(
+        server: HttpUrl,
+        username: String,
+        password: String,
+        streamId: Long,
+        startToken: String,
+        durationMinutes: Long,
+        extension: String = "ts",
+    ): String = server.newBuilder()
+        .addPathSegment("timeshift")
+        .addPathSegment(username)
+        .addPathSegment(password)
+        .addPathSegment(durationMinutes.toString())
+        .addPathSegment(startToken)
+        .addPathSegment("$streamId.$extension")
+        .build()
+        .toString()
+
     /** Link za gledanje filma. */
     fun movieStream(server: HttpUrl, username: String, password: String, movieId: Long, extension: String): String =
         vodStream(server, "movie", username, password, movieId, extension)
@@ -121,4 +143,5 @@ object XtreamUrls {
     const val ACTION_SERIES_INFO = "get_series_info"
     const val ACTION_LIVE_CATEGORIES = "get_live_categories"
     const val ACTION_LIVE_STREAMS = "get_live_streams"
+    const val ACTION_ARCHIVE_GUIDE = "get_simple_data_table"
 }
