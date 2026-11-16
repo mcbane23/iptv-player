@@ -14,7 +14,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.bane23.iptvplayer.ui.common.AppLanguage
 import com.bane23.iptvplayer.ui.common.AppLocale
-import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.label
 import androidx.compose.foundation.layout.Column
@@ -53,6 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.update.UpdateChannel
+import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -82,6 +83,8 @@ fun MobileSettingsScreen(
     val context = LocalContext.current
     val language = AppLocale.get(context)
     var languageOpen by remember { mutableStateOf(false) }
+    var channelOpen by remember { mutableStateOf(false) }
+    val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
 
     // Providno: pozadinu sa sjajem crta početni ekran.
     Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) { padding ->
@@ -220,9 +223,44 @@ fun MobileSettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { channelOpen = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.update_channel),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = updateChannel.label(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.update_channel_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (channelOpen) {
+        val channels = UpdateChannel.entries
+        TrackDialog(
+            title = stringResource(R.string.update_channel),
+            options = channels.map { it.label() to (it == updateChannel) },
+            emptyText = null,
+            onSelect = {
+                channelOpen = false
+                if (channels[it] != updateChannel) updateViewModel.setChannel(channels[it])
+            },
+            onDismiss = { channelOpen = false },
+        )
     }
 
     if (languageOpen) {

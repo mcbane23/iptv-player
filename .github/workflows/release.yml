@@ -63,6 +63,14 @@ jobs:
       TAG: v${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Cela istorija: broj builda je broj commitova u main-u.
+          fetch-depth: 0
+
+      # Isto brojanje verzija kao u build.yml (vidi app/build.gradle.kts), da test build i izdanje
+      # mogu jedno preko drugog.
+      - name: Broj builda
+        run: echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
 
       - name: Ključ za potpis
         env:
@@ -149,9 +157,8 @@ jobs:
             echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
             exit 0
           fi
-          IFS=. read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
           # Mora da prati račun u app/build.gradle.kts.
-          CODE=$((10#$MAJOR * 1000000 + 10#$MINOR * 1000 + 10#$PATCH))
+          CODE=$((1000000 + APP_BUILD_NUMBER))
           CURRENT=$(curl -fsSL "https://github.com/$APK_REPO/releases/download/$CHANNEL/iptv-player.json" 2>/dev/null | jq -r '.versionCode // 0' 2>/dev/null)
           if [ "${CURRENT:-0}" -ge "$CODE" ]; then
             echo "U javnom repou je već verzija $CURRENT, ne menjam je."

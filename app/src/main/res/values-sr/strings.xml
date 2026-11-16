@@ -304,6 +304,10 @@
     <string name="settings_about_header">O aplikaciji</string>
     <string name="update_check">Proveri ažuriranje</string>
     <string name="update_current_version">Instalirana verzija: %1$s</string>
+    <string name="update_channel">Verzija za ažuriranje</string>
+    <string name="update_channel_release">Zvanična izdanja</string>
+    <string name="update_channel_dev">Test buildovi (dev)</string>
+    <string name="update_channel_summary">Aplikacija prelazi kad na izabranoj verziji izađe build noviji od instaliranog. Liste i podešavanja ostaju.</string>
     <string name="update_title">Ažuriranje aplikacije</string>
     <string name="update_checking">Proveravam da li postoji nova verzija…</string>
     <string name="update_up_to_date">Imate najnoviju verziju (%1$s).</string>

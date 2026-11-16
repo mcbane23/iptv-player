@@ -41,20 +41,68 @@ jobs:
 
       # Ključevi Trakt aplikacije (GitHub Secrets) ugrađuju se u APK. Bez Client ID-ja Trakt se ne prikazuje;
       # Client Secret nije obavezan (nove Trakt aplikacije ga nemaju).
-      # Build „dev”: optimizovan kao izdanje (R8), potpisan debug ključem (vidi app/build.gradle.kts).
+      # Na main-u se test APK potpisuje istim ključem kao zvanična izdanja, da aplikacija može da pređe
+      # sa test builda na izdanje i nazad bez brisanja. Grane nemaju ključ i potpisuju se debug ključem.
+      - name: Ključ za potpis
+        if: github.ref == 'refs/heads/main'
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          for NAME in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD; do
+            if [ -z "${!NAME}" ]; then
+              echo "Secret $NAME ne postoji. Test build se ne objavljuje bez ključa za potpis."
+              exit 1
+            fi
+          done
+          KEY_PASSWORD="${RELEASE_KEY_PASSWORD:-$RELEASE_KEYSTORE_PASSWORD}"
+          echo "::add-mask::$KEY_PASSWORD"
+          {
+            echo "RELEASE_KEY_ALIAS=${RELEASE_KEY_ALIAS:-release}"
+            echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          if ! printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/release.jks"; then
+            echo "RELEASE_KEYSTORE_BASE64 nije ispravan base64."
+            exit 1
+          fi
+          echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      # Isto brojanje verzija kao u release.yml: broj commitova u main-u (vidi app/build.gradle.kts).
+      - name: Broj builda
+        run: echo "APP_BUILD_NUMBER=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      # Build „dev”: optimizovan kao izdanje (R8); potpis vidi u app/build.gradle.kts.
       - name: Test APK
         env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.RELEASE_KEYSTORE_PASSWORD || '' }}
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
           OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
         run: ./gradlew assembleDev
+
+      - name: Obriši ključ sa diska
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      # Objavljen test build mora biti potpisan ključem za izdanja, inače ne bi mogao preko izdanja.
+      - name: Provera potpisa
+        if: github.ref == 'refs/heads/main'
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/dev/app-dev.apk | tee certs.txt
+          if grep -q "CN=Android Debug" certs.txt; then
+            echo "Test APK je potpisan debug ključem."
+            exit 1
+          fi
 
       # APK se objavljuje samo sa main-a (posle spajanja). Na granama build služi samo kao provera.
       - name: Test APK kao artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v6
         with:
-          name: iptv-player-debug-${{ github.run_number }}
+          name: iptv-player-dev-${{ github.run_number }}
           path: app/build/outputs/apk/dev/*.apk
           if-no-files-found: error
 
@@ -70,8 +118,8 @@ jobs:
           gh release create dev-latest iptv-player-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Poslednji test build (#${{ github.run_number }})" \
-            --notes "Commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan debug ključem."
+            --title "Poslednji test build (#$APP_BUILD_NUMBER)" \
+            --notes "Commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan istim ključem kao zvanična izdanja."
 
       # Isti APK ide i u javni repo za APK-ove, odakle ga aplikacija sama preuzima (Podešavanja → Proveri
       # ažuriranje). Kod ostaje privatan. Token APK_REPO_TOKEN ima pravo pisanja samo u taj repo; bez njega
@@ -84,8 +132,10 @@ jobs:
           APK_REPO: mcbane23/apps
           TAG: iptv-player-dev
           BRANCH: ${{ github.ref_name }}
-          CODE: ${{ github.run_number }}
         run: |
+          # Mora da prati račun u app/build.gradle.kts.
+          CODE=$((1000000 + APP_BUILD_NUMBER))
+          NAME="$(tr -d '[:space:]' < version.txt)-dev.$APP_BUILD_NUMBER"
           if [ -z "$APK_REPO_TOKEN" ]; then
             echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
             exit 0
@@ -102,8 +152,7 @@ jobs:
           APK="iptv-player-dev-$CODE.apk"
           cp app/build/outputs/apk/dev/app-dev.apk "$APK"
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
-          # versionName mora da prati app/build.gradle.kts.
-          jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+          jq -n --argjson code "$CODE" --arg name "$NAME" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
             '{versionCode: $code, versionName: $name, apk: $apk, sha256: $sha, commit: $commit}' \
             > iptv-player.json
           if ! gh release view "$TAG" -R "$APK_REPO" > /dev/null 2>&1; then
@@ -114,7 +163,7 @@ jobs:
           gh release upload "$TAG" -R "$APK_REPO" "$APK" --clobber
           gh release upload "$TAG" -R "$APK_REPO" iptv-player.json --clobber
           gh release edit "$TAG" -R "$APK_REPO" \
-            --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan debug ključem."
+            --notes "Build #$APP_BUILD_NUMBER, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan istim ključem kao zvanična izdanja."
           # Stari APK-ovi se brišu tek sada, kad opis već pokazuje na novi. Prethodni build ostaje
           # još jedan krug, za aplikaciju koja je upravo pročitala stari opis.
           PREVIOUS="iptv-player-dev-${CURRENT:-0}.apk"

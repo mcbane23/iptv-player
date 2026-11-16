@@ -142,6 +142,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[ACCENT_COLOR] = name }
     }
 
+    /**
+     * Oznaka kanala ažuriranja koji je korisnik izabrao (vidi `UpdateChannel`), ili null dok nije birao
+     * (tada važi kanal iz koga je build).
+     */
+    val updateChannel: Flow<String?> = dataStore.data.map { it[UPDATE_CHANNEL] }.distinctUntilChanged()
+
+    suspend fun setUpdateChannel(tag: String) {
+        dataStore.edit { it[UPDATE_CHANNEL] = tag }
+    }
+
     /** Uputstvo za gestove u plejeru na telefonu je već prikazano (prikazuje se samo prvi put). */
     val gestureHintShown: Flow<Boolean> =
         dataStore.data.map { it[GESTURE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -229,6 +239,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }
 }

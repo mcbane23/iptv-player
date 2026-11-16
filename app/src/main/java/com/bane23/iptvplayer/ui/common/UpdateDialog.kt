@@ -24,20 +24,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.AppUpdater
+import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.data.update.UpdateError
 import com.bane23.iptvplayer.data.update.UpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : ViewModel() {
     val state: StateFlow<UpdateState> = updater.state
     val installedVersion: String = updater.installedVersionName
+    val channel: StateFlow<UpdateChannel> =
+        updater.channel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpdateChannel.DEFAULT)
+
+    fun setChannel(channel: UpdateChannel) = updater.setChannel(channel)
 
     fun checkOnStart() = updater.checkOnStart()
     fun check() = updater.check(userInitiated = true)
@@ -192,3 +200,12 @@ private fun openInstallPermission(context: Context) {
         if (runCatching { context.startActivity(intent) }.isSuccess) return
     }
 }
+
+/** Naziv kanala ažuriranja za podešavanja. */
+@Composable
+fun UpdateChannel.label(): String = stringResource(
+    when (this) {
+        UpdateChannel.RELEASE -> R.string.update_channel_release
+        UpdateChannel.DEV -> R.string.update_channel_dev
+    },
+)

@@ -53,7 +53,16 @@ class UpdateManifestTest {
     @Test
     fun urlsPointToChannelRelease() {
         val m = UpdateManifest(versionCode = 1, versionName = "x", apk = "iptv-player-dev.apk")
-        assertTrue(UpdateSource.manifestUrl.endsWith("/releases/download/${UpdateSource.CHANNEL_TAG}/iptv-player.json"))
-        assertTrue(UpdateSource.apkUrl(m).endsWith("/${UpdateSource.CHANNEL_TAG}/iptv-player-dev.apk"))
+        assertTrue(UpdateSource.manifestUrl(UpdateChannel.DEV).endsWith("/releases/download/iptv-player-dev/iptv-player.json"))
+        assertTrue(UpdateSource.manifestUrl(UpdateChannel.RELEASE).endsWith("/releases/download/iptv-player/iptv-player.json"))
+        assertTrue(UpdateSource.apkUrl(UpdateChannel.DEV, m).endsWith("/iptv-player-dev/iptv-player-dev.apk"))
+    }
+
+    @Test
+    fun channelIsFoundByTag() {
+        assertEquals(UpdateChannel.DEV, UpdateChannel.fromTag("iptv-player-dev"))
+        assertEquals(UpdateChannel.RELEASE, UpdateChannel.fromTag("iptv-player"))
+        assertNull(UpdateChannel.fromTag("nešto drugo"))
+        assertNull(UpdateChannel.fromTag(null))
     }
 }

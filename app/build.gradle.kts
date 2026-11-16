@@ -14,21 +14,22 @@ android {
         applicationId = "com.bane23.iptvplayer"
         minSdk = 24
         targetSdk = 37
-        // U CI-ju broj builda, da bi svaki novi APK bio „noviji” i ažuriranje u aplikaciji ga prepoznalo.
-        // Lokalni build ostaje 1, pa ga CI build uvek može zameniti.
-        val ciBuild = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull()
-        // Zvanično izdanje: release.yml postavlja RELEASE_VERSION iz fajla version.txt (npr. „1.2.3”).
-        // Broj verzije se računa iz nje (1.2.3 daje 1002003), pa ne zavisi od broja CI run-a
-        // i uvek je veći od dev buildova.
+        // Brojanje verzija je isto za test buildove i zvanična izdanja, da se sa jednog na drugo prelazi
+        // običnim ažuriranjem: versionCode = 1 000 000 + broj commitova u main-u (CI ga šalje kao
+        // APP_BUILD_NUMBER). Raste sa svakim spajanjem i veći je od svih starijih buildova
+        // (izdanje 1.0.0 ima 1 000 000). Lokalni build ostaje 1, pa ga CI build uvek može zameniti.
+        val buildNumber = providers.environmentVariable("APP_BUILD_NUMBER").orNull?.trim()?.toIntOrNull()
+        // Ime verzije: version.txt za zvanično izdanje (release.yml postavlja RELEASE_VERSION),
+        // a za test build isto to sa dodatkom „-dev.<broj>”.
+        val baseVersion = providers.fileContents(rootProject.layout.projectDirectory.file("version.txt"))
+            .asText.orNull?.trim()?.takeIf { Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}""").matches(it) } ?: "0.0.1"
         val release = providers.environmentVariable("RELEASE_VERSION").orNull?.trim()
-            ?.let { Regex("""(\d{1,3})\.(\d{1,3})\.(\d{1,3})""").matchEntire(it) }
-        if (release != null) {
-            val (major, minor, patch) = release.destructured
-            versionCode = major.toInt() * 1_000_000 + minor.toInt() * 1_000 + patch.toInt()
-            versionName = release.value
-        } else {
-            versionCode = ciBuild ?: 1
-            versionName = if (ciBuild != null) "0.0.1-dev.$ciBuild" else "0.0.1-local"
+            ?.takeIf { Regex("""\d{1,3}\.\d{1,3}\.\d{1,3}""").matches(it) }
+        versionCode = if (buildNumber != null) 1_000_000 + buildNumber else 1
+        versionName = when {
+            release != null -> release
+            buildNumber != null -> "$baseVersion-dev.$buildNumber"
+            else -> "$baseVersion-local"
         }
 
         // Ključevi Trakt aplikacije stižu iz GitHub Secrets (CI) i nikad nisu u repou.
@@ -42,7 +43,7 @@ android {
 
     signingConfigs {
         // Stalan debug ključ iz repoa, da bi novi debug APK mogao da se instalira preko starog.
-        // Koristi se samo za debug, nikad za release.
+        // Koristi se za debug i za test buildove sa grana, nikad za objavljene buildove.
         getByName("debug") {
             storeFile = rootProject.file("keystore/debug.keystore")
             storePassword = "android"
@@ -80,11 +81,12 @@ android {
         }
         // Test build koji CI objavljuje (dev-latest i ažuriranje u aplikaciji): optimizovan kao izdanje (R8,
         // nije debuggable), jer je debug build sa Compose-om višestruko sporiji na slabijim TV uređajima.
-        // Potpisan je stalnim debug ključem i ima dev kanal ažuriranja, pa se instalira preko debug buildova
-        // bez brisanja podataka.
+        // Na main-u je potpisan istim ključem kao zvanična izdanja (CI ga dobija iz GitHub Secrets), pa se
+        // sa test builda prelazi na izdanje i nazad bez brisanja podataka. Bez tog ključa (grane, lokalno)
+        // potpisuje se debug ključem; takav build se ne objavljuje.
         create("dev") {
             initWith(getByName("release"))
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             buildConfigField("String", "UPDATE_CHANNEL", "\"iptv-player-dev\"")
             matchingFallbacks += listOf("release")
         }

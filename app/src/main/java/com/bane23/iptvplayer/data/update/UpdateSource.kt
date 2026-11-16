@@ -3,25 +3,37 @@ package com.bane23.iptvplayer.data.update
 import com.bane23.iptvplayer.BuildConfig
 
 /**
- * Gde aplikacija traži nova izdanja: javni repo samo sa APK-ovima (kod ostaje privatan).
+ * Kanal ažuriranja: zvanična izdanja ili test buildovi. Oba su potpisana istim ključem i dele
+ * isto brojanje verzija, pa se sa jednog na drugi prelazi običnim ažuriranjem, bez gubitka podataka.
+ * [tag] je oznaka izdanja u javnom repou.
+ */
+enum class UpdateChannel(val tag: String) {
+    RELEASE("iptv-player"),
+    DEV("iptv-player-dev"),
+    ;
+
+    companion object {
+        /** Kanal iz koga je ovaj build (zvanično izdanje ili test build); važi dok korisnik ne izabere drugi. */
+        val DEFAULT: UpdateChannel = fromTag(BuildConfig.UPDATE_CHANNEL) ?: RELEASE
+
+        fun fromTag(tag: String?): UpdateChannel? = entries.firstOrNull { it.tag == tag }
+    }
+}
+
+/**
+ * Gde aplikacija traži nova izdanja: javni repo samo sa APK-ovima.
  * U repou svaka aplikacija ima svoja izdanja po imenu taga, pa tu mogu stajati i druge aplikacije.
  * Isti repo i tagove koriste `.github/workflows/build.yml` (dev) i `release.yml` (zvanična izdanja).
+ * Tag se ne pomera, CI menja fajlove u njemu.
  */
 object UpdateSource {
     const val REPO = "mcbane23/apps"
 
-    /**
-     * Kanal zavisi od vrste builda: debug prati `iptv-player-dev` (svako spajanje u main), a zvanično
-     * izdanje prati `iptv-player` (samo oznake `v*`). Tag se ne pomera, CI menja fajlove u njemu.
-     * Kanali se ne mešaju jer su potpisani različitim ključevima.
-     */
-    val CHANNEL_TAG: String = BuildConfig.UPDATE_CHANNEL
-
     const val MANIFEST_FILE = "iptv-player.json"
 
-    private val BASE = "https://github.com/$REPO/releases/download/$CHANNEL_TAG/"
+    private fun base(channel: UpdateChannel) = "https://github.com/$REPO/releases/download/${channel.tag}/"
 
-    val manifestUrl: String get() = BASE + MANIFEST_FILE
+    fun manifestUrl(channel: UpdateChannel): String = base(channel) + MANIFEST_FILE
 
-    fun apkUrl(manifest: UpdateManifest): String = BASE + manifest.apk
+    fun apkUrl(channel: UpdateChannel, manifest: UpdateManifest): String = base(channel) + manifest.apk
 }

@@ -13,8 +13,11 @@ zvanično izdanje (Faza 8 u planu).
 
 ## Preuzimanje APK-a
 
-Postoje dve vrste APK-a. Potpisane su različitim ključevima, pa jedna ne može da se instalira
-preko druge: za prelazak sa jedne na drugu aplikacija mora prvo da se obriše.
+Postoje dve vrste APK-a: zvanična izdanja i test (dev) buildovi. Potpisane su istim ključem i dele
+brojanje verzija, pa se sa jedne na drugu prelazi običnim ažuriranjem, bez brisanja aplikacije: u
+Podešavanjima se izabere „Verzija za ažuriranje” (zvanična izdanja ili test buildovi). Android ne
+dozvoljava vraćanje na stariji build, pa aplikacija prelazi tek kad na izabranoj verziji izađe build
+noviji od instaliranog.
 
 **Zvanično izdanje** (`iptv-player-<verzija>.apk`): stranica **Releases** u repou. Pravi se samo kad se
 u `main` spoji nova verzija u `version.txt` (vidi „Novo izdanje”). Aplikacija se posle sama ažurira na sledeća izdanja
@@ -26,8 +29,9 @@ u `main` spoji nova verzija u `version.txt` (vidi „Novo izdanje”). Aplikacij
 
 Link je uvek isti i vodi na poslednji spojen kod. Grane ne objavljuju APK, samo proveravaju build
 i testove.
-Dev build je uvek potpisan istim ključem (`keystore/debug.keystore`), pa se novi instalira preko
-starog, i sam se ažurira na sledeći dev build.
+Dev build sa `main`-a potpisan je istim ključem kao zvanična izdanja (CI ga čita iz GitHub Secrets),
+pa se instalira preko izdanja i preko ranijih dev buildova. Buildovi stariji od ove promene bili su
+potpisani debug ključem: preko njih novi ne može, pa se aplikacija jednom obriše.
 
 ## Instalacija
 
@@ -80,8 +84,9 @@ Ključ i lozinke nikad ne idu u repo.
 Izdanje se pravi samo od sebe: u fajlu `version.txt` promeni se verzija (npr. `1.0.0` u `1.0.1`) i ta
 izmena se spoji u `main` kroz pull request. Workflow **Release** tada pokreće testove, pravi potpisan
 APK sa uključenim R8, postavlja oznaku `v1.0.1`, objavljuje APK u **Releases** i u javni repo iz kog se
-aplikacija ažurira. Ako oznaka za tu verziju već postoji, ne radi ništa. Verzija `1.2.3` daje ime
-`1.2.3` i broj `1002003`.
+aplikacija ažurira. Ako oznaka za tu verziju već postoji, ne radi ništa. Ime verzije je ono iz
+`version.txt`, a broj verzije (`versionCode`) je 1 000 000 + broj commitova u `main`-u, isti račun kao
+za dev buildove.
 
 ## Build
 

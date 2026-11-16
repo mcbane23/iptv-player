@@ -38,6 +38,7 @@ import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
@@ -64,6 +65,7 @@ fun TvSettingsScreen(
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
+    val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // Dozvola se menja u sistemskim podešavanjima, pa se proverava pri svakom povratku na ekran.
     var autostartAllowed by remember { mutableStateOf(Autostart.isAllowed(context)) }
@@ -235,6 +237,19 @@ fun TvSettingsScreen(
                         openChoice = null
                     },
                 )
+                TvTextRow(
+                    text = stringResource(R.string.update_channel),
+                    trailing = updateChannel.label(),
+                    onClick = {
+                        // Svaki pritisak prelazi na drugi kanal i odmah proverava šta on nudi.
+                        val channels = UpdateChannel.entries
+                        updateViewModel.setChannel(channels[(updateChannel.ordinal + 1) % channels.size])
+                    },
+                    onFocused = {
+                        focusedChoice = UPDATE_CHANNEL_ROW
+                        openChoice = null
+                    },
+                )
                 Text(
                     text = stringResource(R.string.settings_player_header),
                     style = MaterialTheme.typography.titleMedium,
@@ -261,6 +276,7 @@ fun TvSettingsScreen(
                         null -> stringResource(R.string.settings_resume_last_summary)
                         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
                         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
+                        UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
                         AUTOSTART_ROW -> stringResource(
                             when {
                                 !autostart || autostartAllowed -> R.string.settings_autostart_summary
@@ -335,3 +351,4 @@ fun TvSettingsScreen(
 private const val AUTOSTART_ROW = -1
 private const val ACCENT_ROW = -2
 private const val LANGUAGE_ROW = -3
+private const val UPDATE_CHANNEL_ROW = -4
