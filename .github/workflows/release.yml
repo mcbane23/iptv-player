@@ -5,9 +5,9 @@ name: Release
 # iz kog aplikacija preuzima ažuriranja (kanal iptv-player, vidi data/update/UpdateSource.kt).
 #
 # Potrebni GitHub Secrets (nikad u repou):
-#   RELEASE_KEYSTORE_BASE64    keystore fajl kao base64 (base64 -w0 ember-release.jks)
+#   RELEASE_KEYSTORE_BASE64    keystore fajl kao base64 (base64 -w0 release.jks)
 #   RELEASE_KEYSTORE_PASSWORD  lozinka keystore-a
-#   RELEASE_KEY_ALIAS          ime ključa (nije obavezno, podrazumevano „ember”)
+#   RELEASE_KEY_ALIAS          ime ključa (nije obavezno, podrazumevano „release”)
 #   RELEASE_KEY_PASSWORD       lozinka ključa (nije obavezno, podrazumevano ista kao lozinka keystore-a)
 #   APK_REPO_TOKEN             pisanje u javni repo (isti kao u build.yml)
 on:
@@ -63,7 +63,7 @@ jobs:
           KEY_PASSWORD="${RELEASE_KEY_PASSWORD:-$RELEASE_KEYSTORE_PASSWORD}"
           echo "::add-mask::$KEY_PASSWORD"
           {
-            echo "RELEASE_KEY_ALIAS=${RELEASE_KEY_ALIAS:-ember}"
+            echo "RELEASE_KEY_ALIAS=${RELEASE_KEY_ALIAS:-release}"
             echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
           } >> "$GITHUB_ENV"
           printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
@@ -101,16 +101,16 @@ jobs:
             echo "APK je potpisan debug ključem."
             exit 1
           fi
-          cp "$APK" "ember-$RELEASE_VERSION.apk"
+          cp "$APK" "iptv-player-$RELEASE_VERSION.apk"
           cp "$APK" iptv-player.apk
 
       - name: Objavi izdanje
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$TAG" "ember-$RELEASE_VERSION.apk" \
+          gh release create "$TAG" "iptv-player-$RELEASE_VERSION.apk" \
             --verify-tag \
-            --title "Ember $RELEASE_VERSION" \
+            --title "Izdanje $RELEASE_VERSION" \
             --generate-notes
 
       # Isti APK ide u javni repo, u kanal „iptv-player”, odakle ga preuzimaju zvanična izdanja aplikacije.
@@ -140,7 +140,7 @@ jobs:
             > iptv-player.json
           if ! gh release view "$CHANNEL" -R "$APK_REPO" > /dev/null 2>&1; then
             gh release create "$CHANNEL" -R "$APK_REPO" \
-              --title "Ember" --notes "Zvanična izdanja."
+              --title "IPTV plejer" --notes "Zvanična izdanja."
           fi
           # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
           gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.apk --clobber

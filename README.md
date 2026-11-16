@@ -16,7 +16,7 @@ zvanično izdanje (Faza 8 u planu).
 Postoje dve vrste APK-a. Potpisane su različitim ključevima, pa jedna ne može da se instalira
 preko druge: za prelazak sa jedne na drugu aplikacija mora prvo da se obriše.
 
-**Zvanično izdanje** (`ember-<verzija>.apk`): stranica **Releases** u repou. Pravi se samo kad se
+**Zvanično izdanje** (`iptv-player-<verzija>.apk`): stranica **Releases** u repou. Pravi se samo kad se
 postavi oznaka `v1.2.3` (vidi „Novo izdanje”). Aplikacija se posle sama ažurira na sledeća izdanja
 (Podešavanja, „Proveri ažuriranje”).
 
@@ -39,7 +39,7 @@ izvora kad Android to zatraži.
 
 ```
 adb connect <ip-adresa-tv-a>
-adb install -r ember-1.0.0.apk
+adb install -r iptv-player-1.0.0.apk
 ```
 
 Druga mogućnost je aplikacija za prenos fajlova ili USB fleš, pa instalacija preko
@@ -60,20 +60,20 @@ preko starih.
 1. U repou, **Settings → Secrets and variables → Actions**, dodaj secret `RELEASE_KEYSTORE_PASSWORD`
    sa lozinkom po izboru (najmanje 8 znakova). Zapiši je.
 2. **Actions → Napravi ključ za potpis → Run workflow.**
-3. Kad se završi, na dnu stranice preuzmi artifact `ember-kljuc-za-potpis` (briše se posle jednog
-   dana). U ZIP-u su `ember-release.jks` (ključ, njega čuvaš) i `RELEASE_KEYSTORE_BASE64.txt`.
+3. Kad se završi, na dnu stranice preuzmi artifact `kljuc-za-potpis` (briše se posle jednog
+   dana). U ZIP-u su `release.jks` (ključ, njega čuvaš) i `RELEASE_KEYSTORE_BASE64.txt`.
 4. Ceo sadržaj tekstualnog fajla nalepi u novi secret `RELEASE_KEYSTORE_BASE64`.
 
 **Sa `keytool`-om (dolazi uz JDK):**
 
 ```
-keytool -genkeypair -v -keystore ember-release.jks -storetype PKCS12 -alias ember \
+keytool -genkeypair -v -keystore release.jks -storetype PKCS12 -alias release \
   -keyalg RSA -keysize 4096 -validity 10000
-base64 -w0 ember-release.jks
+base64 -w0 release.jks
 ```
 
 Zatim dodaj secrets `RELEASE_KEYSTORE_BASE64` (ispis komande `base64`) i `RELEASE_KEYSTORE_PASSWORD`.
-Ako ključ nema ime `ember` ili ima posebnu lozinku, dodaj i `RELEASE_KEY_ALIAS` i `RELEASE_KEY_PASSWORD`.
+Ako ključ nema ime `release` ili ima posebnu lozinku, dodaj i `RELEASE_KEY_ALIAS` i `RELEASE_KEY_PASSWORD`.
 
 Ključ i lozinke nikad ne idu u repo. Izdanje se zatim pravi oznakom na `main`-u:
 
