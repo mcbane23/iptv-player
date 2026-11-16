@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.playerPanel
 import kotlin.math.roundToInt
 
 /** Jačina zvuka i osvetljenje ekrana dok je plejer otvoren, obe vrednosti od 0 do 1. */
@@ -161,65 +162,75 @@ private fun SideSlider(
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.alpha(if (dragging) 1f else 0f),
         )
-        BoxWithConstraints(
-            contentAlignment = Alignment.BottomCenter,
+        // Ista tamna pločica sa tankim okvirom kao donja traka sa kontrolama.
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
                 .weight(1f, fill = false)
-                .heightIn(max = SLIDER_MAX_HEIGHT)
-                .width(SLIDER_TOUCH_WIDTH)
-                .fillMaxHeight()
-                // Uz ivicu ekrana sistem inače hvata potez kao gest Nazad.
-                .systemGestureExclusion()
-                .semantics { contentDescription = "$description $percent%" }
-                .pointerInput(Unit) { detectTapGestures { onInteraction() } }
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragEnd = { dragging = false },
-                        onDragCancel = { dragging = false },
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            // Cela dužina trake je ceo opseg, pa tačka prati prst.
-                            onChange(-dragAmount / size.height)
-                        },
-                    )
-                },
+                .playerPanel(RoundedCornerShape(percent = 50))
+                .padding(top = 14.dp, bottom = 10.dp),
         ) {
-            val trackWidth = if (dragging) 5.dp else 3.dp
-            Box(
+            BoxWithConstraints(
                 contentAlignment = Alignment.BottomCenter,
                 modifier = Modifier
-                    .width(trackWidth)
+                    .weight(1f, fill = false)
+                    .heightIn(max = SLIDER_MAX_HEIGHT)
+                    .width(SLIDER_TOUCH_WIDTH)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(trackWidth / 2))
-                    .background(Color.White.copy(alpha = 0.3f)),
+                    // Uz ivicu ekrana sistem inače hvata potez kao gest Nazad.
+                    .systemGestureExclusion()
+                    .semantics { contentDescription = "$description $percent%" }
+                    .pointerInput(Unit) { detectTapGestures { onInteraction() } }
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragStart = { dragging = true },
+                            onDragEnd = { dragging = false },
+                            onDragCancel = { dragging = false },
+                            onVerticalDrag = { change, dragAmount ->
+                                change.consume()
+                                // Cela dužina trake je ceo opseg, pa tačka prati prst.
+                                onChange(-dragAmount / size.height)
+                            },
+                        )
+                    },
             ) {
+                val trackWidth = if (dragging) 5.dp else 3.dp
                 Box(
+                    contentAlignment = Alignment.BottomCenter,
                     modifier = Modifier
                         .width(trackWidth)
-                        .fillMaxHeight(fraction.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(trackWidth / 2))
+                        .background(Color.White.copy(alpha = 0.3f)),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(trackWidth)
+                            .fillMaxHeight(fraction.coerceIn(0f, 1f))
+                            .background(accent),
+                    )
+                }
+                val thumb = if (dragging) 14.dp else 10.dp
+                Box(
+                    modifier = Modifier
+                        .offset(y = -(maxHeight - thumb) * fraction.coerceIn(0f, 1f))
+                        .size(thumb)
+                        .clip(CircleShape)
                         .background(accent),
                 )
             }
-            val thumb = if (dragging) 14.dp else 10.dp
-            Box(
-                modifier = Modifier
-                    .offset(y = -(maxHeight - thumb) * fraction.coerceIn(0f, 1f))
-                    .size(thumb)
-                    .clip(CircleShape)
-                    .background(accent),
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(18.dp),
             )
         }
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.7f),
-            modifier = Modifier.size(18.dp),
-        )
     }
 }
 
 private val SLIDER_TOUCH_WIDTH = 40.dp
 private val SLIDER_MAX_HEIGHT = 160.dp
 private val SLIDER_TOP_SPACE = 76.dp
-private val SLIDER_BOTTOM_SPACE = 168.dp
+private val SLIDER_BOTTOM_SPACE = 164.dp
