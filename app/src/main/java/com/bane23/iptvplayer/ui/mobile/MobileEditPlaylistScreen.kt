@@ -54,21 +54,13 @@ fun MobileEditPlaylistScreen(
                 .padding(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onClose, enabled = !state.saving) {
-                    Text(stringResource(R.string.action_back))
-                }
-                Text(
-                    text = stringResource(
-                        if (playlistId == null) R.string.edit_title_add else R.string.edit_title_edit,
-                    ),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
+            SectionTopBar(
+                title = stringResource(if (playlistId == null) R.string.edit_title_add else R.string.edit_title_edit),
+                onBack = onClose.takeIf { !state.saving },
+            )
 
             // Tip liste se bira samo pri dodavanju; kod izmene ostaje isti.
             if (playlistId == null) {

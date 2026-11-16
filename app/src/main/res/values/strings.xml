@@ -233,6 +233,7 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">General</string>
+    <string name="settings_content_header">Content</string>
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>
     <string name="settings_tv_preview">Channel preview</string>

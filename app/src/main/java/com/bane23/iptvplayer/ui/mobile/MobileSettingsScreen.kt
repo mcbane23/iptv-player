@@ -2,15 +2,19 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
@@ -55,74 +59,83 @@ fun MobileSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
-            if (onPlaylists != null) {
-                SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
-            }
-            if (onCategories != null) {
-                SettingsLinkRow(AppIcons.Categories, stringResource(R.string.categories_manage_title), onCategories)
-            }
-            Text(
-                text = stringResource(R.string.settings_general_header),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .toggleable(
-                        value = resumeLastChannel,
-                        role = Role.Switch,
-                        onValueChange = viewModel::setResumeLastChannel,
-                    )
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.settings_resume_last),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_resume_last_summary),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (onPlaylists != null || onCategories != null) {
+                SettingsGroup(stringResource(R.string.settings_content_header)) {
+                    if (onPlaylists != null) {
+                        SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
+                    }
+                    if (onCategories != null) {
+                        SettingsLinkRow(AppIcons.Categories, stringResource(R.string.categories_manage_title), onCategories)
+                    }
                 }
-                Switch(checked = resumeLastChannel, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
             }
-
-            Text(
-                text = stringResource(R.string.settings_player_header),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp),
-            )
-            choices.forEachIndexed { index, choice ->
-                Column(
+            SettingsGroup(stringResource(R.string.settings_general_header)) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { openChoice = index }
+                        .toggleable(
+                            value = resumeLastChannel,
+                            role = Role.Switch,
+                            onValueChange = viewModel::setResumeLastChannel,
+                        )
                         .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(text = choice.title, style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = choice.value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = choice.summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_resume_last),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_resume_last_summary),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = resumeLastChannel, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
+                }
+            }
+            SettingsGroup(stringResource(R.string.settings_player_header)) {
+                choices.forEachIndexed { index, choice ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { openChoice = index }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = choice.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = choice.value,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .padding(start = 12.dp)
+                                    .widthIn(max = 160.dp),
+                            )
+                        }
+                        Text(
+                            text = choice.summary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
                 }
             }
             Text(
                 text = stringResource(R.string.settings_player_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 24.dp),
             )
         }
     }
@@ -136,6 +149,26 @@ fun MobileSettingsScreen(
             onSelect = choice.onSelect,
             onDismiss = { openChoice = null },
         )
+    }
+}
+
+/** Grupa podešavanja: naslov iznad i zaobljena kartica sa redovima. */
+@Composable
+private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
+    )
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(content = content)
     }
 }
 

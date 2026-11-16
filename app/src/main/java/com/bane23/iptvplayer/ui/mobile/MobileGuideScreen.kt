@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.guide.GuideCell
 import com.bane23.iptvplayer.ui.common.guide.GuideSelection
@@ -68,22 +69,9 @@ fun MobileGuideScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
-                Text(
-                    text = stringResource(R.string.guide_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 8.dp),
-                )
-                TextButton(onClick = viewModel::refresh, enabled = !status.loading) {
-                    Text(stringResource(R.string.action_refresh))
+            SectionTopBar(title = stringResource(R.string.guide_title), onBack = onBack) {
+                if (!status.loading) {
+                    ToolbarIcon(AppIcons.Refresh, stringResource(R.string.action_refresh), viewModel::refresh)
                 }
             }
             Text(

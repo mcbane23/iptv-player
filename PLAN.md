@@ -283,7 +283,7 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
   (Titlovi, Audio, Format, Od početka). TV: OK prikazuje kontrole, levo/desno premotava (držanje
   ubrzava), levo u kanalima otvara listu. Telefon: dupli dodir premotava, zaključavanje, slika u slici,
   uputstvo za gestove samo pri prvom pokretanju
-- [ ] 5. Podešavanja i liste: grupisana podešavanja, prazna stanja i poruke o greškama
+- [x] 5. Podešavanja i liste: grupisana podešavanja, zaglavlja sa ikonicama, prazna stanja
 
 ### Faza 8: Izdanje
 

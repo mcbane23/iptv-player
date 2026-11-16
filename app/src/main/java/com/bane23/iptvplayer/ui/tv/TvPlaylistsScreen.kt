@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,6 +63,8 @@ fun TvPlaylistsScreen(
                 text = stringResource(R.string.playlists_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
             // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
@@ -169,6 +172,8 @@ private fun TvPlaylistRow(
                 text = playlist.name,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
             if (playlist.isActive) {
@@ -176,6 +181,7 @@ private fun TvPlaylistRow(
                     text = stringResource(R.string.playlist_active),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 12.dp),
                 )
             }
         }
@@ -183,6 +189,8 @@ private fun TvPlaylistRow(
             text = if (refreshing) stringResource(R.string.playlist_refreshing) else playlist.summary(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (confirmDelete) {

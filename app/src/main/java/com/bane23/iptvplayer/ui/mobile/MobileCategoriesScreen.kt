@@ -44,19 +44,7 @@ fun MobileCategoriesScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.action_back)) }
-                Text(
-                    text = stringResource(R.string.categories_manage_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
+            SectionTopBar(title = stringResource(R.string.categories_manage_title), onBack = onBack)
             Text(
                 text = stringResource(R.string.categories_manage_hint),
                 style = MaterialTheme.typography.bodyMedium,
