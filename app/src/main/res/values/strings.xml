@@ -404,6 +404,7 @@
     <string name="recordings_empty">No recordings yet. Start one with the Record button in the channel player.</string>
     <string name="recording_chip">Record</string>
     <string name="recording_chip_active">Recording</string>
+    <string name="recording_started_single_stream">Recording started. Your account allows one stream at a time, so playback or the recording may stutter or stop.</string>
     <string name="recording_started">Recording started</string>
     <string name="recording_stopped">Recording stopped</string>
     <string name="recording_no_space">Not enough free space to record</string>

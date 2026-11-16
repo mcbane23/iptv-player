@@ -404,6 +404,7 @@
     <string name="recording_chip">Snimaj</string>
     <string name="recording_chip_active">Snima se</string>
     <string name="recording_started">Snimanje je počelo</string>
+    <string name="recording_started_single_stream">Snimanje je počelo. Nalog dozvoljava jedan strim istovremeno, pa gledanje ili snimak mogu da seckaju ili da se prekidaju.</string>
     <string name="recording_stopped">Snimanje je zaustavljeno</string>
     <string name="recording_no_space">Nema dovoljno slobodnog prostora za snimanje</string>
     <string name="recording_no_storage">Nema mesta za čuvanje snimka</string>

@@ -13,6 +13,7 @@ import com.bane23.iptvplayer.data.recording.RecordingStartError
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.LockRepository
+import com.bane23.iptvplayer.data.repo.PlaylistRepository
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.NowNext
@@ -45,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Kako se slika uklapa u ekran. */
 enum class AspectMode { FIT, FILL, ZOOM }
@@ -72,6 +74,7 @@ class PlayerViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val locks: LockRepository,
     private val recordings: RecordingRepository,
+    private val playlists: PlaylistRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -173,7 +176,8 @@ class PlayerViewModel @Inject constructor(
             val error = recordings.start(channel.id, nowNext.value.now?.title, stopAtMs)
             _recordingNotice.tryEmit(
                 when (error) {
-                    null -> R.string.recording_started
+                    // Snimanje ide preko posebne veze: sa nalogom od jednog strima smeta gledanju.
+                    null -> if (singleStreamAccount()) R.string.recording_started_single_stream else R.string.recording_started
                     RecordingStartError.NO_SPACE -> R.string.recording_no_space
                     RecordingStartError.NO_STORAGE -> R.string.recording_no_storage
                     RecordingStartError.NO_SOURCE -> R.string.recording_failed
@@ -181,6 +185,11 @@ class PlayerViewModel @Inject constructor(
             )
         }
     }
+
+    /** Da li nalog aktivne liste dozvoljava samo jedan strim istovremeno. Kad se ne zna, vraća false. */
+    private suspend fun singleStreamAccount(): Boolean = withTimeoutOrNull(SINGLE_STREAM_CHECK_MS) {
+        repository.activePlaylistId.first()?.let { playlists.maxConnections(it) } == 1
+    } ?: false
 
     fun toggleFavorite() {
         val channel = _ui.value.channel ?: return
@@ -306,5 +315,6 @@ class PlayerViewModel @Inject constructor(
         const val MAX_NUMBER_DIGITS = 5
         const val NUMBER_ENTRY_DELAY_MS = 1_500L
         const val NOW_NEXT_REFRESH_MS = 30_000L
+        const val SINGLE_STREAM_CHECK_MS = 4_000L
     }
 }
