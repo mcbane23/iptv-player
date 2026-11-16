@@ -115,8 +115,32 @@ object PairingPage {
     }
 
     /** Odgovor na adresu koja nije ona iz QR koda. */
-    fun notFound(texts: PairingTexts): String = page(texts.title) {
-        append("<p>").append(escape(texts.notFound)).append("</p>")
+    fun notFound(texts: PairingTexts): String = notFound(texts.title, texts.notFound)
+
+    fun notFound(title: String, text: String): String = page(title) {
+        append("<p>").append(escape(text)).append("</p>")
+    }
+
+    /**
+     * Forma za prijavu na nalog (korisničko ime i lozinka). Posle greške se vraća samo
+     * [username]; lozinka se nikada ne ispisuje nazad.
+     */
+    fun login(texts: LoginTexts, error: String? = null, username: String = ""): String = page(texts.title) {
+        append("<h1>").append(escape(texts.title)).append("</h1>")
+        append("<p>").append(escape(texts.intro)).append("</p>")
+        if (error != null) append("<p class=\"error\">").append(escape(error)).append("</p>")
+        append("<form method=\"post\">")
+        field(texts.username, LoginSubmission.FIELD_USERNAME, username)
+        field(texts.password, LoginSubmission.FIELD_PASSWORD, "", type = "password")
+        append("<button type=\"submit\">").append(escape(texts.submit)).append("</button>")
+        append("</form>")
+    }
+
+    /** Potvrda da je TV prijavljen na nalog. */
+    fun loginDone(texts: LoginTexts, username: String): String = page(texts.doneTitle) {
+        append("<h1>").append(escape(texts.doneTitle)).append("</h1>")
+        append("<p><b>").append(escape(username)).append("</b></p>")
+        append("<p>").append(escape(texts.doneText)).append("</p>")
     }
 
     fun escape(text: String): String = buildString(text.length) {
