@@ -66,6 +66,46 @@ jobs:
             --title "Poslednji debug build (#${{ github.run_number }})" \
             --notes "Grana: ${{ github.ref_name }}, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
 
+      # Isti APK ide i u javni repo za APK-ove, odakle ga aplikacija sama preuzima (Podešavanja → Proveri
+      # ažuriranje). Kod ostaje privatan. Token APK_REPO_TOKEN ima pravo pisanja samo u taj repo; bez njega
+      # se korak preskače. Repo i tag moraju biti isti kao u data/update/UpdateSource.kt.
+      # Samo main: aplikacija ne sme da nudi buildove sa nespojenih grana.
+      - name: Objavi u javni repo za ažuriranje
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          APK_REPO: mcbane23/apps
+          TAG: iptv-player-dev
+          BRANCH: ${{ github.ref_name }}
+          CODE: ${{ github.run_number }}
+        run: |
+          if [ -z "$APK_REPO_TOKEN" ]; then
+            echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
+            exit 0
+          fi
+          # Dva builda mogu da se završe obrnutim redom: stariji ne sme da zameni noviji.
+          CURRENT=$(curl -fsSL "https://github.com/$APK_REPO/releases/download/$TAG/iptv-player.json" 2>/dev/null | jq -r '.versionCode // 0' 2>/dev/null)
+          if [ "${CURRENT:-0}" -ge "$CODE" ]; then
+            echo "U javnom repou je već build #$CURRENT, ne menjam ga."
+            exit 0
+          fi
+          export GH_TOKEN="$APK_REPO_TOKEN"
+          cp app/build/outputs/apk/debug/app-debug.apk iptv-player-dev.apk
+          SHA=$(sha256sum iptv-player-dev.apk | cut -d' ' -f1)
+          # versionName mora da prati app/build.gradle.kts.
+          jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+            '{versionCode: $code, versionName: $name, apk: "iptv-player-dev.apk", sha256: $sha, commit: $commit}' \
+            > iptv-player.json
+          if ! gh release view "$TAG" -R "$APK_REPO" > /dev/null 2>&1; then
+            gh release create "$TAG" -R "$APK_REPO" --prerelease \
+              --title "IPTV plejer (dev)" --notes "Automatski build."
+          fi
+          # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
+          gh release upload "$TAG" -R "$APK_REPO" iptv-player-dev.apk --clobber
+          gh release upload "$TAG" -R "$APK_REPO" iptv-player.json --clobber
+          gh release edit "$TAG" -R "$APK_REPO" \
+            --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+
   provere:
     name: Testovi i lint
     runs-on: ubuntu-latest
