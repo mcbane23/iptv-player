@@ -1,7 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
@@ -100,7 +99,9 @@ fun TvHomeScreen(
     val playlistId = liveState.playlistId
 
     var railFocused by remember { mutableStateOf(false) }
-    val railWidth by animateDpAsState(if (railFocused) RailExpanded else RailCollapsed, label = "rail")
+    // Bez animacije širine: animacija ponovo raspoređuje i crta meni sa senkom u svakom kadru,
+    // što na slabijim TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
+    val railWidth = if (railFocused) RailExpanded else RailCollapsed
     val selectedFocus = remember { FocusRequester() }
     // Stavka „Snima se” ostaje u meniju dok je fokus na njoj i kad se snimanje završi, da fokus ne nestane.
     var recordingFocused by remember { mutableStateOf(false) }

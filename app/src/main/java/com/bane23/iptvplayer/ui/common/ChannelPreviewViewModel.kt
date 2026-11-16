@@ -58,7 +58,7 @@ class ChannelPreviewViewModel @Inject constructor(
     private var shownId: Long? = null
 
     /**
-     * Fokus je prešao na kanal [channelId]. Vodič se učitava odmah, a slika tek posle kratke pauze,
+     * Fokus je prešao na kanal [channelId]. Vodič se učitava posle vrlo kratke pauze, a slika tek posle kratke pauze,
      * da brzo listanje kroz kanale ne otvara strim za svaki.
      */
     fun focus(channelId: Long) {
@@ -67,6 +67,8 @@ class ChannelPreviewViewModel @Inject constructor(
         focusJob?.cancel()
         focusJob = viewModelScope.launch {
             _nowNext.value = NowNext()
+            // Dok se taster drži i fokus brzo prelazi preko kanala, vodič se ne čita za svaki.
+            delay(NOW_NEXT_DELAY_MS)
             _nowNext.value = epg.nowNext(channelId)
             if (!enabled.first()) {
                 stop()
@@ -110,6 +112,7 @@ class ChannelPreviewViewModel @Inject constructor(
     }
 
     private companion object {
-        const val PREVIEW_DELAY_MS = 800L
+        const val NOW_NEXT_DELAY_MS = 150L
+        const val PREVIEW_DELAY_MS = 650L
     }
 }

@@ -411,6 +411,11 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       veličina slova i položaj na ekranu (visina od dna)
 - [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
 
+**Brzina na slabijim TV uređajima**
+
+- [x] Ekrani na TV-u se menjaju odmah (bez pretapanja od 700 ms), bočni meni se širi bez animacije,
+      vodič u pregledu kanala se ne čita za svaki kanal dok se taster drži
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.
