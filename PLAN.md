@@ -378,7 +378,7 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 
 - [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna)
-- [ ] Pregled izgleda titlova u samim podešavanjima (za sada se izmena vidi u plejeru)
+- [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
 
 ## 7. Testiranje
 

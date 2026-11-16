@@ -319,6 +319,7 @@
     <string name="settings_subtitle_size">Veličina titlova</string>
     <string name="settings_subtitle_position">Položaj titlova</string>
     <string name="settings_subtitle_background">Crna pozadina titlova</string>
+    <string name="subtitle_preview_text">Ovako će izgledati titlovi</string>
     <string name="settings_subtitle_look_summary">Izgled titlova u plejeru. Izmena važi odmah.</string>
     <string name="subtitle_size_small">Mala</string>
     <string name="subtitle_size_normal">Srednja</string>

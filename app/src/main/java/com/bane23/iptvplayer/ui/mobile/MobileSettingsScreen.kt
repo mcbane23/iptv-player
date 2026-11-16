@@ -51,6 +51,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 
 /** Podešavanja aplikacije na telefonu. */
@@ -157,6 +158,13 @@ fun MobileSettingsScreen(
                         )
                     }
                 }
+                // Probni titl: odmah pokazuje izabranu veličinu, položaj i pozadinu.
+                SubtitlePreview(
+                    settings = playerSettings,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
             }
             Text(
                 text = stringResource(R.string.settings_player_note),

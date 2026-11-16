@@ -16,6 +16,8 @@ data class SettingChoice(
     val summary: String,
     val options: List<String>,
     val selected: Int,
+    /** Utiče na izgled titlova, pa se uz njega prikazuje probni titl. */
+    val subtitleLook: Boolean = false,
     val onSelect: (Int) -> Unit,
 ) {
     val value: String get() = options.getOrElse(selected) { "" }
@@ -42,7 +44,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
         val extra = current.isNotEmpty() && current !in LANGUAGE_CODES
         val codes = listOf("") + LANGUAGE_CODES + if (extra) listOf(current) else emptyList()
         val names = listOf(first) + languageNames + if (extra) listOf(languageName(current)) else emptyList()
-        return SettingChoice(title, summary, names, codes.indexOf(current).coerceAtLeast(0)) { set(codes[it]) }
+        return SettingChoice(title, summary, names, codes.indexOf(current).coerceAtLeast(0), onSelect = { set(codes[it]) })
     }
 
     return listOf(
@@ -95,6 +97,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.subtitle_size_xlarge),
             ),
             selected = SubtitleSize.entries.indexOf(settings.subtitleSize),
+            subtitleLook = true,
             onSelect = { viewModel.setSubtitleSize(SubtitleSize.entries[it]) },
         ),
         SettingChoice(
@@ -106,6 +109,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.subtitle_position_high),
             ),
             selected = SubtitlePosition.entries.indexOf(settings.subtitlePosition),
+            subtitleLook = true,
             onSelect = { viewModel.setSubtitlePosition(SubtitlePosition.entries[it]) },
         ),
         SettingChoice(
@@ -113,6 +117,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             summary = stringResource(R.string.settings_subtitle_look_summary),
             options = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off)),
             selected = if (settings.subtitleBackground) 0 else 1,
+            subtitleLook = true,
             onSelect = { viewModel.setSubtitleBackground(it == 0) },
         ),
     )
