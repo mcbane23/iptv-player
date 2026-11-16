@@ -325,6 +325,8 @@
     <string name="trakt_note">Only movies and series for which the provider sends a TMDB number are recognized.</string>
     <string name="trakt_connect">Connect Trakt account</string>
     <string name="trakt_connect_steps">On your phone or computer open %1$s (or scan the code) and enter:</string>
+    <string name="trakt_open_activation">Open the activation page</string>
+    <string name="trakt_code_copied">Code copied, paste it on the page</string>
     <string name="trakt_waiting">Waiting for approval…</string>
     <string name="trakt_starting">Connecting…</string>
     <string name="trakt_cancel">Cancel</string>
