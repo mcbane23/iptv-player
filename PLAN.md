@@ -40,7 +40,7 @@ aplikacijama Hot Player Plus, TiViMate i Smarters TV Pro.
 | Build | Gradle (Kotlin DSL) + version catalog (`gradle/libs.versions.toml`) |
 | Isporuka | Jedan APK za telefon i TV |
 | Gde se bilduje | **Samo GitHub Actions** (vidi odeljak 5) |
-| Repo | Privatan, `mcbane23/iptv-player` |
+| Repo | Javan od 16. 11. 2026, `mcbane23/iptv-player` (GitHub Actions je za javne repoe bez limita minuta; tajne ostaju samo u GitHub Secrets) |
 | Način rada | Claude Code na webu i u Android aplikaciji |
 | Package name (applicationId) | `com.bane23.iptvplayer` (potvrđeno) |
 | Jezici interfejsa | Engleski i srpski (svi tekstovi u `strings.xml`) |
@@ -136,7 +136,7 @@ objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Grane n
 služe samo kao provera. Ažuriranje iz aplikacije prati samo `main`. Za sada je APK
 **potpisan debug ključem**.
 
-**Ažuriranje iz aplikacije (urađeno, dev kanal):** kod ostaje privatan, a CI APK sa `main`-a objavljuje i u
+**Ažuriranje iz aplikacije (urađeno, dev kanal):** CI APK sa `main`-a objavljuje i u
 poseban javni repo za APK-ove (`mcbane23/apps`, izdanje `iptv-player-dev`, fajlovi
 `iptv-player-dev.apk` i `iptv-player.json` sa `versionCode`, `versionName` i `sha256`). Repo je
 zajednički za više aplikacija, svaka ima svoje tagove. CI piše tamo tokenom `APK_REPO_TOKEN`
@@ -413,6 +413,13 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna)
 - [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
+- [x] Titlovi sa interneta (OpenSubtitles): u plejeru filmova i epizoda spisak titlova ima stavku
+      „Potraži online”. Traži se po TMDB ID-ju (za epizodu: serija + sezona + epizoda), a ako ga provajder
+      ne šalje, po nazivu očišćenom od oznaka liste. Jezici: jezik titlova iz podešavanja, jezik uređaja i
+      engleski; uz srpski idu i hrvatski i bosanski. Izabrani titl se preuzima u keš (isti se ne preuzima
+      dvaput) i uključuje, a gledanje se nastavlja sa istog mesta. API ključ stiže iz GitHub Secrets
+      (`OPENSUBTITLES_API_KEY`); bez njega se opcija ne prikazuje. Prijava na korisnikov nalog
+      (Podešavanja → OpenSubtitles) nije obavezna, a daje veći dnevni broj preuzimanja
 
 **Brzina na slabijim TV uređajima**
 

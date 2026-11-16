@@ -67,6 +67,7 @@ fun MobileSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
     onTrakt: (() -> Unit)? = null,
+    onOpenSubtitles: (() -> Unit)? = null,
     onRecordings: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
@@ -91,7 +92,9 @@ fun MobileSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
-            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onRecordings != null) {
+            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onOpenSubtitles != null ||
+                onRecordings != null
+            ) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
                         SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
@@ -104,6 +107,9 @@ fun MobileSettingsScreen(
                     }
                     if (onTrakt != null) {
                         SettingsLinkRow(AppIcons.Check, stringResource(R.string.trakt_title), onTrakt)
+                    }
+                    if (onOpenSubtitles != null) {
+                        SettingsLinkRow(AppIcons.Subtitles, stringResource(R.string.opensubtitles_title), onOpenSubtitles)
                     }
                     if (onRecordings != null) {
                         SettingsLinkRow(AppIcons.Record, stringResource(R.string.recordings_title), onRecordings)

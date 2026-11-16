@@ -427,4 +427,25 @@
     <string name="recording_home_one">Snima se: %1$s</string>
     <string name="recording_home_many">Snimanja u toku: %1$d</string>
     <string name="recording_home_stop">Zaustavi</string>
+
+    <!-- Titlovi sa interneta (OpenSubtitles) -->
+    <string name="subtitles_search_online">Potraži online</string>
+    <string name="subtitles_online_title">Titlovi sa interneta</string>
+    <string name="subtitles_searching">Tražim titlove…</string>
+    <string name="subtitles_none_found">Nema titlova za ovaj naslov.</string>
+    <string name="subtitles_downloading">Preuzimam…</string>
+    <string name="subtitles_machine">mašinski prevod</string>
+    <string name="subtitles_hearing">za osobe oštećenog sluha</string>
+    <string name="subtitles_applied">Titl je uključen.</string>
+    <string name="subtitles_applied_remaining">Titl je uključen. Preostalo preuzimanja danas: %1$d</string>
+    <string name="subtitles_error_network">OpenSubtitles nije dostupan. Proverite internet vezu.</string>
+    <string name="subtitles_error_quota">Današnja preuzimanja su potrošena. Prijavite se na OpenSubtitles nalog u Podešavanjima ili probajte sutra.</string>
+    <string name="subtitles_error_failed">Titl nije mogao da se učita. Probajte ponovo.</string>
+    <string name="subtitles_error_login">Korisničko ime ili lozinka nisu tačni.</string>
+    <string name="opensubtitles_title">OpenSubtitles</string>
+    <string name="opensubtitles_summary">Titlovi sa interneta rade i bez naloga, ali sa svega nekoliko preuzimanja dnevno. Sa besplatnim nalogom sa opensubtitles.com dobijate više.</string>
+    <string name="opensubtitles_sign_in">Prijavi se</string>
+    <string name="opensubtitles_signing_in">Prijavljujem…</string>
+    <string name="opensubtitles_signed_in_as">Prijavljeni ste kao %1$s</string>
+    <string name="opensubtitles_sign_out">Odjavi se</string>
 </resources>

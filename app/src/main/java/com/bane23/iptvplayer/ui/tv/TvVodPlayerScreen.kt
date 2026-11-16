@@ -27,6 +27,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
+import com.bane23.iptvplayer.ui.common.subtitles.appliedSubtitleToast
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
@@ -76,6 +78,10 @@ fun TvVodPlayerScreen(
     var controls by remember { mutableStateOf(true) }
     var focusOn by remember { mutableStateOf(VodFocus.PLAY) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    // Spisak titlova sa interneta; otvara se iz spiska titlova.
+    var onlineOpen by remember { mutableStateOf(false) }
+    val online by viewModel.online.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     // Svaki pritisak tastera povećava brojač, čime se kontrole zadržavaju još nekoliko sekundi.
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
@@ -87,21 +93,36 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
-    BackHandler(enabled = tracks != null || controls) {
-        if (tracks != null) tracks = null else controls = false
+    BackHandler(enabled = tracks != null || onlineOpen || controls) {
+        when {
+            onlineOpen -> {
+                onlineOpen = false
+                viewModel.closeOnlineSubtitles()
+            }
+            tracks != null -> tracks = null
+            else -> controls = false
+        }
+    }
+    // Titl je preuzet i uključen: spisak se zatvara, a kratka poruka javlja koliko preuzimanja je ostalo.
+    LaunchedEffect(online.appliedId) {
+        if (online.appliedId != null) {
+            appliedSubtitleToast(context, online.remaining)
+            onlineOpen = false
+            viewModel.closeOnlineSubtitles()
+        }
     }
 
-    LaunchedEffect(controls, tracks, activity, playback.status, ui.scrubMs) {
+    LaunchedEffect(controls, tracks, onlineOpen, activity, playback.status, ui.scrubMs) {
         // Dok traje premotavanje kontrole ostaju, da se vidi pregled vremena.
-        if (controls && tracks == null && ui.scrubMs == null && playback.status == PlaybackStatus.PLAYING) {
+        if (controls && tracks == null && !onlineOpen && ui.scrubMs == null && playback.status == PlaybackStatus.PLAYING) {
             delay(CONTROLS_TIMEOUT_MS)
             controls = false
         }
     }
     // Fokus prati ono što je na ekranu, inače tasteri ne bi stizali nikuda.
-    LaunchedEffect(controls, tracks, focusOn) {
+    LaunchedEffect(controls, tracks, onlineOpen, focusOn) {
         when {
-            tracks != null -> Unit
+            tracks != null || onlineOpen -> Unit
             controls -> repeat(FOCUS_ATTEMPTS) {
                 val target = if (focusOn == VodFocus.SEEK) seekFocus else playFocus
                 if (target.tryRequestFocus()) return@LaunchedEffect
@@ -345,6 +366,22 @@ fun TvVodPlayerScreen(
                 onSelectAudio = viewModel::selectAudio,
                 onSelectText = viewModel::selectText,
                 onClose = { tracks = null },
+                modifier = Modifier.align(Alignment.CenterEnd),
+                onSearchOnline = if (ui.onlineSubtitles) {
+                    {
+                        tracks = null
+                        onlineOpen = true
+                        viewModel.searchOnlineSubtitles()
+                    }
+                } else {
+                    null
+                },
+            )
+        }
+        if (onlineOpen) {
+            TvOnlineSubtitlesPanel(
+                state = online,
+                onPick = viewModel::downloadSubtitle,
                 modifier = Modifier.align(Alignment.CenterEnd),
             )
         }

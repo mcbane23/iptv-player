@@ -43,7 +43,7 @@ import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
 
-private enum class VodPanel { NONE, AUDIO, SUBTITLES }
+private enum class VodPanel { NONE, AUDIO, SUBTITLES, ONLINE_SUBTITLES }
 
 /**
  * Plejer za film ili epizodu na telefonu, sa istim kontrolama kao na TV-u. Dodir prikazuje i
@@ -278,7 +278,27 @@ fun MobileVodPlayerScreen(
                 viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
             },
             onDismiss = { panel = VodPanel.NONE },
+            extra = if (ui.onlineSubtitles) {
+                stringResource(R.string.subtitles_search_online) to {
+                    viewModel.searchOnlineSubtitles()
+                    panel = VodPanel.ONLINE_SUBTITLES
+                }
+            } else {
+                null
+            },
         )
+
+        VodPanel.ONLINE_SUBTITLES -> {
+            val online by viewModel.online.collectAsStateWithLifecycle()
+            OnlineSubtitlesDialog(
+                state = online,
+                onPick = viewModel::downloadSubtitle,
+                onDismiss = {
+                    viewModel.closeOnlineSubtitles()
+                    panel = VodPanel.NONE
+                },
+            )
+        }
 
         VodPanel.NONE -> Unit
     }

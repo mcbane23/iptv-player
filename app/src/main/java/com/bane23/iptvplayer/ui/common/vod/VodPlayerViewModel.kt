@@ -9,9 +9,15 @@ import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.repo.ArchiveRepository
 import com.bane23.iptvplayer.data.repo.VodRepository
+import com.bane23.iptvplayer.data.subtitles.OpenSubtitlesRepository
+import com.bane23.iptvplayer.data.subtitles.SubtitleException
+import com.bane23.iptvplayer.data.subtitles.SubtitleFailure
+import com.bane23.iptvplayer.data.subtitles.SubtitleQuery
+import com.bane23.iptvplayer.data.subtitles.SubtitleResult
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.domain.StreamSource
+import com.bane23.iptvplayer.player.ExternalSubtitle
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.TrackOption
@@ -48,6 +54,22 @@ data class VodPlayerUiState(
     val hasNext: Boolean = false,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
+    /** Može li se titl potražiti na internetu (film ili epizoda, a APK ima ključ za OpenSubtitles). */
+    val onlineSubtitles: Boolean = false,
+)
+
+/** Pretraga titlova na internetu za ono što se gleda. */
+data class OnlineSubtitlesState(
+    val searching: Boolean = false,
+    /** Null dok pretraga nije završena; prazan spisak znači da titlova nema. */
+    val results: List<SubtitleResult>? = null,
+    /** Titl koji se upravo preuzima. */
+    val downloadingId: Long? = null,
+    val failure: SubtitleFailure? = null,
+    /** Titl koji je preuzet i uključen; ekran po tome zatvara spisak. */
+    val appliedId: Long? = null,
+    /** Koliko preuzimanja je ostalo za danas, ako je server javio. */
+    val remaining: Int? = null,
 )
 
 /** Plejer za filmove i epizode: premotavanje, pamćenje pozicije i prelazak na sledeću epizodu. */
@@ -58,6 +80,7 @@ class VodPlayerViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val archive: ArchiveRepository,
     private val recordings: RecordingRepository,
+    private val subtitles: OpenSubtitlesRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -71,6 +94,10 @@ class VodPlayerViewModel @Inject constructor(
 
     private val _ui = MutableStateFlow(VodPlayerUiState())
     val ui: StateFlow<VodPlayerUiState> = _ui.asStateFlow()
+
+    private val _online = MutableStateFlow(OnlineSubtitlesState())
+    val online: StateFlow<OnlineSubtitlesState> = _online.asStateFlow()
+    private var onlineJob: Job? = null
 
     /**
      * Ono što se trenutno gleda; [seriesId] je null za film. [title], [poster] i [extension] se pamte
@@ -119,7 +146,7 @@ class VodPlayerViewModel @Inject constructor(
         if (started) return
         started = true
         item = Item(movieId, seriesId = null, title = name, poster = poster, extension = extension)
-        _ui.update { it.copy(title = name) }
+        _ui.update { it.copy(title = name, onlineSubtitles = subtitles.isAvailable) }
         viewModelScope.launch {
             play(startOver) {
                 val start = repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs
@@ -262,6 +289,69 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
+    /** Traži titlove za film ili epizodu koja se gleda. Svako otvaranje spiska traži iznova. */
+    fun searchOnlineSubtitles() {
+        val current = item ?: return
+        val state = _ui.value
+        onlineJob?.cancel()
+        _online.value = OnlineSubtitlesState(searching = true)
+        onlineJob = viewModelScope.launch {
+            try {
+                val seriesId = current.seriesId
+                val query = if (seriesId != null) {
+                    SubtitleQuery(
+                        title = current.title.orEmpty(),
+                        tmdbId = series?.tmdbId ?: lookup { repository.seriesListTmdbId(seriesId) },
+                        season = state.season,
+                        episode = state.episode,
+                    )
+                } else {
+                    SubtitleQuery(title = current.title.orEmpty(), tmdbId = lookup { repository.movieTmdbId(current.id) })
+                }
+                _online.value = OnlineSubtitlesState(results = subtitles.search(query))
+            } catch (e: SubtitleException) {
+                _online.value = OnlineSubtitlesState(failure = e.failure)
+            }
+        }
+    }
+
+    /** Preuzima izabrani titl i uključuje ga; gledanje se nastavlja sa istog mesta. */
+    fun downloadSubtitle(result: SubtitleResult) {
+        if (_online.value.downloadingId != null) return
+        _online.update { it.copy(downloadingId = result.fileId, failure = null) }
+        onlineJob = viewModelScope.launch {
+            try {
+                val downloaded = subtitles.download(result)
+                engine.addSubtitle(
+                    ExternalSubtitle(
+                        id = "os-${result.fileId}",
+                        uri = android.net.Uri.fromFile(downloaded.file).toString(),
+                        language = result.language.ifEmpty { null },
+                        label = result.name,
+                    ),
+                )
+                _online.update { it.copy(downloadingId = null, appliedId = result.fileId, remaining = downloaded.remaining) }
+            } catch (e: SubtitleException) {
+                _online.update { it.copy(downloadingId = null, failure = e.failure) }
+            }
+        }
+    }
+
+    /** Spisak je zatvoren: pretraga koja traje se prekida, a preuzimanje koje je krenulo se završava. */
+    fun closeOnlineSubtitles() {
+        if (_online.value.downloadingId == null) onlineJob?.cancel()
+        _online.update { OnlineSubtitlesState(downloadingId = it.downloadingId) }
+    }
+
+    /** TMDB ID se traži kod provajdera; ako to ne uspe, pretraga ide po nazivu. */
+    private suspend fun lookup(load: suspend () -> Long?): Long? = try {
+        load()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
     fun onForeground() = engine.resume()
 
     fun onBackground() {
@@ -280,6 +370,7 @@ class VodPlayerViewModel @Inject constructor(
                 durationMs = 0,
                 scrubMs = null,
                 hasNext = details.episodeAfter(episode.id) != null,
+                onlineSubtitles = subtitles.isAvailable,
             )
         }
         play(startOver) {
