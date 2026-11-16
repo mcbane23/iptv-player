@@ -42,7 +42,6 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
-import com.bane23.iptvplayer.ui.common.player.PlayerScrim
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
@@ -196,19 +195,22 @@ fun TvVodPlayerScreen(
 
         if (controls) {
             Box(modifier = Modifier.align(Alignment.TopStart)) {
-                PlayerScrim(top = true, modifier = Modifier.matchParentSize())
                 val season = ui.season
                 val episode = ui.episode
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
+                        .padding(horizontal = 48.dp, vertical = 27.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TitleBackIcon()
                     PlayerTitle(
-                        title = ui.title,
-                        subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
+                        title = if (season != null && episode != null) {
+                            "${episodeLabel(season, episode)}  ·  ${ui.title}"
+                        } else {
+                            ui.title
+                        },
+                        subtitle = null,
                         large = true,
                         modifier = Modifier.weight(1f),
                     )
@@ -216,11 +218,10 @@ fun TvVodPlayerScreen(
             }
 
             Box(modifier = Modifier.align(Alignment.BottomStart)) {
-                PlayerScrim(top = false, modifier = Modifier.matchParentSize())
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
+                        .padding(horizontal = 48.dp, vertical = 27.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     val paused = playback.status == PlaybackStatus.PAUSED
@@ -229,7 +230,7 @@ fun TvVodPlayerScreen(
                         endLabel = formatDuration(ui.durationMs),
                         leading = {
                             PlayerIconButton(
-                                icon = AppIcons.Rewind,
+                                icon = AppIcons.FastRewind,
                                 description = stringResource(R.string.vod_seek_back),
                                 onClick = { viewModel.seekBy(-SEEK_STEP_MS) },
                             )
@@ -250,9 +251,9 @@ fun TvVodPlayerScreen(
                             )
                         },
                         trailing = {
-                            PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                            PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                             PlayerIconButton(
-                                icon = AppIcons.Forward,
+                                icon = AppIcons.FastForward,
                                 description = stringResource(R.string.vod_seek_forward),
                                 onClick = { viewModel.seekBy(SEEK_STEP_MS) },
                             )
@@ -263,6 +264,11 @@ fun TvVodPlayerScreen(
                                     onClick = viewModel::next,
                                 )
                             }
+                            PlayerIconButton(
+                                icon = AppIcons.AspectRatio,
+                                description = ui.aspectMode.label(),
+                                onClick = viewModel::cycleAspectMode,
+                            )
                         },
                     ) { barModifier ->
                         PlayerSeekBar(
@@ -276,23 +282,19 @@ fun TvVodPlayerScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlayerChip(
                             label = stringResource(R.string.player_subtitles),
-                            icon = AppIcons.Subtitles,
                             active = playback.textEnabled,
                             onClick = { tracks = TvTrackKind.SUBTITLES },
                         )
                         PlayerChip(
                             label = stringResource(R.string.player_audio),
-                            icon = AppIcons.Audio,
                             onClick = { tracks = TvTrackKind.AUDIO },
                         )
                         PlayerChip(
                             label = ui.aspectMode.label(),
-                            icon = AppIcons.AspectRatio,
                             onClick = viewModel::cycleAspectMode,
                         )
                         PlayerChip(
                             label = stringResource(R.string.vod_start_over),
-                            icon = AppIcons.Previous,
                             onClick = { viewModel.seekTo(0) },
                         )
                     }

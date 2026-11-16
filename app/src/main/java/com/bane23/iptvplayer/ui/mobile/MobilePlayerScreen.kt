@@ -290,8 +290,9 @@ private fun LiveControls(
                     )
                 },
                 trailing = {
-                    PlayerResolution(player, modifier = Modifier.padding(end = 8.dp))
+                    PlayerResolution(player, modifier = Modifier.padding(horizontal = 8.dp))
                     PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext)
+                    PlayerIconButton(AppIcons.AspectRatio, ui.aspectMode.label(), onAspect)
                 },
             ) { barModifier ->
                 val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
@@ -303,27 +304,28 @@ private fun LiveControls(
             nowNext.nextLine()?.let { line ->
                 Text(
                     text = line,
-                    color = Color.White.copy(alpha = 0.75f),
+                    color = Color.White.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                 )
             }
         },
         chips = {
-            PlayerChip(label = stringResource(R.string.player_channels), icon = AppIcons.ChannelList, onClick = onChannels)
+            PlayerChip(label = stringResource(R.string.player_channels), onClick = onChannels)
             PlayerChip(
                 label = stringResource(R.string.player_subtitles),
-                icon = AppIcons.Subtitles,
                 active = playback.textEnabled,
                 onClick = onSubtitles,
             )
-            PlayerChip(label = stringResource(R.string.player_audio), icon = AppIcons.Audio, onClick = onAudio)
-            PlayerChip(label = ui.aspectMode.label(), icon = AppIcons.AspectRatio, onClick = onAspect)
+            PlayerChip(label = stringResource(R.string.player_audio), onClick = onAudio)
+            PlayerChip(label = ui.aspectMode.label(), onClick = onAspect)
             if (channel != null) {
                 PlayerChip(
                     label = stringResource(R.string.category_favorites),
-                    icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                     active = isFavorite,
                     onClick = onFavorite,
                 )

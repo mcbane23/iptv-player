@@ -57,7 +57,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
-import com.bane23.iptvplayer.ui.common.player.PlayerScrim
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
@@ -283,11 +282,10 @@ private fun LiveControls(
     val now by rememberNow()
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.align(Alignment.TopStart)) {
-            PlayerScrim(top = true, modifier = Modifier.matchParentSize())
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
+                    .padding(horizontal = 48.dp, vertical = 27.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TitleBackIcon()
@@ -301,11 +299,10 @@ private fun LiveControls(
         }
 
         Box(modifier = Modifier.align(Alignment.BottomStart)) {
-            PlayerScrim(top = false, modifier = Modifier.matchParentSize())
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
+                    .padding(horizontal = 48.dp, vertical = 27.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 val program = nowNext.now
@@ -337,11 +334,16 @@ private fun LiveControls(
                         )
                     },
                     trailing = {
-                        PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                        PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                         PlayerIconButton(
                             icon = AppIcons.Next,
                             description = stringResource(R.string.player_next),
                             onClick = viewModel::next,
+                        )
+                        PlayerIconButton(
+                            icon = AppIcons.AspectRatio,
+                            description = ui.aspectMode.label(),
+                            onClick = onAspect,
                         )
                     },
                 ) { barModifier ->
@@ -354,29 +356,29 @@ private fun LiveControls(
                 nowNext.nextLine()?.let { line ->
                     Text(
                         text = line,
-                        color = Color.White.copy(alpha = 0.75f),
+                        color = Color.White.copy(alpha = 0.9f),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PlayerChip(
                         label = stringResource(R.string.player_channels),
-                        icon = AppIcons.ChannelList,
                         onClick = onChannels,
                     )
                     PlayerChip(
                         label = stringResource(R.string.player_subtitles),
-                        icon = AppIcons.Subtitles,
                         active = playback.textEnabled,
                         onClick = onSubtitles,
                     )
-                    PlayerChip(label = stringResource(R.string.player_audio), icon = AppIcons.Audio, onClick = onAudio)
-                    PlayerChip(label = ui.aspectMode.label(), icon = AppIcons.AspectRatio, onClick = onAspect)
+                    PlayerChip(label = stringResource(R.string.player_audio), onClick = onAudio)
+                    PlayerChip(label = ui.aspectMode.label(), onClick = onAspect)
                     PlayerChip(
                         label = stringResource(R.string.category_favorites),
-                        icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                         active = isFavorite,
                         onClick = onFavorite,
                     )

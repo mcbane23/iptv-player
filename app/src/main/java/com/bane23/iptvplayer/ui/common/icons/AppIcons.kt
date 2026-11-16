@@ -66,6 +66,8 @@ object AppIcons {
         "M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8" +
             " 3.58-8 8-8z",
     )
+    val FastRewind by icon("M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z")
+    val FastForward by icon("M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z")
     val Subtitles by icon(
         "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2z" +
             "m10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z",
