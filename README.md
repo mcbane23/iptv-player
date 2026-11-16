@@ -1,4 +1,4 @@
-# Ember (IPTV plejer)
+# Glowbox (IPTV plejer)
 
 Besplatan IPTV plejer za Android telefon i Android TV. Aplikacija ne sadrži nikakav
 sadržaj: korisnik dodaje sopstvene liste (M3U ili Xtream Codes nalog).
