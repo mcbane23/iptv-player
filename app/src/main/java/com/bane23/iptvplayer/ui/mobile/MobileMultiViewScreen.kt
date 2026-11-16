@@ -48,6 +48,7 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
 import com.bane23.iptvplayer.ui.common.multiview.MultiViewViewModel
+import com.bane23.iptvplayer.ui.common.multiview.label
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
@@ -105,6 +106,7 @@ fun MobileMultiViewScreen(
             val tile = state.tiles[index]
             Tile(
                 tile = tile,
+                showInfo = state.showInfo,
                 active = state.active == index,
                 modifier = modifier,
                 onClick = {
@@ -208,6 +210,7 @@ private const val CONTROLS_TIMEOUT_MS = 4_000L
 @Composable
 private fun Tile(
     tile: MultiTile,
+    showInfo: Boolean,
     active: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
@@ -238,6 +241,20 @@ private fun Tile(
                     .background(Color.Black.copy(alpha = 0.6f))
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )
+            val info = if (showInfo) tile.video.label() else null
+            if (info != null) {
+                Text(
+                    text = info,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
             if (tile.status == PlaybackStatus.FAILED) {
                 Text(
                     text = stringResource(R.string.multiview_failed),

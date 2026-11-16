@@ -48,6 +48,7 @@ import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
 import com.bane23.iptvplayer.ui.common.multiview.MultiViewViewModel
+import com.bane23.iptvplayer.ui.common.multiview.label
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
@@ -96,6 +97,7 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
                     row.forEach { index ->
                         Tile(
                             tile = state.tiles[index],
+                            showInfo = state.showInfo,
                             modifier = Modifier
                                 .weight(1f)
                                 .focusRequester(tileFocus[index]),
@@ -216,6 +218,7 @@ private fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: (
 @Composable
 private fun Tile(
     tile: MultiTile,
+    showInfo: Boolean,
     modifier: Modifier,
     onFocused: () -> Unit,
     onClick: () -> Unit,
@@ -251,6 +254,20 @@ private fun Tile(
                     .background(Color.Black.copy(alpha = 0.6f))
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             )
+            val info = if (showInfo) tile.video.label() else null
+            if (info != null) {
+                Text(
+                    text = info,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+            }
             if (tile.status == PlaybackStatus.FAILED) {
                 Text(
                     text = stringResource(R.string.multiview_failed),

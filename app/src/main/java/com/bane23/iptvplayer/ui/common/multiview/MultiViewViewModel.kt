@@ -14,10 +14,12 @@ import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.PlayerSettings
+import com.bane23.iptvplayer.player.VideoInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +38,7 @@ data class MultiTile(
     val channel: Channel? = null,
     val player: Player? = null,
     val status: PlaybackStatus = PlaybackStatus.IDLE,
+    val video: VideoInfo = VideoInfo(),
 )
 
 /** Izbor kanala za polje [slot]: prvo kategorija, pa kanal. */
@@ -48,6 +51,8 @@ data class MultiViewUiState(
     /** Polje čiji se zvuk čuje. */
     val active: Int = 0,
     val picker: MultiPicker? = null,
+    /** Na poljima se ispisuju dekoder, rezolucija i ispuštene slike (podešavanje). */
+    val showInfo: Boolean = false,
 )
 
 /**
@@ -64,8 +69,15 @@ class MultiViewViewModel @Inject constructor(
     val state: StateFlow<MultiViewUiState> = _state.asStateFlow()
 
     private val engines = arrayOfNulls<PlayerEngine>(MAX_TILES)
+    private val statusJobs = arrayOfNulls<Job>(MAX_TILES)
     private var playerSettings: PlayerSettings? = null
     private var foreground = false
+
+    init {
+        viewModelScope.launch {
+            settings.playerSettings.collect { current -> _state.update { it.copy(showInfo = current.showStreamInfo) } }
+        }
+    }
 
     /** Kategorije aktivne liste za izbor kanala (zaključane nose katanac u nazivu). */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -158,6 +170,8 @@ class MultiViewViewModel @Inject constructor(
     }
 
     private fun clear(index: Int) {
+        statusJobs[index]?.cancel()
+        statusJobs[index] = null
         engines[index]?.release()
         engines[index] = null
         _state.update { state -> state.copy(tiles = state.tiles.replace(index) { MultiTile() }) }
@@ -166,13 +180,13 @@ class MultiViewViewModel @Inject constructor(
     private suspend fun engine(index: Int): PlayerEngine {
         engines[index]?.let { return it }
         val playerSettings = playerSettings ?: settings.playerSettings.first().also { playerSettings = it }
-        val engine = PlayerEngine(context, viewModelScope, playerSettings)
+        val engine = PlayerEngine(context, viewModelScope, playerSettings, shared = true)
         engines[index] = engine
-        viewModelScope.launch {
+        statusJobs[index] = viewModelScope.launch {
             engine.state.collect { playback ->
                 // Polje je u međuvremenu ispražnjeno: stanje starog plejera se više ne prikazuje.
                 if (engines[index] !== engine) return@collect
-                _state.update { state -> state.copy(tiles = state.tiles.replace(index) { it.copy(status = playback.status) }) }
+                _state.update { state -> state.copy(tiles = state.tiles.replace(index) { it.copy(status = playback.status, video = playback.video) }) }
             }
         }
         return engine
