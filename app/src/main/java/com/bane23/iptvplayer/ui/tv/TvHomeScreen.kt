@@ -51,6 +51,7 @@ import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
 /** Sekcije koje se otvaraju u početnom ekranu, pored bočnog menija. */
@@ -82,7 +83,9 @@ fun TvHomeScreen(
     onTrakt: () -> Unit,
     onRecordings: () -> Unit,
     onMultiView: () -> Unit,
+    recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
 ) {
+    val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(TvTab.LIVE) }
     LaunchedEffect(liveState.loading, liveState.hasVod) {
@@ -99,6 +102,8 @@ fun TvHomeScreen(
     var railFocused by remember { mutableStateOf(false) }
     val railWidth by animateDpAsState(if (railFocused) RailExpanded else RailCollapsed, label = "rail")
     val selectedFocus = remember { FocusRequester() }
+    // Stavka „Snima se” ostaje u meniju dok je fokus na njoj i kad se snimanje završi, da fokus ne nestane.
+    var recordingFocused by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -166,6 +171,21 @@ fun TvHomeScreen(
                 .padding(horizontal = 16.dp, vertical = 48.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            if (recording.isNotEmpty() || recordingFocused) {
+                val single = recording.singleOrNull()
+                RailItem(
+                    icon = AppIcons.Record,
+                    label = when {
+                        single != null -> stringResource(R.string.recording_home_one, single.channelName)
+                        recording.isNotEmpty() -> stringResource(R.string.recording_home_many, recording.size)
+                        else -> stringResource(R.string.recordings_title)
+                    },
+                    expanded = railFocused,
+                    onClick = onRecordings,
+                    modifier = Modifier.onFocusChanged { recordingFocused = it.isFocused },
+                    tint = if (recording.isNotEmpty()) MaterialTheme.colorScheme.error else null,
+                )
+            }
             if (playlistId != null) {
                 RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railFocused, onClick = onSearch)
             }
@@ -231,7 +251,8 @@ fun TvHomeScreen(
 
 /**
  * Stavka bočnog menija. Fokusirana stavka je bela sa tamnim sadržajem, izabrana sekcija ima
- * ikonicu u akcentnoj boji. Naziv se vidi samo kad je meni raširen.
+ * ikonicu u akcentnoj boji, a [tint] daje stavci svoju boju (crvena dok se snima). Naziv se vidi
+ * samo kad je meni raširen.
  */
 @Composable
 private fun RailItem(
@@ -241,11 +262,13 @@ private fun RailItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    tint: Color? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val content = when {
         focused -> Color(0xFF0E1216)
+        tint != null -> tint
         selected -> colors.primary
         else -> colors.onSurfaceVariant
     }
