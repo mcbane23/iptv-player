@@ -22,6 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -66,7 +72,10 @@ fun TvListRow(
     )
 }
 
-/** Red sa jednim tekstom i, po želji, tekstom na desnoj strani (npr. broj kanala). */
+/**
+ * Red sa jednim tekstom i, po želji, tekstom na desnoj strani (npr. broj kanala). Kad je zadat
+ * [checked], red je podešavanje uključeno/isključeno i desno ima prekidač; OK ga menja.
+ */
 @Composable
 fun TvTextRow(
     text: String,
@@ -75,8 +84,21 @@ fun TvTextRow(
     trailing: String? = null,
     selected: Boolean = false,
     onFocused: () -> Unit = {},
+    checked: Boolean? = null,
 ) {
-    TvListRow(onClick = onClick, modifier = modifier, selected = selected, onFocused = onFocused) { color ->
+    TvListRow(
+        onClick = onClick,
+        modifier = if (checked != null) {
+            modifier.semantics {
+                role = Role.Switch
+                toggleableState = if (checked) ToggleableState.On else ToggleableState.Off
+            }
+        } else {
+            modifier
+        },
+        selected = selected,
+        onFocused = onFocused,
+    ) { color ->
         Text(
             text = text,
             color = color,
@@ -93,6 +115,35 @@ fun TvTextRow(
                 modifier = Modifier.padding(start = 12.dp),
             )
         }
+        if (checked != null) TvSwitch(checked = checked, color = color)
+    }
+}
+
+/**
+ * Prekidač u redu podešavanja. Samo prikazuje stanje (fokus i OK pripadaju celom redu), u boji
+ * teksta reda da se vidi i na fokusiranom redu: uključen je pun sa kružićem desno, isključen
+ * je samo okvir sa kružićem levo.
+ */
+@Composable
+private fun TvSwitch(checked: Boolean, color: Color) {
+    val shape = RoundedCornerShape(11.dp)
+    Box(
+        modifier = Modifier
+            .padding(start = 12.dp)
+            .size(width = 40.dp, height = 22.dp)
+            .then(
+                if (checked) Modifier.background(color, shape) else Modifier.border(2.dp, color.copy(alpha = 0.6f), shape),
+            )
+            .padding(4.dp),
+        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+    ) {
+        // Kružić na punoj podlozi mora da bude suprotne svetline od nje.
+        val thumb = when {
+            !checked -> color.copy(alpha = 0.6f)
+            color.luminance() > 0.5f -> Color(0xFF0E1216)
+            else -> Color.White
+        }
+        Box(modifier = Modifier.size(14.dp).background(thumb, androidx.compose.foundation.shape.CircleShape))
     }
 }
 

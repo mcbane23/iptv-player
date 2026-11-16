@@ -225,15 +225,18 @@ fun MobileVodPlayerScreen(
                 },
                 chips = {
                     PlayerChip(
+                        icon = AppIcons.Subtitles,
                         label = stringResource(R.string.player_subtitles),
                         active = playback.textEnabled,
                         onClick = { panel = VodPanel.SUBTITLES },
                     )
                     PlayerChip(
+                        icon = AppIcons.Audio,
                         label = stringResource(R.string.player_audio),
                         onClick = { panel = VodPanel.AUDIO },
                     )
                     PlayerChip(
+                        icon = AppIcons.AspectRatio,
                         label = ui.aspectMode.label(),
                         onClick = {
                             viewModel.cycleAspectMode()
@@ -241,11 +244,13 @@ fun MobileVodPlayerScreen(
                         },
                     )
                     PlayerChip(
+                        icon = AppIcons.Previous,
                         label = stringResource(R.string.vod_start_over),
                         onClick = { viewModel.seekTo(0) },
                     )
                     if (ui.hasNext) {
                         PlayerChip(
+                            icon = AppIcons.Next,
                             label = stringResource(R.string.vod_next_episode),
                             onClick = viewModel::next,
                         )

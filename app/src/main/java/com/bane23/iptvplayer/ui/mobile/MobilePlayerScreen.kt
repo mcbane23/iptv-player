@@ -346,21 +346,24 @@ private fun LiveControls(
             }
         },
         chips = {
-            PlayerChip(label = stringResource(R.string.player_channels), onClick = onChannels)
+            PlayerChip(icon = AppIcons.ChannelList, label = stringResource(R.string.player_channels), onClick = onChannels)
             PlayerChip(
+                icon = AppIcons.Subtitles,
                 label = stringResource(R.string.player_subtitles),
                 active = playback.textEnabled,
                 onClick = onSubtitles,
             )
-            PlayerChip(label = stringResource(R.string.player_audio), onClick = onAudio)
-            PlayerChip(label = ui.aspectMode.label(), onClick = onAspect)
+            PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
+            PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
             if (channel != null) {
                 PlayerChip(
+                    icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                     label = stringResource(R.string.category_favorites),
                     active = isFavorite,
                     onClick = onFavorite,
                 )
                 PlayerChip(
+                    icon = AppIcons.Record,
                     label = stringResource(if (isRecording) R.string.recording_chip_active else R.string.recording_chip),
                     active = isRecording,
                     onClick = onRecord,

@@ -379,6 +379,13 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Podešavanje mesta čuvanja (memorija uređaja, USB/SD) na ekranu „Snimci”, vidi se kad je priključena
       SD kartica ili USB; upozorenje ispod 2 GB slobodnog prostora, a ispod 300 MB snimanje ne kreće
       i ono koje traje staje. Na USB/SD se piše u folder aplikacije (bez dozvola)
+- [x] Oznaka na početnom ekranu dok se nešto snima: na telefonu traka iznad donje trake (dodir otvara
+      „Snimci”, jedno snimanje se zaustavlja odmah), na TV-u crvena stavka na vrhu bočnog menija
+      koja otvara „Snimci”
+- [x] Dugmad ispod trake u plejeru imaju ikonice; na telefonu u portretu ostaje samo ikonica (red
+      staje u širinu ekrana), u landscape-u i na TV-u ikonica i naziv
+- [x] Podešavanja uključeno/isključeno su prekidači (telefon i TV): OK ili dodir menja stanje odmah,
+      bez spiska vrednosti
 
 **Cast sa telefona na TV**
 

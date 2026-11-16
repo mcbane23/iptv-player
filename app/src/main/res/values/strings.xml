@@ -419,4 +419,7 @@
     <string name="recording_until_program_end">Until the programme ends (%1$s)</string>
     <string name="recording_minutes">%1$d min</string>
     <string name="recording_hours">%1$d h</string>
+    <string name="recording_home_one">Recording: %1$s</string>
+    <string name="recording_home_many">Recordings in progress: %1$d</string>
+    <string name="recording_home_stop">Stop</string>
 </resources>

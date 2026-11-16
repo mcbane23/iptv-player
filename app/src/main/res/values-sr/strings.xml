@@ -417,4 +417,7 @@
     <string name="recording_until_program_end">Do kraja emisije (%1$s)</string>
     <string name="recording_minutes">%1$d min</string>
     <string name="recording_hours">%1$d h</string>
+    <string name="recording_home_one">Snima se: %1$s</string>
+    <string name="recording_home_many">Snimanja u toku: %1$d</string>
+    <string name="recording_home_stop">Zaustavi</string>
 </resources>
