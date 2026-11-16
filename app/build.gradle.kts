@@ -76,6 +76,16 @@ android {
                 "proguard-rules.pro",
             )
         }
+        // Test build koji CI objavljuje (dev-latest i ažuriranje u aplikaciji): optimizovan kao izdanje (R8,
+        // nije debuggable), jer je debug build sa Compose-om višestruko sporiji na slabijim TV uređajima.
+        // Potpisan je stalnim debug ključem i ima dev kanal ažuriranja, pa se instalira preko debug buildova
+        // bez brisanja podataka.
+        create("dev") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "UPDATE_CHANNEL", "\"iptv-player-dev\"")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     compileOptions {
