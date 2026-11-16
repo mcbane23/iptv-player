@@ -54,6 +54,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
@@ -86,6 +87,7 @@ fun MobileHomeScreen(
     onCategories: () -> Unit,
     onParental: () -> Unit,
     onTrakt: () -> Unit,
+    onOpenSubtitles: () -> Unit,
     onRecordings: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
@@ -137,6 +139,7 @@ fun MobileHomeScreen(
                     onCategories = onCategories.takeIf { liveState.playlistId != null },
                     onParental = onParental.takeIf { liveState.playlistId != null },
                     onTrakt = onTrakt.takeIf { isTraktConfigured },
+                    onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
                     onRecordings = onRecordings,
                 )
             }

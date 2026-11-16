@@ -1,6 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +21,11 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.TrackOption
+import com.bane23.iptvplayer.data.subtitles.SubtitleResult
+import com.bane23.iptvplayer.ui.common.subtitles.details
+import com.bane23.iptvplayer.ui.common.subtitles.message
+import com.bane23.iptvplayer.ui.common.vod.OnlineSubtitlesState
+import androidx.compose.ui.text.style.TextOverflow
 
 /** Koji spisak zapisa je otvoren preko slike. */
 enum class TvTrackKind { AUDIO, SUBTITLES }
@@ -35,6 +42,8 @@ fun TvTrackPanel(
     onSelectText: (TrackOption?) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Kad je zadato, spisak titlova na dnu ima stavku „Potraži online”. */
+    onSearchOnline: (() -> Unit)? = null,
 ) {
     val selectedFocus = remember { FocusRequester() }
     // Za titlove je prva stavka „Isključeno”, pa se ostale pomeraju za jedan.
@@ -87,6 +96,15 @@ fun TvTrackPanel(
                 modifier = if (index == focusIndex) Modifier.focusRequester(selectedFocus) else Modifier,
             )
         }
+        if (kind == TvTrackKind.SUBTITLES && onSearchOnline != null) {
+            item {
+                TvTextRow(
+                    text = stringResource(R.string.subtitles_search_online),
+                    trailing = "›",
+                    onClick = onSearchOnline,
+                )
+            }
+        }
     }
     // Prazan spisak nema šta da primi fokus; zatvara se tasterom Nazad.
     LaunchedEffect(kind) { selectedFocus.tryRequestFocus() }
@@ -130,4 +148,87 @@ fun TvChoicePanel(
         }
     }
     LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
+}
+
+/**
+ * Titlovi nađeni na internetu, uz desnu ivicu ekrana. OK preuzima titl i uključuje ga. Dok traje
+ * pretraga (ili kad nema rezultata) fokus drži sama poruka, da daljinski ne ostane bez fokusa.
+ */
+@Composable
+fun TvOnlineSubtitlesPanel(
+    state: OnlineSubtitlesState,
+    onPick: (SubtitleResult) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val firstFocus = remember { FocusRequester() }
+    val statusFocus = remember { FocusRequester() }
+    val results = state.results.orEmpty()
+    val status = when {
+        state.searching -> stringResource(R.string.subtitles_searching)
+        state.failure != null -> stringResource(state.failure.message())
+        state.results != null && results.isEmpty() -> stringResource(R.string.subtitles_none_found)
+        else -> null
+    }
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.45f)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.subtitles_online_title),
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            )
+        }
+        if (status != null) {
+            item {
+                Text(
+                    text = status,
+                    color = if (state.failure != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .focusRequester(statusFocus)
+                        .focusable()
+                        .padding(start = 16.dp, bottom = 8.dp),
+                )
+            }
+        }
+        items(results.size) { index ->
+            val result = results[index]
+            TvListRow(
+                onClick = { onPick(result) },
+                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            ) { color ->
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.name,
+                        color = color,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = if (state.downloadingId == result.fileId) {
+                            stringResource(R.string.subtitles_downloading)
+                        } else {
+                            result.details()
+                        },
+                        color = color.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+    LaunchedEffect(results.isEmpty()) {
+        if (results.isEmpty()) statusFocus.tryRequestFocus() else firstFocus.tryRequestFocus()
+    }
 }

@@ -413,6 +413,13 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna)
 - [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
+- [x] Titlovi sa interneta (OpenSubtitles): u plejeru filmova i epizoda spisak titlova ima stavku
+      „Potraži online”. Traži se po TMDB ID-ju (za epizodu: serija + sezona + epizoda), a ako ga provajder
+      ne šalje, po nazivu očišćenom od oznaka liste. Jezici: jezik titlova iz podešavanja, jezik uređaja i
+      engleski; uz srpski idu i hrvatski i bosanski. Izabrani titl se preuzima u keš (isti se ne preuzima
+      dvaput) i uključuje, a gledanje se nastavlja sa istog mesta. API ključ stiže iz GitHub Secrets
+      (`OPENSUBTITLES_API_KEY`); bez njega se opcija ne prikazuje. Prijava na korisnikov nalog
+      (Podešavanja → OpenSubtitles) nije obavezna, a daje veći dnevni broj preuzimanja
 
 **Brzina na slabijim TV uređajima**
 

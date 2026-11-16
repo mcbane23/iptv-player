@@ -85,6 +85,10 @@ data object ManageCategories : NavKey
 @Serializable
 data object TraktAccount : NavKey
 
+/** OpenSubtitles nalog: prijava za veći dnevni broj preuzimanja titlova. */
+@Serializable
+data object OpenSubtitlesAccount : NavKey
+
 /** Roditeljska zaštita: PIN i zaključane kategorije. */
 @Serializable
 data object ParentalControl : NavKey

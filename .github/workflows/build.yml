@@ -46,6 +46,7 @@ jobs:
         env:
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
         run: ./gradlew assembleDev
 
       # APK se objavljuje samo sa main-a (posle spajanja). Na granama build služi samo kao provera.

@@ -413,6 +413,8 @@ internal fun TrackDialog(
     emptyText: String?,
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
+    /** Dodatna stavka na dnu spiska (npr. „Potraži online”); ne zatvara dijalog sama. */
+    extra: Pair<String, () -> Unit>? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -432,6 +434,11 @@ internal fun TrackDialog(
                             text = if (selected) "✓  $label" else label,
                             modifier = Modifier.fillMaxWidth(),
                         )
+                    }
+                }
+                if (extra != null) {
+                    TextButton(onClick = extra.second, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = extra.first, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
