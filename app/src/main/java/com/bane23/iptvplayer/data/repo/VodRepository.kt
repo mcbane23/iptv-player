@@ -458,15 +458,12 @@ class VodRepository @Inject constructor(
         trakt.changed(playlistId, kind, ids, seriesId ?: 0, watched)
     }
 
-    /** TMDB ID filma (za Trakt): iz već učitanih spiskova, inače iz detalja filma. Null ako ga panel ne šalje. */
-    suspend fun movieTmdbId(movieId: Long): Long? {
-        val prefix = "${session().playlistId}/${VodKind.MOVIES}/"
-        itemCache.entries.asSequence()
-            .filter { it.key.startsWith(prefix) }
-            .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == movieId }?.tmdbId }
-            ?.let { return it }
-        return movie(movieId).tmdbId
-    }
+    /** TMDB ID filma (za Trakt): iz već učitanih spiskova, inače iz detalja filma ili celog spiska. Null ako ga panel ne šalje. */
+    suspend fun movieTmdbId(movieId: Long): Long? =
+        cachedListTmdbId(VodKind.MOVIES, movieId) ?: movie(movieId).tmdbId ?: movieListTmdbId(movieId)
+
+    /** TMDB ID filma iz spiskova (neki paneli ga šalju samo tamo). */
+    suspend fun movieListTmdbId(movieId: Long): Long? = listTmdbId(VodKind.MOVIES, movieId)
 
     /** Epizoda kako je zna Trakt: TMDB ID serije, sezona i broj. Null ako panel ne šalje TMDB ID serije. */
     suspend fun episodeTraktKey(seriesId: Long, episodeId: Long): TraktKey? {
@@ -476,12 +473,22 @@ class VodRepository @Inject constructor(
         return TraktKey.episode(tmdb, episode.season, episode.number)
     }
 
-    /** TMDB ID serije iz već učitanih spiskova (neki paneli ga šalju samo tamo). */
-    suspend fun seriesListTmdbId(seriesId: Long): Long? {
-        val prefix = "${session().playlistId}/${VodKind.SERIES}/"
+    /** TMDB ID serije iz spiskova (neki paneli ga šalju samo tamo). */
+    suspend fun seriesListTmdbId(seriesId: Long): Long? = listTmdbId(VodKind.SERIES, seriesId)
+
+    /**
+     * TMDB ID iz spiskova: prvo iz onih koji su već u memoriji, inače se učitava ceo spisak. Bez toga
+     * serija otvorena pre nego što je ijedan spisak učitan (npr. iz reda „Nastavi gledanje”) ne bi
+     * imala TMDB ID, pa ni oznake sa Trakt-a.
+     */
+    private suspend fun listTmdbId(kind: VodKind, itemId: Long): Long? =
+        cachedListTmdbId(kind, itemId) ?: loadItems(kind, ALL_CATEGORIES).firstOrNull { it.id == itemId }?.tmdbId
+
+    private suspend fun cachedListTmdbId(kind: VodKind, itemId: Long): Long? {
+        val prefix = "${session().playlistId}/$kind/"
         return itemCache.entries.asSequence()
             .filter { it.key.startsWith(prefix) }
-            .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == seriesId }?.tmdbId }
+            .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == itemId }?.tmdbId }
     }
 
     /** ID-jevi odgledanih filmova aktivne liste, za kvačicu na posteru. */

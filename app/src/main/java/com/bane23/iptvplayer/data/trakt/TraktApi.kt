@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 /**
  * Trakt API v2. Zaglavlja `trakt-api-version` i `trakt-api-key` dodaje klijent (vidi `AppModule`);
@@ -27,11 +28,25 @@ interface TraktApi {
     @GET("users/settings")
     suspend fun userSettings(@Header("Authorization") auth: String): TraktUserSettings
 
+    /**
+     * Odgledani filmovi, stranu po stranu (Trakt od jula 2026. bez `limit` vraća samo prvih 100).
+     * Broj strana je u zaglavlju `X-Pagination-Page-Count`.
+     */
     @GET("sync/watched/movies")
-    suspend fun watchedMovies(@Header("Authorization") auth: String): List<WatchedMovie>
+    suspend fun watchedMovies(
+        @Header("Authorization") auth: String,
+        @Query("page") page: Int,
+        @Query("limit") limit: Int,
+    ): Response<List<WatchedMovie>>
 
+    /** Odgledane serije, stranu po stranu. Sezone i epizode stižu samo uz `extended=progress` (najviše 100 po strani). */
     @GET("sync/watched/shows")
-    suspend fun watchedShows(@Header("Authorization") auth: String): List<WatchedShow>
+    suspend fun watchedShows(
+        @Header("Authorization") auth: String,
+        @Query("page") page: Int,
+        @Query("limit") limit: Int,
+        @Query("extended") extended: String = "progress",
+    ): Response<List<WatchedShow>>
 
     @POST("sync/history")
     suspend fun addHistory(@Header("Authorization") auth: String, @Body body: HistoryBody): Response<Unit>

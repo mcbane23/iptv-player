@@ -98,7 +98,13 @@ data class WatchedSeason(val number: Int, val episodes: List<WatchedEpisode> = e
 data class WatchedEpisode(
     val number: Int,
     @SerialName("last_watched_at") val lastWatchedAt: String? = null,
-)
+    /** Broj gledanja, kad ga Trakt šalje; 0 znači da epizoda nije odgledana. */
+    val plays: Int? = null,
+    /** Kad Trakt šalje napredak po epizodi: false znači da epizoda nije odgledana. */
+    val completed: Boolean? = null,
+) {
+    val isWatched: Boolean get() = completed != false && (plays == null || plays > 0)
+}
 
 /** Telo za `sync/history` (dodavanje) i `sync/history/remove` (uklanjanje). */
 @Serializable

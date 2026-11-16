@@ -52,6 +52,7 @@ object TraktPayloads {
             val tmdb = show.show?.ids?.tmdb ?: continue
             for (season in show.seasons) {
                 for (episode in season.episodes) {
+                    if (!episode.isWatched) continue
                     rows.add(TraktWatchedEntity(TraktKey.EPISODE, tmdb, season.number, episode.number, now))
                 }
             }
