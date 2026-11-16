@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ažuriranje iz aplikacije: instaliranje preuzetog APK-a (korisnik potvrđuje). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Android 14+: sledeće ažuriranje može bez potvrde kad je aplikacija već instalirala sebe. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!-- Jedan APK za telefon i TV: ni ekran na dodir ni leanback nisu obavezni. -->
     <uses-feature
@@ -46,6 +50,10 @@
                     android:scheme="iptvplayer" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".data.update.InstallResultReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

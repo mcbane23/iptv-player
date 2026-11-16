@@ -245,4 +245,28 @@
     <string name="search_empty_categories">No category matches</string>
     <string name="vod_favorites_empty">No favorites yet. Add one with the star in the details.</string>
     <string name="vod_category">Category</string>
+
+    <!-- Ažuriranje aplikacije -->
+    <string name="settings_about_header">About</string>
+    <string name="update_check">Check for update</string>
+    <string name="update_current_version">Installed version: %1$s</string>
+    <string name="update_title">App update</string>
+    <string name="update_checking">Checking for a new version…</string>
+    <string name="update_up_to_date">You have the latest version (%1$s).</string>
+    <string name="update_available_title">New version</string>
+    <string name="update_available_text">Version %1$s is available (installed: %2$s). The app closes after the update; just open it again. Your playlists and favorites stay.</string>
+    <string name="update_install">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading…</string>
+    <string name="update_downloading_percent">Downloading… %1$d%%</string>
+    <string name="update_installing">Confirm the installation on the next screen.</string>
+    <string name="update_permission_title">Permission needed</string>
+    <string name="update_permission_text">To install the update, allow this app to install apps (Install unknown apps). Then come back and the installation starts.</string>
+    <string name="update_open_settings">Open settings</string>
+    <string name="update_cancel">Cancel</string>
+    <string name="update_close">Close</string>
+    <string name="update_ok">OK</string>
+    <string name="update_error_network">Could not reach the update server. Check the internet connection and try again.</string>
+    <string name="update_error_file">The downloaded file is damaged. Try again.</string>
+    <string name="update_error_install">The update was not installed.</string>
 </resources>
