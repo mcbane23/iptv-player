@@ -50,6 +50,7 @@ fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
     onTrakt: (() -> Unit)? = null,
+    onRecordings: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -121,6 +122,17 @@ fun TvSettingsScreen(
                         text = stringResource(R.string.trakt_title),
                         trailing = "›",
                         onClick = onTrakt,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
+                if (onRecordings != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.recordings_title),
+                        trailing = "›",
+                        onClick = onRecordings,
                         onFocused = {
                             focusedChoice = null
                             openChoice = null

@@ -33,6 +33,9 @@ class RecordingService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    /** Servis sme da se ugasi tek pošto je pokazao obaveštenje (sistem to traži od svakog pokretanja). */
+    private var foreground = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -43,6 +46,7 @@ class RecordingService : Service() {
         }
         scope.launch {
             recordings.active.collect { active ->
+                if (!foreground) return@collect
                 if (active.isEmpty()) {
                     ServiceCompat.stopForeground(this@RecordingService, ServiceCompat.STOP_FOREGROUND_REMOVE)
                     stopSelf()
@@ -61,6 +65,7 @@ class RecordingService : Service() {
             0
         }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(recordings.active.value), type)
+        foreground = true
         if (intent?.action == ACTION_STOP) recordings.stopAll()
         if (recordings.active.value.isEmpty()) {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)

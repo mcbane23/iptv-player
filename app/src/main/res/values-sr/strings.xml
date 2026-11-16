@@ -373,4 +373,26 @@
     <string name="cast_failed_tv_app">TV ne može da pusti ovaj strim.</string>
     <string name="cast_tv_code_title">Kod za povezivanje telefona</string>
     <string name="cast_from_phone">Poslato sa telefona</string>
+    <string name="recordings_title">Snimci</string>
+    <string name="recordings_empty">Još nema snimaka. Snimanje počinje dugmetom „Snimaj” u plejeru kanala.</string>
+    <string name="recording_chip">Snimaj</string>
+    <string name="recording_chip_active">Snima se</string>
+    <string name="recording_started">Snimanje je počelo</string>
+    <string name="recording_stopped">Snimanje je zaustavljeno</string>
+    <string name="recording_no_space">Nema dovoljno slobodnog prostora za snimanje</string>
+    <string name="recording_no_storage">Nema mesta za čuvanje snimka</string>
+    <string name="recording_failed">Ovaj kanal ne može da se snima</string>
+    <string name="recording_in_progress">Snima se</string>
+    <string name="recording_error_space">Zaustavljeno: nema prostora</string>
+    <string name="recording_error_unsupported">Ovaj strim ne može da se snima</string>
+    <string name="recording_error_failed">Nije uspelo. Provajder možda dozvoljava samo jednu vezu.</string>
+    <string name="recording_error_interrupted">Prekinuto</string>
+    <string name="recording_storage">Snimci: %1$s · Slobodno: %2$s</string>
+    <string name="recording_play">Pusti</string>
+    <string name="recording_stop">Zaustavi snimanje</string>
+    <string name="recording_delete_title">Brisanje snimka</string>
+    <string name="recording_delete_message">Obrisati „%1$s”? Fajl se briše sa uređaja.</string>
+    <string name="recording_delete_confirm">Pritisni ponovo za brisanje</string>
+    <string name="recording_channel">Snimanje</string>
+    <string name="recording_notification_title">Snimanje je u toku</string>
 </resources>

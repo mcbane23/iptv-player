@@ -373,4 +373,26 @@
     <string name="cast_failed_tv_app">The TV could not play this stream.</string>
     <string name="cast_tv_code_title">Code for connecting the phone</string>
     <string name="cast_from_phone">Sent from the phone</string>
+    <string name="recordings_title">Recordings</string>
+    <string name="recordings_empty">No recordings yet. Start one with the Record button in the channel player.</string>
+    <string name="recording_chip">Record</string>
+    <string name="recording_chip_active">Recording</string>
+    <string name="recording_started">Recording started</string>
+    <string name="recording_stopped">Recording stopped</string>
+    <string name="recording_no_space">Not enough free space to record</string>
+    <string name="recording_no_storage">No place to save the recording</string>
+    <string name="recording_failed">This channel cannot be recorded</string>
+    <string name="recording_in_progress">Recording now</string>
+    <string name="recording_error_space">Stopped: storage full</string>
+    <string name="recording_error_unsupported">This stream cannot be recorded</string>
+    <string name="recording_error_failed">Failed. The provider may allow only one connection.</string>
+    <string name="recording_error_interrupted">Interrupted</string>
+    <string name="recording_storage">Recordings: %1$s · Free: %2$s</string>
+    <string name="recording_play">Play</string>
+    <string name="recording_stop">Stop recording</string>
+    <string name="recording_delete_title">Delete recording</string>
+    <string name="recording_delete_message">Delete “%1$s”? The file is removed from the device.</string>
+    <string name="recording_delete_confirm">Press again to delete</string>
+    <string name="recording_channel">Recording</string>
+    <string name="recording_notification_title">Recording in progress</string>
 </resources>

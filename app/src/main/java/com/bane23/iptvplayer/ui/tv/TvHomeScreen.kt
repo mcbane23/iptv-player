@@ -80,6 +80,7 @@ fun TvHomeScreen(
     onCategories: () -> Unit,
     onParental: () -> Unit,
     onTrakt: () -> Unit,
+    onRecordings: () -> Unit,
     onMultiView: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
@@ -144,6 +145,7 @@ fun TvHomeScreen(
                         onCategories = onCategories.takeIf { playlistId != null },
                         onParental = onParental.takeIf { playlistId != null },
                         onTrakt = onTrakt.takeIf { isTraktConfigured },
+                        onRecordings = onRecordings,
                     )
                 }
             }

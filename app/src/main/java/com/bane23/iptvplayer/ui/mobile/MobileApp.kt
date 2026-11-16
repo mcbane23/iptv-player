@@ -21,6 +21,8 @@ import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
+import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
+import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
@@ -91,6 +93,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
+                    onRecordings = { backStack.add(Recordings) },
                     onMultiView = { backStack.add(MultiView) },
                 )
             }
@@ -221,6 +224,18 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<TraktAccount> {
                 MobileTraktScreen(onBack = { backStack.removeLastOrNull() })
+            }
+            entry<Recordings> {
+                MobileRecordingsScreen(
+                    onPlay = { id -> backStack.add(PlayRecording(id)) },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<PlayRecording> { key ->
+                MobileVodPlayerScreen(
+                    start = { it.startRecording(key.recordingId) },
+                    onClose = { backStack.removeLastOrNull() },
+                )
             }
             entry<Playlists> {
                 MobilePlaylistsScreen(

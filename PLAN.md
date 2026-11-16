@@ -351,9 +351,12 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 
 **Snimanje sadržaja**
 
-- [ ] Snimanje kanala koji se trenutno gleda (dugme u plejeru), snimak se čuva na uređaju
+- [x] Snimanje kanala koji se trenutno gleda (dugme „Snimaj” u plejeru), snimak se čuva na uređaju.
+      Vlasnik je 16. 11. 2026. izabrao posebnu vezu za snimanje: snima se i kad se promeni kanal ili
+      zatvori plejer (servis u pozadini), ali uz gledanje nalog troši dve veze kod provajdera.
+      MPEG-TS se prepisuje kako stiže, HLS deo po deo; šifrovan i fMP4 HLS se ne snima (baza v11)
 - [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
-- [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
+- [x] Ekran „Snimci” (u Podešavanjima): puštanje, zaustavljanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
 
 **Cast sa telefona na TV**
