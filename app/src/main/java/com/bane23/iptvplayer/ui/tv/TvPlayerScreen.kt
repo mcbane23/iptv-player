@@ -64,6 +64,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
+import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -209,6 +210,7 @@ fun TvPlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
         )
+        StreamDebugLabel(playback.video, Modifier.align(Alignment.TopEnd))
 
         statusMessage(ui, playback)?.let { message ->
             Text(
