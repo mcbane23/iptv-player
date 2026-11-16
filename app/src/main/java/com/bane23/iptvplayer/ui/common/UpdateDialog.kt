@@ -62,21 +62,24 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
         onPauseOrDispose { }
     }
 
-    when (val s = state) {
-        UpdateState.Idle -> Unit
-        UpdateState.Checking -> UpdateAlert(
+    // Jedan dijalog za sva stanja: menja se samo sadržaj, pa prozor ne nestaje i ne treperi
+    // (npr. „Proveravam…” odmah prelazi u „Imate najnoviju verziju”).
+    val content: AlertContent? = when (val s = state) {
+        UpdateState.Idle -> null
+        UpdateState.Checking -> AlertContent(
             title = stringResource(R.string.update_title),
             text = stringResource(R.string.update_checking),
+            progress = -1f,
             confirm = stringResource(R.string.update_close) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
-        UpdateState.UpToDate -> UpdateAlert(
+        UpdateState.UpToDate -> AlertContent(
             title = stringResource(R.string.update_title),
             text = stringResource(R.string.update_up_to_date, viewModel.installedVersion),
             confirm = stringResource(R.string.update_ok) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
-        is UpdateState.Available -> UpdateAlert(
+        is UpdateState.Available -> AlertContent(
             title = stringResource(R.string.update_available_title),
             text = stringResource(
                 R.string.update_available_text,
@@ -87,7 +90,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
             dismiss = stringResource(R.string.update_later) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
-        is UpdateState.Downloading -> UpdateAlert(
+        is UpdateState.Downloading -> AlertContent(
             title = stringResource(R.string.update_available_title),
             text = s.progress?.let { stringResource(R.string.update_downloading_percent, (it * 100).toInt()) }
                 ?: stringResource(R.string.update_downloading),
@@ -96,20 +99,20 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
             // Slučajan dodir pored dijaloga ne prekida preuzimanje.
             onDismiss = {},
         )
-        is UpdateState.NeedsPermission -> UpdateAlert(
+        is UpdateState.NeedsPermission -> AlertContent(
             title = stringResource(R.string.update_permission_title),
             text = stringResource(R.string.update_permission_text),
             confirm = stringResource(R.string.update_open_settings) to { openInstallPermission(context) },
             dismiss = stringResource(R.string.update_cancel) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
-        is UpdateState.Installing -> UpdateAlert(
+        is UpdateState.Installing -> AlertContent(
             title = stringResource(R.string.update_available_title),
             text = stringResource(R.string.update_installing),
             confirm = stringResource(R.string.update_close) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
-        is UpdateState.Failed -> UpdateAlert(
+        is UpdateState.Failed -> AlertContent(
             title = stringResource(R.string.update_title),
             text = stringResource(
                 when (s.reason) {
@@ -122,18 +125,22 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
             onDismiss = viewModel::dismiss,
         )
     }
+    if (content != null) UpdateAlert(content)
 }
 
-@Composable
-private fun UpdateAlert(
-    title: String,
-    text: String,
-    confirm: Pair<String, () -> Unit>,
-    onDismiss: () -> Unit,
-    dismiss: Pair<String, () -> Unit>? = null,
+private data class AlertContent(
+    val title: String,
+    val text: String,
+    val confirm: Pair<String, () -> Unit>,
+    val onDismiss: () -> Unit,
+    val dismiss: Pair<String, () -> Unit>? = null,
     /** Napredak od 0 do 1, negativno za neodređen, null bez trake. */
-    progress: Float? = null,
-) {
+    val progress: Float? = null,
+)
+
+@Composable
+private fun UpdateAlert(content: AlertContent) {
+    val (title, text, confirm, onDismiss, dismiss, progress) = content
     val confirmFocus = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
