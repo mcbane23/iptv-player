@@ -343,8 +343,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 **Premotavanje strima**
 
 - [x] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
-- [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
-      sa pregledom vremena na traci, da se lako stigne do željenog mesta
+- [x] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
+      sa pregledom vremena na traci, da se lako stigne do željenog mesta. Plejer premota tek kad
+      se strelica pusti, pa se strim ne učitava iznova na svaki korak
 
 **Snimanje sadržaja**
 

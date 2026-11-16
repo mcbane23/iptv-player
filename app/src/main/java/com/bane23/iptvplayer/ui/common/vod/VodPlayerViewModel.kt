@@ -19,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,10 @@ data class VodPlayerUiState(
     val episode: Int? = null,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    /** Mesto na koje će se premotati kad se strelica pusti; null kad se ne premotava. */
+    val scrubMs: Long? = null,
+    /** Pozicija sa koje je premotavanje krenulo, za prikaz pomaka. */
+    val scrubFromMs: Long = 0,
     val aspectMode: AspectMode = AspectMode.FIT,
     val hasNext: Boolean = false,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
@@ -82,6 +87,7 @@ class VodPlayerViewModel @Inject constructor(
     private var source: StreamSource? = null
     private var started = false
     private var lastSavedAt = 0L
+    private var scrubJob: Job? = null
 
     init {
         // Pozicija se osvežava dok se gleda i povremeno pamti.
@@ -188,8 +194,34 @@ class VodPlayerViewModel @Inject constructor(
     }
 
     fun seekTo(positionMs: Long) {
+        scrubJob?.cancel()
         engine.seekTo(positionMs)
-        _ui.update { it.copy(positionMs = positionMs) }
+        _ui.update { it.copy(positionMs = positionMs, scrubMs = null) }
+    }
+
+    /**
+     * Premotavanje strelicama na daljinskom: dok se strelica drži pomera se samo oznaka na traci,
+     * a plejer premota tek kad se strelica pusti ([commitScrub]) ili malo posle poslednjeg pritiska.
+     * Tako se ne učitava iznova na svaki korak.
+     */
+    fun scrubBy(deltaMs: Long) {
+        val state = _ui.value
+        if (state.durationMs <= 0) return
+        val from = state.scrubMs ?: state.positionMs
+        val target = (from + deltaMs).coerceIn(0, state.durationMs)
+        _ui.update {
+            it.copy(scrubMs = target, scrubFromMs = if (it.scrubMs == null) it.positionMs else it.scrubFromMs)
+        }
+        scrubJob?.cancel()
+        scrubJob = viewModelScope.launch {
+            delay(SCRUB_COMMIT_MS)
+            commitScrub()
+        }
+    }
+
+    fun commitScrub() {
+        val target = _ui.value.scrubMs ?: return
+        seekTo(target)
     }
 
     fun cycleAspectMode() = _ui.update {
@@ -227,6 +259,7 @@ class VodPlayerViewModel @Inject constructor(
                 episode = episode.number,
                 positionMs = 0,
                 durationMs = 0,
+                scrubMs = null,
                 hasNext = details.episodeAfter(episode.id) != null,
             )
         }
@@ -279,5 +312,6 @@ class VodPlayerViewModel @Inject constructor(
     private companion object {
         const val POSITION_TICK_MS = 500L
         const val SAVE_EVERY_MS = 10_000L
+        const val SCRUB_COMMIT_MS = 1_200L
     }
 }
