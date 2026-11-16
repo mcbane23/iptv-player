@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.ui.common.recording
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.data.db.RecordingEntity
+import com.bane23.iptvplayer.data.recording.RecordingLocation
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.recording.RecordingStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,9 +26,35 @@ class RecordingsViewModel @Inject constructor(private val repository: RecordingR
     private val _storage = MutableStateFlow<RecordingStorage?>(null)
     val storage: StateFlow<RecordingStorage?> = _storage.asStateFlow()
 
+    private val _locations = MutableStateFlow<List<RecordingLocation>>(emptyList())
+
+    /** Mesta za čuvanje; izbor se nudi samo kad ih ima više od jednog (priključena SD kartica ili USB). */
+    val locations: StateFlow<List<RecordingLocation>> = _locations.asStateFlow()
+
     init {
         // Zauzeće se menja dok se snima i posle brisanja.
         viewModelScope.launch { repository.recordings.collect { _storage.value = repository.storage() } }
+        refreshLocations()
+    }
+
+    /** Ponovo čita priključene memorije (npr. posle povratka na ekran). */
+    fun refreshLocations() {
+        viewModelScope.launch { _locations.value = repository.locations() }
+    }
+
+    fun setLocation(path: String) {
+        viewModelScope.launch {
+            repository.setLocation(path)
+            _locations.value = repository.locations()
+            _storage.value = repository.storage()
+        }
+    }
+
+    /** Prelazi na sledeće mesto u spisku (za TV, gde OK menja vrednost). */
+    fun nextLocation() {
+        val all = _locations.value
+        if (all.size < 2) return
+        setLocation(all[(all.indexOfFirst { it.selected } + 1).mod(all.size)].path)
     }
 
     fun stop(id: Long) = repository.stop(id)

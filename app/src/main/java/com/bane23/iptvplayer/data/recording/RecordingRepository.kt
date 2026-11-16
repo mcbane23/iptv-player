@@ -6,6 +6,7 @@ import android.os.Environment
 import androidx.core.content.ContextCompat
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.RecordingEntity
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -37,8 +39,14 @@ data class ActiveRecording(val id: Long, val channelId: Long, val channelName: S
 /** Zašto snimanje nije moglo da krene. */
 enum class RecordingStartError { NO_SOURCE, NO_SPACE, NO_STORAGE }
 
-/** Zauzeće prostora na mestu gde se čuvaju snimci. */
-data class RecordingStorage(val usedBytes: Long, val freeBytes: Long)
+/** Zauzeće prostora: koliko zauzimaju svi snimci i koliko je slobodno tamo gde idu novi. */
+data class RecordingStorage(val usedBytes: Long, val freeBytes: Long) {
+    /** Slobodnog prostora je malo, pa snimanje uskoro neće moći da krene ili će stati. */
+    val low: Boolean get() = freeBytes < RecordingRepository.LOW_FREE_BYTES
+}
+
+/** Mesto na koje snimci mogu da se čuvaju. [removable] je SD kartica ili USB memorija. */
+data class RecordingLocation(val path: String, val removable: Boolean, val freeBytes: Long, val selected: Boolean)
 
 /**
  * Snimci kanala: pokretanje i zaustavljanje snimanja, spisak i brisanje. Dok se nešto snima,
@@ -50,6 +58,7 @@ class RecordingRepository @Inject constructor(
     db: AppDatabase,
     private val channels: ChannelRepository,
     private val recorder: StreamRecorder,
+    private val settings: SettingsStore,
 ) {
     private val dao = db.recordingDao()
     private val channelDao = db.channelDao()
@@ -242,24 +251,48 @@ class RecordingRepository @Inject constructor(
     }
 
     suspend fun storage(): RecordingStorage = withContext(Dispatchers.IO) {
-        val dir = directory()
         RecordingStorage(
-            usedBytes = dir?.listFiles()?.sumOf { it.length() } ?: 0,
-            freeBytes = dir?.usableSpace ?: 0,
+            usedBytes = roots().sumOf { root -> root.listFiles()?.sumOf { it.length() } ?: 0 },
+            freeBytes = directory()?.usableSpace ?: 0,
         )
     }
 
-    /** Folder sa snimcima: deljena memorija uređaja (folder aplikacije), a bez nje interna. */
-    private fun directory(): File? {
-        val external = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-            ?.takeIf { Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
-        val dir = external ?: File(context.filesDir, "recordings")
-        return dir.takeIf { it.isDirectory || it.mkdirs() }
+    /** Mesta koja uređaj trenutno nudi: memorija uređaja, pa SD kartice i USB memorije koje su priključene. */
+    suspend fun locations(): List<RecordingLocation> = withContext(Dispatchers.IO) {
+        val current = directory()?.absolutePath
+        roots().mapIndexed { index, dir ->
+            RecordingLocation(dir.absolutePath, removable = index > 0, freeBytes = dir.usableSpace, selected = dir.absolutePath == current)
+        }
+    }
+
+    /** Bira gde idu novi snimci. Postojeći snimci ostaju gde jesu. */
+    suspend fun setLocation(path: String) {
+        val roots = withContext(Dispatchers.IO) { roots() }
+        // Prvo mesto je podrazumevano; pamti se kao prazno, da ostane ispravno i ako se put promeni.
+        settings.setRecordingDir(if (path == roots.firstOrNull()?.absolutePath) "" else path)
+    }
+
+    /** Folderi aplikacije na svim priključenim memorijama (za njih ne treba dozvola); prvi je memorija uređaja. */
+    private fun roots(): List<File> {
+        val external = context.getExternalFilesDirs(Environment.DIRECTORY_MOVIES).filterNotNull()
+            .filter { Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
+        val all = external.ifEmpty { listOf(File(context.filesDir, "recordings")) }
+        return all.filter { it.isDirectory || it.mkdirs() }
+    }
+
+    /** Folder za nove snimke: izabrano mesto ako je još priključeno, inače memorija uređaja. */
+    private suspend fun directory(): File? {
+        val roots = roots()
+        val chosen = settings.recordingDir.first()
+        return roots.firstOrNull { it.absolutePath == chosen } ?: roots.firstOrNull()
     }
 
     companion object {
         /** Ispod ovoliko slobodnog prostora snimanje ne kreće, a ono koje traje se zaustavlja. */
         const val MIN_FREE_BYTES = 300L * 1024 * 1024
+
+        /** Ispod ovoliko se na ekranu „Snimci” upozorava da ponestaje prostora. */
+        const val LOW_FREE_BYTES = 2L * 1024 * 1024 * 1024
         private const val SAVE_EVERY_MS = 5_000L
 
         /** Naziv fajla: naziv kanala bez znakova koje sistem fajlova ne podnosi, i vreme početka. */

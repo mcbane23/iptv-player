@@ -24,6 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.RecordingEntity
@@ -43,6 +45,9 @@ fun MobileRecordingsScreen(
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     val storage by viewModel.storage.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<RecordingEntity?>(null) }
+    val locations by viewModel.locations.collectAsStateWithLifecycle()
+    var pickLocation by remember { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshLocations() }
 
     Scaffold { padding ->
         Column(
@@ -55,9 +60,36 @@ fun MobileRecordingsScreen(
                 Text(
                     text = it.label(),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (it.low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
+            }
+            // Izbor mesta ima smisla samo kad je priključena SD kartica ili USB memorija.
+            if (locations.size > 1) {
+                val selected = locations.indexOfFirst { it.selected }.coerceAtLeast(0)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { pickLocation = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.recording_location),
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = locations[selected].label(selected),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
             }
             val list = recordings
             when {
@@ -110,6 +142,16 @@ fun MobileRecordingsScreen(
                 }
             }
         }
+    }
+
+    if (pickLocation) {
+        TrackDialog(
+            title = stringResource(R.string.recording_location),
+            options = locations.mapIndexed { index, location -> location.label(index) to location.selected },
+            emptyText = null,
+            onSelect = { index -> locations.getOrNull(index)?.let { viewModel.setLocation(it.path) } },
+            onDismiss = { pickLocation = false },
+        )
     }
 
     pendingDelete?.let { recording ->

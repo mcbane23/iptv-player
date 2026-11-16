@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.RecordingEntity
+import com.bane23.iptvplayer.data.recording.RecordingLocation
 import com.bane23.iptvplayer.data.recording.RecordingStorage
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.player.formatDuration
@@ -62,10 +63,17 @@ val RecordingEntity.playable: Boolean get() = status != RecordingEntity.STATUS_F
 fun RecordingStorage.label(): String {
     val context = LocalContext.current
     return stringResource(
-        R.string.recording_storage,
+        if (low) R.string.recording_storage_low else R.string.recording_storage,
         Formatter.formatShortFileSize(context, usedBytes),
         Formatter.formatShortFileSize(context, freeBytes),
     )
+}
+
+/** Naziv mesta za čuvanje: memorija uređaja, odnosno SD kartica ili USB sa rednim brojem. */
+@Composable
+fun RecordingLocation.label(index: Int): String {
+    val name = if (removable) stringResource(R.string.recording_location_removable, index) else stringResource(R.string.recording_location_device)
+    return "$name (${Formatter.formatShortFileSize(LocalContext.current, freeBytes)})"
 }
 
 /** Prikazuje kratke poruke o snimanju iz plejera. */

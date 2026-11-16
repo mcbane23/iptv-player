@@ -405,4 +405,8 @@
     <string name="recording_hint_cancel_tv">● Recording scheduled, OK cancels it</string>
     <string name="recording_error_missed">Missed: the device was off or asleep</string>
     <string name="recording_error_channel">The channel is no longer in the playlist</string>
+    <string name="recording_storage_low">Low on space. Recordings: %1$s · Free: %2$s</string>
+    <string name="recording_location">Save recordings to</string>
+    <string name="recording_location_device">Device storage</string>
+    <string name="recording_location_removable">SD card or USB %1$d</string>
 </resources>

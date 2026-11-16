@@ -405,4 +405,8 @@
     <string name="recording_hint_cancel_tv">● Snimanje je zakazano, OK ga otkazuje</string>
     <string name="recording_error_missed">Propušteno: uređaj je bio ugašen ili uspavan</string>
     <string name="recording_error_channel">Kanala više nema u listi</string>
+    <string name="recording_storage_low">Ponestaje prostora. Snimci: %1$s · Slobodno: %2$s</string>
+    <string name="recording_location">Mesto čuvanja snimaka</string>
+    <string name="recording_location_device">Memorija uređaja</string>
+    <string name="recording_location_removable">SD kartica ili USB %1$d</string>
 </resources>

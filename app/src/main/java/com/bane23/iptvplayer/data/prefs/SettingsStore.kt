@@ -70,6 +70,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[CAST_KEY] = key }
     }
 
+    /** Folder u koji idu novi snimci; prazno = memorija uređaja. Važi samo za ovaj uređaj. */
+    val recordingDir: Flow<String> = dataStore.data.map { it[RECORDING_DIR].orEmpty() }.distinctUntilChanged()
+
+    suspend fun setRecordingDir(path: String) {
+        dataStore.edit { it[RECORDING_DIR] = path }
+    }
+
     /** Na telefonu: ključevi TV-a sa kojima je telefon već povezan, po imenu TV-a. */
     val castPeers: Flow<Map<String, String>> = dataStore.data.map { prefs ->
         prefs[CAST_PEERS].orEmpty().mapNotNull { entry ->
@@ -188,6 +195,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val CAST_KEY = stringPreferencesKey("cast_key")
+        val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")

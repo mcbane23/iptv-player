@@ -361,7 +361,9 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
       upaljen. Zakazana snimanja se vide i otkazuju na ekranu „Snimci”
 - [ ] Ručno zakazivanje (kanal, početak, kraj): čeka odluku vlasnika o obliku
 - [x] Ekran „Snimci” (u Podešavanjima): puštanje, zaustavljanje, brisanje, prikaz zauzetog prostora
-- [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+- [x] Podešavanje mesta čuvanja (memorija uređaja, USB/SD) na ekranu „Snimci”, vidi se kad je priključena
+      SD kartica ili USB; upozorenje ispod 2 GB slobodnog prostora, a ispod 300 MB snimanje ne kreće
+      i ono koje traje staje. Na USB/SD se piše u folder aplikacije (bez dozvola)
 
 **Cast sa telefona na TV**
 

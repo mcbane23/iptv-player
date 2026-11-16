@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -41,6 +43,8 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     val storage by viewModel.storage.collectAsStateWithLifecycle()
     val list = recordings.orEmpty()
+    val locations by viewModel.locations.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshLocations() }
     val listFocus = remember { FocusRequester() }
     val actionFocus = remember { FocusRequester() }
     // Snimak čije su radnje otvorene, ili null.
@@ -67,7 +71,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
         Text(
             text = storage?.label().orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (storage?.low == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp),
         )
         if (recordings != null && list.isEmpty()) {
@@ -84,6 +88,20 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
+                // Izbor mesta ima smisla samo kad je priključena SD kartica ili USB memorija. OK menja mesto.
+                if (locations.size > 1) {
+                    item(key = "location") {
+                        val selected = locations.indexOfFirst { it.selected }.coerceAtLeast(0)
+                        TvTextRow(
+                            text = stringResource(R.string.recording_location),
+                            trailing = locations[selected].label(selected),
+                            onClick = viewModel::nextLocation,
+                            onFocused = { openId = null },
+                            // Bez snimaka je ovo jedini red, pa mora da primi fokus.
+                            modifier = if (anchorId == null) Modifier.focusRequester(listFocus) else Modifier,
+                        )
+                    }
+                }
                 items(list, key = { it.id }) { recording ->
                     TvListRow(
                         onClick = {
@@ -170,7 +188,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
         }
     }
     // Fokus na spisak pri otvaranju ekrana i kad snimak sa fokusom nestane (brisanje).
-    LaunchedEffect(anchorId, openId == null) {
+    LaunchedEffect(anchorId, openId == null, locations.size > 1) {
         if (openId == null) listFocus.tryRequestFocus()
     }
 }
