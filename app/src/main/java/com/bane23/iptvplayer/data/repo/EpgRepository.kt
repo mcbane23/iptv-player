@@ -90,7 +90,7 @@ class EpgRepository @Inject constructor(
     /** Osvežava vodiče koji su stariji od nekoliko sati i briše emisije koje su odavno završene. */
     suspend fun refreshStale() {
         val now = System.currentTimeMillis()
-        epgDao.deleteEndedBefore(now - KEEP_PAST_MS)
+        prune(now)
         for (playlist in playlistDao.getAll()) {
             val refreshedAt = playlist.epgRefreshedAt
             if (refreshedAt == null || now - refreshedAt > STALE_AFTER_MS) refresh(playlist.id)
@@ -173,10 +173,20 @@ class EpgRepository @Inject constructor(
             }
         }
         val matchedByName = HashMap<String, MutableList<Long>>()
+        // Za kanale sa arhivom iz M3U liste vodič se čuva danima unazad (vidi ArchiveRepository).
+        val archiveIds = HashSet<Long>()
+        val archiveKeys = HashSet<String>()
+        for (channel in channels) {
+            val type = channel.catchupType
+            if (type == null || type == ArchiveRepository.TYPE_XTREAM) continue
+            archiveIds.add(channel.id)
+            channel.tvgId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let(archiveKeys::add)
+        }
 
         val shiftMs = playlist.epgShiftHours * HOUR_MS
         val now = System.currentTimeMillis()
         val from = now - KEEP_PAST_MS
+        val archiveFrom = now - KEEP_ARCHIVE_MS
         val to = now + KEEP_FUTURE_MS
         val batch = ArrayList<EpgProgramEntity>(BATCH_SIZE)
 
@@ -190,6 +200,7 @@ class EpgRepository @Inject constructor(
                         for (name in item.displayNames) {
                             val ids = idsByName[name.lowercase()] ?: continue
                             matchedByName.getOrPut(key) { ArrayList() }.addAll(ids)
+                            if (ids.any { it in archiveIds }) archiveKeys.add(key)
                         }
                     }
 
@@ -198,7 +209,7 @@ class EpgRepository @Inject constructor(
                         if (key !in wanted && key !in matchedByName) continue
                         val start = item.startMs + shiftMs
                         val stop = item.stopMs + shiftMs
-                        if (stop <= from || start >= to) continue
+                        if (stop <= (if (key in archiveKeys) archiveFrom else from) || start >= to) continue
                         batch.add(
                             EpgProgramEntity(
                                 playlistId = playlist.id,
@@ -224,10 +235,16 @@ class EpgRepository @Inject constructor(
             for ((key, ids) in matchedByName) {
                 ids.distinct().chunked(ID_CHUNK).forEach { channelDao.setEpgKey(it, key) }
             }
+            for (key in archiveKeys) {
+                val before = epgDao.firstStart(playlist.id, key, generation) ?: Long.MAX_VALUE
+                epgDao.adoptEarlier(playlist.id, key, generation, before)
+            }
             epgDao.deleteOtherGenerations(playlist.id, generation)
             playlistDao.markEpgRefreshed(playlist.id, System.currentTimeMillis())
         }
     }
+
+    private suspend fun prune(now: Long) = epgDao.deleteEndedBefore(now - KEEP_PAST_MS, now - KEEP_ARCHIVE_MS)
 
     /** Otvara vodič; ako https veza ne može da se uspostavi proba http, a `.gz` raspakuje u hodu. */
     private fun openGuide(url: String, userAgent: String?): InputStream {
@@ -277,6 +294,7 @@ class EpgRepository @Inject constructor(
     private companion object {
         const val HOUR_MS = 3_600_000L
         const val KEEP_PAST_MS = 6 * HOUR_MS
+        const val KEEP_ARCHIVE_MS = ArchiveRepository.MAX_DAYS * ArchiveRepository.DAY_MS
         const val KEEP_FUTURE_MS = 48 * HOUR_MS
         const val STALE_AFTER_MS = 6 * HOUR_MS
         const val BATCH_SIZE = 1_000

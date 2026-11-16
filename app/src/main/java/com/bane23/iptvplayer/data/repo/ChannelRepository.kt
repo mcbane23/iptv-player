@@ -212,6 +212,7 @@ class ChannelRepository @Inject constructor(
         logo = logo,
         number = number,
         sortOrder = sortOrder,
+        archiveDays = ArchiveRepository.archiveDays(this),
     )
 
     private companion object {

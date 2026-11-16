@@ -14,7 +14,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
+import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
+import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
@@ -92,7 +94,25 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     playlistId = key.playlistId,
                     categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
+                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
                     onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<ChannelArchive> { key ->
+                MobileArchiveScreen(
+                    channelId = key.channelId,
+                    onPlay = { program ->
+                        backStack.add(
+                            PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
+                        )
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<PlayArchive> { key ->
+                MobileVodPlayerScreen(
+                    start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
+                    onClose = { backStack.removeLastOrNull() },
                 )
             }
             entry<Player> { key ->

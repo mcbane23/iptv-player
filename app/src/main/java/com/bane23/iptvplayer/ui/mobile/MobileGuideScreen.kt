@@ -54,6 +54,7 @@ fun MobileGuideScreen(
     playlistId: Long,
     categoryId: Long?,
     onPlay: (Long) -> Unit,
+    onArchive: (Long) -> Unit,
     onBack: () -> Unit,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
@@ -123,6 +124,7 @@ fun MobileGuideScreen(
                 SelectionPanel(
                     selection = selection,
                     onPlay = { onPlay(selection.channel.id) },
+                    onArchive = { onArchive(selection.channel.id) },
                     onClose = viewModel::clearSelection,
                 )
             }
@@ -210,9 +212,9 @@ private fun EmptyCell(modifier: Modifier, onClick: () -> Unit) {
     )
 }
 
-/** Detalji izabrane emisije i dugme za gledanje kanala. */
+/** Detalji izabrane emisije, dugme za gledanje kanala i, ako kanal ima arhivu, ulaz u nju. */
 @Composable
-private fun SelectionPanel(selection: GuideSelection, onPlay: () -> Unit, onClose: () -> Unit) {
+private fun SelectionPanel(selection: GuideSelection, onPlay: () -> Unit, onArchive: () -> Unit, onClose: () -> Unit) {
     val program = selection.program
     Surface(tonalElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -252,6 +254,9 @@ private fun SelectionPanel(selection: GuideSelection, onPlay: () -> Unit, onClos
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+                if (selection.hasArchive) {
+                    TextButton(onClick = onArchive) { Text(stringResource(R.string.archive_title)) }
+                }
                 Button(onClick = onPlay) { Text(stringResource(R.string.guide_watch)) }
             }
         }

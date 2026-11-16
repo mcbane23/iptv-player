@@ -245,4 +245,8 @@
     <string name="search_empty_categories">Nijedna kategorija ne odgovara</string>
     <string name="vod_favorites_empty">Još nema omiljenih. Dodaj ih zvezdicom u detaljima.</string>
     <string name="vod_category">Kategorija</string>
+    <string name="archive_title">Arhiva</string>
+    <string name="archive_empty">Za ovaj kanal još nema prošlih emisija. Spisak arhive se pravi iz TV vodiča.</string>
+    <string name="archive_failed">Spisak arhive nije mogao da se učita.</string>
+    <string name="archive_hint_tv">OK otvara arhivu</string>
 </resources>

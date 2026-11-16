@@ -60,13 +60,15 @@ private const val WINDOW_MS = 150 * 60_000L
 /**
  * TV vodič na TV-u: levo kanal, desno njegove emisije na zajedničkoj vremenskoj osi.
  * Fokus na emisiji prikazuje njene detalje dole, OK pušta kanal. Levo sa naziva kanala
- * pomera vodič unazad, desno sa poslednje emisije unapred.
+ * pomera vodič unazad, desno sa poslednje emisije unapred. Kod kanala sa arhivom OK na nazivu
+ * kanala ili na emisiji koja je završena otvara arhivu tog kanala.
  */
 @Composable
 fun TvGuideScreen(
     playlistId: Long,
     categoryId: Long?,
     onPlay: (Long) -> Unit,
+    onArchive: (Long) -> Unit,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(playlistId, categoryId) { viewModel.open(playlistId, categoryId) }
@@ -135,6 +137,7 @@ fun TvGuideScreen(
                         now = now,
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
+                        onArchive = { onArchive(channel.id) },
                         onFocused = { lastChannelId = channel.id },
                         restoreFocus = channel.id == restoreChannelId,
                         onFocusRestored = { restoreChannelId = null },
@@ -163,6 +166,7 @@ private fun GuideRow(
     now: Long,
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
+    onArchive: () -> Unit,
     onFocused: () -> Unit,
     restoreFocus: Boolean,
     onFocusRestored: () -> Unit,
@@ -183,14 +187,15 @@ private fun GuideRow(
             .height(ROW_HEIGHT),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        val hasArchive = channel.archiveDays != null
         GuideBox(
-            text = channel.name,
+            text = if (hasArchive) "↺ ${channel.name}" else channel.name,
             highlighted = false,
             onFocused = {
                 onFocused()
                 viewModel.select(channel, null)
             },
-            onClick = onPlay,
+            onClick = if (hasArchive) onArchive else onPlay,
             modifier = Modifier
                 .width(CHANNEL_WIDTH)
                 .focusRequester(channelFocus)
@@ -210,7 +215,7 @@ private fun GuideRow(
                     onFocused()
                     viewModel.select(channel, program)
                 },
-                onClick = onPlay,
+                onClick = if (hasArchive && program != null && program.stopMs <= now) onArchive else onPlay,
                 modifier = Modifier
                     .weight(cell.weight)
                     .onPreviewKeyEvent { event ->
@@ -278,8 +283,12 @@ private fun SelectionPanel(selection: GuideSelection?) {
     ) {
         if (selection == null) return@Column
         val program = selection.program
+        // Kod kanala sa arhivom piše šta OK radi na emisiji koja je završena.
+        val archiveHint = stringResource(R.string.archive_hint_tv).takeIf {
+            selection.hasArchive && program != null && program.stopMs <= System.currentTimeMillis()
+        }
         Text(
-            text = listOfNotNull(selection.channel.name, program?.timeRange()).joinToString(" · "),
+            text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint).joinToString(" · "),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
