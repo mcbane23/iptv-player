@@ -3,6 +3,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Pokretanje pri paljenju uređaja (isključeno dok ga korisnik ne uključi u podešavanjima). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Od Androida 10 aplikacija sme sama da se otvori posle paljenja samo uz ovu dozvolu. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Jedan APK za telefon i TV: ni ekran na dodir ni leanback nisu obavezni. -->
     <uses-feature
         android:name="android.hardware.touchscreen"
@@ -46,6 +51,15 @@
                     android:scheme="iptvplayer" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".work.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

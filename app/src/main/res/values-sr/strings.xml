@@ -245,4 +245,8 @@
     <string name="search_empty_categories">Nijedna kategorija ne odgovara</string>
     <string name="vod_favorites_empty">Još nema omiljenih. Dodaj ih zvezdicom u detaljima.</string>
     <string name="vod_category">Kategorija</string>
+    <string name="settings_autostart">Pokreni pri paljenju uređaja</string>
+    <string name="settings_autostart_summary">Aplikacija se sama otvara kad se TV box upali.</string>
+    <string name="settings_autostart_permission">Još jedan korak: u sistemskim podešavanjima dozvolite ovoj aplikaciji „Prikaz preko drugih aplikacija”. Bez toga Android ne da aplikaciji da se sama otvori.</string>
+    <string name="settings_autostart_manual">Ručno dozvolite ovoj aplikaciji „Prikaz preko drugih aplikacija”: sistemska Podešavanja, Aplikacije, Poseban pristup. Bez toga Android ne da aplikaciji da se sama otvori.</string>
 </resources>

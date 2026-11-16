@@ -52,6 +52,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[TV_CHANNEL_PREVIEW] = enabled }
     }
 
+    /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
+    val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
+
+    suspend fun setAutostart(enabled: Boolean) {
+        dataStore.edit { it[AUTOSTART] = enabled }
+    }
+
     /** Uputstvo za gestove u plejeru na telefonu je već prikazano (prikazuje se samo prvi put). */
     val gestureHintShown: Flow<Boolean> =
         dataStore.data.map { it[GESTURE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -93,6 +100,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
+        val AUTOSTART = booleanPreferencesKey("autostart")
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }

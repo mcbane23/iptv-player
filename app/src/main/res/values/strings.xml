@@ -245,4 +245,8 @@
     <string name="search_empty_categories">No category matches</string>
     <string name="vod_favorites_empty">No favorites yet. Add one with the star in the details.</string>
     <string name="vod_category">Category</string>
+    <string name="settings_autostart">Start when the device turns on</string>
+    <string name="settings_autostart_summary">The app opens by itself when the TV box is switched on.</string>
+    <string name="settings_autostart_permission">One more step: allow “Display over other apps” for this app in the system settings. Without it Android does not let the app open by itself.</string>
+    <string name="settings_autostart_manual">Allow “Display over other apps” for this app by hand: system Settings, Apps, Special app access. Without it Android does not let the app open by itself.</string>
 </resources>
