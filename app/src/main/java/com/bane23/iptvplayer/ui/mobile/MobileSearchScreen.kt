@@ -71,12 +71,7 @@ fun MobileSearchScreen(
                 )
             }
             if (state.query.isNotBlank() && results.itemCount == 0 && results.loadState.refresh is LoadState.NotLoading) {
-                Text(
-                    text = stringResource(R.string.search_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp),
-                )
+                EmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty))
             }
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(count = results.itemCount, key = results.itemKey { it.id }) { index ->

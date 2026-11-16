@@ -118,23 +118,13 @@ fun MobileLiveTvScreen(
             when {
                 state.loading -> MobileChannelSkeletonList()
 
-                playlistId == null -> Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.playlists_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                    Button(onClick = onManagePlaylists) {
-                        Text(stringResource(R.string.action_add_playlist))
-                    }
-                }
+                playlistId == null -> EmptyState(
+                    icon = AppIcons.Playlists,
+                    text = stringResource(R.string.playlists_empty),
+                    actionLabel = stringResource(R.string.action_add_playlist),
+                    actionIcon = AppIcons.Add,
+                    onAction = onManagePlaylists,
+                )
 
                 else -> {
                     val favoritesLabel = stringResource(R.string.category_favorites)
@@ -183,13 +173,10 @@ fun MobileLiveTvScreen(
                             MobileChannelSkeletonList()
                         }
                         if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
-                            Text(
-                                text = stringResource(
-                                    if (selected == ChannelGroups.FAVORITES) R.string.favorites_empty else R.string.channels_empty,
-                                ),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(24.dp),
+                            val favorites = selected == ChannelGroups.FAVORITES
+                            EmptyState(
+                                icon = if (favorites) AppIcons.StarOutline else AppIcons.LiveTv,
+                                text = stringResource(if (favorites) R.string.favorites_empty else R.string.channels_empty),
                             )
                         }
                         LazyVerticalGrid(

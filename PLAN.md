@@ -433,6 +433,9 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
       umesto jednog dugmeta sa spiskom
 - [x] Telefon u landscape-u (van plejera): kartice u uskoj traci levo umesto donje trake, a kanali
       u Uživo u dve kolone. Filmovi i serije već imaju više postera u redu
+- [x] TV: poster u fokusu je malo veći (bez animacije) i ima podlogu, da se fokus jasno vidi
+- [x] TV, pregled kanala: kad slike nema (pregled isključen, kanal zaključan), veliki logo i naziv kanala
+- [x] Prazna stanja i greške su ista svuda: ikonica, kratak tekst i, gde ima smisla, dugme
 
 ## 7. Testiranje
 

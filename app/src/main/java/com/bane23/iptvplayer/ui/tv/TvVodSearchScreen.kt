@@ -90,7 +90,7 @@ fun TvVodSearchScreen(
                 columns = GridCells.Fixed(7),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 4.dp, start = 4.dp, end = 4.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 12.dp, start = 12.dp, end = 12.dp),
             ) {
                 items(state.results, key = { it.id }) { item ->
                     PosterCard(

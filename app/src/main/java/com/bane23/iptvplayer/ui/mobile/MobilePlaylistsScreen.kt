@@ -64,24 +64,13 @@ fun MobilePlaylistsScreen(
             when {
                 state.loading -> Unit
 
-                state.playlists.isEmpty() -> Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.playlists_empty),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                    Button(onClick = onAdd) {
-                        Icon(AppIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.action_add_playlist), modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
+                state.playlists.isEmpty() -> EmptyState(
+                    icon = AppIcons.Playlists,
+                    text = stringResource(R.string.playlists_empty),
+                    actionLabel = stringResource(R.string.action_add_playlist),
+                    actionIcon = AppIcons.Add,
+                    onAction = onAdd,
+                )
 
                 else -> LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),

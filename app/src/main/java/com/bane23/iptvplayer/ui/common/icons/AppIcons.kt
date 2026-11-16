@@ -118,6 +118,10 @@ object AppIcons {
     )
     val Delete by icon("M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
     val Check by icon("M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z")
+    val Warning by icon(
+        "M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 " +
+            "11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z",
+    )
     val Add by icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
     val ArrowDown by icon("M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z")
     val ChevronRight by icon("M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z")

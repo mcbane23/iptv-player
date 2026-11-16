@@ -32,6 +32,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
@@ -86,6 +87,8 @@ fun TvLiveTvScreen(
     val channelFocus = remember { FocusRequester() }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Kanal na kome je fokus, za logo i naziv u pregledu kad slike nema.
+    var focusedChannel by remember { mutableStateOf<Channel?>(null) }
     val playlistId = state.playlistId
     val now by rememberNow()
 
@@ -163,12 +166,7 @@ fun TvLiveTvScreen(
             }
 
             playlistId == null -> {
-                Text(
-                    text = stringResource(R.string.playlists_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 24.dp),
-                )
+                TvEmptyState(icon = AppIcons.Playlists, text = stringResource(R.string.playlists_empty))
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
                 Button(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(R.string.action_add_playlist))
@@ -265,6 +263,7 @@ fun TvLiveTvScreen(
                             onFocused = {
                                 channel?.let {
                                     lastChannelId = it.id
+                                    focusedChannel = it
                                     previewViewModel.focus(it.id)
                                 }
                             },
@@ -337,6 +336,7 @@ fun TvLiveTvScreen(
                 }
                 ChannelPreviewPane(
                     viewModel = previewViewModel,
+                    channel = focusedChannel?.takeIf { it.id == lastChannelId },
                     now = now,
                     modifier = Modifier
                         .weight(0.32f)
@@ -393,7 +393,12 @@ fun TvProgressBar(progress: Float, trackColor: Color, barColor: Color, modifier:
  * Ako je pregled isključen u podešavanjima, umesto slike stoji samo prazna površina.
  */
 @Composable
-private fun ChannelPreviewPane(viewModel: ChannelPreviewViewModel, now: Long, modifier: Modifier = Modifier) {
+private fun ChannelPreviewPane(
+    viewModel: ChannelPreviewViewModel,
+    channel: Channel?,
+    now: Long,
+    modifier: Modifier = Modifier,
+) {
     val player by viewModel.player.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
@@ -409,6 +414,27 @@ private fun ChannelPreviewPane(viewModel: ChannelPreviewViewModel, now: Long, mo
             val current = player
             if (current != null) {
                 VideoSurface(player = current, aspectMode = AspectMode.FIT, modifier = Modifier.fillMaxSize())
+            } else if (channel != null) {
+                // Slike nema (pregled isključen, kanal zaključan ili se tek pokreće): veliki logo i naziv.
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    ChannelLogo(url = channel.logo, name = channel.name, size = 72.dp)
+                    Text(
+                        text = channel.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
             }
             val status = statusMessage(sourceMissing = false, playback = playback)
             if (current != null && status != null) {

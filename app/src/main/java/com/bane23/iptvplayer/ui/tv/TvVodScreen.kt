@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -118,7 +120,7 @@ fun TvVodScreen(
             }
 
             state.categoriesFailed -> {
-                Note(stringResource(R.string.vod_load_failed))
+                TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
                 Button(onClick = viewModel::loadCategories, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(R.string.player_retry))
@@ -126,7 +128,7 @@ fun TvVodScreen(
                 LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
             }
 
-            state.categories.isEmpty() -> Note(stringResource(R.string.vod_empty))
+            state.categories.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 LazyColumn(
@@ -215,7 +217,7 @@ fun TvVodScreen(
                             }
                         }
 
-                        showFavorites && favorites.isEmpty() -> Note(stringResource(R.string.vod_favorites_empty))
+                        showFavorites && favorites.isEmpty() -> TvEmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
 
                         showFavorites -> PosterGrid {
                             items(favorites, key = { it.id }) { item ->
@@ -234,8 +236,8 @@ fun TvVodScreen(
 
                         state.selected == null -> Note(stringResource(R.string.vod_pick_category))
                         state.loadingItems -> SkeletonPosterGrid()
-                        state.itemsFailed -> Note(stringResource(R.string.vod_load_failed))
-                        state.items.isEmpty() -> Note(stringResource(R.string.vod_empty))
+                        state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
+                        state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
                         else -> PosterGrid {
                             items(state.items, key = { it.id }) { item ->
@@ -276,7 +278,8 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
         columns = GridCells.Fixed(5),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(4.dp),
+        // Mesto za uvećan poster u fokusu, da ga ivica mreže ne odseče.
+        contentPadding = PaddingValues(12.dp),
         content = content,
     )
 }
@@ -289,6 +292,7 @@ private fun SkeletonPosterGrid() {
     }
 }
 
+private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val SKELETON_CATEGORIES = 8
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
@@ -314,10 +318,19 @@ fun PosterCard(
     val shape = RoundedCornerShape(10.dp)
     Column(
         modifier = modifier
+            // Fokusiran poster je malo veći i crta se preko suseda, da se sa kauča jasno vidi gde je
+            // fokus. Bez animacije, jer bi na slabijim uređajima usporila kretanje kroz mrežu.
+            .zIndex(if (focused) 1f else 0f)
+            .graphicsLayer {
+                val scale = if (focused) FOCUSED_POSTER_SCALE else 1f
+                scaleX = scale
+                scaleY = scale
+            }
             .onFocusChanged {
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
+            .background(if (focused) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, shape)
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
             // Dug pritisak na OK dodaje u omiljene, odnosno uklanja.
             .combinedClickable(onClick = onClick, onLongClick = onToggleFavorite)

@@ -94,7 +94,7 @@ fun MobileVodScreen(
                     items(SKELETON_POSTERS) { SkeletonPoster() }
                 }
                 state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
-                state.categories.isEmpty() -> Message(stringResource(R.string.vod_empty))
+                state.categories.isEmpty() -> EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
                 else -> LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 104.dp),
@@ -135,7 +135,7 @@ fun MobileVodScreen(
                     }
                     when {
                         showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Message(stringResource(R.string.vod_favorites_empty))
+                            EmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
                         }
 
                         showingFavorites -> items(favorites, key = { it.id }) { item ->
@@ -156,7 +156,7 @@ fun MobileVodScreen(
                         }
 
                         state.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Message(stringResource(R.string.vod_empty))
+                            EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
                         }
 
                         else -> items(state.items, key = { it.id }) { item ->
@@ -254,12 +254,12 @@ internal fun Message(text: String) {
 
 @Composable
 internal fun Failure(onRetry: () -> Unit) {
-    Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.vod_load_failed),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
-        )
-        Button(onClick = onRetry) { Text(stringResource(R.string.player_retry)) }
-    }
+    EmptyState(
+        icon = AppIcons.Warning,
+        text = stringResource(R.string.vod_load_failed),
+        isError = true,
+        actionLabel = stringResource(R.string.player_retry),
+        actionIcon = AppIcons.Refresh,
+        onAction = onRetry,
+    )
 }
