@@ -14,8 +14,11 @@ android {
         applicationId = "com.bane23.iptvplayer"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.0.1"
+        // U CI-ju broj builda, da bi svaki novi APK bio „noviji” i ažuriranje u aplikaciji ga prepoznalo.
+        // Lokalni build ostaje 1, pa ga CI build uvek može zameniti.
+        val ciBuild = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull()
+        versionCode = ciBuild ?: 1
+        versionName = if (ciBuild != null) "0.0.1-dev.$ciBuild" else "0.0.1-local"
     }
 
     signingConfigs {

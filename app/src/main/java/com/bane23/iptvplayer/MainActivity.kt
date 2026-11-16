@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.bane23.iptvplayer.data.lan.TransferTarget
 import com.bane23.iptvplayer.ui.common.DeviceType
+import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.ui.common.theme.IptvTheme
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
                 }
+                UpdateDialog()
             }
         }
     }
