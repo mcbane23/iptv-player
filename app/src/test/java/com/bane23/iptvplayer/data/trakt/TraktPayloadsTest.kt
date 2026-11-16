@@ -38,6 +38,19 @@ class TraktPayloadsTest {
     }
 
     @Test
+    fun `episodes that are listed but not watched are skipped`() {
+        val shows = TraktJson.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(WatchedShow.serializer()),
+            """[{"show":{"title":"Izmisljena","aired_episodes":4,"ids":{"trakt":2,"tmdb":77}},"seasons":[{"number":1,"aired":4,"completed":2,
+               "episodes":[{"number":1,"plays":2,"last_watched_at":"2026-01-01T00:00:00.000Z"},{"number":2,"completed":true},
+               {"number":3,"completed":false},{"number":4,"plays":0}]}]}]""",
+        )
+        val rows = TraktPayloads.watchedRows(emptyList(), shows, now = 5)
+        assertEquals(listOf(1, 2), rows.map { it.episode })
+        assertEquals(listOf(77L, 77L), rows.map { it.tmdbId })
+    }
+
+    @Test
     fun `watched lists become rows and items without tmdb are skipped`() {
         val movies = TraktJson.decodeFromString(
             kotlinx.serialization.builtins.ListSerializer(WatchedMovie.serializer()),
