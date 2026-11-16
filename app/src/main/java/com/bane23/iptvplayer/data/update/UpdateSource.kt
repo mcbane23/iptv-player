@@ -1,19 +1,25 @@
 package com.bane23.iptvplayer.data.update
 
+import com.bane23.iptvplayer.BuildConfig
+
 /**
  * Gde aplikacija traži nova izdanja: javni repo samo sa APK-ovima (kod ostaje privatan).
  * U repou svaka aplikacija ima svoja izdanja po imenu taga, pa tu mogu stajati i druge aplikacije.
- * Isti repo i tag koristi `.github/workflows/build.yml`.
+ * Isti repo i tagove koriste `.github/workflows/build.yml` (dev) i `release.yml` (zvanična izdanja).
  */
 object UpdateSource {
     const val REPO = "mcbane23/apps"
 
-    /** Dev kanal: tag se ne pomera, CI menja fajlove u njemu na svaki build. Posle v1.0 prelazi na izdanja. */
-    const val CHANNEL_TAG = "iptv-player-dev"
+    /**
+     * Kanal zavisi od vrste builda: debug prati `iptv-player-dev` (svako spajanje u main), a zvanično
+     * izdanje prati `iptv-player` (samo oznake `v*`). Tag se ne pomera, CI menja fajlove u njemu.
+     * Kanali se ne mešaju jer su potpisani različitim ključevima.
+     */
+    val CHANNEL_TAG: String = BuildConfig.UPDATE_CHANNEL
 
     const val MANIFEST_FILE = "iptv-player.json"
 
-    private const val BASE = "https://github.com/$REPO/releases/download/$CHANNEL_TAG/"
+    private val BASE = "https://github.com/$REPO/releases/download/$CHANNEL_TAG/"
 
     val manifestUrl: String get() = BASE + MANIFEST_FILE
 

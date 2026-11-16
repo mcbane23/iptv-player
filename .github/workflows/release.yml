@@ -1,0 +1,144 @@
+name: Release
+
+# Zvanično izdanje: pokreće ga oznaka oblika v1.2.3 na commitu koji je u main-u.
+# Pravi potpisan release APK, objavljuje ga u GitHub Releases ovog repoa i u javni repo
+# iz kog aplikacija preuzima ažuriranja (kanal iptv-player, vidi data/update/UpdateSource.kt).
+#
+# Potrebni GitHub Secrets (nikad u repou):
+#   RELEASE_KEYSTORE_BASE64    keystore fajl kao base64 (base64 -w0 ember-release.jks)
+#   RELEASE_KEYSTORE_PASSWORD  lozinka keystore-a
+#   RELEASE_KEY_ALIAS          ime ključa
+#   RELEASE_KEY_PASSWORD       lozinka ključa
+#   APK_REPO_TOKEN             pisanje u javni repo (isti kao u build.yml)
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Izdanje
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Provera oznake
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            echo "Oznaka $TAG nije oblika v1.2.3."
+            exit 1
+          fi
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Oznaka $TAG nije na commitu iz main-a."
+            exit 1
+          fi
+          echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Ključ za potpis
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          for NAME in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            if [ -z "${!NAME}" ]; then
+              echo "Secret $NAME ne postoji. Izdanje se ne pravi bez ključa za potpis."
+              exit 1
+            fi
+          done
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Testovi i release APK
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+        run: ./gradlew testDebugUnitTest assembleRelease
+
+      - name: Obriši ključ sa diska
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      # Nepotpisan ili debug ključem potpisan APK ne sme da izađe kao izdanje.
+      - name: Provera potpisa
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          if [ ! -f "$APK" ]; then
+            echo "Nema potpisanog APK-a ($APK)."
+            exit 1
+          fi
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee certs.txt
+          if grep -q "CN=Android Debug" certs.txt; then
+            echo "APK je potpisan debug ključem."
+            exit 1
+          fi
+          cp "$APK" "ember-$RELEASE_VERSION.apk"
+          cp "$APK" iptv-player.apk
+
+      - name: Objavi izdanje
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" "ember-$RELEASE_VERSION.apk" \
+            --verify-tag \
+            --title "Ember $RELEASE_VERSION" \
+            --generate-notes
+
+      # Isti APK ide u javni repo, u kanal „iptv-player”, odakle ga preuzimaju zvanična izdanja aplikacije.
+      # Dev buildovi prate svoj kanal (iptv-player-dev) i ovo ih ne dira.
+      - name: Objavi u javni repo za ažuriranje
+        env:
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          APK_REPO: mcbane23/apps
+          CHANNEL: iptv-player
+        run: |
+          if [ -z "$APK_REPO_TOKEN" ]; then
+            echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
+            exit 0
+          fi
+          IFS=. read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
+          # Mora da prati račun u app/build.gradle.kts.
+          CODE=$((10#$MAJOR * 1000000 + 10#$MINOR * 1000 + 10#$PATCH))
+          CURRENT=$(curl -fsSL "https://github.com/$APK_REPO/releases/download/$CHANNEL/iptv-player.json" 2>/dev/null | jq -r '.versionCode // 0' 2>/dev/null)
+          if [ "${CURRENT:-0}" -ge "$CODE" ]; then
+            echo "U javnom repou je već verzija $CURRENT, ne menjam je."
+            exit 0
+          fi
+          export GH_TOKEN="$APK_REPO_TOKEN"
+          SHA=$(sha256sum iptv-player.apk | cut -d' ' -f1)
+          jq -n --argjson code "$CODE" --arg name "$RELEASE_VERSION" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+            '{versionCode: $code, versionName: $name, apk: "iptv-player.apk", sha256: $sha, commit: $commit}' \
+            > iptv-player.json
+          if ! gh release view "$CHANNEL" -R "$APK_REPO" > /dev/null 2>&1; then
+            gh release create "$CHANNEL" -R "$APK_REPO" \
+              --title "Ember" --notes "Zvanična izdanja."
+          fi
+          # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
+          gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.apk --clobber
+          gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.json --clobber
+          gh release edit "$CHANNEL" -R "$APK_REPO" \
+            --notes "Verzija $RELEASE_VERSION, commit: ${GITHUB_SHA::7}."
