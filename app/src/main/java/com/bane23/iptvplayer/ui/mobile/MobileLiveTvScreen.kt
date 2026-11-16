@@ -283,7 +283,7 @@ private fun QuickGroupChips(
 }
 
 @Composable
-private fun GroupChip(
+internal fun GroupChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,

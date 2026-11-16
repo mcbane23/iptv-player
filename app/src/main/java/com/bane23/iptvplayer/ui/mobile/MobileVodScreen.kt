@@ -2,6 +2,9 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -125,13 +128,28 @@ fun MobileVodScreen(
                         }
                     }
                     item(key = "categories", span = { GridItemSpan(maxLineSpan) }) {
-                        CategoryButton(
-                            label = if (showingFavorites) favoritesLabel else state.selected?.name ?: stringResource(R.string.vod_category),
-                            icon = if (showingFavorites) AppIcons.Star else null,
-                            onClick = { pickerOpen = true },
-                            // Mreža već ima bočne margine.
-                            horizontalPadding = 0.dp,
-                        )
+                        // Prečice kao u Uživo: Favoriti jednim dodirom, a čip kategorije nosi naziv
+                        // izabrane kategorije i otvara spisak svih.
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            GroupChip(
+                                label = favoritesLabel,
+                                selected = showingFavorites,
+                                onClick = {
+                                    if (!showingFavorites) viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                                },
+                                leading = AppIcons.Star,
+                            )
+                            GroupChip(
+                                label = state.selected?.takeIf { !showingFavorites }?.name
+                                    ?: stringResource(R.string.category_chip_more),
+                                selected = !showingFavorites && state.selected != null,
+                                onClick = { pickerOpen = true },
+                                trailing = AppIcons.ArrowDown,
+                            )
+                        }
                     }
                     when {
                         showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
