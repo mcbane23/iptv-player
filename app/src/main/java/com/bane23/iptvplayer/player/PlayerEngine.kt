@@ -103,19 +103,19 @@ class PlayerEngine(
         .setConnectTimeoutMs(15_000)
         .setReadTimeoutMs(20_000)
 
+    /** Koji dekoder se bira pri sledećem pokretanju dekodera; menja se i u toku gledanja, vidi [setDecoder]. */
+    @Volatile
+    private var decoderMode = settings.decoder
+
     private val renderersFactory = DefaultRenderersFactory(appContext)
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
-        .apply {
-            if (settings.decoder == DecoderMode.SOFTWARE) {
-                setMediaCodecSelector(
-                    MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
-                        MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
-                            .sortedByDescending { it.softwareOnly }
-                    },
-                )
-            }
-        }
+        .setMediaCodecSelector(
+            MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
+                val decoders = MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
+                if (decoderMode == DecoderMode.SOFTWARE) decoders.sortedByDescending { it.softwareOnly } else decoders
+            },
+        )
 
     val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
         .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory)))
@@ -301,6 +301,23 @@ class PlayerEngine(
             attempts = 0
             _state.update { it.copy(status = PlaybackStatus.LOADING, failure = null, failureDetail = null) }
         }
+        prepareCurrent()
+    }
+
+    /**
+     * Menja dekoder u toku gledanja. Sadržaj se priprema iznova, da se dekoder ponovo izabere; film
+     * ili epizoda nastavljaju sa istog mesta.
+     */
+    fun setDecoder(mode: DecoderMode) {
+        if (decoderMode == mode) return
+        decoderMode = mode
+        if (source == null) return
+        retryJob?.cancel()
+        rememberPosition()
+        attempts = 0
+        _state.update { it.copy(status = PlaybackStatus.LOADING, failure = null, failureDetail = null, video = VideoInfo()) }
+        // Zaustavljanje oslobađa trenutni dekoder; bez toga bi plejer nastavio sa istim.
+        player.stop()
         prepareCurrent()
     }
 

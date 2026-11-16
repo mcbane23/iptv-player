@@ -210,6 +210,8 @@
     <string name="buffer_large">Veliki</string>
     <string name="settings_decoder">Dekoder</string>
     <string name="settings_decoder_summary">Probajte softverski ako je slika crna, zelena ili secka. Troši više baterije i ume da bude spor na visokim rezolucijama.</string>
+    <string name="player_decoder_auto">Dekoder: auto</string>
+    <string name="player_decoder_software">Dekoder: softverski</string>
     <string name="decoder_auto">Automatski (hardverski)</string>
     <string name="decoder_software">Softverski</string>
     <string name="settings_audio_language">Jezik zvuka</string>
