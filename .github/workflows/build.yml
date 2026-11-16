@@ -5,6 +5,8 @@ name: Build
 on:
   push:
     branches: ['**']
+  # Ručno pokretanje na main-u (Actions → Build → Run workflow) ponovo objavljuje APK,
+  # npr. kad GitHub ne pokrene build posle spajanja.
   workflow_dispatch:
 
 concurrency:
@@ -50,7 +52,7 @@ jobs:
       # Stalan link ka poslednjem APK-u sa main-a (zgodno za TV): tag dev-latest se pomera na svaki
       # push na main.
       - name: Objavi pre-release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -67,7 +69,7 @@ jobs:
       # se korak preskače. Repo i tag moraju biti isti kao u data/update/UpdateSource.kt.
       # Samo main: aplikacija ne sme da nudi buildove sa nespojenih grana.
       - name: Objavi u javni repo za ažuriranje
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         env:
           APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
           APK_REPO: mcbane23/apps
