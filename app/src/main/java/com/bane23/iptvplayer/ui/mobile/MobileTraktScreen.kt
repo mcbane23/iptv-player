@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,7 +92,12 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
+                            // Dodir na kod ga kopira.
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClickLabel = stringResource(R.string.trakt_copy_code)) {
+                                    copyCode(context, login.code.userCode)
+                                },
                         )
                         // Otvara stranicu za aktivaciju u pregledaču, a kod ide u privremenu memoriju da se samo nalepi.
                         Button(
@@ -138,11 +144,15 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
 
 /** Kopira kod i otvara stranicu za aktivaciju; ako pregledača nema, ostaje samo kopiran kod. */
 private fun openActivation(context: Context, uriHandler: UriHandler, url: String, code: String) {
-    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Trakt", code))
-    Toast.makeText(context, R.string.trakt_code_copied, Toast.LENGTH_SHORT).show()
+    copyCode(context, code)
     try {
         uriHandler.openUri(url)
     } catch (_: Exception) {
         // Nema aplikacije koja otvara linkove; kod je kopiran, a adresa piše na ekranu.
     }
+}
+
+private fun copyCode(context: Context, code: String) {
+    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Trakt", code))
+    Toast.makeText(context, R.string.trakt_code_copied, Toast.LENGTH_SHORT).show()
 }
