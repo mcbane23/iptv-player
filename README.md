@@ -10,10 +10,10 @@ sadržaj: korisnik dodaje sopstvene liste (M3U ili Xtream Codes nalog).
 
 ## Preuzimanje APK-a
 
-APK se bilduje automatski preko GitHub Actions na svaki push i pull request.
+APK se bilduje automatski preko GitHub Actions posle svakog spajanja u `main`.
 
 1. Otvori karticu **Actions** u repou i izaberi workflow **Build**.
-2. Klikni na poslednji uspešan run (zelena kvačica) za granu koja te zanima (obično `main`).
+2. Klikni na poslednji uspešan run (zelena kvačica) za granu `main`.
 3. Na dnu stranice, u odeljku **Artifacts**, preuzmi `iptv-player-debug-<broj>`.
 4. GitHub daje ZIP; raspakuj ga i dobićeš `app-debug.apk`.
 
@@ -21,12 +21,7 @@ APK se bilduje automatski preko GitHub Actions na svaki push i pull request.
 
 <https://github.com/mcbane23/iptv-player/releases/download/dev-latest/iptv-player-debug.apk>
 
-Link je uvek isti i vodi na poslednji spojen kod. Svaka druga grana dobija svoj link, za
-isprobavanje pre spajanja (u imenu grane `/` postaje `-`):
-
-`https://github.com/mcbane23/iptv-player/releases/download/dev-<ime-grane>/iptv-player-debug.apk`
-
-Izdanje grane se briše kad joj se PR zatvori. Pošto je repo privatan, radi samo u
+Link je uvek isti i vodi na poslednji spojen kod. Grane ne objavljuju APK, samo proveravaju build i testove. Pošto je repo privatan, radi samo u
 pregledaču u kome si prijavljen na GitHub.
 
 Debug APK je uvek potpisan istim ključem (`keystore/debug.keystore`), pa novi APK

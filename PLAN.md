@@ -119,17 +119,16 @@ pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions
 jer PR prikazuje rezultat push builda za isti commit). Dva posla rade paralelno:
 
 - **Debug APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
-  (keširanje), `./gradlew assembleDebug`, upload APK-a kao artifact, objava pre-release-a
+  (keširanje), `./gradlew assembleDebug`, na main-u upload APK-a kao artifact i objava pre-release-a
 - **Testovi i lint**: isti koraci za pripremu, `./gradlew testDebugUnitTest lintDebug`,
   upload izveštaja
 
 CI je zelen tek kad oba posla prođu. Pre-release se objavljuje čim je APK gotov, ne čeka testove.
 
-APK artifact se pravi na **svaki** CI build, ne samo za release. Push na `main` dodatno
-objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV), a push na svaku drugu
-granu kao pre-release `dev-<ime-grane>` (`/` postaje `-`), da se izmena isproba pre spajanja.
-Grana se objavljuje samo ako sadrži vrh main-a. Izdanje grane se briše na sledećem push-u na
-`main` kad je grana obrisana ili joj je PR zatvoren. Ažuriranje iz aplikacije prati samo `main`. Za sada je APK
+APK artifact se čuva samo za build-ove sa `main`-a. Push na `main` dodatno
+objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Grane ne objavljuju APK
+(odluka vlasnika 2026-11-16, linkovi po grani su bili zbunjujući); na njima build i testovi
+služe samo kao provera. Ažuriranje iz aplikacije prati samo `main`. Za sada je APK
 **potpisan debug ključem**.
 
 **Ažuriranje iz aplikacije (urađeno, dev kanal):** kod ostaje privatan, a CI APK sa `main`-a objavljuje i u
