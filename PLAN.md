@@ -129,7 +129,7 @@ APK artifact se pravi na **svaki** CI build, ne samo za release. Svaki push doda
 objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Za sada je APK
 **potpisan debug ključem**.
 
-**Ažuriranje iz aplikacije (urađeno, dev kanal):** kod ostaje privatan, a CI isti APK objavljuje i u
+**Ažuriranje iz aplikacije (urađeno, dev kanal):** kod ostaje privatan, a CI APK sa `main`-a objavljuje i u
 poseban javni repo za APK-ove (`mcbane23/apps`, izdanje `iptv-player-dev`, fajlovi
 `iptv-player-dev.apk` i `iptv-player.json` sa `versionCode`, `versionName` i `sha256`). Repo je
 zajednički za više aplikacija, svaka ima svoje tagove. CI piše tamo tokenom `APK_REPO_TOKEN`

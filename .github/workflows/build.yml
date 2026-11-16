@@ -69,8 +69,9 @@ jobs:
       # Isti APK ide i u javni repo za APK-ove, odakle ga aplikacija sama preuzima (Podešavanja → Proveri
       # ažuriranje). Kod ostaje privatan. Token APK_REPO_TOKEN ima pravo pisanja samo u taj repo; bez njega
       # se korak preskače. Repo i tag moraju biti isti kao u data/update/UpdateSource.kt.
+      # Samo main: aplikacija ne sme da nudi buildove sa nespojenih grana.
       - name: Objavi u javni repo za ažuriranje
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
           APK_REPO: mcbane23/apps
@@ -80,11 +81,6 @@ jobs:
         run: |
           if [ -z "$APK_REPO_TOKEN" ]; then
             echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
-            exit 0
-          fi
-          git fetch --quiet origin main
-          if ! git merge-base --is-ancestor origin/main "$GITHUB_SHA"; then
-            echo "Grana ne sadrži vrh main-a, javni repo se ne menja."
             exit 0
           fi
           # Dva builda mogu da se završe obrnutim redom: stariji ne sme da zameni noviji.
