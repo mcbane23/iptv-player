@@ -193,6 +193,8 @@ class MovieViewModel @Inject constructor(
                     extension = details?.extension ?: it.extension,
                 )
             }
+            // Neki paneli šalju TMDB ID samo u spisku filmova; bez njega nema oznake sa Trakt-a.
+            if (tmdbId.value == null) tmdbId.value = listTmdbId { repository.movieListTmdbId(movieId) }
         }
         viewModelScope.launch {
             val local = repository.activePlaylistId.filterNotNull().flatMapLatest { repository.observeMovieProgress(it, movieId) }
@@ -323,8 +325,10 @@ class SeriesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val details = repository.series(id)
-                showTmdbId.value = details.tmdbId ?: repository.seriesListTmdbId(id)
+                showTmdbId.value = details.tmdbId
                 base.update { it.copy(loading = false, details = details, poster = it.poster ?: details.poster) }
+                // Neki paneli šalju TMDB ID samo u spisku serija; bez njega nema oznaka sa Trakt-a.
+                if (details.tmdbId == null) showTmdbId.value = listTmdbId { repository.seriesListTmdbId(id) }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -458,6 +462,15 @@ object VodSearch {
     fun normalize(text: String): String =
         java.text.Normalizer.normalize(text.trim().lowercase().replace("đ", "dj"), java.text.Normalizer.Form.NFD)
             .replace(marks, "")
+}
+
+/** TMDB ID iz spiska na serveru; kad spisak ne može da se učita, ekran radi i bez njega. */
+private suspend fun listTmdbId(lookup: suspend () -> Long?): Long? = try {
+    lookup()
+} catch (e: CancellationException) {
+    throw e
+} catch (_: Exception) {
+    null
 }
 
 /** Šta je odgledano: ID-jevi sa liste (označeno u aplikaciji) i TMDB ID-jevi (odgledano na Trakt nalogu). */
