@@ -120,8 +120,11 @@ pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions
 **`.github/workflows/build.yml`** (pokreće se na svaki push; poseban pull_request build ne postoji,
 jer PR prikazuje rezultat push builda za isti commit). Dva posla rade paralelno:
 
-- **Debug APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
-  (keširanje), `./gradlew assembleDebug`, na main-u upload APK-a kao artifact i objava pre-release-a
+- **Test APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
+  (keširanje), `./gradlew assembleDev`, na main-u upload APK-a kao artifact i objava pre-release-a.
+  Build `dev` je optimizovan kao izdanje (R8, nije debuggable), a potpisan stalnim debug ključem, pa se
+  instalira preko ranijih debug buildova bez gubitka podataka (odluka vlasnika 2026-11-16, debug build
+  je bio spor na slabijem TV-u)
 - **Testovi i lint**: isti koraci za pripremu, `./gradlew testDebugUnitTest lintDebug`,
   upload izveštaja
 

@@ -23,7 +23,7 @@ permissions:
 # „release” proverava da release build (R8) prolazi. CI je zelen tek kad sva tri prođu.
 jobs:
   apk:
-    name: Debug APK
+    name: Test APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -41,19 +41,20 @@ jobs:
 
       # Ključevi Trakt aplikacije (GitHub Secrets) ugrađuju se u APK. Bez Client ID-ja Trakt se ne prikazuje;
       # Client Secret nije obavezan (nove Trakt aplikacije ga nemaju).
-      - name: Debug APK
+      # Build „dev”: optimizovan kao izdanje (R8), potpisan debug ključem (vidi app/build.gradle.kts).
+      - name: Test APK
         env:
           TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
           TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDev
 
       # APK se objavljuje samo sa main-a (posle spajanja). Na granama build služi samo kao provera.
-      - name: Debug APK kao artifact
+      - name: Test APK kao artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v6
         with:
           name: iptv-player-debug-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/dev/*.apk
           if-no-files-found: error
 
       # Stalan link ka poslednjem APK-u sa main-a (zgodno za TV): tag dev-latest se pomera na svaki
@@ -63,13 +64,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk iptv-player-debug.apk
+          cp app/build/outputs/apk/dev/app-dev.apk iptv-player-debug.apk
           gh release delete dev-latest --yes --cleanup-tag || true
           gh release create dev-latest iptv-player-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Poslednji debug build (#${{ github.run_number }})" \
-            --notes "Commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+            --title "Poslednji test build (#${{ github.run_number }})" \
+            --notes "Commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan debug ključem."
 
       # Isti APK ide i u javni repo za APK-ove, odakle ga aplikacija sama preuzima (Podešavanja → Proveri
       # ažuriranje). Kod ostaje privatan. Token APK_REPO_TOKEN ima pravo pisanja samo u taj repo; bez njega
@@ -98,7 +99,7 @@ jobs:
           # Svaki build ima svoj fajl. Da se isti fajl menja u mestu, aplikacija koja je već pročitala
           # stari opis preuzela bi novi APK, kontrolni zbir se ne bi poklopio i ažuriranje bi bilo odbijeno.
           APK="iptv-player-dev-$CODE.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          cp app/build/outputs/apk/dev/app-dev.apk "$APK"
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
           # versionName mora da prati app/build.gradle.kts.
           jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
@@ -112,7 +113,7 @@ jobs:
           gh release upload "$TAG" -R "$APK_REPO" "$APK" --clobber
           gh release upload "$TAG" -R "$APK_REPO" iptv-player.json --clobber
           gh release edit "$TAG" -R "$APK_REPO" \
-            --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+            --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski optimizovan build (R8), potpisan debug ključem."
           # Stari APK-ovi se brišu tek sada, kad opis već pokazuje na novi. Prethodni build ostaje
           # još jedan krug, za aplikaciju koja je upravo pročitala stari opis.
           PREVIOUS="iptv-player-dev-${CURRENT:-0}.apk"
