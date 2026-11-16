@@ -31,6 +31,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.message
@@ -100,12 +101,7 @@ fun TvPlaylistsScreen(
         when {
             state.loading -> Unit
 
-            state.playlists.isEmpty() -> Text(
-                text = stringResource(R.string.playlists_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+            state.playlists.isEmpty() -> TvEmptyState(icon = AppIcons.Playlists, text = stringResource(R.string.playlists_empty))
 
             else -> LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),

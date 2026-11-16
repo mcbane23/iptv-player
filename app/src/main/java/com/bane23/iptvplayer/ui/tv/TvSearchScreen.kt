@@ -28,6 +28,7 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SearchViewModel
 
@@ -65,12 +66,7 @@ fun TvSearchScreen(
                 .focusRequester(fieldFocus),
         )
         if (state.query.isNotBlank() && results.itemCount == 0 && results.loadState.refresh is LoadState.NotLoading) {
-            Text(
-                text = stringResource(R.string.search_empty),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+            TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty))
         }
         LazyColumn(
             modifier = Modifier

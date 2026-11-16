@@ -2,6 +2,9 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -94,7 +97,7 @@ fun MobileVodScreen(
                     items(SKELETON_POSTERS) { SkeletonPoster() }
                 }
                 state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
-                state.categories.isEmpty() -> Message(stringResource(R.string.vod_empty))
+                state.categories.isEmpty() -> EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
                 else -> LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 104.dp),
@@ -125,17 +128,32 @@ fun MobileVodScreen(
                         }
                     }
                     item(key = "categories", span = { GridItemSpan(maxLineSpan) }) {
-                        CategoryButton(
-                            label = if (showingFavorites) favoritesLabel else state.selected?.name ?: stringResource(R.string.vod_category),
-                            icon = if (showingFavorites) AppIcons.Star else null,
-                            onClick = { pickerOpen = true },
-                            // Mreža već ima bočne margine.
-                            horizontalPadding = 0.dp,
-                        )
+                        // Prečice kao u Uživo: Favoriti jednim dodirom, a čip kategorije nosi naziv
+                        // izabrane kategorije i otvara spisak svih.
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            GroupChip(
+                                label = favoritesLabel,
+                                selected = showingFavorites,
+                                onClick = {
+                                    if (!showingFavorites) viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                                },
+                                leading = AppIcons.Star,
+                            )
+                            GroupChip(
+                                label = state.selected?.takeIf { !showingFavorites }?.name
+                                    ?: stringResource(R.string.category_chip_more),
+                                selected = !showingFavorites && state.selected != null,
+                                onClick = { pickerOpen = true },
+                                trailing = AppIcons.ArrowDown,
+                            )
+                        }
                     }
                     when {
                         showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Message(stringResource(R.string.vod_favorites_empty))
+                            EmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
                         }
 
                         showingFavorites -> items(favorites, key = { it.id }) { item ->
@@ -156,7 +174,7 @@ fun MobileVodScreen(
                         }
 
                         state.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Message(stringResource(R.string.vod_empty))
+                            EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
                         }
 
                         else -> items(state.items, key = { it.id }) { item ->
@@ -254,12 +272,12 @@ internal fun Message(text: String) {
 
 @Composable
 internal fun Failure(onRetry: () -> Unit) {
-    Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = stringResource(R.string.vod_load_failed),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
-        )
-        Button(onClick = onRetry) { Text(stringResource(R.string.player_retry)) }
-    }
+    EmptyState(
+        icon = AppIcons.Warning,
+        text = stringResource(R.string.vod_load_failed),
+        isError = true,
+        actionLabel = stringResource(R.string.player_retry),
+        actionIcon = AppIcons.Refresh,
+        onAction = onRetry,
+    )
 }
