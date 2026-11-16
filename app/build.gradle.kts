@@ -17,8 +17,8 @@ android {
         // U CI-ju broj builda, da bi svaki novi APK bio „noviji” i ažuriranje u aplikaciji ga prepoznalo.
         // Lokalni build ostaje 1, pa ga CI build uvek može zameniti.
         val ciBuild = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toIntOrNull()
-        // Zvanično izdanje: release.yml postavlja RELEASE_VERSION iz oznake (v1.2.3 daje „1.2.3”).
-        // Broj verzije se računa iz oznake (1.2.3 daje 1002003), pa ne zavisi od broja CI run-a
+        // Zvanično izdanje: release.yml postavlja RELEASE_VERSION iz fajla version.txt (npr. „1.2.3”).
+        // Broj verzije se računa iz nje (1.2.3 daje 1002003), pa ne zavisi od broja CI run-a
         // i uvek je veći od dev buildova.
         val release = providers.environmentVariable("RELEASE_VERSION").orNull?.trim()
             ?.let { Regex("""(\d{1,3})\.(\d{1,3})\.(\d{1,3})""").matchEntire(it) }

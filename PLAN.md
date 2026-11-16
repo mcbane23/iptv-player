@@ -315,12 +315,12 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 ### Faza 8: Izdanje
 
 - [x] Potvrđeni ime, akcentna boja, ikonica i TV baner
-- [ ] Keystore napravljen, secrets dodati, `release.yml` radi. `release.yml` je napisan (oznaka
-      `v1.2.3` na main-u pravi potpisan APK); čeka se keystore i `RELEASE_*` secrets (vidi README).
+- [ ] Keystore napravljen, secrets dodati, `release.yml` radi. `release.yml` pravi izdanje sam kad se
+      u main spoji nova verzija u `version.txt`; keystore i `RELEASE_*` secrets su dodati (vidi README).
 - [ ] R8/ProGuard pravila proverena na release buildu. R8 i smanjivanje resursa su uključeni i
       release build se pravi u CI-ju na svaki push; ostaje proba release APK-a na uređaju.
-- [x] Verzionisanje: dev buildovi iz broja CI run-a (`0.0.1-dev.N`), izdanja iz oznake
-      (`v1.2.3` daje `1.2.3`, `versionCode` 1002003)
+- [x] Verzionisanje: dev buildovi iz broja CI run-a (`0.0.1-dev.N`), izdanja iz `version.txt`
+      (`1.2.3` daje oznaku `v1.2.3` i `versionCode` 1002003)
 - [x] README: kako instalirati APK na telefon i na TV
 - [ ] Prvo izdanje `v1.0.0` u GitHub Releases
 - [x] Ažuriranje iz aplikacije: zvanična izdanja prate kanal `iptv-player` u javnom repou, dev
