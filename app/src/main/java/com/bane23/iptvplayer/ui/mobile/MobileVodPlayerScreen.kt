@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +34,7 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
-import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
@@ -63,6 +64,7 @@ fun MobileVodPlayerScreen(
     var panel by remember { mutableStateOf(VodPanel.NONE) }
     var gestureHint by remember { mutableStateOf<String?>(null) }
     var locked by remember { mutableStateOf(false) }
+    var infoVisible by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
     // Svaki dodir na kontrolama odlaže njihovo sklanjanje.
     var activity by remember { mutableIntStateOf(0) }
@@ -139,6 +141,17 @@ fun MobileVodPlayerScreen(
         gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
         FirstLaunchGestureHint()
 
+        // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
+        if (infoVisible) {
+            PlayerStreamInfo(
+                player = viewModel.player,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .safeDrawingPadding()
+                    .padding(start = 16.dp, top = 76.dp, end = 16.dp),
+            )
+        }
+
         if (locked) {
             LockedOverlay(visible = unlockVisible) {
                 locked = false
@@ -165,8 +178,20 @@ fun MobileVodPlayerScreen(
                 },
                 onPip = rememberEnterPictureInPicture(),
                 onCast = cast,
+                center = {
+                    PlayPauseCenter(
+                        paused = playback.status == PlaybackStatus.PAUSED,
+                        failed = failed,
+                        lowered = statusMessage(ui.sourceMissing, playback) != null,
+                        onPlayPause = {
+                            viewModel.togglePlayPause()
+                            activity++
+                        },
+                        onRetry = viewModel::retry,
+                    )
+                },
                 bottom = {
-                    val paused = playback.status == PlaybackStatus.PAUSED
+                    // Premotavanje na krajevima, traka u sredini.
                     PlayerTransportBar(
                         startLabel = formatDuration(preview ?: ui.positionMs),
                         endLabel = formatDuration(ui.durationMs),
@@ -179,35 +204,13 @@ fun MobileVodPlayerScreen(
                                     activity++
                                 },
                             )
-                            PlayerIconButton(
-                                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                                description = stringResource(
-                                    when {
-                                        failed -> R.string.player_retry
-                                        paused -> R.string.player_play
-                                        else -> R.string.player_pause
-                                    },
-                                ),
-                                onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
-                                primary = true,
-                                modifier = Modifier.padding(start = 8.dp),
-                            )
                         },
                         trailing = {
-                            PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                             PlayerIconButton(
                                 icon = AppIcons.FastForward,
                                 description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
                                 onClick = {
                                     viewModel.seekBy(viewModel.seekStepMs)
-                                    activity++
-                                },
-                            )
-                            PlayerIconButton(
-                                icon = AppIcons.AspectRatio,
-                                description = ui.aspectMode.label(),
-                                onClick = {
-                                    viewModel.cycleAspectMode()
                                     activity++
                                 },
                             )
@@ -244,17 +247,14 @@ fun MobileVodPlayerScreen(
                         },
                     )
                     PlayerChip(
-                        icon = AppIcons.Previous,
-                        label = stringResource(R.string.vod_start_over),
-                        onClick = { viewModel.seekTo(0) },
+                        icon = AppIcons.Info,
+                        label = stringResource(R.string.player_stream_info),
+                        active = infoVisible,
+                        onClick = {
+                            infoVisible = !infoVisible
+                            activity++
+                        },
                     )
-                    if (ui.hasNext) {
-                        PlayerChip(
-                            icon = AppIcons.Next,
-                            label = stringResource(R.string.vod_next_episode),
-                            onClick = viewModel::next,
-                        )
-                    }
                 },
             )
         }

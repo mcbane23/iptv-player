@@ -61,7 +61,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.common.Player
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
@@ -78,7 +77,7 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
-import com.bane23.iptvplayer.ui.common.player.PlayerResolution
+import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
@@ -118,6 +117,7 @@ fun MobilePlayerScreen(
     val recordChoices = recordingChoices(nowNext.now?.stopMs)
     var gestureHint by remember { mutableStateOf<String?>(null) }
     var locked by remember { mutableStateOf(false) }
+    var infoVisible by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
@@ -187,6 +187,17 @@ fun MobilePlayerScreen(
             gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
             FirstLaunchGestureHint()
 
+            // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
+            if (infoVisible && panel != Panel.CHANNELS) {
+                PlayerStreamInfo(
+                    player = viewModel.player,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .safeDrawingPadding()
+                        .padding(start = 16.dp, top = 76.dp, end = 16.dp),
+                )
+            }
+
             if (locked) {
                 LockedOverlay(visible = unlockVisible) {
                     locked = false
@@ -197,7 +208,6 @@ fun MobilePlayerScreen(
                 LiveControls(
                     ui = ui,
                     playback = playback,
-                    player = viewModel.player,
                     onClose = onClose,
                     onLock = {
                         locked = true
@@ -211,6 +221,8 @@ fun MobilePlayerScreen(
                     onAudio = { panel = Panel.AUDIO },
                     onSubtitles = { panel = Panel.SUBTITLES },
                     onAspect = viewModel::cycleAspectMode,
+                    infoVisible = infoVisible,
+                    onInfo = { infoVisible = !infoVisible },
                     isFavorite = isFavorite,
                     nowNext = nowNext,
                     onFavorite = viewModel::toggleFavorite,
@@ -269,7 +281,6 @@ fun MobilePlayerScreen(
 private fun LiveControls(
     ui: PlayerUiState,
     playback: PlaybackState,
-    player: Player,
     onClose: () -> Unit,
     onLock: () -> Unit,
     onPrevious: () -> Unit,
@@ -280,6 +291,8 @@ private fun LiveControls(
     onAudio: () -> Unit,
     onSubtitles: () -> Unit,
     onAspect: () -> Unit,
+    infoVisible: Boolean,
+    onInfo: () -> Unit,
     isFavorite: Boolean,
     nowNext: NowNext,
     onFavorite: () -> Unit,
@@ -298,32 +311,26 @@ private fun LiveControls(
         onLock = onLock,
         onPip = onPip,
         onCast = onCast,
+        center = {
+            PlayPauseCenter(
+                paused = playback.status == PlaybackStatus.PAUSED,
+                failed = failed,
+                lowered = statusMessage(ui, playback) != null,
+                onPlayPause = onPlayPause,
+                onRetry = onRetry,
+            )
+        },
         bottom = {
             val program = nowNext.now
-            val paused = playback.status == PlaybackStatus.PAUSED
+            // Prethodni i sledeći kanal na krajevima, traka emisije u sredini.
             PlayerTransportBar(
                 startLabel = program?.let { formatTime(it.startMs) },
                 endLabel = program?.let { formatTime(it.stopMs) },
                 leading = {
                     PlayerIconButton(AppIcons.Previous, stringResource(R.string.player_previous), onPrevious)
-                    PlayerIconButton(
-                        icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                        description = stringResource(
-                            when {
-                                failed -> R.string.player_retry
-                                paused -> R.string.player_play
-                                else -> R.string.player_pause
-                            },
-                        ),
-                        onClick = if (failed) onRetry else onPlayPause,
-                        primary = true,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
                 },
                 trailing = {
-                    PlayerResolution(player, modifier = Modifier.padding(horizontal = 8.dp))
                     PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext)
-                    PlayerIconButton(AppIcons.AspectRatio, ui.aspectMode.label(), onAspect)
                 },
             ) { barModifier ->
                 val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
@@ -355,6 +362,12 @@ private fun LiveControls(
             )
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
             PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
+            PlayerChip(
+                icon = AppIcons.Info,
+                label = stringResource(R.string.player_stream_info),
+                active = infoVisible,
+                onClick = onInfo,
+            )
             if (channel != null) {
                 PlayerChip(
                     icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,

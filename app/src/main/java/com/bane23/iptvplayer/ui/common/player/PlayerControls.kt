@@ -68,7 +68,7 @@ private val PanelBorder = Color.White.copy(alpha = 0.16f)
 private val ChipShape = RoundedCornerShape(10.dp)
 
 /** Tamna poluprovidna pločica sa tankim okvirom, podloga za sve kontrole plejera. */
-private fun Modifier.playerPanel(shape: Shape): Modifier =
+internal fun Modifier.playerPanel(shape: Shape): Modifier =
     background(PanelBackground, shape).border(1.dp, PanelBorder, shape)
 
 /**
@@ -354,7 +354,7 @@ fun PlayerProgress(fraction: Float, modifier: Modifier = Modifier) {
 /**
  * Donja traka plejera, ista na TV-u i telefonu: jedna zaobljena pločica u kojoj su levo dugmad
  * ([leading]), pa vreme, traka i vreme, pa desno ostalo ([trailing]). Na uskom ekranu (telefon
- * uspravno) traka sa vremenima ide u svoj red iznad dugmadi, da ostane dovoljno duga.
+ * uspravno) vremena idu ispod trake, da traka ostane dovoljno duga.
  */
 @Composable
 fun PlayerTransportBar(
@@ -384,25 +384,29 @@ fun PlayerTransportBar(
                 trailing()
             }
         } else {
-            Column(
+            // Uzak ekran: premotavanje na krajevima, traka u sredini, vremena ispod trake da traka ostane duga.
+            Row(
                 modifier = Modifier
                     .playerPanel(RoundedCornerShape(28.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TimeLabel(startLabel)
-                    bar(
-                        Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp),
-                    )
-                    TimeLabel(endLabel)
+                leading()
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                ) {
+                    bar(Modifier.fillMaxWidth())
+                    if (startLabel != null || endLabel != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TimeLabel(startLabel)
+                            Spacer(modifier = Modifier.weight(1f))
+                            TimeLabel(endLabel)
+                        }
+                    }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    leading()
-                    Spacer(modifier = Modifier.weight(1f))
-                    trailing()
-                }
+                trailing()
             }
         }
     }
