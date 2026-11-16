@@ -80,3 +80,7 @@ data object Search : NavKey
 /** Sakrivanje kategorija i promena njihovog redosleda. */
 @Serializable
 data object ManageCategories : NavKey
+
+/** Roditeljska zaštita: PIN i zaključane kategorije. */
+@Serializable
+data object ParentalControl : NavKey

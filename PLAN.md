@@ -259,7 +259,7 @@ Redosled unutar faze po želji vlasnika.
 - [x] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`): ulaz je iz TV vodiča, ekran
       „Arhiva” prikazuje prošle emisije kanala po danima. Za Xtream spisak daje server; za M3U se pravi
       iz sačuvanog vodiča (čuva se do 7 dana unazad za kanale sa arhivom)
-- [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
+- [x] Roditeljska zaštita PIN-om (zaključavanje kategorija)
 - [ ] Više profila
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)

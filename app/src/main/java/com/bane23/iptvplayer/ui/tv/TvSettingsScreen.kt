@@ -40,6 +40,7 @@ import com.bane23.iptvplayer.work.Autostart
 @Composable
 fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
+    onParental: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
@@ -84,6 +85,17 @@ fun TvSettingsScreen(
                         text = stringResource(R.string.categories_manage_title),
                         trailing = "›",
                         onClick = onCategories,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                }
+                if (onParental != null) {
+                    TvTextRow(
+                        text = stringResource(R.string.parental_title),
+                        trailing = "›",
+                        onClick = onParental,
                         onFocused = {
                             focusedChoice = null
                             openChoice = null

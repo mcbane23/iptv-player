@@ -76,6 +76,7 @@ fun TvHomeScreen(
     onAddFromPhone: () -> Unit,
     onEditPlaylist: (Long) -> Unit,
     onCategories: () -> Unit,
+    onParental: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(TvTab.LIVE) }
@@ -136,6 +137,7 @@ fun TvHomeScreen(
 
                     TvTab.SETTINGS -> TvSettingsScreen(
                         onCategories = onCategories.takeIf { playlistId != null },
+                        onParental = onParental.takeIf { playlistId != null },
                     )
                 }
             }

@@ -69,6 +69,7 @@ fun MobileHomeScreen(
     onSearchVod: (series: Boolean) -> Unit,
     onPlaylists: () -> Unit,
     onCategories: () -> Unit,
+    onParental: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(MobileTab.LIVE) }
@@ -122,6 +123,7 @@ fun MobileHomeScreen(
                     MobileTab.SETTINGS -> MobileSettingsScreen(
                         onPlaylists = onPlaylists,
                         onCategories = onCategories.takeIf { liveState.playlistId != null },
+                        onParental = onParental.takeIf { liveState.playlistId != null },
                     )
                 }
             }

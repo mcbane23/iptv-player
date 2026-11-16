@@ -253,4 +253,19 @@
     <string name="archive_empty">There are no past programs for this channel yet. The archive list is built from the TV guide.</string>
     <string name="archive_failed">The archive list could not be loaded.</string>
     <string name="archive_hint_tv">OK opens the archive</string>
+    <string name="parental_title">Parental control</string>
+    <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
+    <string name="parental_hint">Locked categories stay visible with a padlock, and their content asks for the PIN. An entered PIN stays valid until the app is closed.</string>
+    <string name="parental_lock_again">Lock again</string>
+    <string name="parental_change_pin">Change PIN</string>
+    <string name="parental_remove_pin">Remove PIN and all locks</string>
+    <string name="parental_locked">Locked</string>
+    <string name="parental_unlocked">Open</string>
+    <string name="pin_enter">Enter PIN</string>
+    <string name="pin_new">Enter a new PIN</string>
+    <string name="pin_repeat">Repeat the new PIN</string>
+    <string name="pin_wrong">Wrong PIN</string>
+    <string name="pin_mismatch">The PINs do not match, try again</string>
+    <string name="pin_locked_title">Locked content</string>
+    <string name="pin_hint_tv">Type the digits on the remote or pick them on screen.</string>
 </resources>

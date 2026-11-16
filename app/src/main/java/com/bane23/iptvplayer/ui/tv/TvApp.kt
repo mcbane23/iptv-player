@@ -13,7 +13,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
+import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
@@ -67,6 +69,7 @@ fun TvApp() {
                     onAddFromPhone = { backStack.add(PairPlaylist) },
                     onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
                     onCategories = { backStack.add(ManageCategories) },
+                    onParental = { backStack.add(ParentalControl) },
                 )
             }
             entry<Search> {
@@ -94,54 +97,69 @@ fun TvApp() {
                 )
             }
             entry<ChannelArchive> { key ->
-                TvArchiveScreen(
-                    channelId = key.channelId,
-                    onPlay = { program ->
-                        backStack.add(
-                            PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
-                        )
-                    },
-                )
+                TvPinGate(LockTarget.Channel(key.channelId)) {
+                    TvArchiveScreen(
+                        channelId = key.channelId,
+                        onPlay = { program ->
+                            backStack.add(
+                                PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
+                            )
+                        },
+                    )
+                }
             }
             entry<PlayArchive> { key ->
-                TvVodPlayerScreen(
-                    start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
-                )
+                TvPinGate(LockTarget.Channel(key.channelId)) {
+                    TvVodPlayerScreen(
+                        start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
+                    )
+                }
             }
             entry<Player> { key ->
-                TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
+                TvPinGate(LockTarget.Channel(key.channelId)) {
+                    TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
+                }
             }
             entry<MovieDetails> { key ->
-                TvMovieScreen(
-                    movieId = key.movieId,
-                    name = key.name,
-                    poster = key.poster,
-                    extension = key.extension,
-                    onPlay = { extension, startOver ->
-                        backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
-                    },
-                )
+                TvPinGate(LockTarget.Vod(series = false, itemId = key.movieId)) {
+                    TvMovieScreen(
+                        movieId = key.movieId,
+                        name = key.name,
+                        poster = key.poster,
+                        extension = key.extension,
+                        onPlay = { extension, startOver ->
+                            backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
+                        },
+                    )
+                }
             }
             entry<SeriesDetails> { key ->
-                TvSeriesScreen(
-                    seriesId = key.seriesId,
-                    name = key.name,
-                    poster = key.poster,
-                    onPlay = { episodeId, startOver ->
-                        backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
-                    },
-                )
+                TvPinGate(LockTarget.Vod(series = true, itemId = key.seriesId)) {
+                    TvSeriesScreen(
+                        seriesId = key.seriesId,
+                        name = key.name,
+                        poster = key.poster,
+                        onPlay = { episodeId, startOver ->
+                            backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                        },
+                    )
+                }
             }
             entry<PlayMovie> { key ->
-                TvVodPlayerScreen(
-                    start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
-                )
+                TvPinGate(LockTarget.Vod(series = false, itemId = key.movieId)) {
+                    TvVodPlayerScreen(
+                        start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
+                    )
+                }
             }
             entry<PlayEpisode> { key ->
-                TvVodPlayerScreen(
-                    start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
-                )
+                TvPinGate(LockTarget.Vod(series = true, itemId = key.seriesId)) {
+                    TvVodPlayerScreen(
+                        start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
+                    )
+                }
             }
+            entry<ParentalControl> { TvParentalScreen() }
             entry<PairPlaylist> {
                 TvPairingScreen(onClose = { backStack.removeLastOrNull() })
             }
