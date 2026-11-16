@@ -419,6 +419,19 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Ekrani na TV-u se menjaju odmah (bez pretapanja od 700 ms), bočni meni se širi bez animacije,
       vodič u pregledu kanala se ne čita za svaki kanal dok se taster drži
 
+**Doterivanje izgleda (predlozi od 16. 11. 2026)**
+
+Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
+
+- [x] TV, Uživo: uputstvo „držite OK za favorite” vidi se samo pri prvom otvaranju, nekoliko sekundi
+- [x] Kanal bez logoa dobija kratku oznaku (npr. „RTS1”) na zaobljenoj podlozi; film ili serija
+      bez postera dobija naziv na tamnom prelivu
+- [x] Dok se kanali, filmovi i serije učitavaju, stoje nepomični sivi obrisi umesto praznog ekrana
+- [x] Sat na TV-u: u zaglavlju sekcija Uživo, Filmovi, Serije, Liste, Podešavanja i Vodič, i u plejeru
+      dok su kontrole otvorene
+- [x] Telefon, Uživo: čipovi Favoriti, Nedavno, Svi i čip „Kategorije” (nosi naziv izabrane kategorije)
+      umesto jednog dugmeta sa spiskom
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.

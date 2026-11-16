@@ -134,6 +134,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[GESTURE_HINT_SHOWN] = true }
     }
 
+    /** Uputstvo na TV-u kako se kanal dodaje u omiljene je već prikazano (prikazuje se samo prvi put). */
+    val tvFavoriteHintShown: Flow<Boolean> =
+        dataStore.data.map { it[TV_FAVORITE_HINT_SHOWN] ?: false }.distinctUntilChanged()
+
+    suspend fun setTvFavoriteHintShown() {
+        dataStore.edit { it[TV_FAVORITE_HINT_SHOWN] = true }
+    }
+
     /** Podešavanja plejera. Čitaju se pri otvaranju plejera, pa izmena važi od sledećeg puštanja. */
     val playerSettings: Flow<PlayerSettings> = dataStore.data.map { prefs ->
         PlayerSettings(
@@ -201,6 +209,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
+        val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }

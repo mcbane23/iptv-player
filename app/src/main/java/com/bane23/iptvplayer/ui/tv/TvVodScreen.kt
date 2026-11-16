@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,6 +51,9 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.ui.common.vod.Poster
+import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
+import com.bane23.iptvplayer.ui.common.vod.SkeletonPoster
+import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
@@ -88,14 +92,30 @@ fun TvVodScreen(
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = stringResource(if (series) R.string.vod_series else R.string.vod_movies),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+        TvHeader(
+            title = stringResource(if (series) R.string.vod_series else R.string.vod_movies),
             modifier = Modifier.padding(bottom = 16.dp),
         )
         when {
-            state.loadingCategories -> Note(stringResource(R.string.vod_loading))
+            state.loadingCategories -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(0.28f)
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    repeat(SKELETON_CATEGORIES) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 16.dp)
+                                .fillMaxWidth(0.7f)
+                                .height(16.dp)
+                                .skeleton(4.dp),
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(0.72f)) { SkeletonPosterGrid() }
+            }
 
             state.categoriesFailed -> {
                 Note(stringResource(R.string.vod_load_failed))
@@ -213,7 +233,7 @@ fun TvVodScreen(
                         }
 
                         state.selected == null -> Note(stringResource(R.string.vod_pick_category))
-                        state.loadingItems -> Note(stringResource(R.string.vod_loading))
+                        state.loadingItems -> SkeletonPosterGrid()
                         state.itemsFailed -> Note(stringResource(R.string.vod_load_failed))
                         state.items.isEmpty() -> Note(stringResource(R.string.vod_empty))
 
@@ -261,6 +281,15 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
     )
 }
 
+/** Obrisi postera dok se kategorija učitava; nisu fokusirani, pa fokus ostaje u kategorijama. */
+@Composable
+private fun SkeletonPosterGrid() {
+    PosterGrid {
+        items(SKELETON_POSTERS) { SkeletonPoster(modifier = Modifier.padding(5.dp)) }
+    }
+}
+
+private const val SKELETON_CATEGORIES = 8
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 
@@ -295,7 +324,7 @@ fun PosterCard(
             .padding(5.dp),
     ) {
         Box {
-            Poster(url = poster, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
+            Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite) {
                 Icon(
                     imageVector = AppIcons.Star,

@@ -35,6 +35,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
+import com.bane23.iptvplayer.ui.common.SkeletonLogo
+import com.bane23.iptvplayer.ui.common.SkeletonTextLines
+import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -119,12 +122,45 @@ fun TvLiveTvScreen(
                 text = stringResource(R.string.nav_live),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(end = 24.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 24.dp),
             )
+            TvClock()
         }
 
         when {
-            state.loading -> Unit
+            state.loading -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                // Obrisi kolona dok se lista učitava; ništa nije fokusirano, pa daljinski čeka.
+                Column(modifier = Modifier.weight(0.26f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    repeat(SKELETON_ROWS) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 16.dp, top = 8.dp)
+                                .fillMaxWidth(0.7f)
+                                .height(16.dp)
+                                .skeleton(4.dp),
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(0.42f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    repeat(SKELETON_ROWS) {
+                        Row(
+                            modifier = Modifier.padding(start = 62.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SkeletonLogo(size = 36.dp)
+                            SkeletonTextLines(modifier = Modifier.weight(1f).padding(start = 16.dp))
+                        }
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(0.32f)
+                        .aspectRatio(16f / 9f)
+                        .skeleton(12.dp),
+                )
+            }
 
             playlistId == null -> {
                 Text(
@@ -210,12 +246,7 @@ fun TvLiveTvScreen(
                         .weight(0.42f)
                         .fillMaxHeight(),
                 ) {
-                Text(
-                    text = stringResource(R.string.favorite_tv_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-                )
+                TvFavoriteHint()
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -249,46 +280,56 @@ fun TvLiveTvScreen(
                                     .width(36.dp)
                                     .padding(end = 10.dp),
                             )
-                            ChannelLogo(url = channel?.logo, size = 36.dp)
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 16.dp),
-                            ) {
-                                Text(
-                                    text = channel?.name.orEmpty(),
-                                    color = color,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                            if (channel == null) {
+                                // Strana liste se još učitava: obrisi umesto praznog reda.
+                                SkeletonLogo(size = 36.dp)
+                                SkeletonTextLines(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
                                 )
-                                channel?.nowTitle?.let { nowTitle ->
+                            } else {
+                                ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 16.dp),
+                                ) {
                                     Text(
-                                        text = nowTitle,
-                                        color = color.copy(alpha = 0.7f),
-                                        style = MaterialTheme.typography.bodySmall,
+                                        text = channel.name,
+                                        color = color,
+                                        style = MaterialTheme.typography.bodyLarge,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
+                                    channel.nowTitle?.let { nowTitle ->
+                                        Text(
+                                            text = nowTitle,
+                                            color = color.copy(alpha = 0.7f),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    channel.nowProgress(now)?.let { progress ->
+                                        TvProgressBar(
+                                            progress = progress,
+                                            trackColor = color.copy(alpha = 0.15f),
+                                            barColor = color.copy(alpha = 0.5f),
+                                            modifier = Modifier.padding(top = 5.dp),
+                                        )
+                                    }
                                 }
-                                channel?.nowProgress(now)?.let { progress ->
-                                    TvProgressBar(
-                                        progress = progress,
-                                        trackColor = color.copy(alpha = 0.15f),
-                                        barColor = color.copy(alpha = 0.5f),
-                                        modifier = Modifier.padding(top = 5.dp),
+                                if (channel.favorite) {
+                                    Icon(
+                                        AppIcons.Star,
+                                        contentDescription = null,
+                                        tint = if (color == MaterialTheme.colorScheme.onSurface) FavoriteGold else color,
+                                        modifier = Modifier
+                                            .padding(start = 12.dp)
+                                            .size(18.dp),
                                     )
                                 }
-                            }
-                            if (channel?.favorite == true) {
-                                Icon(
-                                    AppIcons.Star,
-                                    contentDescription = null,
-                                    tint = if (color == MaterialTheme.colorScheme.onSurface) FavoriteGold else color,
-                                    modifier = Modifier
-                                        .padding(start = 12.dp)
-                                        .size(18.dp),
-                                )
                             }
                         }
                     }
@@ -321,6 +362,7 @@ fun TvLiveTvScreen(
 private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 
+private const val SKELETON_ROWS = 8
 private const val CATEGORY_FOCUS_DELAY_MS = 250L
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L

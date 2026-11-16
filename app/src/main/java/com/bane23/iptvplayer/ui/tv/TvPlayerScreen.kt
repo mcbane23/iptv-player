@@ -60,6 +60,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
+import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
@@ -322,6 +323,10 @@ private fun LiveControls(
                     large = true,
                     modifier = Modifier.weight(1f),
                 )
+                // Dok se kuca broj kanala, na tom mestu stoji broj.
+                if (ui.typedNumber.isEmpty()) {
+                    PlayerClock(large = true, modifier = Modifier.padding(start = 16.dp))
+                }
             }
         }
 
@@ -458,7 +463,7 @@ private fun ChannelListPanel(
                 },
                 modifier = if (isCurrent) Modifier.focusRequester(currentFocus) else Modifier,
             ) { color ->
-                ChannelLogo(url = channel?.logo, size = 32.dp)
+                ChannelLogo(url = channel?.logo, name = channel?.name, size = 32.dp)
                 Text(
                     text = channel?.name.orEmpty(),
                     color = color,

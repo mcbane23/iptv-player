@@ -102,6 +102,9 @@
     <!-- Favoriti, istorija, pretraga -->
     <string name="category_favorites">Favoriti</string>
     <string name="category_recent">Nedavno gledano</string>
+    <string name="category_chip_all">Svi</string>
+    <string name="category_chip_recent">Nedavno</string>
+    <string name="category_chip_more">Kategorije</string>
     <string name="favorite_add">Dodaj u favorite</string>
     <string name="favorite_remove">Ukloni iz favorita</string>
     <string name="favorite_tv_hint">Držite OK na kanalu da ga dodate u favorite ili uklonite iz njih</string>

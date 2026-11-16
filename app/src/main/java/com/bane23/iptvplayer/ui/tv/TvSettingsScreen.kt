@@ -84,12 +84,7 @@ fun TvSettingsScreen(
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+        TvHeader(title = stringResource(R.string.settings_title), modifier = Modifier.padding(bottom = 16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Column(
                 // Podešavanja ima više nego što staje na ekran; spisak se pomera za fokusom.
