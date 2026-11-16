@@ -17,7 +17,7 @@ Postoje dve vrste APK-a. Potpisane su različitim ključevima, pa jedna ne može
 preko druge: za prelazak sa jedne na drugu aplikacija mora prvo da se obriše.
 
 **Zvanično izdanje** (`iptv-player-<verzija>.apk`): stranica **Releases** u repou. Pravi se samo kad se
-postavi oznaka `v1.2.3` (vidi „Novo izdanje”). Aplikacija se posle sama ažurira na sledeća izdanja
+u `main` spoji nova verzija u `version.txt` (vidi „Novo izdanje”). Aplikacija se posle sama ažurira na sledeća izdanja
 (Podešavanja, „Proveri ažuriranje”).
 
 **Dev build** (`iptv-player-debug.apk`): pravi se posle svakog spajanja u `main` i služi za probu:
@@ -75,16 +75,13 @@ base64 -w0 release.jks
 Zatim dodaj secrets `RELEASE_KEYSTORE_BASE64` (ispis komande `base64`) i `RELEASE_KEYSTORE_PASSWORD`.
 Ako ključ nema ime `release` ili ima posebnu lozinku, dodaj i `RELEASE_KEY_ALIAS` i `RELEASE_KEY_PASSWORD`.
 
-Ključ i lozinke nikad ne idu u repo. Izdanje se zatim pravi oznakom na `main`-u:
+Ključ i lozinke nikad ne idu u repo.
 
-```
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Workflow **Release** pokreće testove, pravi potpisan APK sa uključenim R8, objavljuje ga u
-**Releases** i u javni repo iz kog se aplikacija ažurira. Verzija se čita iz oznake
-(`v1.2.3` daje ime `1.2.3` i broj `1002003`).
+Izdanje se pravi samo od sebe: u fajlu `version.txt` promeni se verzija (npr. `1.0.0` u `1.0.1`) i ta
+izmena se spoji u `main` kroz pull request. Workflow **Release** tada pokreće testove, pravi potpisan
+APK sa uključenim R8, postavlja oznaku `v1.0.1`, objavljuje APK u **Releases** i u javni repo iz kog se
+aplikacija ažurira. Ako oznaka za tu verziju već postoji, ne radi ništa. Verzija `1.2.3` daje ime
+`1.2.3` i broj `1002003`.
 
 ## Build
 
