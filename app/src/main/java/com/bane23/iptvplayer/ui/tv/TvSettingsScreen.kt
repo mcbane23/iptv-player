@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,7 +81,10 @@ fun TvSettingsScreen(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Column(
-                modifier = Modifier.weight(0.55f),
+                // Podešavanja ima više nego što staje na ekran; spisak se pomera za fokusom.
+                modifier = Modifier
+                    .weight(0.55f)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (onCategories != null) {

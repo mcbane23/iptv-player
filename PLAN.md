@@ -330,7 +330,7 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Premotavanje strima**
 
-- [ ] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
+- [x] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
 - [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
       sa pregledom vremena na traci, da se lako stigne do željenog mesta
 
@@ -352,14 +352,15 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Izlaz iz aplikacije**
 
-- [ ] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
+- [x] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
       toast poruku („Pritisnite Nazad još jednom za izlaz”), drugi u roku od ~2 s zatvara aplikaciju.
       Radi isto na telefonu i na TV-u (daljinski)
 
 **Titlovi**
 
-- [ ] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
-      veličina slova i položaj na ekranu (visina od dna), sa pregledom
+- [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
+      veličina slova i položaj na ekranu (visina od dna)
+- [ ] Pregled izgleda titlova u samim podešavanjima (za sada se izmena vidi u plejeru)
 
 ## 7. Testiranje
 

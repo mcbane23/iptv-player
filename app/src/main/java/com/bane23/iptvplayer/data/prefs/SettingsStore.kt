@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -12,6 +13,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
+import com.bane23.iptvplayer.player.SubtitlePosition
+import com.bane23.iptvplayer.player.SubtitleSize
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -101,6 +104,12 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             decoder = DecoderMode.entries.firstOrNull { it.name == prefs[PLAYER_DECODER] } ?: DecoderMode.AUTO,
             audioLanguage = prefs[PLAYER_AUDIO_LANGUAGE].orEmpty(),
             subtitleLanguage = prefs[PLAYER_SUBTITLE_LANGUAGE].orEmpty(),
+            seekStepSeconds = prefs[PLAYER_SEEK_STEP]?.takeIf { it in PlayerSettings.SEEK_STEP_OPTIONS }
+                ?: PlayerSettings.DEFAULT_SEEK_STEP_SECONDS,
+            subtitleBackground = prefs[SUBTITLE_BACKGROUND] ?: true,
+            subtitleSize = SubtitleSize.entries.firstOrNull { it.name == prefs[SUBTITLE_SIZE] } ?: SubtitleSize.NORMAL,
+            subtitlePosition = SubtitlePosition.entries.firstOrNull { it.name == prefs[SUBTITLE_POSITION] }
+                ?: SubtitlePosition.LOW,
         )
     }.distinctUntilChanged()
 
@@ -110,6 +119,22 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     suspend fun setPlayerDecoder(decoder: DecoderMode) {
         dataStore.edit { it[PLAYER_DECODER] = decoder.name }
+    }
+
+    suspend fun setSeekStep(seconds: Int) {
+        dataStore.edit { it[PLAYER_SEEK_STEP] = seconds }
+    }
+
+    suspend fun setSubtitleBackground(enabled: Boolean) {
+        dataStore.edit { it[SUBTITLE_BACKGROUND] = enabled }
+    }
+
+    suspend fun setSubtitleSize(size: SubtitleSize) {
+        dataStore.edit { it[SUBTITLE_SIZE] = size.name }
+    }
+
+    suspend fun setSubtitlePosition(position: SubtitlePosition) {
+        dataStore.edit { it[SUBTITLE_POSITION] = position.name }
     }
 
     suspend fun setAudioLanguage(language: String) {
@@ -123,6 +148,10 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     private companion object {
         val PLAYER_BUFFER = stringPreferencesKey("player_buffer")
         val PLAYER_DECODER = stringPreferencesKey("player_decoder")
+        val PLAYER_SEEK_STEP = intPreferencesKey("player_seek_step")
+        val SUBTITLE_BACKGROUND = booleanPreferencesKey("subtitle_background")
+        val SUBTITLE_SIZE = stringPreferencesKey("subtitle_size")
+        val SUBTITLE_POSITION = stringPreferencesKey("subtitle_position")
         val PLAYER_AUDIO_LANGUAGE = stringPreferencesKey("player_audio_language")
         val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")

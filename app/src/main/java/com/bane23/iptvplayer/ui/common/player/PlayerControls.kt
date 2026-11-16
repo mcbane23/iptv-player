@@ -285,13 +285,13 @@ fun PlayerSeekBar(
 }
 
 /**
- * Korak premotavanja za strelicu na daljinskom: prvi pritisak 10 s, a dok se strelica drži
- * korak raste, da se i dug film brzo pređe.
+ * Korak premotavanja za strelicu na daljinskom: prvi pritisak je [baseMs] (iz podešavanja), a dok
+ * se strelica drži korak raste, da se i dug film brzo pređe.
  */
-fun seekStepFor(repeatCount: Int): Long = when {
-    repeatCount < 6 -> 10_000L
-    repeatCount < 20 -> 30_000L
-    else -> 60_000L
+fun seekStepFor(repeatCount: Int, baseMs: Long = 10_000L): Long = when {
+    repeatCount < 6 -> baseMs
+    repeatCount < 20 -> maxOf(30_000L, baseMs * 2)
+    else -> maxOf(60_000L, baseMs * 4)
 }
 
 /** Ista traka kao [PlayerSeekBar], ali samo za prikaz (npr. koliko je emisija odmakla). */

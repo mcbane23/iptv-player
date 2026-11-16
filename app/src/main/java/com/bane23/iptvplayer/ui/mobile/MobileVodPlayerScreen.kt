@@ -109,7 +109,7 @@ fun MobileVodPlayerScreen(
                     },
                     onDoubleTap = { offset ->
                         if (!locked) {
-                            viewModel.seekBy(if (offset.x < size.width / 2) -SEEK_STEP_MS else SEEK_STEP_MS)
+                            viewModel.seekBy(if (offset.x < size.width / 2) -viewModel.seekStepMs else viewModel.seekStepMs)
                             activity++
                         }
                     },
@@ -170,9 +170,9 @@ fun MobileVodPlayerScreen(
                         leading = {
                             PlayerIconButton(
                                 icon = AppIcons.FastRewind,
-                                description = stringResource(R.string.vod_seek_back),
+                                description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
                                 onClick = {
-                                    viewModel.seekBy(-SEEK_STEP_MS)
+                                    viewModel.seekBy(-viewModel.seekStepMs)
                                     activity++
                                 },
                             )
@@ -194,9 +194,9 @@ fun MobileVodPlayerScreen(
                             PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                             PlayerIconButton(
                                 icon = AppIcons.FastForward,
-                                description = stringResource(R.string.vod_seek_forward),
+                                description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
                                 onClick = {
-                                    viewModel.seekBy(SEEK_STEP_MS)
+                                    viewModel.seekBy(viewModel.seekStepMs)
                                     activity++
                                 },
                             )
@@ -276,6 +276,5 @@ fun MobileVodPlayerScreen(
     }
 }
 
-private const val SEEK_STEP_MS = 10_000L
 private const val VOD_GESTURE_HINT_MS = 1_200L
 private const val VOD_CONTROLS_TIMEOUT_MS = 4_000L

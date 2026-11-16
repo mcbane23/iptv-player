@@ -51,7 +51,11 @@ class VodPlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
-    private val engine = PlayerEngine(context, viewModelScope, runBlocking { settings.playerSettings.first() })
+    private val playerSettings = runBlocking { settings.playerSettings.first() }
+    private val engine = PlayerEngine(context, viewModelScope, playerSettings)
+
+    /** Korak dugmadi napred i nazad, iz podešavanja. */
+    val seekStepMs: Long = playerSettings.seekStepSeconds * 1_000L
     val player get() = engine.player
     val playback: StateFlow<PlaybackState> = engine.state
 

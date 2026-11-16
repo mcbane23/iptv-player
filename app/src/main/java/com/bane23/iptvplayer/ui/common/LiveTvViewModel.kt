@@ -182,6 +182,22 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setPlayerBuffer(buffer) }
     }
 
+    fun setSubtitleBackground(enabled: Boolean) {
+        viewModelScope.launch { settings.setSubtitleBackground(enabled) }
+    }
+
+    fun setSubtitleSize(size: com.bane23.iptvplayer.player.SubtitleSize) {
+        viewModelScope.launch { settings.setSubtitleSize(size) }
+    }
+
+    fun setSubtitlePosition(position: com.bane23.iptvplayer.player.SubtitlePosition) {
+        viewModelScope.launch { settings.setSubtitlePosition(position) }
+    }
+
+    fun setSeekStep(seconds: Int) {
+        viewModelScope.launch { settings.setSeekStep(seconds) }
+    }
+
     fun setDecoder(decoder: DecoderMode) {
         viewModelScope.launch { settings.setPlayerDecoder(decoder) }
     }

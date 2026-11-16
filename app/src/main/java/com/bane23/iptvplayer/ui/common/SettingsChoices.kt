@@ -6,6 +6,8 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
+import com.bane23.iptvplayer.player.SubtitlePosition
+import com.bane23.iptvplayer.player.SubtitleSize
 import java.util.Locale
 
 /** Jedno podešavanje sa spiskom vrednosti. Isti opis koriste ekrani za telefon i za TV. */
@@ -62,6 +64,13 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             selected = DecoderMode.entries.indexOf(settings.decoder),
             onSelect = { viewModel.setDecoder(DecoderMode.entries[it]) },
         ),
+        SettingChoice(
+            title = stringResource(R.string.settings_seek_step),
+            summary = stringResource(R.string.settings_seek_step_summary),
+            options = PlayerSettings.SEEK_STEP_OPTIONS.map { stringResource(R.string.seek_step_seconds, it) },
+            selected = PlayerSettings.SEEK_STEP_OPTIONS.indexOf(settings.seekStepSeconds).coerceAtLeast(0),
+            onSelect = { viewModel.setSeekStep(PlayerSettings.SEEK_STEP_OPTIONS[it]) },
+        ),
         languageChoice(
             title = stringResource(R.string.settings_audio_language),
             summary = stringResource(R.string.settings_audio_language_summary),
@@ -75,6 +84,36 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             first = stringResource(R.string.player_subtitles_off),
             current = settings.subtitleLanguage,
             set = viewModel::setSubtitleLanguage,
+        ),
+        SettingChoice(
+            title = stringResource(R.string.settings_subtitle_size),
+            summary = stringResource(R.string.settings_subtitle_look_summary),
+            options = listOf(
+                stringResource(R.string.subtitle_size_small),
+                stringResource(R.string.subtitle_size_normal),
+                stringResource(R.string.subtitle_size_large),
+                stringResource(R.string.subtitle_size_xlarge),
+            ),
+            selected = SubtitleSize.entries.indexOf(settings.subtitleSize),
+            onSelect = { viewModel.setSubtitleSize(SubtitleSize.entries[it]) },
+        ),
+        SettingChoice(
+            title = stringResource(R.string.settings_subtitle_position),
+            summary = stringResource(R.string.settings_subtitle_look_summary),
+            options = listOf(
+                stringResource(R.string.subtitle_position_low),
+                stringResource(R.string.subtitle_position_middle),
+                stringResource(R.string.subtitle_position_high),
+            ),
+            selected = SubtitlePosition.entries.indexOf(settings.subtitlePosition),
+            onSelect = { viewModel.setSubtitlePosition(SubtitlePosition.entries[it]) },
+        ),
+        SettingChoice(
+            title = stringResource(R.string.settings_subtitle_background),
+            summary = stringResource(R.string.settings_subtitle_look_summary),
+            options = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off)),
+            selected = if (settings.subtitleBackground) 0 else 1,
+            onSelect = { viewModel.setSubtitleBackground(it == 0) },
         ),
     )
 }

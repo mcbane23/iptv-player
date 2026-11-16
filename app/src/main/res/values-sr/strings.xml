@@ -167,8 +167,8 @@
     <string name="vod_episode_label">S%1$d E%2$d</string>
     <string name="vod_watched">Odgledano</string>
     <string name="vod_progress">%1$s od %2$s</string>
-    <string name="vod_seek_back">−10 s</string>
-    <string name="vod_seek_forward">+10 s</string>
+    <string name="vod_seek_back">−%1$d s</string>
+    <string name="vod_seek_forward">+%1$d s</string>
     <string name="vod_next_episode">Sledeća epizoda</string>
 
     <!-- Dodavanje liste sa telefona -->
@@ -300,4 +300,19 @@
     <string name="update_error_install">Ažuriranje nije instalirano.</string>
     <string name="multiview_fullscreen">Ceo ekran</string>
     <string name="multiview_change">Promeni kanal</string>
+    <string name="exit_press_again">Pritisnite Nazad još jednom za izlaz</string>
+    <string name="settings_seek_step">Korak premotavanja</string>
+    <string name="settings_seek_step_summary">Za koliko dugmad napred i nazad premotaju film ili epizodu. Na TV-u držanje strelice ubrzava premotavanje.</string>
+    <string name="seek_step_seconds">%1$d s</string>
+    <string name="settings_subtitle_size">Veličina titlova</string>
+    <string name="settings_subtitle_position">Položaj titlova</string>
+    <string name="settings_subtitle_background">Crna pozadina titlova</string>
+    <string name="settings_subtitle_look_summary">Izgled titlova u plejeru. Izmena važi odmah.</string>
+    <string name="subtitle_size_small">Mala</string>
+    <string name="subtitle_size_normal">Srednja</string>
+    <string name="subtitle_size_large">Velika</string>
+    <string name="subtitle_size_xlarge">Vrlo velika</string>
+    <string name="subtitle_position_low">Pri dnu</string>
+    <string name="subtitle_position_middle">Malo više</string>
+    <string name="subtitle_position_high">Visoko</string>
 </resources>
