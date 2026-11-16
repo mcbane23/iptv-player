@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,11 +43,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
 /** Kartice donje trake na telefonu. */
@@ -75,7 +79,9 @@ fun MobileHomeScreen(
     onTrakt: () -> Unit,
     onRecordings: () -> Unit,
     onMultiView: () -> Unit,
+    recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
 ) {
+    val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(MobileTab.LIVE) }
     val tabs = if (liveState.hasVod) MobileTab.entries else listOf(MobileTab.LIVE, MobileTab.SETTINGS)
@@ -90,7 +96,12 @@ fun MobileHomeScreen(
 
     Scaffold(
         bottomBar = {
-            CompactNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
+            Column {
+                if (recording.isNotEmpty()) {
+                    RecordingBar(active = recording, onOpen = onRecordings, onStop = recordingsViewModel::stop)
+                }
+                CompactNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
+            }
         },
     ) { padding ->
         // Ekrani u karticama imaju svoj Scaffold; umeci (status bar, donja traka) se ovde troše
@@ -134,6 +145,54 @@ fun MobileHomeScreen(
                         onTrakt = onTrakt.takeIf { isTraktConfigured },
                         onRecordings = onRecordings,
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Traka iznad donje trake dok se nešto snima, vidljiva u svim karticama. Dodir otvara „Snimci”;
+ * kad se snima jedan kanal, snimanje može da se zaustavi odmah, bez odlaska na drugi ekran.
+ */
+@Composable
+private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onStop: (Long) -> Unit) {
+    val single = active.singleOrNull()
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpen)
+                .height(48.dp)
+                .padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = AppIcons.Record,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = if (single != null) {
+                    stringResource(R.string.recording_home_one, single.channelName)
+                } else {
+                    stringResource(R.string.recording_home_many, active.size)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            )
+            if (single != null) {
+                TextButton(onClick = { onStop(single.id) }) {
+                    Text(stringResource(R.string.recording_home_stop))
+                }
+            } else {
+                TextButton(onClick = onOpen) {
+                    Text(stringResource(R.string.recordings_title))
                 }
             }
         }

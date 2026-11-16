@@ -101,34 +101,20 @@ fun MobileSettingsScreen(
                 }
             }
             SettingsGroup(stringResource(R.string.settings_general_header)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = resumeLastChannel,
-                            role = Role.Switch,
-                            onValueChange = viewModel::setResumeLastChannel,
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_resume_last),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_resume_last_summary),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = resumeLastChannel, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
-                }
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_resume_last),
+                    summary = stringResource(R.string.settings_resume_last_summary),
+                    checked = resumeLastChannel,
+                    onChange = viewModel::setResumeLastChannel,
+                )
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
             }
             SettingsGroup(stringResource(R.string.settings_player_header)) {
                 choices.forEachIndexed { index, choice ->
+                    if (choice.toggle) {
+                        SettingsSwitchRow(choice.title, choice.summary, choice.checked) { choice.flip() }
+                        return@forEachIndexed
+                    }
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -282,6 +268,28 @@ private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> 
 }
 
 /** Red koji vodi na drugi ekran (npr. Liste): ikonica, naziv i strelica desno. */
+@Composable
+private fun SettingsSwitchRow(title: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
+    }
+}
+
+/** Red koji vodi na drugi ekran. */
 @Composable
 private fun SettingsLinkRow(icon: ImageVector, title: String, onClick: () -> Unit) {
     Row(
