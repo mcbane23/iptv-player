@@ -44,6 +44,7 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
     var editing by remember { mutableStateOf(false) }
     // Posle „Gotovo” na tastaturi fokus se vraća na red, da daljinski ne ostane bez fokusa.
     var restoreFocus by remember { mutableStateOf(false) }
+    var fieldHadFocus by remember { mutableStateOf(false) }
     val fieldFocus = remember { FocusRequester() }
     val rowFocus = remember { FocusRequester() }
     LaunchedEffect(editing, restoreFocus) {
@@ -104,9 +105,14 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
                         .fillMaxWidth()
                         .focusRequester(fieldFocus)
                         .onFocusChanged {
+                            // Prvi poziv stiže pre nego što polje dobije fokus, pa se gleda samo gubitak fokusa.
+                            if (it.isFocused) fieldHadFocus = true
                             focused = it.isFocused
                             // Kad fokus ode sa polja, ono se vraća u običan red.
-                            if (!it.isFocused && editing) editing = false
+                            if (!it.isFocused && fieldHadFocus) {
+                                fieldHadFocus = false
+                                editing = false
+                            }
                         },
                 )
                 LaunchedEffect(Unit) { fieldFocus.tryRequestFocus() }
