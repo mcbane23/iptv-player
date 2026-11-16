@@ -12,6 +12,8 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -36,7 +38,10 @@ class OpenSubtitlesRepository @Inject constructor(
     private val settings: SettingsStore,
     private val client: OkHttpClient,
 ) {
-    private val directory = File(context.cacheDir, "subtitles")
+    // Trajno skladište (ne keš): preuzet titl ostaje na uređaju i ne troši dnevni broj drugi put.
+    private val directory = File(context.filesDir, "subtitles")
+    private val indexFile = File(directory, "index.json")
+    private val indexLock = Mutex()
 
     val isAvailable: Boolean get() = isOpenSubtitlesConfigured
 
@@ -82,7 +87,7 @@ class OpenSubtitlesRepository @Inject constructor(
         }
     }
 
-    /** Preuzima titl u keš. Jednom preuzet titl se ne preuzima ponovo, pa ne troši dnevni broj. */
+    /** Preuzima titl na uređaj. Jednom preuzet titl se ne preuzima ponovo, pa ne troši dnevni broj. */
     suspend fun download(result: SubtitleResult): DownloadedSubtitle = withContext(Dispatchers.IO) {
         val target = File(directory, "${result.fileId}.srt")
         if (target.length() > 0) return@withContext DownloadedSubtitle(target, result, remaining = null)
@@ -112,8 +117,57 @@ class OpenSubtitlesRepository @Inject constructor(
                 partial.delete()
                 throw SubtitleException(SubtitleFailure.FAILED)
             }
-            trimCache(keep = target)
+            trimFiles(keep = target)
             DownloadedSubtitle(target, result, info?.remaining)
+        }
+    }
+
+    /** Pamti da je [result] izabran za film ili epizodu [itemId] aktivne liste. */
+    suspend fun remember(itemId: Long, episode: Boolean, result: SubtitleResult) {
+        val key = key(itemId, episode) ?: return
+        updateIndex { it.with(key, SavedSubtitle(result.fileId, result.language, result.name)) }
+    }
+
+    /** Korisnik je isključio titlove ili izabrao drugi: zapamćeni izbor se zaboravlja (fajl ostaje). */
+    suspend fun forget(itemId: Long, episode: Boolean) {
+        val key = key(itemId, episode) ?: return
+        updateIndex { it.without(key) }
+    }
+
+    /** Titl zapamćen za film ili epizodu, ako je njegov fajl još na uređaju. */
+    suspend fun saved(itemId: Long, episode: Boolean): Pair<SavedSubtitle, File>? = withContext(Dispatchers.IO) {
+        val key = key(itemId, episode) ?: return@withContext null
+        val subtitle = indexLock.withLock { readIndex() }.items[key] ?: return@withContext null
+        val file = File(directory, "${subtitle.fileId}.srt")
+        if (file.length() > 0) subtitle to file else null
+    }
+
+    private suspend fun key(itemId: Long, episode: Boolean): String? =
+        settings.activePlaylistId.first()?.let { SubtitleSearch.savedKey(it, itemId, episode) }
+
+    private suspend fun updateIndex(change: (SavedSubtitles) -> SavedSubtitles) = withContext(Dispatchers.IO) {
+        indexLock.withLock {
+            val current = readIndex()
+            val updated = change(current)
+            if (updated != current) writeIndex(updated)
+        }
+    }
+
+    private fun readIndex(): SavedSubtitles = try {
+        OpenSubtitlesJson.decodeFromString(SavedSubtitles.serializer(), indexFile.readText())
+    } catch (_: Exception) {
+        // Fajla još nema ili je oštećen: kreće se od praznog spiska.
+        SavedSubtitles()
+    }
+
+    private fun writeIndex(index: SavedSubtitles) {
+        try {
+            directory.mkdirs()
+            val partial = File(directory, "index.json.part")
+            partial.writeText(OpenSubtitlesJson.encodeToString(SavedSubtitles.serializer(), index))
+            if (!partial.renameTo(indexFile)) partial.delete()
+        } catch (_: IOException) {
+            // Izbor se samo neće zapamtiti; titl i dalje radi.
         }
     }
 
@@ -168,14 +222,23 @@ class OpenSubtitlesRepository @Inject constructor(
         throw SubtitleException(SubtitleFailure.FAILED)
     }
 
-    /** Keš čuva samo poslednjih nekoliko titlova. */
-    private fun trimCache(keep: File) {
-        val files = directory.listFiles()?.filter { it != keep }?.sortedByDescending { it.lastModified() } ?: return
-        files.drop(MAX_FILES - 1).forEach { it.delete() }
+    /** Čuva se poslednjih [MAX_FILES] titlova; najstariji se brišu, zajedno sa izborima koji na njih pokazuju. */
+    private suspend fun trimFiles(keep: File) {
+        val files = directory.listFiles { file -> file.extension == "srt" }
+            ?.filter { it != keep }?.sortedByDescending { it.lastModified() } ?: return
+        val old = files.drop(MAX_FILES - 1)
+        if (old.isEmpty()) return
+        old.forEach { it.delete() }
+        val existing = (files - old.toSet() + keep).mapNotNullTo(HashSet()) { it.nameWithoutExtension.toLongOrNull() }
+        indexLock.withLock {
+            val current = readIndex()
+            val updated = current.onlyWith(existing)
+            if (updated != current) writeIndex(updated)
+        }
     }
 
     private companion object {
-        const val MAX_FILES = 30
+        const val MAX_FILES = 300
         const val MAX_BYTES = 5L * 1024 * 1024
     }
 }

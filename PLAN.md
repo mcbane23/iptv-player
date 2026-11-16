@@ -416,8 +416,10 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Titlovi sa interneta (OpenSubtitles): u plejeru filmova i epizoda spisak titlova ima stavku
       „Potraži online”. Traži se po TMDB ID-ju (za epizodu: serija + sezona + epizoda), a ako ga provajder
       ne šalje, po nazivu očišćenom od oznaka liste. Jezici: jezik titlova iz podešavanja, jezik uređaja i
-      engleski; uz srpski idu i hrvatski i bosanski. Izabrani titl se preuzima u keš (isti se ne preuzima
-      dvaput) i uključuje, a gledanje se nastavlja sa istog mesta. API ključ stiže iz GitHub Secrets
+      engleski; uz srpski idu i hrvatski i bosanski. Izabrani titl se preuzima i trajno čuva na uređaju (isti se
+      ne preuzima dvaput; čuva se poslednjih 300) i uključuje, a gledanje se nastavlja sa istog mesta. Izbor
+      se pamti po filmu i epizodi, pa je sledeći put titl već uključen; zaboravlja se kad korisnik isključi
+      titlove ili izabere drugi zapis. API ključ stiže iz GitHub Secrets
       (`OPENSUBTITLES_API_KEY`); bez njega se opcija ne prikazuje. Prijava na korisnikov nalog
       (Podešavanja → OpenSubtitles) nije obavezna, a daje veći dnevni broj preuzimanja
 

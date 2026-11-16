@@ -83,8 +83,7 @@ fun TvOpenSubtitlesScreen(viewModel: OpenSubtitlesViewModel = hiltViewModel()) {
                 onUsername = { username = it },
                 password = password,
                 onPassword = { password = it },
-                // Polja ostaju uključena i dok traje prijava: isključeno polje bi izgubilo fokus.
-                enabled = true,
+                readOnly = state.signingIn,
                 onDone = { viewModel.signIn(username, password) },
                 modifier = Modifier.fillMaxWidth(0.5f),
             )

@@ -160,11 +160,15 @@ class PlayerEngine(
      * Pušta strim. Kad je zadato [startPositionMs], sadržaj je film ili epizoda: kreće od te
      * pozicije, a posle prekida se nastavlja tamo gde je stao.
      */
-    fun play(source: StreamSource, startPositionMs: Long? = null) {
+    fun play(source: StreamSource, startPositionMs: Long? = null, subtitles: List<ExternalSubtitle>? = null) {
         retryJob?.cancel()
         seekable = startPositionMs != null
         resumePositionMs = startPositionMs ?: 0
-        if (source != this.source) {
+        if (subtitles != null) {
+            // Titlovi zapamćeni za ovaj sadržaj: poslednji se uključuje čim ga plejer prijavi.
+            externalSubtitles = subtitles
+            pendingSubtitleId = subtitles.lastOrNull()?.id
+        } else if (source != this.source) {
             externalSubtitles = emptyList()
             pendingSubtitleId = null
         }

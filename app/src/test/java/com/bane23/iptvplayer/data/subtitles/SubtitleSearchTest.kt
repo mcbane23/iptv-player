@@ -85,4 +85,31 @@ class SubtitleSearchTest {
         val json = OpenSubtitlesJson.encodeToString(OsDownloadRequest.serializer(), OsDownloadRequest(42))
         assertEquals("""{"file_id":42,"sub_format":"srt"}""", json)
     }
+
+    @Test
+    fun `saved choice is kept per playlist and kind`() {
+        val movie = SubtitleSearch.savedKey(playlistId = 3, itemId = 7, episode = false)
+        val episode = SubtitleSearch.savedKey(playlistId = 3, itemId = 7, episode = true)
+        val other = SubtitleSearch.savedKey(playlistId = 4, itemId = 7, episode = false)
+        assertEquals(3, setOf(movie, episode, other).size)
+
+        val index = SavedSubtitles()
+            .with(movie, SavedSubtitle(11, "sr", "Izmisljeno.Izdanje.A"))
+            .with(episode, SavedSubtitle(12, "en", "Izmisljeno.Izdanje.B"))
+            .with(movie, SavedSubtitle(13, "hr", "Izmisljeno.Izdanje.C"))
+        assertEquals(13L, index.items[movie]?.fileId)
+        assertEquals(2, index.items.size)
+        assertNull(index.without(movie).items[movie])
+        assertEquals(index, index.without(other))
+    }
+
+    @Test
+    fun `saved choices survive json and drop when the file is gone`() {
+        val key = SubtitleSearch.savedKey(1, 2, episode = true)
+        val index = SavedSubtitles().with(key, SavedSubtitle(21, "sr", "Izmisljeno")).with("1/m/9", SavedSubtitle(22, "", "x"))
+        val json = OpenSubtitlesJson.encodeToString(SavedSubtitles.serializer(), index)
+        val back = OpenSubtitlesJson.decodeFromString(SavedSubtitles.serializer(), json)
+        assertEquals(index, back)
+        assertEquals(setOf(key), back.onlyWith(setOf(21L)).items.keys)
+    }
 }
