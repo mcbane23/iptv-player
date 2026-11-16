@@ -18,6 +18,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
@@ -27,12 +34,24 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
 /**
- * Polje za filtriranje spiska (npr. kategorija) na TV-u. Dobija fokus D-padom kao i redovi, a OK
- * otvara tastaturu. Fokus se vidi kao okvir u akcentnoj boji.
+ * Polje za filtriranje spiska (npr. kategorija) na TV-u. Dok se samo prolazi D-padom preko njega,
+ * ponaša se kao običan red i ne otvara tastaturu; tek OK prelazi na kucanje. Fokus se vidi kao
+ * okvir u akcentnoj boji.
  */
 @Composable
 fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
     var focused by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
+    // Posle „Gotovo” na tastaturi fokus se vraća na red, da daljinski ne ostane bez fokusa.
+    var restoreFocus by remember { mutableStateOf(false) }
+    val fieldFocus = remember { FocusRequester() }
+    val rowFocus = remember { FocusRequester() }
+    LaunchedEffect(editing, restoreFocus) {
+        if (!editing && restoreFocus) {
+            restoreFocus = false
+            rowFocus.tryRequestFocus()
+        }
+    }
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(8.dp)
     Row(
@@ -41,6 +60,16 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
             .height(44.dp)
             .background(colors.surface, shape)
             .border(2.dp, if (focused) colors.primary else Color.Transparent, shape)
+            .then(
+                if (editing) {
+                    Modifier
+                } else {
+                    Modifier
+                        .focusRequester(rowFocus)
+                        .onFocusChanged { focused = it.isFocused }
+                        .clickable { editing = true }
+                },
+            )
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -59,16 +88,36 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
                     maxLines = 1,
                 )
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onChange,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
-                cursorBrush = SolidColor(colors.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focused = it.isFocused },
-            )
+            if (editing) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+                    cursorBrush = SolidColor(colors.primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        restoreFocus = true
+                        editing = false
+                    }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(fieldFocus)
+                        .onFocusChanged {
+                            focused = it.isFocused
+                            // Kad fokus ode sa polja, ono se vraća u običan red.
+                            if (!it.isFocused && editing) editing = false
+                        },
+                )
+                LaunchedEffect(Unit) { fieldFocus.tryRequestFocus() }
+            } else if (value.isNotEmpty()) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
