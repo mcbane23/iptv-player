@@ -90,7 +90,6 @@
     <string name="gesture_brightness">Brightness</string>
     <string name="player_lock">Lock screen</string>
     <string name="player_unlock">Unlock</string>
-    <string name="gesture_guide">Swipe up or down: left side changes brightness, right side changes volume</string>
     <string name="playback_loading">Loading…</string>
     <string name="playback_retrying">Connection lost, trying again…</string>
     <string name="playback_error_network">The channel cannot be played. Check your internet connection.</string>

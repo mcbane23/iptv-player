@@ -62,7 +62,7 @@ fun MobileVodPlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(VodPanel.NONE) }
-    var gestureHint by remember { mutableStateOf<String?>(null) }
+    val levels = rememberPlayerLevels()
     var locked by remember { mutableStateOf(false) }
     var infoVisible by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
@@ -95,12 +95,6 @@ fun MobileVodPlayerScreen(
             unlockVisible = false
         }
     }
-    LaunchedEffect(gestureHint) {
-        if (gestureHint != null) {
-            delay(VOD_GESTURE_HINT_MS)
-            gestureHint = null
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -118,8 +112,7 @@ fun MobileVodPlayerScreen(
                         }
                     },
                 )
-            }
-            .then(if (locked) Modifier else Modifier.volumeBrightnessDrag { gestureHint = it }),
+            },
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
@@ -137,9 +130,6 @@ fun MobileVodPlayerScreen(
                     .padding(horizontal = 32.dp),
             )
         }
-
-        gestureHint?.let { hint -> GestureHint(hint, Modifier.align(Alignment.TopCenter)) }
-        FirstLaunchGestureHint()
 
         // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
         if (infoVisible) {
@@ -162,6 +152,7 @@ fun MobileVodPlayerScreen(
         }
 
         if (controlsVisible) {
+            PlayerSideSliders(levels) { activity++ }
             val season = ui.season
             val episode = ui.episode
             MobilePlayerControls(
@@ -301,5 +292,4 @@ fun MobileVodPlayerScreen(
     }
 }
 
-private const val VOD_GESTURE_HINT_MS = 1_200L
 private const val VOD_CONTROLS_TIMEOUT_MS = 4_000L

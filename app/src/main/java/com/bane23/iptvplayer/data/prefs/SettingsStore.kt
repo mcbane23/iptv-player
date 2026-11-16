@@ -152,14 +152,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[UPDATE_CHANNEL] = tag }
     }
 
-    /** Uputstvo za gestove u plejeru na telefonu je već prikazano (prikazuje se samo prvi put). */
-    val gestureHintShown: Flow<Boolean> =
-        dataStore.data.map { it[GESTURE_HINT_SHOWN] ?: false }.distinctUntilChanged()
-
-    suspend fun setGestureHintShown() {
-        dataStore.edit { it[GESTURE_HINT_SHOWN] = true }
-    }
-
     /** Uputstvo na TV-u kako se kanal dodaje u omiljene je već prikazano (prikazuje se samo prvi put). */
     val tvFavoriteHintShown: Flow<Boolean> =
         dataStore.data.map { it[TV_FAVORITE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -236,7 +228,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
-        val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
