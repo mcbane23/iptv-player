@@ -178,20 +178,8 @@ fun MobileVodPlayerScreen(
                 },
                 onPip = rememberEnterPictureInPicture(),
                 onCast = cast,
-                center = {
-                    PlayPauseCenter(
-                        paused = playback.status == PlaybackStatus.PAUSED,
-                        failed = failed,
-                        lowered = statusMessage(ui.sourceMissing, playback) != null,
-                        onPlayPause = {
-                            viewModel.togglePlayPause()
-                            activity++
-                        },
-                        onRetry = viewModel::retry,
-                    )
-                },
                 bottom = {
-                    // Premotavanje na krajevima, traka u sredini.
+                    // Premotavanje na krajevima, pauza posle premotavanja unazad, traka u sredini.
                     PlayerTransportBar(
                         startLabel = formatDuration(preview ?: ui.positionMs),
                         endLabel = formatDuration(ui.durationMs),
@@ -203,6 +191,15 @@ fun MobileVodPlayerScreen(
                                     viewModel.seekBy(-viewModel.seekStepMs)
                                     activity++
                                 },
+                            )
+                            PlayPauseButton(
+                                paused = playback.status == PlaybackStatus.PAUSED,
+                                failed = failed,
+                                onPlayPause = {
+                                    viewModel.togglePlayPause()
+                                    activity++
+                                },
+                                onRetry = viewModel::retry,
                             )
                         },
                         trailing = {
