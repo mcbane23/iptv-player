@@ -272,7 +272,6 @@ Redosled unutar faze po želji vlasnika.
       oznake jezika ne može da se zapamti)
 - [ ] Catch-up / arhiva (M3U `catchup` atributi i Xtream `timeshift`)
 - [ ] Roditeljska zaštita PIN-om (zaključavanje kategorija)
-- [ ] Više profila
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod
@@ -339,6 +338,15 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
 - [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+
+**Cast sa telefona na TV**
+
+- [ ] Dugme „Pusti na TV-u” u plejeru na telefonu: kanal, film ili epizoda koja se gleda na telefonu
+      nastavlja se na TV-u, a telefon služi kao daljinski (pauza, premotavanje, jačina, sledeći kanal)
+- [ ] Odlučiti način pre početka: (a) Chromecast / Google Cast, radi sa svakim Chromecast i
+      Android TV uređajem, ali traži Google Play servise i ne podržava sve formate strimova;
+      (b) slanje na ovu aplikaciju na TV-u kroz lokalnu mrežu (kao QR dodavanje liste), radi sa svim
+      formatima koje plejer pušta, ali samo ako je aplikacija instalirana na TV-u; ili oba
 
 **Izlaz iz aplikacije**
 
