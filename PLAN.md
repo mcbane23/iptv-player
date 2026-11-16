@@ -54,8 +54,8 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 ## 3. Otvorene odluke (pitati vlasnika pre nego što zatrebaju)
 
 - [ ] **Ime aplikacije.** Za sada ostaje radni naziv „IPTV Player”. Konačno ime potvrditi pre Faze 8.
-- [ ] **Akcentna boja i ikonica.** Tema je potvrđena (vidi odeljak 2), boja se bira kasnije.
-      Do tada koristiti jednu privremenu akcentnu boju definisanu na jednom mestu u temi.
+- [ ] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
+      (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica se bira pre Faze 8.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 - [ ] **Sinhronizacija preko naloga (Faza 9).** Gde se čuvaju podaci (npr. korisnikov
       Google Drive, sopstveni server ili nešto treće), koji nalog (Google, email) i šta se
@@ -304,6 +304,8 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 - [x] 6. Plejer, dorada rasporeda: kontrole na tamnim pločicama bez zatamnjenja slike; gore nazad u
   krugu i naslov u okviru u jednom redu; dole jedna zaobljena traka (premotavanje, puštanje, vreme,
   traka, rezolucija, format), a ispod nje red dugmadi samo sa nazivom. Fokus na TV-u je prsten u boji teme
+- [x] 7. Boja aplikacije: izbor akcentne boje u Podešavanjima (šest boja), podrazumevana svetlo
+  narandžasta; važi odmah, na telefonu i TV-u
 
 ### Faza 8: Izdanje
 

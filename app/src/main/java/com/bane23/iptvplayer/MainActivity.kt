@@ -11,7 +11,13 @@ import androidx.compose.runtime.setValue
 import com.bane23.iptvplayer.data.lan.TransferTarget
 import com.bane23.iptvplayer.ui.common.DeviceType
 import com.bane23.iptvplayer.ui.common.UpdateDialog
+import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.IptvTheme
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,14 +27,19 @@ class MainActivity : ComponentActivity() {
     /** Adresa TV-a iz linka `iptvplayer://send`, dok je ekran za slanje ne preuzme. */
     private var sendTarget by mutableStateOf<String?>(null)
 
+    @Inject lateinit var settingsStore: SettingsStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val isTv = DeviceType.isTv(this)
         if (!isTv) enableEdgeToEdge()
         // Posle obnavljanja aktivnosti link je već obrađen i ekran je na steku.
         if (savedInstanceState == null) sendTarget = sendTargetOf(intent)
+        // Boja se čita pre prvog crtanja, da se pri pokretanju ne vidi podrazumevana pa tek onda izabrana.
+        val savedAccent = runBlocking { settingsStore.accentColor.first() }
         setContent {
-            IptvTheme {
+            val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
+            IptvTheme(accent = AccentColor.fromName(accent)) {
                 if (isTv) {
                     TvApp()
                 } else {

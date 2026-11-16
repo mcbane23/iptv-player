@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common
 
+import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -212,6 +213,15 @@ class SettingsViewModel @Inject constructor(
 
     val resumeLastChannel: StateFlow<Boolean> = repository.resumeLastChannel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Akcentna boja aplikacije; null dok se ne pročita, da se u podešavanjima ne trepne pogrešna. */
+    val accentColor: StateFlow<AccentColor?> = settings.accentColor
+        .map<String?, AccentColor?> { AccentColor.fromName(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setAccentColor(color: AccentColor) {
+        viewModelScope.launch { settings.setAccentColor(color.name) }
+    }
 
     val tvChannelPreview: StateFlow<Boolean> = settings.tvChannelPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)

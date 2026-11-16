@@ -4,13 +4,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Typography as TvTypography
 import androidx.tv.material3.darkColorScheme as tvDarkColorScheme
 
 private val MobileColors = darkColorScheme(
-    primary = Accent,
+    primary = AccentColor.DEFAULT.color,
     onPrimary = OnAccent,
     background = Background,
     onBackground = OnBackground,
@@ -22,7 +23,7 @@ private val MobileColors = darkColorScheme(
 )
 
 private val TvColors = tvDarkColorScheme(
-    primary = Accent,
+    primary = AccentColor.DEFAULT.color,
     onPrimary = OnAccent,
     background = Background,
     onBackground = OnBackground,
@@ -52,10 +53,15 @@ private val TvType = TvTypography().run {
     )
 }
 
-/** Tamna tema aplikacije. Postavlja i Material3 (telefon) i TV Material temu. */
+/**
+ * Tamna tema aplikacije sa akcentnom bojom [accent] koju bira korisnik. Postavlja i Material3
+ * (telefon) i TV Material temu.
+ */
 @Composable
-fun IptvTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = MobileColors, typography = MobileType) {
-        TvMaterialTheme(colorScheme = TvColors, typography = TvType, content = content)
+fun IptvTheme(accent: AccentColor = AccentColor.DEFAULT, content: @Composable () -> Unit) {
+    val mobileColors = remember(accent) { MobileColors.copy(primary = accent.color) }
+    val tvColors = remember(accent) { TvColors.copy(primary = accent.color) }
+    MaterialTheme(colorScheme = mobileColors, typography = MobileType) {
+        TvMaterialTheme(colorScheme = tvColors, typography = TvType, content = content)
     }
 }
