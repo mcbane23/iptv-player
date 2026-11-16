@@ -300,4 +300,5 @@
     <string name="update_error_install">Ažuriranje nije instalirano.</string>
     <string name="multiview_fullscreen">Ceo ekran</string>
     <string name="multiview_change">Promeni kanal</string>
+    <string name="exit_press_again">Pritisnite Nazad još jednom za izlaz</string>
 </resources>

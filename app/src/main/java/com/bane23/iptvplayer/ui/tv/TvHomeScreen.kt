@@ -47,6 +47,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
@@ -88,6 +89,7 @@ fun TvHomeScreen(
     }
     // Nazad iz druge sekcije prvo vraća na Uživo, tek odatle izlazi iz aplikacije.
     BackHandler(enabled = tab != TvTab.LIVE) { tab = TvTab.LIVE }
+    ExitOnDoubleBack(enabled = tab == TvTab.LIVE)
     val holder = rememberSaveableStateHolder()
     val playlistId = liveState.playlistId
 

@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
@@ -82,6 +83,7 @@ fun MobileHomeScreen(
     val holder = rememberSaveableStateHolder()
     // Nazad iz druge kartice prvo vraća na Uživo, tek odatle izlazi iz aplikacije.
     BackHandler(enabled = tab != MobileTab.LIVE) { tab = MobileTab.LIVE }
+    ExitOnDoubleBack(enabled = tab == MobileTab.LIVE)
 
     Scaffold(
         bottomBar = {

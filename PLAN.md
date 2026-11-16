@@ -352,7 +352,7 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Izlaz iz aplikacije**
 
-- [ ] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
+- [x] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
       toast poruku („Pritisnite Nazad još jednom za izlaz”), drugi u roku od ~2 s zatvara aplikaciju.
       Radi isto na telefonu i na TV-u (daljinski)
 

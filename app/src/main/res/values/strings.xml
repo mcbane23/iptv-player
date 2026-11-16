@@ -300,4 +300,5 @@
     <string name="update_error_install">The update was not installed.</string>
     <string name="multiview_fullscreen">Full screen</string>
     <string name="multiview_change">Change channel</string>
+    <string name="exit_press_again">Press Back again to exit</string>
 </resources>
