@@ -331,6 +331,11 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 Ideje dodate posle prvobitnog plana. Rade se posle Faze 8, redosled po želji vlasnika.
 Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
+**Jezik**
+
+- [x] Izbor jezika u Podešavanjima (Kao uređaj, Srpski, English), telefon i TV; važi odmah i za
+      obaveštenja. Srpski tekstovi se koriste i kad je uređaj na „srpski (latinica)”
+
 **Odgledano i Trakt**
 
 - [x] Ručno označavanje filmova i epizoda kao odgledanih (i cele sezone), kvačica na posterima

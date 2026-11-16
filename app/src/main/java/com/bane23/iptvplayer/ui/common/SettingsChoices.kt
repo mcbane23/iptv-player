@@ -122,3 +122,13 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
         ),
     )
 }
+
+/** Naziv jezika aplikacije u podešavanjima. Srpski i engleski se uvek pišu na svom jeziku. */
+@Composable
+fun AppLanguage.label(): String = stringResource(
+    when (this) {
+        AppLanguage.SYSTEM -> R.string.settings_language_system
+        AppLanguage.SERBIAN -> R.string.settings_language_serbian
+        AppLanguage.ENGLISH -> R.string.settings_language_english
+    },
+)

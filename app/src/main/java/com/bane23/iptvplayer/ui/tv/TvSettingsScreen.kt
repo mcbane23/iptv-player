@@ -32,6 +32,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.common.AppLanguage
+import com.bane23.iptvplayer.ui.common.AppLocale
+import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
@@ -180,6 +183,19 @@ fun TvSettingsScreen(
                     },
                 )
                 TvTextRow(
+                    text = stringResource(R.string.settings_language),
+                    trailing = AppLocale.get(context).label(),
+                    onClick = {
+                        // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
+                        val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
+                        AppLocale.change(context, AppLanguage.entries[next])
+                    },
+                    onFocused = {
+                        focusedChoice = LANGUAGE_ROW
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
                     text = stringResource(R.string.settings_accent_color),
                     trailing = accentColor?.label(),
                     onClick = {
@@ -224,6 +240,7 @@ fun TvSettingsScreen(
                     text = when (val focused = focusedChoice) {
                         null -> stringResource(R.string.settings_resume_last_summary)
                         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
+                        LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
                         AUTOSTART_ROW -> stringResource(
                             when {
                                 !autostart || autostartAllowed -> R.string.settings_autostart_summary
@@ -297,3 +314,4 @@ fun TvSettingsScreen(
 /** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
 private const val AUTOSTART_ROW = -1
 private const val ACCENT_ROW = -2
+private const val LANGUAGE_ROW = -3

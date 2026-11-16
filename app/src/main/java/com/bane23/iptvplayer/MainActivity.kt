@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.bane23.iptvplayer.data.lan.TransferTarget
+import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.DeviceType
 import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
@@ -28,6 +30,11 @@ class MainActivity : ComponentActivity() {
     private var sendTarget by mutableStateOf<String?>(null)
 
     @Inject lateinit var settingsStore: SettingsStore
+
+    /** Jezik izabran u podešavanjima važi za sve tekstove aktivnosti. */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
