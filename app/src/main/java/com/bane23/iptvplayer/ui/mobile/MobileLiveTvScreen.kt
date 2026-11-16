@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -165,7 +168,9 @@ fun MobileLiveTvScreen(
 
                     val channels = channelsViewModel.channels.collectAsLazyPagingItems()
                     // Nova kategorija kreće od vrha liste; posle povratka iz plejera ostaje gde je bila.
-                    val listState = rememberLazyListState()
+                    val listState = rememberLazyGridState()
+                    // U landscape-u kanali stoje u dve kolone, da se širina ekrana iskoristi.
+                    val columns = if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) 2 else 1
                     var listShows by rememberSaveable { mutableStateOf(selected) }
                     LaunchedEffect(selected) {
                         if (listShows != selected) {
@@ -187,7 +192,8 @@ fun MobileLiveTvScreen(
                                 modifier = Modifier.padding(24.dp),
                             )
                         }
-                        LazyColumn(
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(columns),
                             state = listState,
                             contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                         ) {
