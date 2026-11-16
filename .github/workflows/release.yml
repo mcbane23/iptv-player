@@ -102,7 +102,6 @@ jobs:
             exit 1
           fi
           cp "$APK" "iptv-player-$RELEASE_VERSION.apk"
-          cp "$APK" iptv-player.apk
 
       - name: Objavi izdanje
         env:
@@ -134,16 +133,16 @@ jobs:
             exit 0
           fi
           export GH_TOKEN="$APK_REPO_TOKEN"
-          SHA=$(sha256sum iptv-player.apk | cut -d' ' -f1)
-          jq -n --argjson code "$CODE" --arg name "$RELEASE_VERSION" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
-            '{versionCode: $code, versionName: $name, apk: "iptv-player.apk", sha256: $sha, commit: $commit}' \
+          SHA=$(sha256sum "iptv-player-$RELEASE_VERSION.apk" | cut -d' ' -f1)
+          jq -n --argjson code "$CODE" --arg name "$RELEASE_VERSION" --arg apk "iptv-player-$RELEASE_VERSION.apk" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+            '{versionCode: $code, versionName: $name, apk: $apk, sha256: $sha, commit: $commit}' \
             > iptv-player.json
           if ! gh release view "$CHANNEL" -R "$APK_REPO" > /dev/null 2>&1; then
             gh release create "$CHANNEL" -R "$APK_REPO" \
               --title "IPTV plejer" --notes "Zvanična izdanja."
           fi
           # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
-          gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.apk --clobber
+          gh release upload "$CHANNEL" -R "$APK_REPO" "iptv-player-$RELEASE_VERSION.apk" --clobber
           gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.json --clobber
           gh release edit "$CHANNEL" -R "$APK_REPO" \
             --notes "Verzija $RELEASE_VERSION, commit: ${GITHUB_SHA::7}."
