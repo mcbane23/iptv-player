@@ -233,6 +233,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAutostart(enabled) }
     }
 
+    val drawUnderCutout: StateFlow<Boolean> = settings.drawUnderCutout
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setDrawUnderCutout(enabled: Boolean) {
+        viewModelScope.launch { settings.setDrawUnderCutout(enabled) }
+    }
+
     val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

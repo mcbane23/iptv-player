@@ -257,6 +257,9 @@
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>
     <string name="settings_tv_preview">Channel preview</string>
+    <string name="settings_under_cutout">Full screen width</string>
+    <string name="settings_under_cutout_summary">With the phone turned sideways, content reaches the screen edge, also under the camera</string>
+    <string name="vod_total">Total: %1$d</string>
     <string name="settings_tv_vod_preview">Movie and series details above posters</string>
     <string name="vod_continue_watching">Continue watching</string>
     <string name="search_movies">Search movies</string>

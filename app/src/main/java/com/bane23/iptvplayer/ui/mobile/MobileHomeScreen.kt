@@ -4,6 +4,9 @@ import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.displayCutout
+import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
@@ -86,7 +89,9 @@ fun MobileHomeScreen(
     onRecordings: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val underCutout by settingsViewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(MobileTab.LIVE) }
@@ -146,15 +151,20 @@ fun MobileHomeScreen(
     if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
         // U landscape-u je visina dragocena: kartice idu u usku traku levo, a ne u donju traku.
         Scaffold(
-            contentWindowInsets = WindowInsets.safeDrawing,
+            // Po izboru u podešavanjima sadržaj ide i ispod isečka za kameru (samo sistemske trake se poštuju).
+            contentWindowInsets = if (underCutout) WindowInsets.systemBars else WindowInsets.safeDrawing,
             containerColor = Color.Transparent,
+            // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
+            contentColor = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
         ) { padding ->
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .consumeWindowInsets(padding),
+                    .consumeWindowInsets(padding)
+                    // Ekrani u karticama ne smeju sami da se odmaknu od kamere kad je izabrana cela širina.
+                    .then(if (underCutout) Modifier.consumeWindowInsets(WindowInsets.displayCutout) else Modifier),
             ) {
                 CompactNavRail(tabs = tabs, selected = tab, onSelect = { tab = it })
                 Column(modifier = Modifier.weight(1f)) {
@@ -169,6 +179,8 @@ fun MobileHomeScreen(
     Scaffold(
         // Blag sjaj akcentne boje gore levo; ekrani u karticama su providni da se vidi.
         containerColor = Color.Transparent,
+        // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
+        contentColor = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
         bottomBar = {
             Column {
