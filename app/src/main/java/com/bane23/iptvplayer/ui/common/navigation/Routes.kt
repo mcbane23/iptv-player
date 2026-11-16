@@ -100,3 +100,11 @@ data object CastRemote : NavKey
 /** Plejer na TV-u za sadržaj poslat sa telefona kroz kućnu mrežu. */
 @Serializable
 data object CastPlayback : NavKey
+
+/** Snimci kanala sačuvani na uređaju. */
+@Serializable
+data object Recordings : NavKey
+
+/** Plejer za snimak sa uređaja. */
+@Serializable
+data class PlayRecording(val recordingId: Long) : NavKey

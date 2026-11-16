@@ -44,6 +44,8 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
@@ -85,6 +87,9 @@ fun TvPlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
+    val record = rememberRecordingToggle(isRecording, viewModel::toggleRecording)
+    RecordingNotices(viewModel.recordingNotice)
     var overlay by remember { mutableStateOf(Overlay.INFO) }
     var channelList by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
@@ -235,6 +240,8 @@ fun TvPlayerScreen(
                 onAudio = { tracks = TvTrackKind.AUDIO },
                 onAspect = viewModel::cycleAspectMode,
                 onFavorite = viewModel::toggleFavorite,
+                isRecording = isRecording,
+                onRecord = record,
             )
         }
 
@@ -277,6 +284,8 @@ private fun LiveControls(
     onAudio: () -> Unit,
     onAspect: () -> Unit,
     onFavorite: () -> Unit,
+    isRecording: Boolean,
+    onRecord: () -> Unit,
 ) {
     val channel = ui.channel ?: return
     val now by rememberNow()
@@ -381,6 +390,12 @@ private fun LiveControls(
                         label = stringResource(R.string.category_favorites),
                         active = isFavorite,
                         onClick = onFavorite,
+                    )
+                    // Isto dugme počinje i zaustavlja snimanje (menja se samo natpis), pa fokus ostaje na njemu.
+                    PlayerChip(
+                        label = stringResource(if (isRecording) R.string.recording_chip_active else R.string.recording_chip),
+                        active = isRecording,
+                        onClick = onRecord,
                     )
                 }
             }

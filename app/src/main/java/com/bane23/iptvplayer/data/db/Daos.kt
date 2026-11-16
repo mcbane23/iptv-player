@@ -417,3 +417,27 @@ interface TraktDao {
     @Query("DELETE FROM trakt_playback_pending")
     suspend fun clearPlayback()
 }
+
+@Dao
+interface RecordingDao {
+    @Query("SELECT * FROM recordings ORDER BY startedAt DESC")
+    fun observeAll(): Flow<List<RecordingEntity>>
+
+    @Query("SELECT * FROM recordings WHERE id = :id")
+    suspend fun getById(id: Long): RecordingEntity?
+
+    @Query("SELECT * FROM recordings WHERE status = :status")
+    suspend fun byStatus(status: String): List<RecordingEntity>
+
+    @Insert
+    suspend fun insert(recording: RecordingEntity): Long
+
+    @Query("UPDATE recordings SET sizeBytes = :sizeBytes WHERE id = :id")
+    suspend fun setSize(id: Long, sizeBytes: Long)
+
+    @Query("UPDATE recordings SET status = :status, error = :error, endedAt = :endedAt, sizeBytes = :sizeBytes WHERE id = :id")
+    suspend fun finish(id: Long, status: String, error: String?, endedAt: Long, sizeBytes: Long)
+
+    @Query("DELETE FROM recordings WHERE id = :id")
+    suspend fun delete(id: Long)
+}

@@ -301,3 +301,33 @@ data class TraktPlaybackPendingEntity(
     val progress: Float,
     val createdAt: Long,
 )
+
+/** Snimak kanala: fajl na uređaju i podaci za ekran „Snimci”. Ne zavisi od liste, pa ostaje i kad se lista obriše. */
+@Entity(tableName = "recordings")
+data class RecordingEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val channelName: String,
+    /** Emisija koja je išla kad je snimanje krenulo, ili naziv kanala. */
+    val title: String,
+    /** Pun put fajla sa snimkom. */
+    val path: String,
+    val startedAt: Long,
+    /** Kraj snimanja; null dok se snima. */
+    val endedAt: Long? = null,
+    /** Kad snimanje samo staje (zakazano); null = dok ga korisnik ne zaustavi. */
+    val stopAtMs: Long? = null,
+    val sizeBytes: Long = 0,
+    /** [STATUS_RECORDING], [STATUS_DONE] ili [STATUS_FAILED]. */
+    val status: String,
+    /** Zašto je snimanje stalo pre vremena ([ERROR_STREAM], [ERROR_SPACE], [ERROR_UNSUPPORTED]), ili null. */
+    val error: String? = null,
+) {
+    companion object {
+        const val STATUS_RECORDING = "recording"
+        const val STATUS_DONE = "done"
+        const val STATUS_FAILED = "failed"
+        const val ERROR_STREAM = "stream"
+        const val ERROR_SPACE = "space"
+        const val ERROR_UNSUPPORTED = "unsupported"
+    }
+}

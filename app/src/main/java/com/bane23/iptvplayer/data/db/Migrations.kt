@@ -85,5 +85,19 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+    /** 10 → 11: snimci kanala. */
+    private val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `recordings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`channelName` TEXT NOT NULL, `title` TEXT NOT NULL, `path` TEXT NOT NULL, " +
+                    "`startedAt` INTEGER NOT NULL, `endedAt` INTEGER, `stopAtMs` INTEGER, " +
+                    "`sizeBytes` INTEGER NOT NULL, `status` TEXT NOT NULL, `error` TEXT)",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+    )
 }
