@@ -76,6 +76,9 @@
     <string name="player_retry">Try again</string>
     <string name="player_channels">Channels</string>
     <string name="player_audio">Audio</string>
+    <string name="player_stream_info">Stream info</string>
+    <string name="stream_info_video">Video</string>
+    <string name="stream_info_unknown">No stream details yet</string>
     <string name="player_subtitles">Subtitles</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_no_tracks">No tracks available</string>

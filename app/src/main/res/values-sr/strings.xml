@@ -75,6 +75,9 @@
     <string name="player_retry">Pokušaj ponovo</string>
     <string name="player_channels">Kanali</string>
     <string name="player_audio">Zvuk</string>
+    <string name="player_stream_info">Informacije o strimu</string>
+    <string name="stream_info_video">Slika</string>
+    <string name="stream_info_unknown">Podaci o strimu još nisu poznati</string>
     <string name="player_subtitles">Titlovi</string>
     <string name="player_subtitles_off">Isključeno</string>
     <string name="player_no_tracks">Nema dostupnih zapisa</string>

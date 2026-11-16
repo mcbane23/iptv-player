@@ -58,6 +58,7 @@ fun MobilePlayerControls(
     onLock: () -> Unit,
     onPip: (() -> Unit)?,
     onCast: (() -> Unit)? = null,
+    center: @Composable () -> Unit = {},
     bottom: @Composable ColumnScope.() -> Unit,
     chips: @Composable RowScope.() -> Unit,
 ) {
@@ -87,6 +88,8 @@ fun MobilePlayerControls(
             }
         }
 
+        Box(modifier = Modifier.align(Alignment.Center)) { center() }
+
         Box(modifier = Modifier.align(Alignment.BottomStart)) {
             Column(
                 modifier = Modifier
@@ -104,6 +107,29 @@ fun MobilePlayerControls(
             }
         }
     }
+}
+
+/**
+ * Veliko dugme za puštanje i pauzu na sredini slike; kad puštanje ne uspe, pokušava ponovo.
+ * [lowered] ga spušta ispod poruke o stanju, da se ne preklapaju.
+ */
+@Composable
+fun PlayPauseCenter(paused: Boolean, failed: Boolean, lowered: Boolean, onPlayPause: () -> Unit, onRetry: () -> Unit) {
+    PlayerIconButton(
+        icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+        description = stringResource(
+            when {
+                failed -> R.string.player_retry
+                paused -> R.string.player_play
+                else -> R.string.player_pause
+            },
+        ),
+        onClick = if (failed) onRetry else onPlayPause,
+        primary = true,
+        backdrop = true,
+        size = 64.dp,
+        modifier = Modifier.padding(top = if (lowered) 176.dp else 0.dp),
+    )
 }
 
 /** Dok je ekran zaključan vidi se samo dugme za otključavanje, i to kratko posle dodira. */

@@ -15,7 +15,8 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: [version.txt]
+    # I izmena samog workflow-a ga pokreće, da ispravka posle neuspelog izdanja ne traži novu verziju.
+    paths: [version.txt, .github/workflows/release.yml]
 
 concurrency:
   group: release
@@ -83,7 +84,12 @@ jobs:
             echo "RELEASE_KEY_ALIAS=${RELEASE_KEY_ALIAS:-release}"
             echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
           } >> "$GITHUB_ENV"
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          # Secret nalepljen iz fajla često nosi razmake ili prelome reda (npr. Windows \r), a base64 -d
+          # na njima pada, pa se beline prvo uklanjaju.
+          if ! printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/release.jks"; then
+            echo "RELEASE_KEYSTORE_BASE64 nije ispravan base64. Nalepi ponovo ceo sadržaj fajla RELEASE_KEYSTORE_BASE64.txt."
+            exit 1
+          fi
           echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v5
