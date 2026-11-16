@@ -47,6 +47,7 @@ import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
+import com.bane23.iptvplayer.ui.common.multiview.ConnectionLimitWarning
 import com.bane23.iptvplayer.ui.common.multiview.MultiViewViewModel
 import com.bane23.iptvplayer.ui.common.multiview.label
 import com.bane23.iptvplayer.ui.common.player.AspectMode
@@ -140,6 +141,10 @@ fun MobileMultiViewScreen(
             }
         }
 
+        val limit = state.connectionLimit
+        if (controls && limit != null && state.overLimit) {
+            ConnectionLimitWarning(limit, Modifier.align(Alignment.BottomCenter))
+        }
         if (controls) {
             Row(
                 modifier = Modifier

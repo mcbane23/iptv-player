@@ -66,7 +66,11 @@ data class XtreamUserInfo(
     val auth: FlexString = null,
     val status: FlexString = null,
     @SerialName("exp_date") val expDate: FlexString = null,
+    @SerialName("max_connections") val maxConnectionsRaw: FlexString = null,
 ) {
+    /** Koliko strimova nalog sme da gleda istovremeno, ili null ako panel to ne navodi. */
+    val maxConnections: Int? get() = maxConnectionsRaw?.toIntOrNull()?.takeIf { it > 0 }
+
     val isAuthenticated: Boolean get() = auth == "1" || auth.equals("true", ignoreCase = true)
 
     /** Vreme isteka u sekundama (Unix), ili null ako nalog ne ističe. */

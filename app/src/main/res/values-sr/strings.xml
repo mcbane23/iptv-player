@@ -296,6 +296,11 @@
     <string name="multiview_two">2 kanala</string>
     <string name="multiview_four">4 kanala</string>
     <string name="multiview_add">+ Dodaj kanal</string>
+    <plurals name="multiview_connection_limit">
+        <item quantity="one">Nalog kod provajdera dozvoljava %1$d strim istovremeno. Više kanala odjednom može da secka ili da se prekida.</item>
+        <item quantity="few">Nalog kod provajdera dozvoljava %1$d strima istovremeno. Više kanala odjednom može da secka ili da se prekida.</item>
+        <item quantity="other">Nalog kod provajdera dozvoljava %1$d strimova istovremeno. Više kanala odjednom može da secka ili da se prekida.</item>
+    </plurals>
     <string name="multiview_pick">Izaberi kanal</string>
     <string name="multiview_failed">Kanal ne radi. Pritisni za novi pokušaj.</string>
 

@@ -47,7 +47,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
+import com.bane23.iptvplayer.ui.common.multiview.ConnectionLimitWarning
 import com.bane23.iptvplayer.ui.common.multiview.MultiViewViewModel
+import kotlinx.coroutines.delay
 import com.bane23.iptvplayer.ui.common.multiview.label
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -109,6 +111,19 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
                 }
             }
         }
+        // Upozorenje se prikaže na kratko svaki put kad se broj kanala promeni, pa se skloni sa slike.
+        val limit = state.connectionLimit
+        var warning by remember { mutableStateOf(false) }
+        LaunchedEffect(state.overLimit, state.channelCount) {
+            warning = state.overLimit
+            if (warning) {
+                delay(WARNING_MS)
+                warning = false
+            }
+        }
+        if (warning && limit != null && menu == null) {
+            ConnectionLimitWarning(limit, Modifier.align(Alignment.TopCenter))
+        }
         menu?.let { index ->
             TileMenu(
                 tile = state.tiles[index],
@@ -133,6 +148,8 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
         }
     }
 }
+
+private const val WARNING_MS = 10_000L
 
 /**
  * Opcije jednog polja, preko slike. Nazad ih zatvara. Strelice se obrađuju ovde, da fokus ne

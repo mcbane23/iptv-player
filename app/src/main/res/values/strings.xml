@@ -298,6 +298,10 @@
     <string name="multiview_two">2 channels</string>
     <string name="multiview_four">4 channels</string>
     <string name="multiview_add">+ Add channel</string>
+    <plurals name="multiview_connection_limit">
+        <item quantity="one">Your provider account allows %1$d stream at a time. More channels at once may stutter or stop.</item>
+        <item quantity="other">Your provider account allows %1$d streams at a time. More channels at once may stutter or stop.</item>
+    </plurals>
     <string name="multiview_pick">Choose a channel</string>
     <string name="multiview_failed">Channel is not working. Press to try again.</string>
 
