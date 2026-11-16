@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ažuriranje iz aplikacije: instaliranje preuzetog APK-a (korisnik potvrđuje). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Android 14+: sledeće ažuriranje može bez potvrde kad je aplikacija već instalirala sebe. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!-- Pokretanje pri paljenju uređaja (isključeno dok ga korisnik ne uključi u podešavanjima). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -60,6 +64,9 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".data.update.InstallResultReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

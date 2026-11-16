@@ -14,6 +14,8 @@ concurrency:
 permissions:
   # write je potreban da bi build objavio pre-release sa APK-om
   contents: write
+  # čitanje PR-ova, za brisanje izdanja grana čiji je PR zatvoren
+  pull-requests: read
 
 # Dva posla rade paralelno: „apk” što pre pravi i objavljuje APK, „provere” radi testove i lint.
 # CI je zelen tek kad oba prođu.
@@ -45,26 +47,105 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Stalan link ka poslednjem APK-u (zgodno za TV): tag dev-latest se pomera na svaki push.
-      # Objavljuje se samo sa grana koje sadrže vrh main-a. Grana zasnovana na starijem main-u bi
-      # inače zamenila APK starijim kodom (i starijom bazom, što briše korisnikove liste).
+      # Stalni linkovi ka APK-u (zgodno za TV):
+      # - main objavljuje „dev-latest”: uvek kod koji je spojen.
+      # - svaka druga grana objavljuje svoje izdanje „dev-<ime-grane>” (/ postaje -), da bi se
+      #   promena isprobala pre spajanja, a da ne prepiše APK drugih grana.
+      # Grana se objavljuje samo ako sadrži vrh main-a. Grana zasnovana na starijem main-u bi
+      # inače dala APK sa starijim kodom (i starijom bazom, što briše korisnikove liste).
       - name: Objavi pre-release
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          RUN: ${{ github.run_number }}
         run: |
-          git fetch --quiet origin main
-          if ! git merge-base --is-ancestor origin/main "$GITHUB_SHA"; then
-            echo "Grana ne sadrži vrh main-a, dev-latest se ne menja."
-            exit 0
+          if [ "$BRANCH" = main ]; then
+            TAG=dev-latest
+            TITLE="Poslednji debug build (#$RUN)"
+          else
+            git fetch --quiet origin main
+            if ! git merge-base --is-ancestor origin/main "$GITHUB_SHA"; then
+              echo "Grana ne sadrži vrh main-a, APK grane se ne objavljuje. Spoji main u granu."
+              exit 0
+            fi
+            TAG="dev-$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._-' '-')"
+            if [ "$TAG" = dev-latest ]; then
+              echo "Ime grane bi zauzelo dev-latest, APK grane se ne objavljuje."
+              exit 0
+            fi
+            TITLE="Grana $BRANCH (#$RUN)"
           fi
           cp app/build/outputs/apk/debug/app-debug.apk iptv-player-debug.apk
-          gh release delete dev-latest --yes --cleanup-tag || true
-          gh release create dev-latest iptv-player-debug.apk \
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" iptv-player-debug.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "Poslednji debug build (#${{ github.run_number }})" \
-            --notes "Grana: ${{ github.ref_name }}, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+            --title "$TITLE" \
+            --notes "Grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+          echo "APK: https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/iptv-player-debug.apk" >> "$GITHUB_STEP_SUMMARY"
+
+      # Na main-u se brišu izdanja grana koje više nisu potrebne: grana je obrisana, ili joj je PR
+      # zatvoren (spojen ili odbačen) i posle toga nije bilo novih commit-a.
+      - name: Obriši izdanja završenih grana
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --quiet --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          declare -A tip
+          while read -r name sha; do
+            tip["dev-$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '-')"]="$sha"
+          done < <(git for-each-ref --format='%(refname:strip=3) %(objectname)' refs/remotes/origin | grep -v '^HEAD ')
+          closed=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=closed&per_page=100" --jq '.[].head.sha')
+          gh release list --limit 200 --json tagName --jq '.[].tagName' | grep '^dev-' | grep -vx 'dev-latest' |
+          while read -r tag; do
+            sha="${tip[$tag]:-}"
+            if [ -z "$sha" ] || grep -qx "$sha" <<< "$closed"; then
+              echo "Brišem $tag"
+              gh release delete "$tag" --yes --cleanup-tag || true
+            fi
+          done
+
+      # Isti APK ide i u javni repo za APK-ove, odakle ga aplikacija sama preuzima (Podešavanja → Proveri
+      # ažuriranje). Kod ostaje privatan. Token APK_REPO_TOKEN ima pravo pisanja samo u taj repo; bez njega
+      # se korak preskače. Repo i tag moraju biti isti kao u data/update/UpdateSource.kt.
+      # Samo main: aplikacija ne sme da nudi buildove sa nespojenih grana.
+      - name: Objavi u javni repo za ažuriranje
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          APK_REPO: mcbane23/apps
+          TAG: iptv-player-dev
+          BRANCH: ${{ github.ref_name }}
+          CODE: ${{ github.run_number }}
+        run: |
+          if [ -z "$APK_REPO_TOKEN" ]; then
+            echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
+            exit 0
+          fi
+          # Dva builda mogu da se završe obrnutim redom: stariji ne sme da zameni noviji.
+          CURRENT=$(curl -fsSL "https://github.com/$APK_REPO/releases/download/$TAG/iptv-player.json" 2>/dev/null | jq -r '.versionCode // 0' 2>/dev/null)
+          if [ "${CURRENT:-0}" -ge "$CODE" ]; then
+            echo "U javnom repou je već build #$CURRENT, ne menjam ga."
+            exit 0
+          fi
+          export GH_TOKEN="$APK_REPO_TOKEN"
+          cp app/build/outputs/apk/debug/app-debug.apk iptv-player-dev.apk
+          SHA=$(sha256sum iptv-player-dev.apk | cut -d' ' -f1)
+          # versionName mora da prati app/build.gradle.kts.
+          jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+            '{versionCode: $code, versionName: $name, apk: "iptv-player-dev.apk", sha256: $sha, commit: $commit}' \
+            > iptv-player.json
+          if ! gh release view "$TAG" -R "$APK_REPO" > /dev/null 2>&1; then
+            gh release create "$TAG" -R "$APK_REPO" --prerelease \
+              --title "IPTV plejer (dev)" --notes "Automatski build."
+          fi
+          # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
+          gh release upload "$TAG" -R "$APK_REPO" iptv-player-dev.apk --clobber
+          gh release upload "$TAG" -R "$APK_REPO" iptv-player.json --clobber
+          gh release edit "$TAG" -R "$APK_REPO" \
+            --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
 
   provere:
     name: Testovi i lint

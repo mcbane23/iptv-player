@@ -275,4 +275,28 @@
     <string name="multiview_pick">Izaberi kanal</string>
     <string name="multiview_failed">Kanal ne radi. Pritisni za novi pokušaj.</string>
     <string name="multiview_hint_tv">Zvuk ide sa označenog polja. OK: ceo ekran. Drži OK: promeni kanal.</string>
+
+    <!-- Ažuriranje aplikacije -->
+    <string name="settings_about_header">O aplikaciji</string>
+    <string name="update_check">Proveri ažuriranje</string>
+    <string name="update_current_version">Instalirana verzija: %1$s</string>
+    <string name="update_title">Ažuriranje aplikacije</string>
+    <string name="update_checking">Proveravam da li postoji nova verzija…</string>
+    <string name="update_up_to_date">Imate najnoviju verziju (%1$s).</string>
+    <string name="update_available_title">Nova verzija</string>
+    <string name="update_available_text">Dostupna je verzija %1$s (instalirana: %2$s). Posle ažuriranja aplikacija se zatvara, samo je ponovo otvorite. Liste i omiljeni ostaju.</string>
+    <string name="update_install">Ažuriraj</string>
+    <string name="update_later">Kasnije</string>
+    <string name="update_downloading">Preuzimam…</string>
+    <string name="update_downloading_percent">Preuzimam… %1$d%%</string>
+    <string name="update_installing">Potvrdite instalaciju na sledećem ekranu.</string>
+    <string name="update_permission_title">Potrebna dozvola</string>
+    <string name="update_permission_text">Da bi se ažuriranje instaliralo, dozvolite ovoj aplikaciji da instalira aplikacije (Instaliranje nepoznatih aplikacija). Kad se vratite, instalacija kreće.</string>
+    <string name="update_open_settings">Otvori podešavanja</string>
+    <string name="update_cancel">Otkaži</string>
+    <string name="update_close">Zatvori</string>
+    <string name="update_ok">U redu</string>
+    <string name="update_error_network">Server za ažuriranje nije dostupan. Proverite internet vezu i pokušajte ponovo.</string>
+    <string name="update_error_file">Preuzeti fajl je oštećen. Pokušajte ponovo.</string>
+    <string name="update_error_install">Ažuriranje nije instalirano.</string>
 </resources>

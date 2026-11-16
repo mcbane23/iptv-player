@@ -30,6 +30,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
+import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.work.Autostart
 
@@ -42,6 +43,7 @@ fun TvSettingsScreen(
     onCategories: (() -> Unit)? = null,
     onParental: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
+    updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
@@ -139,6 +141,15 @@ fun TvSettingsScreen(
                     },
                     onFocused = {
                         focusedChoice = AUTOSTART_ROW
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
+                    text = stringResource(R.string.update_check),
+                    trailing = updateViewModel.installedVersion,
+                    onClick = updateViewModel::check,
+                    onFocused = {
+                        focusedChoice = null
                         openChoice = null
                     },
                 )

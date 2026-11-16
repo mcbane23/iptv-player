@@ -119,15 +119,29 @@ pa lokalni Gradle build ne radi. **Svaka provera builda ide preko GitHub Actions
 jer PR prikazuje rezultat push builda za isti commit). Dva posla rade paralelno:
 
 - **Debug APK**: checkout, `actions/setup-java` (Temurin 21), `gradle/actions/setup-gradle`
-  (keširanje), `./gradlew assembleDebug`, upload APK-a kao artifact, objava `dev-latest`
+  (keširanje), `./gradlew assembleDebug`, upload APK-a kao artifact, objava pre-release-a
 - **Testovi i lint**: isti koraci za pripremu, `./gradlew testDebugUnitTest lintDebug`,
   upload izveštaja
 
-CI je zelen tek kad oba posla prođu. `dev-latest` se objavljuje čim je APK gotov, ne čeka testove.
+CI je zelen tek kad oba posla prođu. Pre-release se objavljuje čim je APK gotov, ne čeka testove.
 
-APK artifact se pravi na **svaki** CI build, ne samo za release. Svaki push dodatno
-objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV). Za sada je APK
+APK artifact se pravi na **svaki** CI build, ne samo za release. Push na `main` dodatno
+objavljuje APK kao pre-release `dev-latest` (stalan link, zgodno za TV), a push na svaku drugu
+granu kao pre-release `dev-<ime-grane>` (`/` postaje `-`), da se izmena isproba pre spajanja.
+Grana se objavljuje samo ako sadrži vrh main-a. Izdanje grane se briše na sledećem push-u na
+`main` kad je grana obrisana ili joj je PR zatvoren. Ažuriranje iz aplikacije prati samo `main`. Za sada je APK
 **potpisan debug ključem**.
+
+**Ažuriranje iz aplikacije (urađeno, dev kanal):** kod ostaje privatan, a CI APK sa `main`-a objavljuje i u
+poseban javni repo za APK-ove (`mcbane23/apps`, izdanje `iptv-player-dev`, fajlovi
+`iptv-player-dev.apk` i `iptv-player.json` sa `versionCode`, `versionName` i `sha256`). Repo je
+zajednički za više aplikacija, svaka ima svoje tagove. CI piše tamo tokenom `APK_REPO_TOKEN`
+(fine-grained, Contents: Read and write samo na taj repo); bez secreta korak se preskače.
+`versionCode` je broj CI run-a, lokalni build je 1. Aplikacija pri startu tiho proverava
+manifest, a u podešavanjima postoji „Proveri ažuriranje”; preuzima APK, proverava heš i
+predaje ga sistemskom instaleru (`PackageInstaller`). Android traži jednu potvrdu, osim na
+Android 12+ kad je aplikacija već sama sebe instalirala. Odluka vlasnika: do v1.0 ažuriranje prati
+dev buildove, posle Faze 8 prelazi na zvanična izdanja (novi ključ znači jedno ručno instaliranje).
 
 **`.github/workflows/release.yml`** (odloženo do Faze 8, kad vlasnik doda secrets;
 pokreće se na tag `v*`):
@@ -260,7 +274,6 @@ Redosled unutar faze po želji vlasnika.
       „Arhiva” prikazuje prošle emisije kanala po danima. Za Xtream spisak daje server; za M3U se pravi
       iz sačuvanog vodiča (čuva se do 7 dana unazad za kanale sa arhivom)
 - [x] Roditeljska zaštita PIN-om (zaključavanje kategorija)
-- [ ] Više profila
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod
@@ -301,6 +314,8 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 - [ ] Verzionisanje (`versionCode` iz broja CI run-a ili iz taga)
 - [ ] README: kako instalirati APK na telefon i na TV
 - [ ] Prvo izdanje `v1.0.0` u GitHub Releases
+- [ ] Ažuriranje iz aplikacije prelazi sa `iptv-player-dev` na zvanična izdanja u javnom repou
+  (`UpdateSource.kt` i `release.yml`)
 
 ### Faza 9: Naknadne ideje
 
@@ -326,6 +341,15 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [ ] Zakazano snimanje iz TV vodiča (EPG) ili ručno (kanal, početak, kraj), preko WorkManager-a
 - [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
+
+**Cast sa telefona na TV**
+
+- [ ] Dugme „Pusti na TV-u” u plejeru na telefonu: kanal, film ili epizoda koja se gleda na telefonu
+      nastavlja se na TV-u, a telefon služi kao daljinski (pauza, premotavanje, jačina, sledeći kanal)
+- [ ] Odlučiti način pre početka: (a) Chromecast / Google Cast, radi sa svakim Chromecast i
+      Android TV uređajem, ali traži Google Play servise i ne podržava sve formate strimova;
+      (b) slanje na ovu aplikaciju na TV-u kroz lokalnu mrežu (kao QR dodavanje liste), radi sa svim
+      formatima koje plejer pušta, ali samo ako je aplikacija instalirana na TV-u; ili oba
 
 **Izlaz iz aplikacije**
 
