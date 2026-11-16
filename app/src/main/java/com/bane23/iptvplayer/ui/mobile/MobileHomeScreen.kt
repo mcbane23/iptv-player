@@ -1,6 +1,11 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -94,12 +99,72 @@ fun MobileHomeScreen(
     BackHandler(enabled = tab != MobileTab.LIVE) { tab = MobileTab.LIVE }
     ExitOnDoubleBack(enabled = tab == MobileTab.LIVE)
 
+    val tabContent: @Composable () -> Unit = {
+        // Spisak filmova i serija pripada aktivnoj listi, pa se posle promene liste učitava iznova.
+        holder.SaveableStateProvider(tab.name) {
+            when (tab) {
+                MobileTab.LIVE -> MobileLiveTvScreen(
+                    onPlay = onPlay,
+                    onManagePlaylists = onPlaylists,
+                    onSearch = onSearch,
+                    onGuide = onGuide,
+                    onMultiView = onMultiView,
+                    viewModel = liveTvViewModel,
+                )
+
+                MobileTab.MOVIES -> MobileVodScreen(
+                    series = false,
+                    onOpen = { onOpenVod(it, false) },
+                    onSearch = { onSearchVod(false) },
+                    viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}"),
+                )
+
+                MobileTab.SERIES -> MobileVodScreen(
+                    series = true,
+                    onOpen = { onOpenVod(it, true) },
+                    onSearch = { onSearchVod(true) },
+                    viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
+                )
+
+                MobileTab.SETTINGS -> MobileSettingsScreen(
+                    onPlaylists = onPlaylists,
+                    onCategories = onCategories.takeIf { liveState.playlistId != null },
+                    onParental = onParental.takeIf { liveState.playlistId != null },
+                    onTrakt = onTrakt.takeIf { isTraktConfigured },
+                    onRecordings = onRecordings,
+                )
+            }
+        }
+    }
+    val recordingBar: @Composable () -> Unit = {
+        if (recording.isNotEmpty()) {
+            RecordingBar(active = recording, onOpen = onRecordings, onStop = recordingsViewModel::stop)
+        }
+    }
+
+    if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        // U landscape-u je visina dragocena: kartice idu u usku traku levo, a ne u donju traku.
+        Scaffold(contentWindowInsets = WindowInsets.safeDrawing) { padding ->
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding),
+            ) {
+                CompactNavRail(tabs = tabs, selected = tab, onSelect = { tab = it })
+                Column(modifier = Modifier.weight(1f)) {
+                    recordingBar()
+                    Box(modifier = Modifier.weight(1f)) { tabContent() }
+                }
+            }
+        }
+        return
+    }
+
     Scaffold(
         bottomBar = {
             Column {
-                if (recording.isNotEmpty()) {
-                    RecordingBar(active = recording, onOpen = onRecordings, onStop = recordingsViewModel::stop)
-                }
+                recordingBar()
                 CompactNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
             }
         },
@@ -112,41 +177,7 @@ fun MobileHomeScreen(
                 .padding(padding)
                 .consumeWindowInsets(padding),
         ) {
-            // Spisak filmova i serija pripada aktivnoj listi, pa se posle promene liste učitava iznova.
-            holder.SaveableStateProvider(tab.name) {
-                when (tab) {
-                    MobileTab.LIVE -> MobileLiveTvScreen(
-                        onPlay = onPlay,
-                        onManagePlaylists = onPlaylists,
-                        onSearch = onSearch,
-                        onGuide = onGuide,
-                        onMultiView = onMultiView,
-                        viewModel = liveTvViewModel,
-                    )
-
-                    MobileTab.MOVIES -> MobileVodScreen(
-                        series = false,
-                        onOpen = { onOpenVod(it, false) },
-                        onSearch = { onSearchVod(false) },
-                        viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}"),
-                    )
-
-                    MobileTab.SERIES -> MobileVodScreen(
-                        series = true,
-                        onOpen = { onOpenVod(it, true) },
-                        onSearch = { onSearchVod(true) },
-                        viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
-                    )
-
-                    MobileTab.SETTINGS -> MobileSettingsScreen(
-                        onPlaylists = onPlaylists,
-                        onCategories = onCategories.takeIf { liveState.playlistId != null },
-                        onParental = onParental.takeIf { liveState.playlistId != null },
-                        onTrakt = onTrakt.takeIf { isTraktConfigured },
-                        onRecordings = onRecordings,
-                    )
-                }
-            }
+            tabContent()
         }
     }
 }
@@ -220,6 +251,54 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 48.dp, height = 26.dp)
+                            .clip(RoundedCornerShape(13.dp))
+                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(imageVector = item.icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        text = stringResource(item.label),
+                        color = color,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Uska traka sa karticama levo, za telefon u landscape-u: ista izgleda kao donja traka
+ * (ikonica na blagoj podlozi i naziv ispod), samo uspravno.
+ */
+@Composable
+private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxHeight()) {
+        Column(
+            modifier = Modifier
+                .width(76.dp)
+                .fillMaxHeight()
+                .selectableGroup(),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            tabs.forEach { item ->
+                val isSelected = item == selected
+                val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
                         .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
