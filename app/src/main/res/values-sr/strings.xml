@@ -78,14 +78,15 @@
     <string name="player_subtitles">Titlovi</string>
     <string name="player_subtitles_off">Isključeno</string>
     <string name="player_no_tracks">Nema dostupnih zapisa</string>
-    <string name="player_aspect">Slika: %1$s</string>
     <string name="player_pip">Slika u slici</string>
-    <string name="player_tv_hint">Gore/dole: promena kanala · OK: lista kanala · Desno: opcije</string>
     <string name="aspect_fit">Uklopi</string>
     <string name="aspect_fill">Razvuci</string>
     <string name="aspect_zoom">Uvećaj</string>
     <string name="gesture_volume">Zvuk</string>
     <string name="gesture_brightness">Osvetljenje</string>
+    <string name="player_lock">Zaključaj ekran</string>
+    <string name="player_unlock">Otključaj</string>
+    <string name="gesture_guide">Prevuci gore ili dole: levo menja osvetljenje, desno jačinu zvuka</string>
     <string name="playback_loading">Učitavanje…</string>
     <string name="playback_retrying">Veza je prekinuta, pokušavam ponovo…</string>
     <string name="playback_error_network">Kanal ne može da se pusti. Proverite internet vezu.</string>
@@ -169,7 +170,6 @@
     <string name="vod_seek_back">−10 s</string>
     <string name="vod_seek_forward">+10 s</string>
     <string name="vod_next_episode">Sledeća epizoda</string>
-    <string name="vod_tv_hint">Levo i desno: preskok 10 s · OK: pauza · Gore: opcije</string>
 
     <!-- Dodavanje liste sa telefona -->
     <string name="action_add_from_phone">Dodaj preko telefona</string>

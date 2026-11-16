@@ -4,15 +4,13 @@ import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,16 +20,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -41,19 +38,30 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PlayerChip
+import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerScrim
+import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
+import com.bane23.iptvplayer.ui.common.player.PlayerTime
+import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.formatDuration
+import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
-import com.bane23.iptvplayer.ui.common.vod.VodPlayerUiState
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
 
+/** Šta dobija fokus kad se kontrole pojave. */
+private enum class VodFocus { PLAY, SEEK }
+
 /**
- * Plejer za film ili epizodu na TV-u, upravlja se samo daljinskim: levo/desno premotava,
- * OK pauzira i nastavlja, gore otvara opcije (zvuk, titlovi, slika, sledeća epizoda),
- * dole prikazuje traku sa pozicijom. [start] pokreće puštanje (poziva se jednom).
+ * Plejer za film ili epizodu na TV-u. Dok su kontrole sklonjene: OK (ili gore/dole) ih prikazuje,
+ * levo/desno premotava (držanje premotava sve brže). Kontrole su iste kao na telefonu: naslov gore,
+ * a dole traka sa vremenom i dugmad Titlovi, Audio, Format i Od početka. Nazad prvo skloni kontrole.
+ * [start] pokreće puštanje (poziva se jednom).
  */
 @Composable
 fun TvVodPlayerScreen(
@@ -62,90 +70,113 @@ fun TvVodPlayerScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
-    var optionsOpen by remember { mutableStateOf(false) }
-    // Svaki pritisak tastera povećava brojač, čime se traka ponovo prikazuje na nekoliko sekundi.
+    var controls by remember { mutableStateOf(true) }
+    var focusOn by remember { mutableStateOf(VodFocus.PLAY) }
+    var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    // Svaki pritisak tastera povećava brojač, čime se kontrole zadržavaju još nekoliko sekundi.
     var activity by remember { mutableIntStateOf(0) }
-    var barVisible by remember { mutableStateOf(true) }
     val rootFocus = remember { FocusRequester() }
+    val playFocus = remember { FocusRequester() }
+    val seekFocus = remember { FocusRequester() }
+    val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
 
     LaunchedEffect(Unit) { start(viewModel) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
-    BackHandler(enabled = optionsOpen) { optionsOpen = false }
+    BackHandler(enabled = tracks != null || controls) {
+        if (tracks != null) tracks = null else controls = false
+    }
 
-    LaunchedEffect(activity, playback.status) {
-        barVisible = true
-        if (playback.status == PlaybackStatus.PLAYING) {
-            delay(BAR_TIMEOUT_MS)
-            barVisible = false
+    LaunchedEffect(controls, tracks, activity, playback.status) {
+        if (controls && tracks == null && playback.status == PlaybackStatus.PLAYING) {
+            delay(CONTROLS_TIMEOUT_MS)
+            controls = false
         }
     }
-    // Kad se opcije zatvore, fokus se vraća na plejer, inače tasteri ne bi stizali do njega.
-    LaunchedEffect(optionsOpen) {
-        if (!optionsOpen) runCatching { rootFocus.requestFocus() }
+    // Fokus prati ono što je na ekranu, inače tasteri ne bi stizali nikuda.
+    LaunchedEffect(controls, tracks, focusOn) {
+        when {
+            tracks != null -> Unit
+            controls -> repeat(FOCUS_ATTEMPTS) {
+                val target = if (focusOn == VodFocus.SEEK) seekFocus else playFocus
+                if (target.tryRequestFocus()) return@LaunchedEffect
+                delay(FOCUS_STEP_MS)
+            }
+            else -> rootFocus.tryRequestFocus()
+        }
+    }
+
+    fun show(focus: VodFocus) {
+        focusOn = focus
+        controls = true
+        activity++
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .focusRequester(rootFocus)
-            .focusable()
+            .onPreviewKeyEvent {
+                if (it.type == KeyEventType.KeyDown) activity++
+                false
+            }
             .onKeyEvent { event ->
-                if (optionsOpen) return@onKeyEvent false
                 val isDown = event.type == KeyEventType.KeyDown
                 val isUp = event.type == KeyEventType.KeyUp
-                val handled = when (event.nativeKeyEvent.keyCode) {
-                    AndroidKeyEvent.KEYCODE_DPAD_LEFT -> {
-                        if (isDown) viewModel.seekBy(-SEEK_STEP_MS)
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        if (isDown) viewModel.seekBy(SEEK_STEP_MS)
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_MEDIA_REWIND -> {
-                        if (isDown) viewModel.seekBy(-FAST_SEEK_STEP_MS)
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                        if (isDown) viewModel.seekBy(FAST_SEEK_STEP_MS)
-                        true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_DPAD_CENTER,
-                    AndroidKeyEvent.KEYCODE_ENTER,
-                    AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+                when (event.nativeKeyEvent.keyCode) {
                     AndroidKeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
                     AndroidKeyEvent.KEYCODE_MEDIA_PLAY,
                     AndroidKeyEvent.KEYCODE_MEDIA_PAUSE,
                     -> {
-                        if (isUp) viewModel.togglePlayPause()
-                        true
+                        if (isDown) viewModel.togglePlayPause()
+                        return@onKeyEvent true
                     }
 
-                    // Panel se otvara kad se taster pusti, da isti pritisak ne bi odmah izabrao stavku u njemu.
-                    AndroidKeyEvent.KEYCODE_DPAD_UP, AndroidKeyEvent.KEYCODE_MENU -> {
-                        if (isUp) optionsOpen = true
-                        true
+                    AndroidKeyEvent.KEYCODE_MEDIA_REWIND -> {
+                        if (isDown) viewModel.seekBy(-seekStepFor(event.nativeKeyEvent.repeatCount + 6))
+                        return@onKeyEvent true
                     }
 
-                    AndroidKeyEvent.KEYCODE_DPAD_DOWN -> true
+                    AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                        if (isDown) viewModel.seekBy(seekStepFor(event.nativeKeyEvent.repeatCount + 6))
+                        return@onKeyEvent true
+                    }
 
                     AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
                         if (isDown) viewModel.next()
+                        return@onKeyEvent true
+                    }
+                }
+                // Ostali tasteri ovde stižu samo dok su kontrole sklonjene (fokus je na samom plejeru).
+                if (controls) return@onKeyEvent false
+                when (event.nativeKeyEvent.keyCode) {
+                    AndroidKeyEvent.KEYCODE_DPAD_LEFT, AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        if (isDown) {
+                            val direction = if (event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
+                            viewModel.seekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount))
+                            show(VodFocus.SEEK)
+                        }
+                        true
+                    }
+
+                    // Kontrole se pojavljuju kad se taster pusti, da isti pritisak ne bi odmah pritisnuo dugme.
+                    AndroidKeyEvent.KEYCODE_DPAD_CENTER,
+                    AndroidKeyEvent.KEYCODE_ENTER,
+                    AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+                    AndroidKeyEvent.KEYCODE_DPAD_UP,
+                    AndroidKeyEvent.KEYCODE_DPAD_DOWN,
+                    AndroidKeyEvent.KEYCODE_MENU,
+                    -> {
+                        if (isUp) show(VodFocus.PLAY)
                         true
                     }
 
                     else -> false
                 }
-                if (handled && isDown) activity++
-                handled
-            },
+            }
+            .focusRequester(rootFocus)
+            .focusable(),
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
@@ -161,87 +192,119 @@ fun TvVodPlayerScreen(
             )
         }
 
-        if (barVisible && !optionsOpen) {
-            ProgressBar(
-                ui = ui,
-                paused = playback.status == PlaybackStatus.PAUSED,
-                modifier = Modifier.align(Alignment.BottomStart),
-            )
-        }
-
-        if (optionsOpen) {
-            TvPlayerOptionsPanel(
-                playback = playback,
-                aspectMode = ui.aspectMode,
-                onCycleAspect = viewModel::cycleAspectMode,
-                onSelectAudio = viewModel::selectAudio,
-                onSelectText = viewModel::selectText,
-                modifier = Modifier.align(Alignment.CenterEnd),
-                firstRowText = if (ui.hasNext) stringResource(R.string.vod_next_episode) else null,
-                onFirstRow = {
-                    optionsOpen = false
-                    viewModel.next()
-                },
-            )
-        }
-    }
-}
-
-/** Naslov, pozicija i trajanje, sa trakom koja pokazuje dokle se stiglo. */
-@Composable
-private fun ProgressBar(ui: VodPlayerUiState, paused: Boolean, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.6f))
-            .padding(horizontal = 48.dp, vertical = 20.dp),
-    ) {
-        val season = ui.season
-        val episode = ui.episode
-        val heading = listOfNotNull(
-            ui.title,
-            if (season != null && episode != null) episodeLabel(season, episode) else null,
-            if (paused) stringResource(R.string.player_pause) else null,
-        ).joinToString(" · ")
-        Text(
-            text = heading,
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Row(
-            modifier = Modifier.padding(top = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(text = formatDuration(ui.positionMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
-            val fraction = if (ui.durationMs > 0) (ui.positionMs.toFloat() / ui.durationMs).coerceIn(0f, 1f) else 0f
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(Color.White.copy(alpha = 0.3f)),
-            ) {
-                Box(
+        if (controls) {
+            Box(modifier = Modifier.align(Alignment.TopStart)) {
+                PlayerScrim(top = true, modifier = Modifier.matchParentSize())
+                val season = ui.season
+                val episode = ui.episode
+                PlayerTitle(
+                    title = ui.title,
+                    subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
+                    large = true,
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(fraction)
-                        .background(MaterialTheme.colorScheme.primary),
+                        .fillMaxWidth()
+                        .padding(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 40.dp),
                 )
             }
-            Text(text = formatDuration(ui.durationMs), color = Color.White, style = MaterialTheme.typography.bodyMedium)
+
+            Box(modifier = Modifier.align(Alignment.BottomStart)) {
+                PlayerScrim(top = false, modifier = Modifier.matchParentSize())
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 48.dp, end = 48.dp, top = 48.dp, bottom = 27.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        PlayerIconButton(
+                            icon = AppIcons.Rewind,
+                            description = stringResource(R.string.vod_seek_back),
+                            onClick = { viewModel.seekBy(-SEEK_STEP_MS) },
+                        )
+                        val paused = playback.status == PlaybackStatus.PAUSED
+                        PlayerIconButton(
+                            icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                            description = stringResource(
+                                when {
+                                    failed -> R.string.player_retry
+                                    paused -> R.string.player_play
+                                    else -> R.string.player_pause
+                                },
+                            ),
+                            onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                            primary = true,
+                            modifier = Modifier.focusRequester(playFocus),
+                        )
+                        PlayerIconButton(
+                            icon = AppIcons.Forward,
+                            description = stringResource(R.string.vod_seek_forward),
+                            onClick = { viewModel.seekBy(SEEK_STEP_MS) },
+                        )
+                        PlayerTime(ui.positionMs, modifier = Modifier.padding(start = 8.dp))
+                        PlayerSeekBar(
+                            positionMs = ui.positionMs,
+                            durationMs = ui.durationMs,
+                            onSeekTo = viewModel::seekTo,
+                            onSeekBy = viewModel::seekBy,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp)
+                                .focusRequester(seekFocus),
+                        )
+                        PlayerTime(ui.durationMs)
+                        if (ui.hasNext) {
+                            PlayerIconButton(
+                                icon = AppIcons.Next,
+                                description = stringResource(R.string.vod_next_episode),
+                                onClick = viewModel::next,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PlayerChip(
+                            label = stringResource(R.string.player_subtitles),
+                            icon = AppIcons.Subtitles,
+                            active = playback.textEnabled,
+                            onClick = { tracks = TvTrackKind.SUBTITLES },
+                        )
+                        PlayerChip(
+                            label = stringResource(R.string.player_audio),
+                            icon = AppIcons.Audio,
+                            onClick = { tracks = TvTrackKind.AUDIO },
+                        )
+                        PlayerChip(
+                            label = ui.aspectMode.label(),
+                            icon = AppIcons.AspectRatio,
+                            onClick = viewModel::cycleAspectMode,
+                        )
+                        PlayerChip(
+                            label = stringResource(R.string.vod_start_over),
+                            icon = AppIcons.Previous,
+                            onClick = { viewModel.seekTo(0) },
+                        )
+                    }
+                }
+            }
         }
-        Text(
-            text = stringResource(R.string.vod_tv_hint),
-            color = Color.White.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp),
-        )
+
+        tracks?.let { kind ->
+            TvTrackPanel(
+                kind = kind,
+                playback = playback,
+                onSelectAudio = viewModel::selectAudio,
+                onSelectText = viewModel::selectText,
+                onClose = { tracks = null },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
     }
 }
 
 private const val SEEK_STEP_MS = 10_000L
-private const val FAST_SEEK_STEP_MS = 30_000L
-private const val BAR_TIMEOUT_MS = 4_000L
+private const val CONTROLS_TIMEOUT_MS = 5_000L
+private const val FOCUS_ATTEMPTS = 10
+private const val FOCUS_STEP_MS = 50L

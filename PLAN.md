@@ -279,10 +279,11 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
 - [x] 1. Osnova: ikonice, tipografija, donja traka na telefonu, bočni meni na TV-u
 - [x] 2. Uživo: kategorije kao čipovi, „sada” uz kanal, pretraga u sekciji, TV u tri kolone sa pregledom
 - [x] 3. Filmovi i serije: „Nastavi gledanje”, mreža postera, pretraga kroz sve kategorije, novi detalji
-- [ ] 4. Plejer na TV-u: kontrole na OK (traka sa vremenom i red dugmadi Titlovi, Audio, Format, Još),
-  lista kanala preko slike, premotavanje držanjem
-- [ ] 5. Plejer na telefonu: ikonice, panel titlova i zvuka, „Više”, zaključavanje, dupli dodir
-- [ ] 6. Podešavanja i liste: grupisana podešavanja, prazna stanja i poruke o greškama
+- [x] 4. Plejer, isti izgled na TV-u i telefonu: naslov gore, traka sa vremenom i red dugmadi dole
+  (Titlovi, Audio, Format, Od početka). TV: OK prikazuje kontrole, levo/desno premotava (držanje
+  ubrzava), levo u kanalima otvara listu. Telefon: dupli dodir premotava, zaključavanje, slika u slici,
+  uputstvo za gestove samo pri prvom pokretanju
+- [ ] 5. Podešavanja i liste: grupisana podešavanja, prazna stanja i poruke o greškama
 
 ### Faza 8: Izdanje
 
