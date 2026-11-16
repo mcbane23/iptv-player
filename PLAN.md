@@ -265,7 +265,7 @@ Redosled unutar faze po želji vlasnika.
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod
   aplikacija na telefonu šalje sve liste, omiljene kanale, uređenje kategorija i podešavanja pravo na TV
-- [ ] Prikaz više kanala odjednom (multi-view)
+- [x] Prikaz više kanala odjednom (multi-view): 2 ili 4 polja na TV-u i telefonu, zvuk sa izabranog polja
 - [x] Automatsko pokretanje pri paljenju uređaja (TV box): prekidač u podešavanjima na TV-u; od Androida 10
       traži i sistemsku dozvolu „Prikaz preko drugih aplikacija”
 

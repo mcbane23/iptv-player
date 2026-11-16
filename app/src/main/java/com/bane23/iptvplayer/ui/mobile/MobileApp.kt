@@ -22,6 +22,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.MultiView
 import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
 import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
 import com.bane23.iptvplayer.ui.common.navigation.Player
@@ -81,6 +82,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onPlaylists = { backStack.add(Playlists) },
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
+                    onMultiView = { backStack.add(MultiView) },
                 )
             }
             entry<Search> {
@@ -189,6 +191,12 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<SendToTv> { key ->
                 MobileSendToTvScreen(target = key.target, onClose = { backStack.removeLastOrNull() })
+            }
+            entry<MultiView> {
+                MobileMultiViewScreen(
+                    onOpen = { channelId -> backStack.add(Player(channelId, null)) },
+                    onBack = { backStack.removeLastOrNull() },
+                )
             }
             entry<ParentalControl> {
                 MobileParentalScreen(onBack = { backStack.removeLastOrNull() })

@@ -268,4 +268,11 @@
     <string name="pin_mismatch">The PINs do not match, try again</string>
     <string name="pin_locked_title">Locked content</string>
     <string name="pin_hint_tv">Type the digits on the remote or pick them on screen.</string>
+    <string name="multiview_title">Multi-view</string>
+    <string name="multiview_two">2 channels</string>
+    <string name="multiview_four">4 channels</string>
+    <string name="multiview_add">+ Add channel</string>
+    <string name="multiview_pick">Choose a channel</string>
+    <string name="multiview_failed">Channel is not working. Press to try again.</string>
+    <string name="multiview_hint_tv">Sound comes from the highlighted tile. OK: full screen. Hold OK: change channel.</string>
 </resources>

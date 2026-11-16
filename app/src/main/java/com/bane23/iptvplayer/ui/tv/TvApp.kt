@@ -22,6 +22,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
+import com.bane23.iptvplayer.ui.common.navigation.MultiView
 import com.bane23.iptvplayer.ui.common.navigation.PairPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.PlayEpisode
 import com.bane23.iptvplayer.ui.common.navigation.PlayMovie
@@ -70,6 +71,7 @@ fun TvApp() {
                     onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
                     onCategories = { backStack.add(ManageCategories) },
                     onParental = { backStack.add(ParentalControl) },
+                    onMultiView = { backStack.add(MultiView) },
                 )
             }
             entry<Search> {
@@ -158,6 +160,9 @@ fun TvApp() {
                         start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
                     )
                 }
+            }
+            entry<MultiView> {
+                TvMultiViewScreen(onOpen = { channelId -> backStack.add(Player(channelId, null)) })
             }
             entry<ParentalControl> { TvParentalScreen() }
             entry<PairPlaylist> {

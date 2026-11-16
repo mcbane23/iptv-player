@@ -84,3 +84,7 @@ data object ManageCategories : NavKey
 /** Roditeljska zaštita: PIN i zaključane kategorije. */
 @Serializable
 data object ParentalControl : NavKey
+
+/** Više kanala odjednom: 2 ili 4 polja, zvuk sa izabranog. */
+@Serializable
+data object MultiView : NavKey

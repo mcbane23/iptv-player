@@ -268,4 +268,11 @@
     <string name="pin_mismatch">PIN-ovi se ne poklapaju, pokušaj ponovo</string>
     <string name="pin_locked_title">Zaključan sadržaj</string>
     <string name="pin_hint_tv">Cifre unesi tasterima na daljinskom ili izaberi na ekranu.</string>
+    <string name="multiview_title">Više kanala</string>
+    <string name="multiview_two">2 kanala</string>
+    <string name="multiview_four">4 kanala</string>
+    <string name="multiview_add">+ Dodaj kanal</string>
+    <string name="multiview_pick">Izaberi kanal</string>
+    <string name="multiview_failed">Kanal ne radi. Pritisni za novi pokušaj.</string>
+    <string name="multiview_hint_tv">Zvuk ide sa označenog polja. OK: ceo ekran. Drži OK: promeni kanal.</string>
 </resources>
