@@ -274,7 +274,6 @@
     <string name="multiview_add">+ Dodaj kanal</string>
     <string name="multiview_pick">Izaberi kanal</string>
     <string name="multiview_failed">Kanal ne radi. Pritisni za novi pokušaj.</string>
-    <string name="multiview_hint_tv">Zvuk ide sa označenog polja. OK: ceo ekran. Drži OK: promeni kanal.</string>
 
     <!-- Ažuriranje aplikacije -->
     <string name="settings_about_header">O aplikaciji</string>
@@ -299,4 +298,6 @@
     <string name="update_error_network">Server za ažuriranje nije dostupan. Proverite internet vezu i pokušajte ponovo.</string>
     <string name="update_error_file">Preuzeti fajl je oštećen. Pokušajte ponovo.</string>
     <string name="update_error_install">Ažuriranje nije instalirano.</string>
+    <string name="multiview_fullscreen">Ceo ekran</string>
+    <string name="multiview_change">Promeni kanal</string>
 </resources>

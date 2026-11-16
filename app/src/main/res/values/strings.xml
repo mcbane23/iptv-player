@@ -274,7 +274,6 @@
     <string name="multiview_add">+ Add channel</string>
     <string name="multiview_pick">Choose a channel</string>
     <string name="multiview_failed">Channel is not working. Press to try again.</string>
-    <string name="multiview_hint_tv">Sound comes from the highlighted tile. OK: full screen. Hold OK: change channel.</string>
 
     <!-- Ažuriranje aplikacije -->
     <string name="settings_about_header">About</string>
@@ -299,4 +298,6 @@
     <string name="update_error_network">Could not reach the update server. Check the internet connection and try again.</string>
     <string name="update_error_file">The downloaded file is damaged. Try again.</string>
     <string name="update_error_install">The update was not installed.</string>
+    <string name="multiview_fullscreen">Full screen</string>
+    <string name="multiview_change">Change channel</string>
 </resources>
