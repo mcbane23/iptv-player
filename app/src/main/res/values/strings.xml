@@ -237,6 +237,11 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">General</string>
+    <string name="settings_language">Language (Jezik)</string>
+    <string name="settings_language_system">Same as device</string>
+    <string name="settings_language_serbian" translatable="false">Srpski</string>
+    <string name="settings_language_english" translatable="false">English</string>
+    <string name="settings_language_tv_summary">Press OK to switch to the next language.</string>
     <string name="settings_accent_color">App color</string>
     <string name="settings_accent_color_tv_summary">Press OK to switch to the next color. The change shows right away.</string>
     <string name="accent_orange">Orange</string>

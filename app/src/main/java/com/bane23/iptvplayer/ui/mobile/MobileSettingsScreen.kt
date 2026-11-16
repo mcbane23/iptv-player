@@ -12,6 +12,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.bane23.iptvplayer.ui.common.AppLanguage
+import com.bane23.iptvplayer.ui.common.AppLocale
+import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.label
 import androidx.compose.foundation.layout.Column
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +76,9 @@ fun MobileSettingsScreen(
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+    val language = AppLocale.get(context)
+    var languageOpen by remember { mutableStateOf(false) }
 
     Scaffold { padding ->
         Column(
@@ -107,6 +114,25 @@ fun MobileSettingsScreen(
                     checked = resumeLastChannel,
                     onChange = viewModel::setResumeLastChannel,
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { languageOpen = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_language),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = language.label(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
             }
             SettingsGroup(stringResource(R.string.settings_player_header)) {
@@ -182,6 +208,20 @@ fun MobileSettingsScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (languageOpen) {
+        val languages = AppLanguage.entries
+        TrackDialog(
+            title = stringResource(R.string.settings_language),
+            options = languages.map { it.label() to (it == language) },
+            emptyText = null,
+            onSelect = {
+                languageOpen = false
+                AppLocale.change(context, languages[it])
+            },
+            onDismiss = { languageOpen = false },
+        )
     }
 
     openChoice?.let { index ->

@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -12,6 +13,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.MainActivity
 import com.bane23.iptvplayer.R
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,6 +43,11 @@ class RecordingService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** Obaveštenje o snimanju je na jeziku izabranom u podešavanjima. */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     override fun onCreate() {
         super.onCreate()

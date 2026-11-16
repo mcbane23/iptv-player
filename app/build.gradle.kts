@@ -89,6 +89,38 @@ android {
     }
 }
 
+/**
+ * Android tekstove iz `values-sr` ne koristi kad je uređaj (ili izbor u aplikaciji) na „srpski (latinica)”,
+ * jer `sr` bez pisma računa kao ćirilicu. Zato se isti tekstovi pri buildu kopiraju i u `values-b+sr+Latn`;
+ * u repou ostaje jedan prevod.
+ */
+abstract class CopySerbianLatinStrings : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val source: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val output: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val target = output.get().dir("values-b+sr+Latn").asFile
+        target.deleteRecursively()
+        source.get().asFile.copyRecursively(target)
+    }
+}
+
+val copySerbianLatinStrings = tasks.register<CopySerbianLatinStrings>("copySerbianLatinStrings") {
+    source.set(layout.projectDirectory.dir("src/main/res/values-sr"))
+    output.set(layout.buildDirectory.dir("generated/serbianLatin/res"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(copySerbianLatinStrings) { it.output }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
