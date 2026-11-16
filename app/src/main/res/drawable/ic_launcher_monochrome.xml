@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Jednobojna verzija za teme ikonica (Android 13+): obris televizora prekinut tamo gde je telefon. -->
+<!-- Jednobojna verzija za teme ikonica (Android 13+): isti crtež kao ikonica, sve u jednoj boji. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,29 +7,24 @@
     android:viewportHeight="108">
     <group
         android:pivotX="54"
-        android:pivotY="56"
-        android:scaleX="0.74"
-        android:scaleY="0.74"
-        android:translateY="-2">
+        android:pivotY="55"
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:translateY="-1">
         <path
             android:strokeColor="#FFFFFFFF"
             android:strokeWidth="4.5"
-            android:strokeLineCap="round"
-            android:pathData="M57,66H29A7,7 0,0 1,22 59V37A7,7 0,0 1,29 30H65A7,7 0,0 1,72 37V39" />
+            android:pathData="M34,32H74A8,8 0,0 1,82 40V62A8,8 0,0 1,74 70H34A8,8 0,0 1,26 62V40A8,8 0,0 1,34 32Z" />
         <path
             android:fillColor="#FFFFFFFF"
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="3"
+            android:strokeWidth="4"
             android:strokeLineJoin="round"
-            android:pathData="M40,40L52,48L40,56Z" />
+            android:pathData="M48,42.5L62,51L48,59.5Z" />
         <path
             android:strokeColor="#FFFFFFFF"
             android:strokeWidth="4.5"
-            android:pathData="M68,44H80A6,6 0,0 1,86 50V76A6,6 0,0 1,80 82H68A6,6 0,0 1,62 76V50A6,6 0,0 1,68 44Z" />
-        <path
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="3"
             android:strokeLineCap="round"
-            android:pathData="M71,76H77" />
+            android:pathData="M44,78H64" />
     </group>
 </vector>
