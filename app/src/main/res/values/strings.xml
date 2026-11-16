@@ -456,4 +456,9 @@
     <string name="opensubtitles_signing_in">Signing in…</string>
     <string name="opensubtitles_signed_in_as">Signed in as %1$s</string>
     <string name="opensubtitles_sign_out">Sign out</string>
+    <string name="opensubtitles_qr_hint">Easier from a phone: connect it to the same Wi-Fi as the TV, scan the code with the camera and enter the details there.</string>
+    <string name="opensubtitles_page_title">Sign in to OpenSubtitles</string>
+    <string name="opensubtitles_page_intro">Enter the username and password of your opensubtitles.com account. They go straight to your TV over your home network.</string>
+    <string name="opensubtitles_page_submit">Sign in on TV</string>
+    <string name="opensubtitles_page_done_title">The TV is signed in</string>
 </resources>

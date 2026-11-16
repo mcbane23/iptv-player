@@ -454,4 +454,9 @@
     <string name="opensubtitles_signing_in">Prijavljujem…</string>
     <string name="opensubtitles_signed_in_as">Prijavljeni ste kao %1$s</string>
     <string name="opensubtitles_sign_out">Odjavi se</string>
+    <string name="opensubtitles_qr_hint">Lakše je preko telefona: povežite ga na isti Wi-Fi kao TV, skenirajte kod kamerom i unesite podatke tamo.</string>
+    <string name="opensubtitles_page_title">Prijava na OpenSubtitles</string>
+    <string name="opensubtitles_page_intro">Unesite korisničko ime i lozinku naloga sa opensubtitles.com. Podaci idu pravo na vaš TV kroz kućnu mrežu.</string>
+    <string name="opensubtitles_page_submit">Prijavi TV</string>
+    <string name="opensubtitles_page_done_title">TV je prijavljen</string>
 </resources>
