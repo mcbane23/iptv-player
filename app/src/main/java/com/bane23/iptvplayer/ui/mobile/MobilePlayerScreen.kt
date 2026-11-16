@@ -311,15 +311,6 @@ private fun LiveControls(
         onLock = onLock,
         onPip = onPip,
         onCast = onCast,
-        center = {
-            PlayPauseCenter(
-                paused = playback.status == PlaybackStatus.PAUSED,
-                failed = failed,
-                lowered = statusMessage(ui, playback) != null,
-                onPlayPause = onPlayPause,
-                onRetry = onRetry,
-            )
-        },
         bottom = {
             val program = nowNext.now
             // Prethodni i sledeći kanal na krajevima, traka emisije u sredini.
@@ -328,6 +319,12 @@ private fun LiveControls(
                 endLabel = program?.let { formatTime(it.stopMs) },
                 leading = {
                     PlayerIconButton(AppIcons.Previous, stringResource(R.string.player_previous), onPrevious)
+                    PlayPauseButton(
+                        paused = playback.status == PlaybackStatus.PAUSED,
+                        failed = failed,
+                        onPlayPause = onPlayPause,
+                        onRetry = onRetry,
+                    )
                 },
                 trailing = {
                     PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext)

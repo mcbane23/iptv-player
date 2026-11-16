@@ -62,7 +62,6 @@ import androidx.media3.common.VideoSize
  * okvirom, bez zatamnjenja cele slike. Na TV-u fokusirano dugme dobija prsten u boji teme.
  */
 
-private val FocusedContent = Color(0xFF0E1216)
 private val PanelBackground = Color.Black.copy(alpha = 0.6f)
 private val PanelBorder = Color.White.copy(alpha = 0.16f)
 private val ChipShape = RoundedCornerShape(10.dp)
@@ -170,16 +169,21 @@ fun PlayerChip(
     icon: ImageVector? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val content = when {
-        focused -> FocusedContent
-        active -> MaterialTheme.colorScheme.primary
-        else -> Color.White
-    }
+    val content = if (active) MaterialTheme.colorScheme.primary else Color.White
     val iconOnly = icon != null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     Row(
         modifier = modifier
             .height(if (iconOnly) 36.dp else 32.dp)
-            .then(if (focused) Modifier.background(Color.White, ChipShape) else Modifier.playerPanel(ChipShape))
+            // U fokusu (TV): isti okvir u boji teme kao kod okruglih dugmadi.
+            .then(
+                if (focused) {
+                    Modifier
+                        .background(Color.Black.copy(alpha = 0.85f), ChipShape)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, ChipShape)
+                } else {
+                    Modifier.playerPanel(ChipShape)
+                },
+            )
             .clip(ChipShape)
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick)
