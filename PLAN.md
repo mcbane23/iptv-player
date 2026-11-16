@@ -371,6 +371,8 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Oznaka na početnom ekranu dok se nešto snima: na telefonu traka iznad donje trake (dodir otvara
       „Snimci”, jedno snimanje se zaustavlja odmah), na TV-u crvena stavka na vrhu bočnog menija
       koja otvara „Snimci”
+- [x] Dugmad ispod trake u plejeru imaju ikonice; na telefonu u portretu ostaje samo ikonica (red
+      staje u širinu ekrana), u landscape-u i na TV-u ikonica i naziv
 
 **Cast sa telefona na TV**
 

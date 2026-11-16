@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common.player
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -139,13 +141,17 @@ fun PlayerIconButton(
     }
 }
 
-/** Dugme sa nazivom u redu ispod trake (Titlovi, Audio, Format...). */
+/**
+ * Dugme u redu ispod trake (Titlovi, Audio, Format...), sa ikonicom i nazivom. Na uspravnom ekranu
+ * (telefon u portretu) ostaje samo ikonica, da ceo red stane u širinu ekrana; naziv tada čita čitač ekrana.
+ */
 @Composable
 fun PlayerChip(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     active: Boolean = false,
+    icon: ImageVector? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val content = when {
@@ -153,25 +159,38 @@ fun PlayerChip(
         active -> MaterialTheme.colorScheme.primary
         else -> Color.White
     }
-    Box(
+    val iconOnly = icon != null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
+    Row(
         modifier = modifier
-            .height(32.dp)
+            .height(if (iconOnly) 36.dp else 32.dp)
             .then(if (focused) Modifier.background(Color.White, ChipShape) else Modifier.playerPanel(ChipShape))
             .clip(ChipShape)
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            color = content,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 180.dp),
-        )
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = if (iconOnly) label else null,
+                tint = content,
+                modifier = Modifier.size(if (iconOnly) 20.dp else 16.dp),
+            )
+        }
+        if (!iconOnly) {
+            Text(
+                text = label,
+                color = content,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(start = if (icon != null) 6.dp else 0.dp)
+                    .widthIn(max = 180.dp),
+            )
+        }
     }
 }
 

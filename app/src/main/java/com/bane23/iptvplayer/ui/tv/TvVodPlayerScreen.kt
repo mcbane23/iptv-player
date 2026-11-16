@@ -311,19 +311,23 @@ fun TvVodPlayerScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PlayerChip(
+                            icon = AppIcons.Subtitles,
                             label = stringResource(R.string.player_subtitles),
                             active = playback.textEnabled,
                             onClick = { tracks = TvTrackKind.SUBTITLES },
                         )
                         PlayerChip(
+                            icon = AppIcons.Audio,
                             label = stringResource(R.string.player_audio),
                             onClick = { tracks = TvTrackKind.AUDIO },
                         )
                         PlayerChip(
+                            icon = AppIcons.AspectRatio,
                             label = ui.aspectMode.label(),
                             onClick = viewModel::cycleAspectMode,
                         )
                         PlayerChip(
+                            icon = AppIcons.Previous,
                             label = stringResource(R.string.vod_start_over),
                             onClick = { viewModel.seekTo(0) },
                         )
