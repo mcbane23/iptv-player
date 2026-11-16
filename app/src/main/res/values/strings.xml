@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Ember</string>
+    <string name="app_name" translatable="false">Glowbox</string>
 
     <!-- Spisak lista -->
     <string name="playlists_title">Playlists</string>

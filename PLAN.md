@@ -53,11 +53,11 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
 
 ## 3. Otvorene odluke (pitati vlasnika pre nego što zatrebaju)
 
-- [x] **Ime aplikacije.** Rešeno 16. 11. 2026: „Ember” (može se promeniti kasnije). Paket
+- [x] **Ime aplikacije.** Rešeno 16. 11. 2026: „Glowbox” (prvo je bilo „Ember”, Bane promenio istog dana). Paket
       (`applicationId`) ostaje isti, da nadogradnja ne obriše podatke.
 - [x] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
-      (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica rešena 16. 11. 2026: plamen
-      sa prelivom i izrezanim znakom za puštanje na tamnoj pozadini; TV baner je plamen + „Ember”.
+      (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica rešena 16. 11. 2026: televizor
+      i telefon jedan preko drugog (jedna aplikacija za oba) na tamnoj pozadini; TV baner je ta slika + „Glowbox”.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 - [x] **Sinhronizacija preko naloga (Faza 9).** Rešeno 16. 11. 2026: sopstvena prijava
       (Google ili email) nije potrebna. Odgledano i pozicija gledanja idu preko korisnikovog

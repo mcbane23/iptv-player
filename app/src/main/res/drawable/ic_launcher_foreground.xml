@@ -1,27 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ikonica „Ember”: plamen sa prelivom i izrezanim znakom za puštanje (koncept C1). -->
+<!-- Ikonica „Glowbox”: televizor i telefon jedan preko drugog (jedna aplikacija za oba), koncept B3.
+     Crtež je umanjen oko središta da ceo stane u bezbednu zonu adaptivne ikonice (prečnik 66). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M54,22C64,36 78,46 78,62A24,24 0,0 1,30 62C30,52 36,46 40,40C42,48 46,50 48,50C46,40 48,30 54,22Z">
-            <aapt:attr name="android:fillColor">
-                <gradient
-                    android:type="linear"
-                    android:startX="54" android:startY="22"
-                    android:endX="54" android:endY="86">
-                    <item android:offset="0" android:color="#FFFFD180" />
-                    <item android:offset="0.55" android:color="@color/accent" />
-                    <item android:offset="1" android:color="#FFFF7A2F" />
-                </gradient>
-            </aapt:attr>
-    </path>
-    <path
-        android:fillColor="@color/background"
-        android:strokeColor="@color/background"
-        android:strokeWidth="3"
-        android:strokeLineJoin="round"
-        android:pathData="M49,55L63,64L49,73Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="56"
+        android:scaleX="0.74"
+        android:scaleY="0.74"
+        android:translateY="-2">
+        <path
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="4.5"
+            android:pathData="M29,30H65A7,7 0,0 1,72 37V59A7,7 0,0 1,65 66H29A7,7 0,0 1,22 59V37A7,7 0,0 1,29 30Z" />
+        <path
+            android:fillColor="@color/accent"
+            android:strokeColor="@color/accent"
+            android:strokeWidth="3"
+            android:strokeLineJoin="round"
+            android:pathData="M40,40L52,48L40,56Z" />
+        <path
+            android:fillColor="@color/background"
+            android:strokeColor="@color/accent"
+            android:strokeWidth="4.5"
+            android:pathData="M68,44H80A6,6 0,0 1,86 50V76A6,6 0,0 1,80 82H68A6,6 0,0 1,62 76V50A6,6 0,0 1,68 44Z" />
+        <path
+            android:strokeColor="@color/accent"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:pathData="M71,76H77" />
+    </group>
 </vector>
