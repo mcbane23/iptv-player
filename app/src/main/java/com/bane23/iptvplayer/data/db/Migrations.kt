@@ -90,6 +90,7 @@ object Migrations {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS `recordings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`playlistId` INTEGER NOT NULL, `channelKey` TEXT NOT NULL, " +
                     "`channelName` TEXT NOT NULL, `title` TEXT NOT NULL, `path` TEXT NOT NULL, " +
                     "`startedAt` INTEGER NOT NULL, `endedAt` INTEGER, `stopAtMs` INTEGER, " +
                     "`sizeBytes` INTEGER NOT NULL, `status` TEXT NOT NULL, `error` TEXT)",

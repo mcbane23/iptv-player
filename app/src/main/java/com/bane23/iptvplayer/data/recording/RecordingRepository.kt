@@ -50,6 +50,7 @@ class RecordingRepository @Inject constructor(
     private val recorder: StreamRecorder,
 ) {
     private val dao = db.recordingDao()
+    private val channelDao = db.channelDao()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val jobs = mutableMapOf<Long, Job>()
 
@@ -83,7 +84,7 @@ class RecordingRepository @Inject constructor(
     suspend fun start(channelId: Long, title: String?, stopAtMs: Long? = null): RecordingStartError? =
         withContext(Dispatchers.IO) {
             if (_active.value.any { it.channelId == channelId }) return@withContext null
-            val channel = channels.getChannel(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
+            val channel = channelDao.getById(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
             val source = channels.streamSource(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
             val dir = directory() ?: return@withContext RecordingStartError.NO_STORAGE
             if (dir.usableSpace < MIN_FREE_BYTES) return@withContext RecordingStartError.NO_SPACE
@@ -91,6 +92,8 @@ class RecordingRepository @Inject constructor(
             val file = File(dir, fileName(channel.name, now))
             val id = dao.insert(
                 RecordingEntity(
+                    playlistId = channel.playlistId,
+                    channelKey = channel.stableKey,
                     channelName = channel.name,
                     title = title?.takeIf { it.isNotBlank() } ?: channel.name,
                     path = file.absolutePath,

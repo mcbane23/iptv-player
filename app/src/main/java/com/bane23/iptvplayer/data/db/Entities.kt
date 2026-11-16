@@ -306,6 +306,9 @@ data class TraktPlaybackPendingEntity(
 @Entity(tableName = "recordings")
 data class RecordingEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** Lista i stalni ključ kanala (kao kod favorita): po njima se kanal nalazi kad zakazano snimanje krene. */
+    val playlistId: Long,
+    val channelKey: String,
     val channelName: String,
     /** Emisija koja je išla kad je snimanje krenulo, ili naziv kanala. */
     val title: String,
