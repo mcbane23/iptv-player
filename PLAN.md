@@ -319,6 +319,15 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [ ] Ekran „Snimci”: puštanje, brisanje, prikaz zauzetog prostora
 - [ ] Podešavanje mesta čuvanja (interna memorija, USB/SD) i upozorenje kad ponestaje prostora
 
+**Cast sa telefona na TV**
+
+- [ ] Dugme „Pusti na TV-u” u plejeru na telefonu: kanal, film ili epizoda koja se gleda na telefonu
+      nastavlja se na TV-u, a telefon služi kao daljinski (pauza, premotavanje, jačina, sledeći kanal)
+- [ ] Odlučiti način pre početka: (a) Chromecast / Google Cast, radi sa svakim Chromecast i
+      Android TV uređajem, ali traži Google Play servise i ne podržava sve formate strimova;
+      (b) slanje na ovu aplikaciju na TV-u kroz lokalnu mrežu (kao QR dodavanje liste), radi sa svim
+      formatima koje plejer pušta, ali samo ako je aplikacija instalirana na TV-u; ili oba
+
 **Izlaz iz aplikacije**
 
 - [ ] Izlaz samo na dupli pritisak „Nazad” sa početnog ekrana: prvi pritisak prikazuje
