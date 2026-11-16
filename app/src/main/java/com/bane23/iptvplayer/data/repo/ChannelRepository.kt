@@ -23,6 +23,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -35,6 +36,7 @@ class ChannelRepository @Inject constructor(
     private val db: AppDatabase,
     private val settings: SettingsStore,
     private val cipher: PasswordCipher,
+    private val locks: LockRepository,
 ) {
     private val playlistDao = db.playlistDao()
     private val categoryDao = db.categoryDao()
@@ -46,9 +48,14 @@ class ChannelRepository @Inject constructor(
 
     suspend fun playlistName(playlistId: Long): String? = playlistDao.getById(playlistId)?.name
 
+    /** Vidljive kategorije. Kategorija koja je sada zaključana ima katanac ispred naziva. */
     fun observeCategories(playlistId: Long): Flow<List<Category>> =
-        categoryDao.observeLiveWithCount(playlistId).map { rows ->
-            rows.map { Category(it.category.id, it.category.name, it.channelCount) }
+        combine(categoryDao.observeLiveWithCount(playlistId), locks.activeKeys) { rows, lockedKeys ->
+            rows.map {
+                val name = it.category.name
+                val locked = LockRepository.liveKey(playlistId, name) in lockedKeys
+                Category(it.category.id, if (locked) LockRepository.LOCK_MARK + name else name, it.channelCount)
+            }
         }
 
     /** Sve kategorije, i sakrivene, za ekran uređivanja. */
@@ -146,7 +153,8 @@ class ChannelRepository @Inject constructor(
     suspend fun channelToResume(): Long? {
         if (!settings.resumeLastChannel.first()) return null
         val playlistId = settings.activePlaylistId.first() ?: return null
-        return channelDao.recentIds(playlistId).firstOrNull()
+        // Kanal iz zaključane kategorije se ne pušta sam pri startu.
+        return channelDao.recentIds(playlistId).firstOrNull()?.takeUnless { locks.isChannelLocked(it) }
     }
 
     private fun flowOfKey(channelId: Long, block: (String) -> Flow<Boolean>): Flow<Boolean> =

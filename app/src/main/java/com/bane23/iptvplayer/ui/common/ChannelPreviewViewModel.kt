@@ -7,6 +7,7 @@ import androidx.media3.common.Player
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
+import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
@@ -34,6 +35,7 @@ class ChannelPreviewViewModel @Inject constructor(
     private val repository: ChannelRepository,
     private val epg: EpgRepository,
     private val settings: SettingsStore,
+    private val locks: LockRepository,
 ) : ViewModel() {
 
     val enabled: StateFlow<Boolean> = settings.tvChannelPreview
@@ -67,6 +69,11 @@ class ChannelPreviewViewModel @Inject constructor(
             _nowNext.value = NowNext()
             _nowNext.value = epg.nowNext(channelId)
             if (!enabled.first()) {
+                stop()
+                return@launch
+            }
+            // Kanal iz zaključane kategorije se ne prikazuje ni u malom pregledu.
+            if (locks.isChannelLocked(channelId)) {
                 stop()
                 return@launch
             }

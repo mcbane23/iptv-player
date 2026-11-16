@@ -8,6 +8,7 @@ import androidx.paging.cachedIn
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
+import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.NowNext
@@ -61,6 +62,7 @@ class PlayerViewModel @Inject constructor(
     private val repository: ChannelRepository,
     private val epg: EpgRepository,
     private val settings: SettingsStore,
+    private val locks: LockRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -179,7 +181,8 @@ class PlayerViewModel @Inject constructor(
             val current = _ui.value.channel
             _ui.update { it.copy(typedNumber = "") }
             if (number != null && current != null) {
-                repository.byNumber(current.playlistId, number)?.let { show(it) }
+                // Brojem se ne može ući u kanal iz zaključane kategorije.
+                repository.byNumber(current.playlistId, number)?.takeUnless { locks.isChannelLocked(it.id) }?.let { show(it) }
             }
         }
     }
@@ -200,8 +203,19 @@ class PlayerViewModel @Inject constructor(
         return ids.indexOf(channel.id).coerceAtLeast(0)
     }
 
-    /** Sledeći ([delta] = 1) ili prethodni (-1) kanal u trenutnoj kategoriji ili grupi, ukrug. */
+    /** Kao [rawNeighbor], ali preskače kanale iz zaključanih kategorija (roditeljska zaštita). */
     private suspend fun neighbor(channel: Channel, delta: Int): Channel? {
+        var candidate = rawNeighbor(channel, delta)
+        var skipped = 0
+        while (candidate != null && candidate.id != channel.id && locks.isChannelLocked(candidate.id)) {
+            if (++skipped > MAX_LOCKED_SKIP) return null
+            candidate = rawNeighbor(candidate, delta)
+        }
+        return candidate
+    }
+
+    /** Sledeći ([delta] = 1) ili prethodni (-1) kanal u trenutnoj kategoriji ili grupi, ukrug. */
+    private suspend fun rawNeighbor(channel: Channel, delta: Int): Channel? {
         val ids = groupIds
         if (ids == null) {
             val categoryId = _ui.value.categoryId
@@ -230,6 +244,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private companion object {
+        const val MAX_LOCKED_SKIP = 300
         const val MAX_NUMBER_DIGITS = 5
         const val NUMBER_ENTRY_DELAY_MS = 1_500L
         const val NOW_NEXT_REFRESH_MS = 30_000L

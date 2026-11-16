@@ -16,10 +16,12 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -80,6 +82,7 @@ class VodRepository @Inject constructor(
     private val settings: SettingsStore,
     private val api: XtreamApi,
     private val cipher: PasswordCipher,
+    private val locks: LockRepository,
 ) {
     private val playlistDao = db.playlistDao()
     private val progressDao = db.watchProgressDao()
@@ -100,7 +103,20 @@ class VodRepository @Inject constructor(
     /** Upis pozicije mora da se završi i kad se ekran plejera zatvori. */
     private val writeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    suspend fun categories(kind: VodKind): List<VodCategory> = withContext(Dispatchers.IO) {
+    /** Kategorije za prikaz. Kategorija koja je sada zaključana ima katanac ispred naziva. */
+    suspend fun categories(kind: VodKind): List<VodCategory> {
+        val all = allCategories(kind)
+        val keys = locks.activeKeysNow()
+        if (keys.isEmpty()) return all
+        val playlistId = settings.activePlaylistId.first() ?: return all
+        return all.map { category ->
+            val locked = LockRepository.vodKey(playlistId, kind == VodKind.SERIES, category.id) in keys
+            if (locked) category.copy(name = LockRepository.LOCK_MARK + category.name) else category
+        }
+    }
+
+    /** Kategorije onako kako ih šalje server, za ekran roditeljske zaštite. */
+    suspend fun allCategories(kind: VodKind): List<VodCategory> = withContext(Dispatchers.IO) {
         val session = session()
         categoryCache.getOrPutSuspending("${session.playlistId}/$kind") {
             val action = if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_CATEGORIES else XtreamUrls.ACTION_SERIES_CATEGORIES
@@ -111,7 +127,48 @@ class VodRepository @Inject constructor(
         }
     }
 
-    suspend fun items(kind: VodKind, categoryId: String): List<VodItem> = withContext(Dispatchers.IO) {
+    /**
+     * Spisak kategorije bez sadržaja zaključanih kategorija (roditeljska zaštita). Zaključana
+     * kategorija je prazna, a iz spiska „sve” nestaju filmovi i serije koji joj pripadaju.
+     */
+    suspend fun items(kind: VodKind, categoryId: String): List<VodItem> {
+        val hidden = lockedIds(kind)
+        val all = loadItems(kind, categoryId)
+        return if (hidden.isEmpty()) all else all.filter { it.id !in hidden }
+    }
+
+    /** Da li film, odnosno serija, pripada kategoriji koja je sada zaključana. */
+    suspend fun isLocked(kind: VodKind, itemId: Long): Boolean = itemId in lockedIds(kind)
+
+    /** ID-jevi filmova, odnosno serija, iz kategorija koje su sada zaključane. */
+    private suspend fun lockedIds(kind: VodKind): Set<Long> {
+        val keys = locks.activeKeysNow()
+        if (keys.isEmpty()) return emptySet()
+        val playlistId = settings.activePlaylistId.first() ?: return emptySet()
+        val series = kind == VodKind.SERIES
+        val prefix = LockRepository.vodKey(playlistId, series, "")
+        val categoryIds = keys.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }
+        val ids = HashSet<Long>()
+        for (categoryId in categoryIds) loadItems(kind, categoryId).mapTo(ids) { it.id }
+        return ids
+    }
+
+    /** Isti spisak, ali bez stavki iz kategorija koje su sada zaključane. */
+    private fun <T> Flow<List<T>>.withoutLocked(kind: VodKind, id: (T) -> Long): Flow<List<T>> =
+        combine(this, locks.activeKeys) { list, keys -> list to keys }.map { (list, keys) ->
+            if (keys.isEmpty()) return@map list
+            val hidden = try {
+                lockedIds(kind)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Bez spiska sa servera ne zna se šta je zaključano, pa se radije ne prikazuje ništa.
+                return@map emptyList()
+            }
+            list.filter { id(it) !in hidden }
+        }
+
+    private suspend fun loadItems(kind: VodKind, categoryId: String): List<VodItem> = withContext(Dispatchers.IO) {
         val session = session()
         itemCache.getOrPutSuspending("${session.playlistId}/$kind/$categoryId") {
             if (kind == VodKind.MOVIES) {
@@ -199,7 +256,7 @@ class VodRepository @Inject constructor(
         } else {
             progressDao.observeContinueSeries(playlistId, CONTINUE_LIMIT)
         }
-        return rows.map { list ->
+        return rows.withoutLocked(kind) { if (kind == VodKind.SERIES) it.seriesId else it.itemId }.map { list ->
             list.map { row ->
                 val isSeries = kind == VodKind.SERIES
                 ContinueItem(
@@ -255,7 +312,7 @@ class VodRepository @Inject constructor(
 
     /** Omiljeni filmovi, odnosno serije, liste; poslednje dodat prvi. */
     fun observeFavorites(playlistId: Long, kind: VodKind): Flow<List<VodItem>> =
-        favoriteDao.observe(playlistId, kind.favoriteKind).map { list ->
+        favoriteDao.observe(playlistId, kind.favoriteKind).withoutLocked(kind) { it.itemId }.map { list ->
             list.map { VodItem(id = it.itemId, name = it.name, poster = it.poster, rating = null, extension = it.extension) }
         }
 
