@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
+import com.bane23.iptvplayer.ui.common.navigation.CastRemote
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
 import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
@@ -49,6 +50,12 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             backStack.add(SendToTv(sendTarget))
             onSendTargetHandled()
         }
+    }
+    // Kad puštanje na TV-u krene, plejer na telefonu se zatvara i otvara se daljinski.
+    val castStarted = {
+        backStack.removeLastOrNull()
+        backStack.add(CastRemote)
+        Unit
     }
     NavDisplay(
         backStack = backStack,
@@ -123,6 +130,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     MobileVodPlayerScreen(
                         start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
                         onClose = { backStack.removeLastOrNull() },
+                        onCastStarted = castStarted,
                     )
                 }
             }
@@ -132,6 +140,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         channelId = key.channelId,
                         categoryId = key.categoryId,
                         onClose = { backStack.removeLastOrNull() },
+                        onCastStarted = castStarted,
                     )
                 }
             }
@@ -180,6 +189,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     MobileVodPlayerScreen(
                         start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
                         onClose = { backStack.removeLastOrNull() },
+                        onCastStarted = castStarted,
                     )
                 }
             }
@@ -188,8 +198,14 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     MobileVodPlayerScreen(
                         start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
                         onClose = { backStack.removeLastOrNull() },
+                        onCastStarted = castStarted,
                     )
                 }
+            }
+            entry<CastRemote> {
+                MobileCastRemoteScreen(
+                    onClose = { if (backStack.lastOrNull() is CastRemote) backStack.removeLastOrNull() },
+                )
             }
             entry<SendToTv> { key ->
                 MobileSendToTvScreen(target = key.target, onClose = { backStack.removeLastOrNull() })

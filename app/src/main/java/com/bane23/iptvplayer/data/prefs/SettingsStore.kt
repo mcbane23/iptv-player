@@ -63,6 +63,29 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[AUTOSTART] = enabled }
     }
 
+    /** Ključ ovog TV-a za slanje sa telefona (cast na ovu aplikaciju); null dok se ne napravi. */
+    val castKey: Flow<String?> = dataStore.data.map { it[CAST_KEY] }.distinctUntilChanged()
+
+    suspend fun setCastKey(key: String) {
+        dataStore.edit { it[CAST_KEY] = key }
+    }
+
+    /** Na telefonu: ključevi TV-a sa kojima je telefon već povezan, po imenu TV-a. */
+    val castPeers: Flow<Map<String, String>> = dataStore.data.map { prefs ->
+        prefs[CAST_PEERS].orEmpty().mapNotNull { entry ->
+            val name = entry.substringBeforeLast(PEER_SEPARATOR, "")
+            val key = entry.substringAfterLast(PEER_SEPARATOR, "")
+            if (name.isEmpty() || key.isEmpty()) null else name to key
+        }.toMap()
+    }.distinctUntilChanged()
+
+    suspend fun setCastPeer(name: String, key: String) {
+        dataStore.edit { prefs ->
+            val others = prefs[CAST_PEERS].orEmpty().filterNot { it.substringBeforeLast(PEER_SEPARATOR, "") == name }
+            prefs[CAST_PEERS] = (others + "$name$PEER_SEPARATOR$key").toSet()
+        }
+    }
+
     /** Zapis PIN-a roditeljske zaštite (vidi `Pin.hash`), ili null ako PIN nije postavljen. */
     val pinRecord: Flow<String?> = dataStore.data.map { it[PIN_RECORD] }.distinctUntilChanged()
 
@@ -164,6 +187,9 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val AUTOSTART = booleanPreferencesKey("autostart")
+        val CAST_KEY = stringPreferencesKey("cast_key")
+        val CAST_PEERS = stringSetPreferencesKey("cast_peers")
+        const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
         val GESTURE_HINT_SHOWN = booleanPreferencesKey("gesture_hint_shown")

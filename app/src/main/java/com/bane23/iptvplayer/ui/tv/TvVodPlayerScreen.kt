@@ -60,7 +60,8 @@ private enum class VodFocus { PLAY, SEEK }
 
 /**
  * Plejer za film ili epizodu na TV-u. Dok su kontrole sklonjene: OK (ili gore/dole) ih prikazuje,
- * levo/desno premotava (držanje premotava sve brže). Kontrole su iste kao na telefonu: naslov gore,
+ * levo/desno premotava (držanje premotava sve brže; plejer skače tek kad se strelica pusti, a dotle
+ * se na traci vidi vreme na koje se stiže). Kontrole su iste kao na telefonu: naslov gore,
  * a dole traka sa vremenom i dugmad Titlovi, Audio, Format i Od početka. Nazad prvo skloni kontrole.
  * [start] pokreće puštanje (poziva se jednom).
  */
@@ -89,8 +90,9 @@ fun TvVodPlayerScreen(
         if (tracks != null) tracks = null else controls = false
     }
 
-    LaunchedEffect(controls, tracks, activity, playback.status) {
-        if (controls && tracks == null && playback.status == PlaybackStatus.PLAYING) {
+    LaunchedEffect(controls, tracks, activity, playback.status, ui.scrubMs) {
+        // Dok traje premotavanje kontrole ostaju, da se vidi pregled vremena.
+        if (controls && tracks == null && ui.scrubMs == null && playback.status == PlaybackStatus.PLAYING) {
             delay(CONTROLS_TIMEOUT_MS)
             controls = false
         }
@@ -134,13 +136,15 @@ fun TvVodPlayerScreen(
                         return@onKeyEvent true
                     }
 
-                    AndroidKeyEvent.KEYCODE_MEDIA_REWIND -> {
-                        if (isDown) viewModel.seekBy(-seekStepFor(event.nativeKeyEvent.repeatCount + 6, viewModel.seekStepMs))
-                        return@onKeyEvent true
-                    }
-
-                    AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                        if (isDown) viewModel.seekBy(seekStepFor(event.nativeKeyEvent.repeatCount + 6, viewModel.seekStepMs))
+                    AndroidKeyEvent.KEYCODE_MEDIA_REWIND, AndroidKeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                        if (isDown) {
+                            val direction = if (event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_MEDIA_REWIND) -1 else 1
+                            viewModel.scrubBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount + 6, viewModel.seekStepMs))
+                            // Kontrole se prikazuju da se na traci vidi dokle se stiglo.
+                            if (!controls) show(VodFocus.SEEK)
+                        } else if (isUp) {
+                            viewModel.commitScrub()
+                        }
                         return@onKeyEvent true
                     }
 
@@ -155,8 +159,10 @@ fun TvVodPlayerScreen(
                     AndroidKeyEvent.KEYCODE_DPAD_LEFT, AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
                         if (isDown) {
                             val direction = if (event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
-                            viewModel.seekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount, viewModel.seekStepMs))
+                            viewModel.scrubBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount, viewModel.seekStepMs))
                             show(VodFocus.SEEK)
+                        } else if (isUp) {
+                            viewModel.commitScrub()
                         }
                         true
                     }
@@ -225,8 +231,30 @@ fun TvVodPlayerScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     val paused = playback.status == PlaybackStatus.PAUSED
+                    val scrub = ui.scrubMs
+                    if (scrub != null) {
+                        // Pregled dok se premotava: vreme na koje se stiže i pomak od početnog mesta.
+                        val delta = scrub - ui.scrubFromMs
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            Text(
+                                text = formatDuration(scrub),
+                                color = Color.White,
+                                style = MaterialTheme.typography.displaySmall,
+                            )
+                            Text(
+                                text = (if (delta < 0) "−" else "+") + formatDuration(kotlin.math.abs(delta)),
+                                color = Color.White.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
+                            )
+                        }
+                    }
                     PlayerTransportBar(
-                        startLabel = formatDuration(ui.positionMs),
+                        startLabel = formatDuration(scrub ?: ui.positionMs),
                         endLabel = formatDuration(ui.durationMs),
                         leading = {
                             PlayerIconButton(
@@ -272,11 +300,13 @@ fun TvVodPlayerScreen(
                         },
                     ) { barModifier ->
                         PlayerSeekBar(
-                            positionMs = ui.positionMs,
+                            positionMs = scrub ?: ui.positionMs,
                             durationMs = ui.durationMs,
                             onSeekTo = viewModel::seekTo,
-                            onSeekBy = viewModel::seekBy,
+                            onSeekBy = viewModel::scrubBy,
                             modifier = barModifier.focusRequester(seekFocus),
+                            stepMs = viewModel.seekStepMs,
+                            onSeekEnd = viewModel::commitScrub,
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

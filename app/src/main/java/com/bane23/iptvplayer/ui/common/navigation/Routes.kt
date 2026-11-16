@@ -92,3 +92,11 @@ data object ParentalControl : NavKey
 /** Više kanala odjednom: 2 ili 4 polja, zvuk sa izabranog. */
 @Serializable
 data object MultiView : NavKey
+
+/** Daljinski na telefonu dok se sadržaj pušta na TV-u preko Chromecast-a. */
+@Serializable
+data object CastRemote : NavKey
+
+/** Plejer na TV-u za sadržaj poslat sa telefona kroz kućnu mrežu. */
+@Serializable
+data object CastPlayback : NavKey

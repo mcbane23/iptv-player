@@ -104,6 +104,9 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     // Samo za crtanje QR koda (dodavanje liste sa telefona).
     implementation(libs.zxing.core)
+    // Slanje na Chromecast sa telefona.
+    implementation(libs.play.services.cast.framework)
+    implementation(libs.androidx.mediarouter)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
 

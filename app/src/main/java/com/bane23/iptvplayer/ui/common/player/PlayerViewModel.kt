@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.bane23.iptvplayer.cast.CastMedia
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
@@ -145,6 +146,21 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun togglePlayPause() = engine.togglePlayPause()
+
+    /** Kanal koji se gleda, u obliku za slanje na TV (cast). Null ako strim ne može da se sastavi. */
+    suspend fun castMedia(): CastMedia? {
+        val channel = _ui.value.channel ?: return null
+        val source = repository.streamSource(channel.id) ?: return null
+        return CastMedia(
+            title = channel.name,
+            urls = source.urls,
+            live = true,
+            channelId = channel.id,
+            categoryId = _ui.value.categoryId,
+            userAgent = source.userAgent,
+            referrer = source.referrer,
+        )
+    }
 
     fun retry() {
         val channel = _ui.value.channel ?: return

@@ -1,18 +1,27 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleStartEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.cast.CastHostViewModel
+import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkAccess
+import com.bane23.iptvplayer.ui.common.navigation.CastPlayback
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
@@ -38,6 +47,21 @@ fun TvApp() {
     val backStack = rememberNavBackStack(LiveTv)
     // Poslednji kanal se pušta samo jednom, pri startu aplikacije.
     var resumeChecked by rememberSaveable { mutableStateOf(false) }
+
+    // Prijem sa telefona (cast na ovu aplikaciju) radi dok je aplikacija vidljiva.
+    val castHost: CastHostViewModel = hiltViewModel()
+    val localNetwork = rememberLocalNetworkAccess()
+    LifecycleStartEffect(localNetwork) {
+        if (localNetwork) castHost.start()
+        onStopOrDispose { castHost.stop() }
+    }
+    val castSession by castHost.session.collectAsStateWithLifecycle()
+    val pairingCode by castHost.pairingCode.collectAsStateWithLifecycle()
+    LaunchedEffect(castSession?.id) {
+        if (castSession != null && backStack.lastOrNull() !is CastPlayback) backStack.add(CastPlayback)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -166,6 +190,11 @@ fun TvApp() {
             entry<MultiView> {
                 TvMultiViewScreen(onOpen = { channelId -> backStack.add(Player(channelId, null)) })
             }
+            entry<CastPlayback> {
+                TvCastPlayerScreen(
+                    onClose = { if (backStack.lastOrNull() is CastPlayback) backStack.removeLastOrNull() },
+                )
+            }
             entry<ParentalControl> { TvParentalScreen() }
             entry<TraktAccount> { TvTraktScreen() }
             entry<PairPlaylist> {
@@ -179,4 +208,10 @@ fun TvApp() {
             }
         },
     )
+    TvCastPairingCode(
+        code = pairingCode,
+        onExpired = castHost::dismissPairing,
+        modifier = Modifier.align(Alignment.TopEnd),
+    )
+    }
 }

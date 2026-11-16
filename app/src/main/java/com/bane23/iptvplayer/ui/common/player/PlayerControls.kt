@@ -189,7 +189,8 @@ fun PlayerTime(timeMs: Long, modifier: Modifier = Modifier) {
 
 /**
  * Traka napretka koja može da premotava: prevlačenjem ili dodirom na telefonu, levo/desno kad je
- * u fokusu na TV-u (držanje strelice premotava sve brže). Dok se prevlači, [onPreview] javlja
+ * u fokusu na TV-u (držanje strelice premotava sve brže, [onSeekEnd] javlja da je strelica puštena).
+ * Dok se prevlači, [onPreview] javlja
  * poziciju pod prstom, a premotava se tek kad se prst podigne.
  */
 @Composable
@@ -200,6 +201,8 @@ fun PlayerSeekBar(
     onSeekBy: (Long) -> Unit,
     modifier: Modifier = Modifier,
     onPreview: (Long?) -> Unit = {},
+    stepMs: Long = 10_000L,
+    onSeekEnd: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
     var dragged by remember { mutableStateOf<Float?>(null) }
@@ -220,8 +223,9 @@ fun PlayerSeekBar(
                     else -> 0
                 }
                 if (direction == 0) return@onKeyEvent false
-                if (event.type == KeyEventType.KeyDown) {
-                    onSeekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount))
+                when (event.type) {
+                    KeyEventType.KeyDown -> onSeekBy(direction * seekStepFor(event.nativeKeyEvent.repeatCount, stepMs))
+                    KeyEventType.KeyUp -> onSeekEnd()
                 }
                 true
             }

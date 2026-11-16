@@ -343,8 +343,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 **Premotavanje strima**
 
 - [x] Dugmad napred/nazad skaču po 10 s (podrazumevano), vrednost skoka podesiva u podešavanjima
-- [ ] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
-      sa pregledom vremena na traci, da se lako stigne do željenog mesta
+- [x] Brzo premotavanje na TV-u: držanje D-pad levo/desno ubrzava premotavanje,
+      sa pregledom vremena na traci, da se lako stigne do željenog mesta. Plejer premota tek kad
+      se strelica pusti, pa se strim ne učitava iznova na svaki korak
 
 **Snimanje sadržaja**
 
@@ -355,12 +356,15 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 **Cast sa telefona na TV**
 
-- [ ] Dugme „Pusti na TV-u” u plejeru na telefonu: kanal, film ili epizoda koja se gleda na telefonu
+- [x] Dugme „Pusti na TV-u” u plejeru na telefonu: kanal, film ili epizoda koja se gleda na telefonu
       nastavlja se na TV-u, a telefon služi kao daljinski (pauza, premotavanje, jačina, sledeći kanal)
-- [ ] Odlučiti način pre početka: (a) Chromecast / Google Cast, radi sa svakim Chromecast i
-      Android TV uređajem, ali traži Google Play servise i ne podržava sve formate strimova;
-      (b) slanje na ovu aplikaciju na TV-u kroz lokalnu mrežu (kao QR dodavanje liste), radi sa svim
-      formatima koje plejer pušta, ali samo ako je aplikacija instalirana na TV-u; ili oba
+- [x] Način: vlasnik je izabrao Chromecast / Google Cast (2026-11-16). Koristi se Google-ov
+      podrazumevani prijemnik, bez registracije. Izbor uređaja i daljinski su sopstveni ekrani.
+      Ograničenja: traži Google Play servise na telefonu; Chromecast ne pušta sirov MPEG-TS (za kanale
+      se šalje HLS adresa) ni sve formate filmova, a strim mora biti dostupan samom uređaju
+- [x] Drugi izbor u istom spisku: slanje na ovu aplikaciju na TV-u kroz kućnu mrežu (TV se oglašava
+      preko mDNS-a dok je aplikacija otvorena, prvo povezivanje kodom sa ekrana TV-a, TV pušta strim
+      svojim plejerom pa rade svi formati). Chromecast uređaji su prvi u spisku
 
 **Izlaz iz aplikacije**
 
