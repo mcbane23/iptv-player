@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -71,6 +72,7 @@ fun MobileHomeScreen(
     onPlaylists: () -> Unit,
     onCategories: () -> Unit,
     onParental: () -> Unit,
+    onTrakt: () -> Unit,
     onMultiView: () -> Unit,
 ) {
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
@@ -128,6 +130,7 @@ fun MobileHomeScreen(
                         onPlaylists = onPlaylists,
                         onCategories = onCategories.takeIf { liveState.playlistId != null },
                         onParental = onParental.takeIf { liveState.playlistId != null },
+                        onTrakt = onTrakt.takeIf { isTraktConfigured },
                     )
                 }
             }

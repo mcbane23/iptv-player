@@ -319,4 +319,24 @@
     <string name="subtitle_position_low">Pri dnu</string>
     <string name="subtitle_position_middle">Malo više</string>
     <string name="subtitle_position_high">Visoko</string>
+    <!-- Trakt -->
+    <string name="trakt_title">Trakt</string>
+    <string name="trakt_summary">Filmovi i epizode koje odgledaš označavaju se na tvom Trakt nalogu, a ono što si gledao drugde označava se ovde.</string>
+    <string name="trakt_note">Prepoznaju se samo filmovi i serije za koje provajder šalje TMDB broj.</string>
+    <string name="trakt_connect">Poveži Trakt nalog</string>
+    <string name="trakt_connect_steps">Na telefonu ili računaru otvori %1$s (ili skeniraj kod) i unesi:</string>
+    <string name="trakt_waiting">Čeka se odobrenje…</string>
+    <string name="trakt_starting">Povezivanje…</string>
+    <string name="trakt_cancel">Otkaži</string>
+    <string name="trakt_connected_as">Povezano: %1$s</string>
+    <string name="trakt_connected">Povezano</string>
+    <string name="trakt_sync_now">Sinhronizuj sada</string>
+    <string name="trakt_syncing">Sinhronizacija…</string>
+    <string name="trakt_last_sync">Poslednja sinhronizacija: %1$s</string>
+    <string name="trakt_never_synced">Još nije sinhronizovano</string>
+    <string name="trakt_disconnect">Odjavi Trakt nalog</string>
+    <string name="trakt_error_network">Trakt nije dostupan. Proveri internet i pokušaj ponovo.</string>
+    <string name="trakt_error_expired">Kod je istekao. Pokušaj ponovo.</string>
+    <string name="trakt_error_denied">Prijava je odbijena na Trakt-u.</string>
+    <string name="trakt_sync_failed">Sinhronizacija nije uspela. Pokušaće ponovo kasnije.</string>
 </resources>

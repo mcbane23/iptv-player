@@ -6,6 +6,8 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.db.WatchProgressEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.trakt.TraktKey
+import com.bane23.iptvplayer.data.trakt.TraktQueue
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.data.xtream.XtreamApi
@@ -41,6 +43,8 @@ data class VodItem(
     val rating: String?,
     /** Nastavak fajla filma; za serije null. */
     val extension: String?,
+    /** ID na TMDB-u (za Trakt), ako ga panel šalje. */
+    val tmdbId: Long? = null,
 )
 
 /**
@@ -94,6 +98,7 @@ class VodRepository @Inject constructor(
     private val api: XtreamApi,
     private val cipher: PasswordCipher,
     private val locks: LockRepository,
+    private val trakt: TraktQueue,
 ) {
     private val playlistDao = db.playlistDao()
     private val progressDao = db.watchProgressDao()
@@ -192,6 +197,7 @@ class VodRepository @Inject constructor(
                             poster = stream.icon?.takeIf { it.isNotBlank() },
                             rating = stream.rating.cleanRating(),
                             extension = stream.extension?.takeIf { it.isNotBlank() },
+                            tmdbId = XtreamVodParser.tmdbId(stream.tmdb) ?: XtreamVodParser.tmdbId(stream.tmdbId),
                         )
                     }
             } else {
@@ -204,6 +210,7 @@ class VodRepository @Inject constructor(
                             poster = series.cover?.takeIf { it.isNotBlank() },
                             rating = series.rating.cleanRating(),
                             extension = null,
+                            tmdbId = XtreamVodParser.tmdbId(series.tmdb) ?: XtreamVodParser.tmdbId(series.tmdbId),
                         )
                     }
             }
@@ -305,11 +312,11 @@ class VodRepository @Inject constructor(
         writeScope.launch {
             val playlistId = settings.activePlaylistId.first() ?: return@launch
             val kind = if (seriesId == null) KIND_MOVIE else KIND_EPISODE
-            db.withTransaction {
+            val newlyWatched = db.withTransaction {
                 val now = System.currentTimeMillis()
                 // Oznaka „odgledano” ostaje i kad se film gleda ponovo; nova se dobija gledanjem do kraja.
-                val watchedAt = progressDao.get(playlistId, kind, itemId)?.watchedAt
-                    ?: now.takeIf { WatchProgress.reachedEnd(positionMs, durationMs) }
+                val previous = progressDao.get(playlistId, kind, itemId)?.watchedAt
+                val watchedAt = previous ?: now.takeIf { WatchProgress.reachedEnd(positionMs, durationMs) }
                 progressDao.upsert(
                     WatchProgressEntity(
                         playlistId = playlistId,
@@ -325,16 +332,24 @@ class VodRepository @Inject constructor(
                         watchedAt = watchedAt,
                     ),
                 )
+                previous == null && watchedAt != null
             }
+            if (newlyWatched) trakt.changed(playlistId, kind, listOf(itemId), seriesId ?: 0, watched = true)
         }
     }
 
     /**
      * Ručno označava filmove, odnosno epizode jedne serije ([seriesId] null za film), kao odgledane
      * ili poništava oznaku. Epizode idu redom kojim se gledaju, da bi nastavak serije krenuo posle
-     * poslednje označene.
+     * poslednje označene. [traktKeys] su isti filmovi, odnosno epizode, kako ih zna Trakt: kad se oznaka
+     * poništava, odmah se skida i ona preuzeta sa Trakt-a.
      */
-    suspend fun setWatched(seriesId: Long?, targets: List<WatchTarget>, watched: Boolean) = withContext(Dispatchers.IO) {
+    suspend fun setWatched(
+        seriesId: Long?,
+        targets: List<WatchTarget>,
+        watched: Boolean,
+        traktKeys: List<TraktKey> = emptyList(),
+    ) = withContext(Dispatchers.IO) {
         if (targets.isEmpty()) return@withContext
         val playlistId = settings.activePlaylistId.first() ?: return@withContext
         val kind = if (seriesId == null) KIND_MOVIE else KIND_EPISODE
@@ -379,6 +394,34 @@ class VodRepository @Inject constructor(
                 )
             }
         }
+        if (!watched) trakt.forget(traktKeys)
+        trakt.changed(playlistId, kind, ids, seriesId ?: 0, watched)
+    }
+
+    /** TMDB ID filma (za Trakt): iz već učitanih spiskova, inače iz detalja filma. Null ako ga panel ne šalje. */
+    suspend fun movieTmdbId(movieId: Long): Long? {
+        val prefix = "${session().playlistId}/${VodKind.MOVIES}/"
+        itemCache.entries.asSequence()
+            .filter { it.key.startsWith(prefix) }
+            .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == movieId }?.tmdbId }
+            ?.let { return it }
+        return movie(movieId).tmdbId
+    }
+
+    /** Epizoda kako je zna Trakt: TMDB ID serije, sezona i broj. Null ako panel ne šalje TMDB ID serije. */
+    suspend fun episodeTraktKey(seriesId: Long, episodeId: Long): TraktKey? {
+        val details = series(seriesId)
+        val tmdb = details.tmdbId ?: seriesListTmdbId(seriesId) ?: return null
+        val episode = details.episodes.firstOrNull { it.id == episodeId } ?: return null
+        return TraktKey.episode(tmdb, episode.season, episode.number)
+    }
+
+    /** TMDB ID serije iz već učitanih spiskova (neki paneli ga šalju samo tamo). */
+    suspend fun seriesListTmdbId(seriesId: Long): Long? {
+        val prefix = "${session().playlistId}/${VodKind.SERIES}/"
+        return itemCache.entries.asSequence()
+            .filter { it.key.startsWith(prefix) }
+            .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == seriesId }?.tmdbId }
     }
 
     /** ID-jevi odgledanih filmova aktivne liste, za kvačicu na posteru. */

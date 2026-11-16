@@ -252,3 +252,35 @@ data class VodFavoriteEntity(
     val extension: String?,
     val addedAt: Long,
 )
+
+/**
+ * Ono što je na Trakt nalogu označeno kao odgledano, preuzeto pri poslednjoj sinhronizaciji.
+ * Ključ je TMDB ID: filma, odnosno serije, uz broj sezone i epizode (0 i 0 za film).
+ * Ne zavisi od liste, jer je Trakt nalog jedan za sve liste.
+ */
+@Entity(tableName = "trakt_watched", primaryKeys = ["kind", "tmdbId", "season", "episode"])
+data class TraktWatchedEntity(
+    /** "movie" ili "episode". */
+    val kind: String,
+    val tmdbId: Long,
+    val season: Int,
+    val episode: Int,
+    val watchedAt: Long,
+)
+
+/**
+ * Promena oznake „odgledano” koja još nije poslata na Trakt. Čuva se ID sa liste; TMDB ID se
+ * pronalazi pri slanju.
+ */
+@Entity(tableName = "trakt_pending")
+data class TraktPendingEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val playlistId: Long,
+    /** "movie" ili "episode". */
+    val kind: String,
+    val itemId: Long,
+    /** Serija kojoj epizoda pripada; 0 za film. */
+    val seriesId: Long,
+    val watched: Boolean,
+    val createdAt: Long,
+)

@@ -349,6 +349,10 @@ interface WatchProgressDao {
     @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
     suspend fun deleteMany(playlistId: Long, kind: String, itemIds: List<Long>)
 
+    /** Sve što je označeno kao odgledano, za prvo slanje na Trakt posle prijave. */
+    @Query("SELECT * FROM watch_progress WHERE watchedAt IS NOT NULL")
+    suspend fun allWatched(): List<WatchProgressEntity>
+
     /** ID-jevi odgledanih filmova, odnosno epizoda, za kvačicu na posteru. */
     @Query("SELECT itemId FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND watchedAt IS NOT NULL")
     fun observeWatchedIds(playlistId: Long, kind: String): Flow<List<Long>>
@@ -370,4 +374,34 @@ interface VodFavoriteDao {
         "SELECT EXISTS(SELECT 1 FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId)",
     )
     fun observeIsFavorite(playlistId: Long, kind: String, itemId: Long): Flow<Boolean>
+}
+
+@Dao
+interface TraktDao {
+    @Insert
+    suspend fun addPending(rows: List<TraktPendingEntity>)
+
+    @Query("SELECT * FROM trakt_pending ORDER BY id")
+    suspend fun pending(): List<TraktPendingEntity>
+
+    @Query("DELETE FROM trakt_pending WHERE id IN (:ids)")
+    suspend fun deletePending(ids: List<Long>)
+
+    @Query("DELETE FROM trakt_pending")
+    suspend fun clearPending()
+
+    @Query("SELECT tmdbId FROM trakt_watched WHERE kind = 'movie'")
+    fun observeWatchedMovies(): Flow<List<Long>>
+
+    @Query("SELECT * FROM trakt_watched WHERE kind = 'episode' AND tmdbId = :showTmdbId")
+    fun observeWatchedEpisodes(showTmdbId: Long): Flow<List<TraktWatchedEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWatched(rows: List<TraktWatchedEntity>)
+
+    @Query("DELETE FROM trakt_watched WHERE kind = :kind AND tmdbId = :tmdbId AND season = :season AND episode = :episode")
+    suspend fun deleteWatched(kind: String, tmdbId: Long, season: Int, episode: Int)
+
+    @Query("DELETE FROM trakt_watched")
+    suspend fun clearWatched()
 }

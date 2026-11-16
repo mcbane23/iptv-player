@@ -319,4 +319,24 @@
     <string name="subtitle_position_low">At the bottom</string>
     <string name="subtitle_position_middle">A bit higher</string>
     <string name="subtitle_position_high">High</string>
+    <!-- Trakt -->
+    <string name="trakt_title">Trakt</string>
+    <string name="trakt_summary">Movies and episodes you watch are marked on your Trakt account, and what you watched elsewhere is marked here.</string>
+    <string name="trakt_note">Only movies and series for which the provider sends a TMDB number are recognized.</string>
+    <string name="trakt_connect">Connect Trakt account</string>
+    <string name="trakt_connect_steps">On your phone or computer open %1$s (or scan the code) and enter:</string>
+    <string name="trakt_waiting">Waiting for approval…</string>
+    <string name="trakt_starting">Connecting…</string>
+    <string name="trakt_cancel">Cancel</string>
+    <string name="trakt_connected_as">Connected: %1$s</string>
+    <string name="trakt_connected">Connected</string>
+    <string name="trakt_sync_now">Sync now</string>
+    <string name="trakt_syncing">Syncing…</string>
+    <string name="trakt_last_sync">Last sync: %1$s</string>
+    <string name="trakt_never_synced">Not synced yet</string>
+    <string name="trakt_disconnect">Disconnect Trakt account</string>
+    <string name="trakt_error_network">Trakt is not reachable. Check the internet connection and try again.</string>
+    <string name="trakt_error_expired">The code has expired. Try again.</string>
+    <string name="trakt_error_denied">The sign-in was declined on Trakt.</string>
+    <string name="trakt_sync_failed">Sync failed. It will be retried later.</string>
 </resources>

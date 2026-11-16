@@ -9,6 +9,8 @@ import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.repo.WatchProgress
 import com.bane23.iptvplayer.data.repo.WatchTarget
+import com.bane23.iptvplayer.data.trakt.TraktKey
+import com.bane23.iptvplayer.data.trakt.TraktRepository
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
@@ -19,6 +21,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +51,7 @@ data class VodBrowseUiState(
 @HiltViewModel
 class VodBrowseViewModel @Inject constructor(
     private val repository: VodRepository,
+    private val trakt: TraktRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VodBrowseUiState())
@@ -75,13 +79,9 @@ class VodBrowseViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** ID-jevi odgledanih filmova, za kvačicu na posteru (serije je nemaju). */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val watchedIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
-        .flatMapLatest { (playlistId, kind) ->
-            if (playlistId == null || kind != VodKind.MOVIES) flowOf(emptySet()) else repository.observeWatchedMovieIds(playlistId)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    /** Odgledani filmovi, za kvačicu na posteru (serije je nemaju). */
+    val watched: StateFlow<WatchedMarks> = watchedMarks(repository, trakt, openedKind)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WatchedMarks())
 
     /** Dodaje film ili seriju u omiljene, odnosno uklanja (zvezdica na posteru). */
     fun toggleFavorite(item: VodItem) {
@@ -162,10 +162,12 @@ data class MovieUiState(
 @HiltViewModel
 class MovieViewModel @Inject constructor(
     private val repository: VodRepository,
+    private val trakt: TraktRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieUiState())
     val state: StateFlow<MovieUiState> = _state.asStateFlow()
+    private val tmdbId = MutableStateFlow<Long?>(null)
 
     private var opened = false
 
@@ -182,6 +184,7 @@ class MovieViewModel @Inject constructor(
             } catch (_: Exception) {
                 null
             }
+            tmdbId.value = details?.tmdbId
             _state.update {
                 it.copy(
                     loading = false,
@@ -192,9 +195,15 @@ class MovieViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            repository.activePlaylistId.filterNotNull()
-                .flatMapLatest { repository.observeMovieProgress(it, movieId) }
-                .collect { progress -> _state.update { it.copy(progress = progress) } }
+            val local = repository.activePlaylistId.filterNotNull().flatMapLatest { repository.observeMovieProgress(it, movieId) }
+            combine(local, trakt.watchedMovies, tmdbId) { progress, traktMovies, tmdb ->
+                // Odgledano na Trakt nalogu računa se kao odgledano i ovde.
+                if (tmdb != null && tmdb in traktMovies) {
+                    (progress ?: WatchProgress(movieId, 0, 0)).copy(watched = true)
+                } else {
+                    progress
+                }
+            }.collect { progress -> _state.update { it.copy(progress = progress) } }
         }
         viewModelScope.launch {
             repository.activePlaylistId.filterNotNull()
@@ -213,7 +222,10 @@ class MovieViewModel @Inject constructor(
     fun toggleWatched() {
         val current = _state.value
         val target = WatchTarget(current.movieId, current.name, current.poster, current.extension)
-        viewModelScope.launch { repository.setWatched(seriesId = null, listOf(target), watched = current.progress?.watched != true) }
+        val keys = listOfNotNull(tmdbId.value?.let { TraktKey.movie(it) })
+        viewModelScope.launch {
+            repository.setWatched(seriesId = null, listOf(target), watched = current.progress?.watched != true, traktKeys = keys)
+        }
     }
 }
 
@@ -239,6 +251,7 @@ data class SeriesUiState(
 @HiltViewModel
 class SeriesViewModel @Inject constructor(
     private val repository: VodRepository,
+    private val trakt: TraktRepository,
 ) : ViewModel() {
 
     private val base = MutableStateFlow(SeriesUiState())
@@ -250,25 +263,44 @@ class SeriesViewModel @Inject constructor(
             if (playlistId == null || id == null) flowOf(emptyList()) else repository.observeSeriesProgress(playlistId, id)
         }
 
+    /** TMDB ID serije, kad stignu detalji (ili iz spiska serija). */
+    private val showTmdbId = MutableStateFlow<Long?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val traktEpisodes = showTmdbId.flatMapLatest { tmdb ->
+        if (tmdb == null) flowOf(emptySet()) else trakt.watchedEpisodes(tmdb)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val favorite = combine(repository.activePlaylistId, seriesId) { playlistId, id -> playlistId to id }
         .flatMapLatest { (playlistId, id) ->
             if (playlistId == null || id == null) flowOf(false) else repository.observeIsFavorite(playlistId, VodKind.SERIES, id)
         }
 
-    val state: StateFlow<SeriesUiState> = combine(base, progress, favorite) { current, watched, isFavorite ->
+    val state: StateFlow<SeriesUiState> = combine(base, progress, favorite, traktEpisodes) { current, watched, isFavorite, onTrakt ->
         val details = current.details
+        val merged = watched.associateByTo(LinkedHashMap<Long, WatchProgress>()) { it.itemId }
+        // Epizode odgledane na Trakt nalogu računaju se kao odgledane i ovde.
+        if (details != null && onTrakt.isNotEmpty()) {
+            for (episode in details.episodes) {
+                if ((episode.season to episode.number) !in onTrakt) continue
+                merged[episode.id] = (merged[episode.id] ?: WatchProgress(episode.id, 0, 0)).copy(watched = true)
+            }
+        }
         val last = watched.firstOrNull()
-        val resume = if (details == null || last == null) {
+        val resume = if (details == null) {
             null
-        } else if (!last.resumable && last.finished) {
+        } else if (last == null) {
+            // Ovde još ništa nije gledano: nastavlja se posle poslednje epizode odgledane na Trakt-u.
+            details.episodes.lastOrNull { merged[it.id]?.watched == true }?.let { details.episodeAfter(it.id) }
+        } else if (!last.resumable && merged[last.itemId]?.finished == true) {
             details.episodeAfter(last.itemId)
         } else {
             details.episodes.firstOrNull { it.id == last.itemId }
         }
         current.copy(
             favorite = isFavorite,
-            progress = watched.associateBy { it.itemId },
+            progress = merged,
             resumeEpisode = resume,
             // Dok korisnik sam ne izabere sezonu, prikazuje se ona u kojoj je stao.
             selectedSeason = current.selectedSeason ?: resume?.season ?: details?.seasons?.firstOrNull()?.number,
@@ -291,6 +323,7 @@ class SeriesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val details = repository.series(id)
+                showTmdbId.value = details.tmdbId ?: repository.seriesListTmdbId(id)
                 base.update { it.copy(loading = false, details = details, poster = it.poster ?: details.poster) }
             } catch (e: CancellationException) {
                 throw e
@@ -325,7 +358,8 @@ class SeriesViewModel @Inject constructor(
         val current = state.value
         val id = seriesId.value ?: return
         val targets = episodes.map { WatchTarget(it.id, current.name, current.poster) }
-        viewModelScope.launch { repository.setWatched(id, targets, watched) }
+        val keys = showTmdbId.value?.let { tmdb -> episodes.map { TraktKey.episode(tmdb, it.season, it.number) } }.orEmpty()
+        viewModelScope.launch { repository.setWatched(id, targets, watched, keys) }
     }
 }
 
@@ -349,6 +383,7 @@ data class VodSearchUiState(
 @HiltViewModel
 class VodSearchViewModel @Inject constructor(
     private val repository: VodRepository,
+    private val trakt: TraktRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VodSearchUiState())
@@ -373,13 +408,9 @@ class VodSearchViewModel @Inject constructor(
         openedKind.value = kind
     }
 
-    /** ID-jevi odgledanih filmova, za kvačicu na posteru. */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val watchedIds: StateFlow<Set<Long>> = combine(repository.activePlaylistId, openedKind) { id, kind -> id to kind }
-        .flatMapLatest { (playlistId, kind) ->
-            if (playlistId == null || kind != VodKind.MOVIES) flowOf(emptySet()) else repository.observeWatchedMovieIds(playlistId)
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    /** Odgledani filmovi, za kvačicu na posteru. */
+    val watched: StateFlow<WatchedMarks> = watchedMarks(repository, trakt, openedKind)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, WatchedMarks())
 
     fun toggleFavorite(item: VodItem) {
         val isFavorite = item.id in favoriteIds.value
@@ -428,3 +459,20 @@ object VodSearch {
         java.text.Normalizer.normalize(text.trim().lowercase().replace("đ", "dj"), java.text.Normalizer.Form.NFD)
             .replace(marks, "")
 }
+
+/** Šta je odgledano: ID-jevi sa liste (označeno u aplikaciji) i TMDB ID-jevi (odgledano na Trakt nalogu). */
+data class WatchedMarks(val ids: Set<Long> = emptySet(), val tmdbIds: Set<Long> = emptySet()) {
+    fun of(item: VodItem): Boolean = item.id in ids || (item.tmdbId != null && item.tmdbId in tmdbIds)
+}
+
+/** Odgledani filmovi aktivne liste; za serije prazno. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun watchedMarks(repository: VodRepository, trakt: TraktRepository, kind: Flow<VodKind?>): Flow<WatchedMarks> =
+    combine(repository.activePlaylistId, kind) { id, opened -> id to opened }
+        .flatMapLatest { (playlistId, opened) ->
+            if (playlistId == null || opened != VodKind.MOVIES) {
+                flowOf(WatchedMarks())
+            } else {
+                combine(repository.observeWatchedMovieIds(playlistId), trakt.watchedMovies) { ids, tmdb -> WatchedMarks(ids, tmdb) }
+            }
+        }
