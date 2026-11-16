@@ -9,9 +9,11 @@ on:
   # npr. kad GitHub ne pokrene build posle spajanja.
   workflow_dispatch:
 
+# Na granama novi push prekida stari build. Na main-u se build ne prekida: prekid usred objave
+# ostavlja u javnom repou opis jednog builda i APK drugog, pa aplikacija odbije ažuriranje kao oštećeno.
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   # write je potreban da bi build objavio pre-release sa APK-om
@@ -93,21 +95,33 @@ jobs:
             exit 0
           fi
           export GH_TOKEN="$APK_REPO_TOKEN"
-          cp app/build/outputs/apk/debug/app-debug.apk iptv-player-dev.apk
-          SHA=$(sha256sum iptv-player-dev.apk | cut -d' ' -f1)
+          # Svaki build ima svoj fajl. Da se isti fajl menja u mestu, aplikacija koja je već pročitala
+          # stari opis preuzela bi novi APK, kontrolni zbir se ne bi poklopio i ažuriranje bi bilo odbijeno.
+          APK="iptv-player-dev-$CODE.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
           # versionName mora da prati app/build.gradle.kts.
-          jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
-            '{versionCode: $code, versionName: $name, apk: "iptv-player-dev.apk", sha256: $sha, commit: $commit}' \
+          jq -n --argjson code "$CODE" --arg name "0.0.1-dev.$CODE" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
+            '{versionCode: $code, versionName: $name, apk: $apk, sha256: $sha, commit: $commit}' \
             > iptv-player.json
           if ! gh release view "$TAG" -R "$APK_REPO" > /dev/null 2>&1; then
             gh release create "$TAG" -R "$APK_REPO" --prerelease \
               --title "IPTV plejer (dev)" --notes "Automatski build."
           fi
           # Prvo APK, pa opis: aplikacija vidi novu verziju tek kad je APK već na mestu.
-          gh release upload "$TAG" -R "$APK_REPO" iptv-player-dev.apk --clobber
+          gh release upload "$TAG" -R "$APK_REPO" "$APK" --clobber
           gh release upload "$TAG" -R "$APK_REPO" iptv-player.json --clobber
           gh release edit "$TAG" -R "$APK_REPO" \
             --notes "Build #$CODE, grana: $BRANCH, commit: ${GITHUB_SHA::7}. Automatski build, potpisan debug ključem."
+          # Stari APK-ovi se brišu tek sada, kad opis već pokazuje na novi. Prethodni build ostaje
+          # još jedan krug, za aplikaciju koja je upravo pročitala stari opis.
+          PREVIOUS="iptv-player-dev-${CURRENT:-0}.apk"
+          gh release view "$TAG" -R "$APK_REPO" --json assets --jq '.assets[].name' \
+            | grep -E '^iptv-player-dev(-[0-9]+)?\.apk$' \
+            | grep -vxF -e "$APK" -e "$PREVIOUS" \
+            | while read -r OLD; do
+                gh release delete-asset "$TAG" "$OLD" -R "$APK_REPO" --yes || true
+              done
 
   provere:
     name: Testovi i lint
