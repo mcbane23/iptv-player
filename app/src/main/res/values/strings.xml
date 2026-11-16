@@ -103,6 +103,9 @@
     <!-- Favorites, history, search -->
     <string name="category_favorites">Favorites</string>
     <string name="category_recent">Recently watched</string>
+    <string name="category_chip_all">All</string>
+    <string name="category_chip_recent">Recent</string>
+    <string name="category_chip_more">Categories</string>
     <string name="favorite_add">Add to favorites</string>
     <string name="favorite_remove">Remove from favorites</string>
     <string name="favorite_tv_hint">Hold OK on a channel to add it to favorites or remove it</string>

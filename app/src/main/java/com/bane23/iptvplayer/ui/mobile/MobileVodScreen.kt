@@ -44,6 +44,8 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.Poster
+import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
+import com.bane23.iptvplayer.ui.common.vod.SkeletonPoster
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 
@@ -82,7 +84,15 @@ fun MobileVodScreen(
             }
 
             when {
-                state.loadingCategories -> Message(stringResource(R.string.vod_loading))
+                state.loadingCategories -> LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 104.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(SKELETON_POSTERS) { SkeletonPoster() }
+                }
                 state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
                 state.categories.isEmpty() -> Message(stringResource(R.string.vod_empty))
 
@@ -139,9 +149,7 @@ fun MobileVodScreen(
                             )
                         }
 
-                        state.loadingItems -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Message(stringResource(R.string.vod_loading))
-                        }
+                        state.loadingItems -> items(SKELETON_POSTERS) { SkeletonPoster() }
 
                         state.itemsFailed -> item(span = { GridItemSpan(maxLineSpan) }) {
                             Failure(onRetry = viewModel::retryItems)
@@ -200,7 +208,7 @@ fun PosterTile(
 ) {
     Column(modifier = modifier.clickable(onClick = onClick)) {
         Box {
-            Poster(url = poster, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
+            Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite != null) {
                 Box(
                     modifier = Modifier

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
+import com.bane23.iptvplayer.ui.common.SkeletonLogo
+import com.bane23.iptvplayer.ui.common.SkeletonTextLines
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
 
@@ -78,34 +80,44 @@ fun MobileChannelRow(
                         .padding(end = 8.dp),
                 )
             }
-            ChannelLogo(url = channel?.logo)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp, end = 4.dp),
-            ) {
-                Text(
-                    text = channel?.name.orEmpty(),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            if (channel == null) {
+                // Strana liste se još učitava: obrisi umesto praznog reda.
+                SkeletonLogo()
+                SkeletonTextLines(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                 )
-                channel?.nowTitle?.let { nowTitle ->
+            } else {
+                ChannelLogo(url = channel.logo, name = channel.name)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp, end = 4.dp),
+                ) {
                     Text(
-                        text = nowTitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = channel.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    channel.nowTitle?.let { nowTitle ->
+                        Text(
+                            text = nowTitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    channel.nowProgress(now)?.let { progress ->
+                        ProgramProgress(progress = progress, modifier = Modifier.padding(top = 5.dp))
+                    }
                 }
-                channel?.nowProgress(now)?.let { progress ->
-                    ProgramProgress(progress = progress, modifier = Modifier.padding(top = 5.dp))
+                if (onToggleFavorite != null) {
+                    FavoriteButton(favorite = channel.favorite, onClick = { onToggleFavorite(channel.id) })
                 }
-            }
-            if (onToggleFavorite != null && channel != null) {
-                FavoriteButton(favorite = channel.favorite, onClick = { onToggleFavorite(channel.id) })
             }
         }
         if (channel != null) {
@@ -176,3 +188,11 @@ fun ProgramProgress(progress: Float, modifier: Modifier = Modifier) {
 
 /** Zlatna zvezdica, ista na svim mestima gde se prikazuju omiljeni. */
 private val FavoriteColor = androidx.compose.ui.graphics.Color(0xFFFFD166)
+
+/** Obrisi nekoliko redova kanala, dok se lista prvi put učitava. */
+@Composable
+fun MobileChannelSkeletonList(modifier: Modifier = Modifier, rows: Int = 10) {
+    Column(modifier = modifier.padding(top = 8.dp)) {
+        repeat(rows) { MobileChannelRow(channel = null, onClick = {}) }
+    }
+}

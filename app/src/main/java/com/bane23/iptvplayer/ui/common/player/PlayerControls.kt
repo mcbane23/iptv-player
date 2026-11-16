@@ -92,6 +92,22 @@ fun PlayerTitle(title: String, subtitle: String?, modifier: Modifier = Modifier,
     }
 }
 
+/** Sat u istom tamnom okviru kao naslov, u gornjem desnom uglu plejera. */
+@Composable
+fun PlayerClock(modifier: Modifier = Modifier, large: Boolean = false) {
+    val clock by com.bane23.iptvplayer.ui.common.rememberClockText()
+    Text(
+        text = clock,
+        color = Color.White,
+        style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        modifier = modifier
+            .playerPanel(ChipShape)
+            .padding(horizontal = if (large) 18.dp else 14.dp, vertical = if (large) 11.dp else 9.dp),
+    )
+}
+
 /**
  * Okruglo dugme sa ikonicom. [primary] ima veću ikonicu (puštanje i pauza), a [backdrop] tamni
  * krug iza ikonice, za dugmad koja stoje sama preko slike (nazad, zaključavanje). U fokusu dugme

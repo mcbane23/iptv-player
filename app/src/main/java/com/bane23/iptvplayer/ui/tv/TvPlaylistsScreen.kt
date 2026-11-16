@@ -74,6 +74,7 @@ fun TvPlaylistsScreen(
             OutlinedButton(onClick = onAddFromPhone, modifier = Modifier.padding(start = 12.dp)) {
                 Text(stringResource(R.string.action_add_from_phone))
             }
+            TvClock(modifier = Modifier.padding(start = 24.dp))
         }
 
         state.error?.let { error ->

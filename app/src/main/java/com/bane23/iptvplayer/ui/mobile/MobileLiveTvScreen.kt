@@ -1,6 +1,12 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -107,7 +113,7 @@ fun MobileLiveTvScreen(
             }
 
             when {
-                state.loading -> Unit
+                state.loading -> MobileChannelSkeletonList()
 
                 playlistId == null -> Column(
                     modifier = Modifier
@@ -137,11 +143,12 @@ fun MobileLiveTvScreen(
                         add(PickerGroup(ALL_CHANNELS.toString(), allLabel))
                         state.categories.forEach { add(PickerGroup(it.id.toString(), it.name)) }
                     }
-                    val selectedGroup = pickerGroups.firstOrNull { it.key == selected.toString() }
-                    CategoryButton(
-                        label = selectedGroup?.label ?: allLabel,
-                        icon = selectedGroup?.icon,
-                        onClick = { pickerOpen = true },
+                    QuickGroupChips(
+                        selected = selected,
+                        showRecent = state.recentCount > 0,
+                        categoryName = state.categories.firstOrNull { it.id == selected }?.name,
+                        onSelect = { chosen = it },
+                        onMore = { pickerOpen = true },
                     )
                     if (pickerOpen) {
                         CategoryPickerDialog(
@@ -167,6 +174,9 @@ fun MobileLiveTvScreen(
                         }
                     }
                     Box(modifier = Modifier.weight(1f)) {
+                        if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.Loading) {
+                            MobileChannelSkeletonList()
+                        }
                         if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
                             Text(
                                 text = stringResource(
@@ -229,4 +239,76 @@ private fun PlaylistSwitcher(activeName: String, names: List<Pair<Long, String>>
             }
         }
     }
+}
+
+/**
+ * Red čipova iznad liste kanala: Favoriti, Nedavno, Svi i, na kraju, čip koji otvara spisak svih
+ * kategorija. Kad je izabrana neka kategorija, taj poslednji čip nosi njen naziv i označen je.
+ * Najčešći izbori su tako jedan dodir, a duga lista kategorija ostaje u spisku.
+ */
+@Composable
+private fun QuickGroupChips(
+    selected: Long,
+    showRecent: Boolean,
+    categoryName: String?,
+    onSelect: (Long) -> Unit,
+    onMore: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GroupChip(
+            label = stringResource(R.string.category_favorites),
+            selected = selected == ChannelGroups.FAVORITES,
+            onClick = { onSelect(ChannelGroups.FAVORITES) },
+            leading = AppIcons.Star,
+        )
+        if (showRecent) {
+            GroupChip(
+                label = stringResource(R.string.category_chip_recent),
+                selected = selected == ChannelGroups.RECENT,
+                onClick = { onSelect(ChannelGroups.RECENT) },
+            )
+        }
+        GroupChip(
+            label = stringResource(R.string.category_chip_all),
+            selected = selected == ALL_CHANNELS,
+            onClick = { onSelect(ALL_CHANNELS) },
+        )
+        GroupChip(
+            label = categoryName ?: stringResource(R.string.category_chip_more),
+            selected = categoryName != null,
+            onClick = onMore,
+            trailing = AppIcons.ArrowDown,
+        )
+    }
+}
+
+@Composable
+private fun GroupChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    leading: ImageVector? = null,
+    trailing: ImageVector? = null,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 180.dp),
+            )
+        },
+        leadingIcon = leading?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
+        trailingIcon = trailing?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
+    )
 }

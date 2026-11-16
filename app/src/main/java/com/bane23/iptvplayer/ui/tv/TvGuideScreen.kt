@@ -119,6 +119,7 @@ fun TvGuideScreen(
             OutlinedButton(onClick = { if (!status.loading) viewModel.refresh() }) {
                 Text(stringResource(R.string.action_refresh))
             }
+            TvClock(modifier = Modifier.padding(start = 12.dp))
         }
         Text(
             text = "${formatDayTime(ui.windowStart)} – ${formatTime(ui.windowStart + WINDOW_MS)}",

@@ -46,6 +46,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
+import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
@@ -220,6 +221,7 @@ fun TvVodPlayerScreen(
                         large = true,
                         modifier = Modifier.weight(1f),
                     )
+                    PlayerClock(large = true, modifier = Modifier.padding(start = 16.dp))
                 }
             }
 

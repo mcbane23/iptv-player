@@ -21,6 +21,18 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.bane23.iptvplayer.ui.common.theme.OnSurfaceVariant
 import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
@@ -30,27 +42,57 @@ import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 
 /**
- * Poster filma ili serije u odnosu 2:3. Dok se ne učita (ili ako ga nema) ostaje tamno polje.
- * [progress] (0 do 1) crta tanku traku na dnu: koliko je odgledano.
+ * Poster filma ili serije u odnosu 2:3. Dok se učitava ostaje tamno polje; ako postera nema ili ne
+ * može da se učita, na tamnom prelivu piše [name]. [progress] (0 do 1) crta tanku traku na dnu:
+ * koliko je odgledano.
  */
 @Composable
-fun Poster(url: String?, modifier: Modifier = Modifier, progress: Float? = null, watched: Boolean = false) {
+fun Poster(
+    url: String?,
+    modifier: Modifier = Modifier,
+    name: String? = null,
+    progress: Float? = null,
+    watched: Boolean = false,
+) {
+    var failed by remember(url) { mutableStateOf(false) }
     Box(
         modifier = modifier
             .aspectRatio(POSTER_RATIO)
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF22262E)),
     ) {
-        if (!url.isNullOrBlank()) {
+        if (!url.isNullOrBlank() && !failed) {
             AsyncImage(
                 model = url,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                onError = { failed = true },
                 modifier = Modifier.fillMaxSize(),
             )
+        } else if (!name.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color(0xFF2C323C), Color(0xFF181C22))))
+                    .padding(10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                BasicText(
+                    text = name,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(
+                        color = OnSurfaceVariant,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    ),
+                )
+            }
         }
         if (watched) {
             Image(
@@ -120,3 +162,26 @@ fun WatchProgress.statusText(): String? = when {
     finished -> stringResource(R.string.vod_watched)
     else -> null
 }
+
+/** Obris postera sa nazivom ispod, dok se filmovi ili serije učitavaju. */
+@Composable
+fun SkeletonPoster(modifier: Modifier = Modifier) {
+    androidx.compose.foundation.layout.Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(POSTER_RATIO)
+                .skeleton(8.dp),
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .fillMaxWidth(0.7f)
+                .height(10.dp)
+                .skeleton(4.dp),
+        )
+    }
+}
+
+/** Broj obrisa postera koji se prikazuju dok se kategorija učitava. */
+const val SKELETON_POSTERS = 15

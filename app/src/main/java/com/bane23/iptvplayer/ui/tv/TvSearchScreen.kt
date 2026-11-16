@@ -84,7 +84,7 @@ fun TvSearchScreen(
                     onClick = { channel?.let { onPlay(it.id) } },
                     onLongClick = { channel?.let { viewModel.toggleFavorite(it.id) } },
                 ) { color ->
-                    ChannelLogo(url = channel?.logo, size = 36.dp)
+                    ChannelLogo(url = channel?.logo, name = channel?.name, size = 36.dp)
                     Text(
                         text = channel?.name.orEmpty(),
                         color = color,
