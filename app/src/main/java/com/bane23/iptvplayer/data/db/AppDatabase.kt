@@ -15,8 +15,9 @@ import androidx.room.RoomDatabase
         VodFavoriteEntity::class,
         TraktWatchedEntity::class,
         TraktPendingEntity::class,
+        TraktPlaybackPendingEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

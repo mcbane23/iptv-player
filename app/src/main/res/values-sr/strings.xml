@@ -333,6 +333,9 @@
     <string name="trakt_note">Prepoznaju se samo filmovi i serije za koje provajder šalje TMDB broj.</string>
     <string name="trakt_connect">Poveži Trakt nalog</string>
     <string name="trakt_connect_steps">Na telefonu ili računaru otvori %1$s (ili skeniraj kod) i unesi:</string>
+    <string name="trakt_open_activation">Otvori stranicu za aktivaciju</string>
+    <string name="trakt_copy_code">Kopiraj kod</string>
+    <string name="trakt_code_copied">Kod je kopiran, nalepi ga na stranici</string>
     <string name="trakt_waiting">Čeka se odobrenje…</string>
     <string name="trakt_starting">Povezivanje…</string>
     <string name="trakt_cancel">Otkaži</string>
