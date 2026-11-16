@@ -150,8 +150,12 @@ fun MobileVodPlayerScreen(
             val season = ui.season
             val episode = ui.episode
             MobilePlayerControls(
-                title = ui.title,
-                subtitle = if (season != null && episode != null) episodeLabel(season, episode) else null,
+                title = if (season != null && episode != null) {
+                    "${episodeLabel(season, episode)}  ·  ${ui.title}"
+                } else {
+                    ui.title
+                },
+                subtitle = null,
                 onClose = onClose,
                 onLock = {
                     locked = true
@@ -165,7 +169,7 @@ fun MobileVodPlayerScreen(
                         endLabel = formatDuration(ui.durationMs),
                         leading = {
                             PlayerIconButton(
-                                icon = AppIcons.Rewind,
+                                icon = AppIcons.FastRewind,
                                 description = stringResource(R.string.vod_seek_back),
                                 onClick = {
                                     viewModel.seekBy(-SEEK_STEP_MS)
@@ -187,12 +191,20 @@ fun MobileVodPlayerScreen(
                             )
                         },
                         trailing = {
-                            PlayerResolution(viewModel.player, modifier = Modifier.padding(end = 8.dp))
+                            PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
                             PlayerIconButton(
-                                icon = AppIcons.Forward,
+                                icon = AppIcons.FastForward,
                                 description = stringResource(R.string.vod_seek_forward),
                                 onClick = {
                                     viewModel.seekBy(SEEK_STEP_MS)
+                                    activity++
+                                },
+                            )
+                            PlayerIconButton(
+                                icon = AppIcons.AspectRatio,
+                                description = ui.aspectMode.label(),
+                                onClick = {
+                                    viewModel.cycleAspectMode()
                                     activity++
                                 },
                             )
@@ -211,18 +223,15 @@ fun MobileVodPlayerScreen(
                 chips = {
                     PlayerChip(
                         label = stringResource(R.string.player_subtitles),
-                        icon = AppIcons.Subtitles,
                         active = playback.textEnabled,
                         onClick = { panel = VodPanel.SUBTITLES },
                     )
                     PlayerChip(
                         label = stringResource(R.string.player_audio),
-                        icon = AppIcons.Audio,
                         onClick = { panel = VodPanel.AUDIO },
                     )
                     PlayerChip(
                         label = ui.aspectMode.label(),
-                        icon = AppIcons.AspectRatio,
                         onClick = {
                             viewModel.cycleAspectMode()
                             activity++
@@ -230,13 +239,11 @@ fun MobileVodPlayerScreen(
                     )
                     PlayerChip(
                         label = stringResource(R.string.vod_start_over),
-                        icon = AppIcons.Previous,
                         onClick = { viewModel.seekTo(0) },
                     )
                     if (ui.hasNext) {
                         PlayerChip(
                             label = stringResource(R.string.vod_next_episode),
-                            icon = AppIcons.Next,
                             onClick = viewModel::next,
                         )
                     }
