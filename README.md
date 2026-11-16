@@ -25,7 +25,7 @@ u `main` spoji nova verzija u `version.txt` (vidi „Novo izdanje”). Aplikacij
 <https://github.com/mcbane23/iptv-player/releases/download/dev-latest/iptv-player-debug.apk>
 
 Link je uvek isti i vodi na poslednji spojen kod. Grane ne objavljuju APK, samo proveravaju build
-i testove. Pošto je repo privatan, link radi samo u pregledaču u kome si prijavljen na GitHub.
+i testove.
 Dev build je uvek potpisan istim ključem (`keystore/debug.keystore`), pa se novi instalira preko
 starog, i sam se ažurira na sledeći dev build.
 
