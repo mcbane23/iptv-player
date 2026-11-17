@@ -116,7 +116,10 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
     MatchDisplayFrameRate(playback.video.frameRate)
-    BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
+    val backCloses = panelOpen || overlay != Overlay.HIDDEN
+
+    // Nazad zatvara ono što je na vrhu: prvo otvoren panel, pa kontrole.
+    fun closeTop() {
         when {
             tracks != null -> tracks = null
             recordPanel -> recordPanel = false
@@ -125,6 +128,7 @@ fun TvPlayerScreen(
             else -> overlay = Overlay.HIDDEN
         }
     }
+    BackHandler(enabled = backCloses) { closeTop() }
 
     // Posle promene kanala kratko se prikaže šta se gleda.
     LaunchedEffect(ui.channel?.id) {
@@ -165,6 +169,12 @@ fun TvPlayerScreen(
                     code == AndroidKeyEvent.KEYCODE_MEDIA_PAUSE
                 ) {
                     if (isDown) viewModel.togglePlayPause()
+                    return@onKeyEvent true
+                }
+                // Nazad se obrađuje ovde, inače bi ga Compose potrošio na pomeranje fokusa sa dugmeta
+                // na plejer, pa bi kontrole ostale na ekranu bez fokusa.
+                if (code == AndroidKeyEvent.KEYCODE_BACK && backCloses) {
+                    if (isUp) closeTop()
                     return@onKeyEvent true
                 }
                 // Ostali tasteri ovde stižu samo dok je fokus na samom plejeru.
