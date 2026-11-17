@@ -549,4 +549,7 @@
     <string name="search_group_channels">Channels</string>
     <string name="search_group_programs">In the TV guide</string>
     <string name="search_on_air">on now, until %1$s</string>
+    <string name="subtitle_shift_earlier">Subtitles earlier</string>
+    <string name="subtitle_shift_later">Subtitles later</string>
+    <string name="subtitle_shift_value">%1$s s</string>
 </resources>

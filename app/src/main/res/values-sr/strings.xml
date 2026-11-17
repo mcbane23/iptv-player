@@ -550,4 +550,7 @@
     <string name="search_group_channels">Kanali</string>
     <string name="search_group_programs">U TV vodiču</string>
     <string name="search_on_air">u toku, do %1$s</string>
+    <string name="subtitle_shift_earlier">Titl ranije</string>
+    <string name="subtitle_shift_later">Titl kasnije</string>
+    <string name="subtitle_shift_value">%1$s s</string>
 </resources>

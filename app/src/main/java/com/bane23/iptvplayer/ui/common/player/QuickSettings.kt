@@ -17,6 +17,9 @@ import java.text.DecimalFormat
 /** Brzine puštanja koje se nude za filmove i epizode. */
 val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
+/** Korak pomeranja titla. */
+const val SUBTITLE_SHIFT_STEP_MS = 500L
+
 /** Brzina kao tekst, npr. „1,25×”. */
 fun speedLabel(speed: Float): String = DecimalFormat("0.##").format(speed.toDouble()) + "×"
 
@@ -35,6 +38,8 @@ fun quickSettingChoices(
     onDecoder: (DecoderMode) -> Unit,
     speed: Float? = null,
     onSpeed: (Float) -> Unit = {},
+    subtitleOffsetMs: Long? = null,
+    onShiftSubtitle: (Long) -> Unit = {},
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ): List<SettingChoice> {
     val settings by settingsViewModel.playerSettings.collectAsStateWithLifecycle()
@@ -91,6 +96,27 @@ fun quickSettingChoices(
         onSelect = { settingsViewModel.setSubtitleSize(SubtitleSize.entries[it]) },
     )
 
+    // Dve stavke umesto spiska vrednosti: svaki dodir (OK) pomera titl za pola sekunde.
+    val subtitleShiftChoices = subtitleOffsetMs?.let { offset ->
+        val value = listOf(stringResource(R.string.subtitle_shift_value, DecimalFormat("+0.0;-0.0").format(offset / 1000.0)))
+        listOf(
+            SettingChoice(
+                title = stringResource(R.string.subtitle_shift_earlier),
+                summary = "",
+                options = value,
+                selected = 0,
+                onSelect = { onShiftSubtitle(-SUBTITLE_SHIFT_STEP_MS) },
+            ),
+            SettingChoice(
+                title = stringResource(R.string.subtitle_shift_later),
+                summary = "",
+                options = value,
+                selected = 0,
+                onSelect = { onShiftSubtitle(SUBTITLE_SHIFT_STEP_MS) },
+            ),
+        )
+    }.orEmpty()
+
     if (!tv) {
         return listOfNotNull(
             switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),
@@ -101,7 +127,7 @@ fun quickSettingChoices(
             speedChoice,
             // Plejer kanala nema titlove, pa veličina stoji samo uz filmove i epizode.
             subtitleSizeChoice.takeIf { speed != null },
-        )
+        ) + subtitleShiftChoices
     }
     return listOfNotNull(
         SettingChoice(
@@ -113,6 +139,7 @@ fun quickSettingChoices(
         ),
         decoderChoice,
         subtitleSizeChoice.takeIf { speed != null },
+        *subtitleShiftChoices.toTypedArray(),
         sleepChoice,
         speedChoice,
         // Jedina stavka koja ne važi odmah, nego od sledećeg puštanja.
