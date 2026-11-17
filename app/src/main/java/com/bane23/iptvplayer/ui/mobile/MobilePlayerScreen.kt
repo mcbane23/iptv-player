@@ -1,6 +1,13 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.util.Rational
 import androidx.activity.ComponentActivity
@@ -32,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.PictureInPictureModeChangedInfo
+import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -117,7 +126,7 @@ fun MobilePlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
     ImmersiveMode()
-    AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
+    PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
 
     // Kontrole se same sklanjaju posle nekoliko sekundi gledanja.
     LaunchedEffect(controlsVisible, panel, playback.status, sliderTouches) {
@@ -498,28 +507,67 @@ internal fun rememberEnterPictureInPicture(): (() -> Unit)? {
     }
 }
 
-/** Dok se kanal gleda, izlazak na početni ekran telefona sam prebacuje plejer u sliku u slici (Android 12+). */
+/**
+ * Podešava sliku u slici dok je plejer otvoren: izlazak na početni ekran telefona sam prebacuje
+ * plejer u mali prozor dok se gleda (Android 12+), a u malom prozoru stoji dugme za pauzu i puštanje.
+ */
 @Composable
-internal fun AutoPictureInPicture(enabled: Boolean) {
+internal fun PlayerPictureInPicture(status: PlaybackStatus, onTogglePlayPause: () -> Unit) {
     val activity = LocalActivity.current
-    if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-    DisposableEffect(activity, enabled) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            activity.setPictureInPictureParams(pipParams(autoEnter = enabled))
+    if (activity == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    val toggle by rememberUpdatedState(onTogglePlayPause)
+    val autoEnter = status == PlaybackStatus.PLAYING
+    // Dok se strim učitava ili ponovo povezuje, dugme i dalje nudi pauzu, kao i kontrole plejera.
+    val showPause = status == PlaybackStatus.PLAYING || status == PlaybackStatus.LOADING ||
+        status == PlaybackStatus.RETRYING
+
+    DisposableEffect(activity) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) = toggle()
         }
+        ContextCompat.registerReceiver(
+            activity,
+            receiver,
+            IntentFilter(ACTION_PIP_PLAY_PAUSE),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         onDispose {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                activity.setPictureInPictureParams(pipParams(autoEnter = false))
+            activity.unregisterReceiver(receiver)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activity.setPictureInPictureParams(pipParams(autoEnter = false, actions = emptyList()))
             }
+        }
+    }
+    LaunchedEffect(activity, autoEnter, showPause) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            activity.setPictureInPictureParams(
+                pipParams(autoEnter = autoEnter, actions = listOf(playPauseAction(activity, showPause))),
+            )
         }
     }
 }
 
 @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
-private fun pipParams(autoEnter: Boolean): PictureInPictureParams {
+private fun playPauseAction(context: Context, showPause: Boolean): RemoteAction {
+    val label = context.getString(if (showPause) R.string.player_pause else R.string.player_play)
+    val intent = PendingIntent.getBroadcast(
+        context,
+        0,
+        Intent(ACTION_PIP_PLAY_PAUSE).setPackage(context.packageName),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+    val icon = Icon.createWithResource(context, if (showPause) R.drawable.ic_pip_pause else R.drawable.ic_pip_play)
+    return RemoteAction(icon, label, label, intent)
+}
+
+/** Polja koja nisu zadata (actions = null) ostaju kakva su poslednji put podešena. */
+@androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+private fun pipParams(autoEnter: Boolean, actions: List<RemoteAction>? = null): PictureInPictureParams {
     val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
+    if (actions != null) builder.setActions(actions)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
     return builder.build()
 }
 
+private const val ACTION_PIP_PLAY_PAUSE = "com.bane23.iptvplayer.action.PIP_PLAY_PAUSE"
 private const val CONTROLS_TIMEOUT_MS = 4_000L

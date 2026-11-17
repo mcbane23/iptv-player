@@ -228,7 +228,7 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 - [x] Automatski ponovni pokušaj kad strim pukne, jasna poruka kad ne može da se pusti
 - [x] Podešavanje User-Agent-a po listi (neki provajderi ga zahtevaju)
 - [x] Ekran ostaje upaljen tokom gledanja; pravilno ponašanje pri izlasku i povratku
-- [x] Telefon: rotacija, jačina zvuka i osvetljenje (od 16. 11. 2026. dve tanke trake uz ivice umesto prevlačenja bilo gde; od 17. 11. 2026. svaka se posebno uključuje u Podešavanjima, podrazumevano su isključene), slika u slici (PiP)
+- [x] Telefon: rotacija, jačina zvuka i osvetljenje (od 16. 11. 2026. dve tanke trake uz ivice umesto prevlačenja bilo gde; od 17. 11. 2026. svaka se posebno uključuje u Podešavanjima, podrazumevano su isključene), slika u slici (PiP; od 17. 11. 2026. mali prozor ima dugme za pauzu i puštanje)
 - [x] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
 
 ### Faza 3: Favoriti, istorija, pretraga
