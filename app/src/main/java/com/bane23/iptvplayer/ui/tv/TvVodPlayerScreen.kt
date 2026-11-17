@@ -103,7 +103,10 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
     MatchDisplayFrameRate(playback.video.frameRate)
-    BackHandler(enabled = tracks != null || onlineOpen || settingsOpen || controls) {
+    val backCloses = tracks != null || onlineOpen || settingsOpen || controls
+
+    // Nazad zatvara ono što je na vrhu: prvo otvoren panel, pa premotavanje, pa kontrole.
+    fun closeTop() {
         when {
             settingsOpen -> settingsOpen = false
             onlineOpen -> {
@@ -118,6 +121,7 @@ fun TvVodPlayerScreen(
             else -> controls = false
         }
     }
+    BackHandler(enabled = backCloses) { closeTop() }
     // Titl je preuzet i uključen: spisak se zatvara, a kratka poruka javlja koliko preuzimanja je ostalo.
     LaunchedEffect(online.appliedId) {
         if (online.appliedId != null) {
@@ -189,6 +193,13 @@ fun TvVodPlayerScreen(
 
                     AndroidKeyEvent.KEYCODE_MEDIA_NEXT -> {
                         if (isDown) viewModel.next()
+                        return@onKeyEvent true
+                    }
+
+                    // Nazad se obrađuje ovde, inače bi ga Compose potrošio na pomeranje fokusa sa dugmeta
+                    // na plejer, pa bi kontrole ostale na ekranu bez fokusa.
+                    AndroidKeyEvent.KEYCODE_BACK -> if (backCloses) {
+                        if (isUp) closeTop()
                         return@onKeyEvent true
                     }
                 }
