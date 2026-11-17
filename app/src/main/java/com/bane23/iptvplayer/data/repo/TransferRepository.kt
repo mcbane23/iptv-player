@@ -4,18 +4,25 @@ import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.FavoriteEntity
 import com.bane23.iptvplayer.data.db.PlaylistEntity
+import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCategory
+import com.bane23.iptvplayer.data.lan.TransferLogin
 import com.bane23.iptvplayer.data.lan.TransferPlaylist
 import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.lan.TransferSettings
+import com.bane23.iptvplayer.data.lan.TransferTraktLogin
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.subtitles.OpenSubtitlesRepository
+import com.bane23.iptvplayer.data.trakt.TokenResponse
+import com.bane23.iptvplayer.data.trakt.TraktRepository
 import com.bane23.iptvplayer.domain.PlaylistDraft
 import com.bane23.iptvplayer.domain.PlaylistException
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.player.BufferSize
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -33,6 +40,8 @@ class TransferRepository @Inject constructor(
     private val playlists: PlaylistRepository,
     private val settings: SettingsStore,
     private val cipher: PasswordCipher,
+    private val openSubtitles: OpenSubtitlesRepository,
+    private val trakt: TraktRepository,
 ) {
     suspend fun exportBundle(): TransferExport = withContext(Dispatchers.IO) {
         var skipped = 0
@@ -50,6 +59,9 @@ class TransferRepository @Inject constructor(
                 audioLanguage = player.audioLanguage,
                 subtitleLanguage = player.subtitleLanguage,
             ),
+            accounts = openSubtitles.credentials()?.let { (username, password) ->
+                TransferAccounts(openSubtitles = TransferLogin(username, password))
+            },
         )
         TransferExport(bundle, skipped)
     }
@@ -126,8 +138,34 @@ class TransferRepository @Inject constructor(
                 if (match == null) applyCategories(playlistId, item.categories)
             }
             bundle.settings?.let { applySettings(it) }
-            TransferResult(added = added, existing = existing, failed = failed)
+            val accounts = bundle.accounts
+            TransferResult(
+                added = added,
+                existing = existing,
+                failed = failed,
+                openSubtitles = accounts?.openSubtitles?.let { adoptOpenSubtitles(it) },
+                trakt = accounts?.trakt?.let { adoptTrakt(it) },
+            )
         }
+
+    private suspend fun adoptOpenSubtitles(login: TransferLogin): Boolean {
+        if (login.username.isBlank() || login.username.length > MAX_ACCOUNT_FIELD || login.password.length > MAX_ACCOUNT_FIELD) {
+            return false
+        }
+        return openSubtitles.adoptLogin(login.username, login.password)
+    }
+
+    private suspend fun adoptTrakt(login: TransferTraktLogin): Boolean {
+        if (login.accessToken.isBlank() || login.refreshToken.isBlank()) return false
+        if (login.accessToken.length > MAX_ACCOUNT_FIELD || login.refreshToken.length > MAX_ACCOUNT_FIELD) return false
+        return try {
+            trakt.adoptLogin(TokenResponse(login.accessToken, login.refreshToken, login.expiresIn, login.createdAt))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     private fun PlaylistEntity.matches(type: PlaylistType, item: TransferPlaylist): Boolean =
         this.type == type &&
@@ -165,5 +203,6 @@ class TransferRepository @Inject constructor(
     private companion object {
         const val MAX_FAVORITES = 5_000
         const val MAX_LANGUAGE_LENGTH = 16
+        const val MAX_ACCOUNT_FIELD = 2_000
     }
 }

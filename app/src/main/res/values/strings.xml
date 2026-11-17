@@ -244,6 +244,14 @@
     <string name="transfer_error_detail">Technical detail: %1$s</string>
     <string name="transfer_refused">The TV did not accept the playlists. Scan the code on the TV again; if that does not help, update the app on the TV.</string>
     <string name="transfer_tv_working">Playlists received from the phone, loading %1$d of %2$d…</string>
+    <string name="transfer_opensubtitles">Your OpenSubtitles account (%1$s) is sent too.</string>
+    <string name="transfer_trakt_add">Add the Trakt account too</string>
+    <string name="transfer_trakt_waiting">Confirm the code %1$s on the Trakt page, then come back here. This gives the TV its own sign-in.</string>
+    <string name="transfer_trakt_ready">The Trakt sign-in for the TV is ready and is sent with the rest.</string>
+    <string name="transfer_opensubtitles_ok">The OpenSubtitles account is signed in on the TV.</string>
+    <string name="transfer_opensubtitles_failed">The OpenSubtitles account was not signed in on the TV. Sign in there manually.</string>
+    <string name="transfer_trakt_ok">The Trakt account is connected on the TV.</string>
+    <string name="transfer_trakt_failed">The Trakt account was not connected on the TV. Connect it there manually.</string>
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">General</string>
