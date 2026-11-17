@@ -239,6 +239,9 @@
     <string name="transfer_nothing">There are no playlists on this phone that can be sent.</string>
     <string name="transfer_bad_target">This link is not valid. Scan the code on the TV again.</string>
     <string name="transfer_unreachable">The TV is not responding. Check that the QR code screen is still open on the TV and that the phone is on the same Wi-Fi.</string>
+    <string name="transfer_permission_needed">Allow the app to access devices on the local network, then send again. Without that permission the phone cannot reach the TV.</string>
+    <string name="transfer_open_settings">Open app settings</string>
+    <string name="transfer_error_detail">Technical detail: %1$s</string>
     <string name="transfer_refused">The TV did not accept the playlists. Scan the code on the TV again; if that does not help, update the app on the TV.</string>
     <string name="transfer_tv_working">Playlists received from the phone, loading %1$d of %2$d…</string>
 

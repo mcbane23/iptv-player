@@ -16,13 +16,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkPermission
 import com.bane23.iptvplayer.ui.common.pairing.SendError
 import com.bane23.iptvplayer.ui.common.pairing.SendToTvViewModel
 
@@ -39,6 +47,14 @@ fun MobileSendToTvScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(target) { viewModel.prepare(target) }
     val result = state.result
+    val context = LocalContext.current
+    // Od Androida 17 telefon ne sme da se obrati TV-u u kućnoj mreži dok korisnik to ne dozvoli.
+    var permissionDenied by rememberSaveable { mutableStateOf(false) }
+    val localNetwork = rememberLocalNetworkPermission { granted ->
+        permissionDenied = !granted
+        if (granted) viewModel.send()
+    }
+    val needsPermission = permissionDenied && !localNetwork.granted
 
     Scaffold { padding ->
         Column(
@@ -85,12 +101,38 @@ fun MobileSendToTvScreen(
                         SendError.REFUSED -> stringResource(R.string.transfer_refused)
                         else -> null
                     }
-                    if (error != null) {
+                    if (needsPermission) {
+                        Text(
+                            text = stringResource(R.string.transfer_permission_needed),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", context.packageName, null),
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text(stringResource(R.string.transfer_open_settings))
+                        }
+                    } else if (error != null) {
                         Text(
                             text = error,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error,
                         )
+                        val detail = state.errorDetail
+                        if (state.error == SendError.UNREACHABLE && detail != null) {
+                            Text(
+                                text = stringResource(R.string.transfer_error_detail, detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -98,7 +140,7 @@ fun MobileSendToTvScreen(
                 val canSend = !state.loading && result == null && state.playlistCount > 0 &&
                     state.error != SendError.BAD_TARGET
                 if (canSend) {
-                    Button(onClick = viewModel::send, enabled = !state.sending) {
+                    Button(onClick = localNetwork.request, enabled = !state.sending) {
                         Text(stringResource(R.string.transfer_send))
                     }
                 }
