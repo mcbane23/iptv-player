@@ -515,10 +515,22 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Jedna pretraga za kanale, emisije iz vodiča (u toku i buduće), filmove i serije: nova kartica
   „Pretraga” na telefonu, stavka „Pretraga” u bočnom meniju na TV-u. Emisija koja traje pušta kanal,
   buduća dobija podsetnik. Posebne pretrage kanala, filmova i serija ostaju kakve jesu.
-- [ ] Pomeranje titla u vremenu (kad kasni ili žuri), u plejeru filmova i epizoda.
-- [ ] Rezervna kopija u fajl i vraćanje iz fajla (liste, favoriti, podešavanja), za prelazak na
-  novi uređaj bez telefona pored TV-a.
-- [ ] Pojačanje zvuka preko 100% za tihe kanale.
+- [ ] **Pomeranje titla u vremenu** (plejer filmova i epizoda). Stavka „Pomeraj titla” u panelu
+  „Podešavanja”: koraci od 0,25 s u oba smera, od -10 do +10 s, sa prikazom trenutne vrednosti.
+  Važi za titlove učitane sa strane (OpenSubtitles, fajl): titl se učita ponovo sa pomerenim
+  vremenima. Titlovi ugrađeni u snimak se ne mogu pomerati na ovaj način; za njih stavka nije
+  ponuđena. Pomeraj se pamti po filmu, odnosno epizodi, dok traje gledanje. Mali posao.
+- [ ] **Rezervna kopija u fajl.** Podešavanja → „Sačuvaj kopiju” i „Vrati iz kopije”, preko sistemskog
+  birača fajlova (radi i sa USB-om na TV boksu). Jedan JSON fajl u istom obliku koji već koristi
+  prenos sa telefona na TV: liste, favoriti, sakrivene i poređane kategorije, podešavanja, a po
+  izboru i istorija gledanja. Lozinke lista su u fajlu, pa se pre čuvanja traži lozinka kojom se
+  fajl šifruje. Srednji posao; otvoreno pitanje za vlasnika: da li kopija nosi i Trakt i
+  OpenSubtitles prijavu.
+- [ ] **Pojačanje zvuka preko 100%** za tihe kanale. Stavka „Pojačanje zvuka” u panelu
+  „Podešavanja”: isključeno, +50%, +100% (Androidov `LoudnessEnhancer` vezan za audio sesiju
+  plejera). Ne pamti se po kanalu u prvoj verziji; vraća se na isključeno kad se plejer zatvori.
+  Rizik: na nekim TV uređajima sa prosleđivanjem zvuka (passthrough) nema efekta. Mali posao.
+- Predloženi redosled: pojačanje zvuka, pomeranje titla, pa rezervna kopija.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 
 ## 7. Testiranje
