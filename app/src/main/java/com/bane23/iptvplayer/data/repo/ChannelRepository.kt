@@ -74,6 +74,11 @@ class ChannelRepository @Inject constructor(
     suspend fun setAllCategoriesHidden(playlistId: Long, hidden: Boolean) =
         categoryDao.setAllLiveHidden(playlistId, hidden)
 
+    /** Sakriva ili prikazuje samo zadate kategorije (npr. one koje je pretraga našla). */
+    suspend fun setCategoriesHidden(categoryIds: List<Long>, hidden: Boolean) = db.withTransaction {
+        categoryIds.forEach { categoryDao.setHidden(it, hidden) }
+    }
+
     /** Pamti ceo redosled kategorija; [orderedIds] su ID-jevi svih kategorija liste, redom prikaza. */
     suspend fun setCategoryOrder(playlistId: Long, orderedIds: List<Long>) = db.withTransaction {
         val current = categoryDao.getLive(playlistId).associate { it.id to it.userOrder }

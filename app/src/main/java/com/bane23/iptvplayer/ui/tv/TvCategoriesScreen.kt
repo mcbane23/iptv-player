@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,14 +20,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -35,6 +40,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.CategoryArrange
 import com.bane23.iptvplayer.ui.common.CategoriesViewModel
 import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -67,12 +73,23 @@ fun TvCategoriesScreen(
     // Posle „Na vrh” spisak se vraća na početak, gde je kategorija (i fokus) sada.
     var movedToTop by remember { mutableIntStateOf(0) }
     val needle = remember(filter) { VodSearch.normalize(filter.trim()) }
-    val shown = remember(state.categories, needle) {
-        if (needle.isEmpty()) state.categories else state.categories.filter { VodSearch.normalize(it.name).contains(needle) }
+    // Redosled na ekranu: premeštanje ga menja odmah, a u bazu ide tek kad se kategorija spusti.
+    var order by remember(state.categories) { mutableStateOf(state.categories) }
+    val shown = remember(order, needle) {
+        if (needle.isEmpty()) order else order.filter { VodSearch.normalize(it.name).contains(needle) }
     }
+    // Kategorija koja je „podignuta”: strelice gore i dole je nose kroz spisak, OK ili Nazad je spuštaju.
+    var movingKey by remember { mutableStateOf<String?>(null) }
+    val moving = order.firstOrNull { it.key == movingKey }
+    val movingIndex = if (moving == null) -1 else order.indexOf(moving)
+    val drop = {
+        if (movingKey != null) {
+            movingKey = null
+            viewModel.reorder(order)
+        }
+    }
+    BackHandler(enabled = movingKey != null) { drop() }
     val moveTop = stringResource(R.string.category_move_top)
-    val moveUp = stringResource(R.string.category_move_up)
-    val moveDown = stringResource(R.string.category_move_down)
 
     Column(
         modifier = Modifier
@@ -83,7 +100,11 @@ fun TvCategoriesScreen(
     ) {
         TvHeader(title = stringResource(R.string.categories_manage_title))
         Text(
-            text = stringResource(R.string.categories_manage_hint),
+            text = if (moving != null) {
+                stringResource(R.string.categories_move_hint, moving.name)
+            } else {
+                stringResource(R.string.categories_manage_hint)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
@@ -107,11 +128,16 @@ fun TvCategoriesScreen(
                 }
             }
             // Dugme koje uvek postoji: fokus ide na njega dok spisak još nije učitan.
-            OutlinedButton(onClick = { viewModel.setAllHidden(false) }, modifier = Modifier.focusRequester(headerFocus)) {
-                Text(stringResource(R.string.categories_show_all))
+            // Uz pretragu dugmad važe samo za pronađene kategorije.
+            val filtered = needle.isNotEmpty()
+            OutlinedButton(
+                onClick = { if (filtered) viewModel.setHidden(shown, false) else viewModel.setAllHidden(false) },
+                modifier = Modifier.focusRequester(headerFocus),
+            ) {
+                Text(stringResource(if (filtered) R.string.categories_show_found else R.string.categories_show_all))
             }
-            OutlinedButton(onClick = { viewModel.setAllHidden(true) }) {
-                Text(stringResource(R.string.categories_hide_all))
+            OutlinedButton(onClick = { if (filtered) viewModel.setHidden(shown, true) else viewModel.setAllHidden(true) }) {
+                Text(stringResource(if (filtered) R.string.categories_hide_found else R.string.categories_hide_all))
             }
             TvFilterField(
                 value = filter,
@@ -141,10 +167,13 @@ fun TvCategoriesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        val isMoving = category.key == movingKey
                         Text(
-                            text = category.name,
+                            text = if (isMoving) "↕ " + category.name else category.name,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (category.hidden) {
+                            color = if (isMoving) {
+                                MaterialTheme.colorScheme.primary
+                            } else if (category.hidden) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             } else {
                                 MaterialTheme.colorScheme.onBackground
@@ -175,21 +204,52 @@ fun TvCategoriesScreen(
                             viewModel.moveToTop(category)
                             movedToTop++
                         }) { Text(moveTop) }
-                        // Dok je spisak filtriran, mesta u njemu nisu prava mesta, pa strelica nema.
+                        // Dok je spisak filtriran, mesta u njemu nisu prava mesta, pa premeštanja nema.
                         if (needle.isEmpty()) {
                             OutlinedButton(
-                                // Dugme se ne isključuje na kraju spiska: isključeno dugme bi izgubilo fokus.
-                                onClick = { if (index > 0) viewModel.move(category, -1) },
-                                modifier = Modifier.semantics { contentDescription = moveUp },
-                            ) { Text("▲") }
-                            OutlinedButton(
-                                onClick = { if (index < shown.lastIndex) viewModel.move(category, 1) },
-                                modifier = Modifier.semantics { contentDescription = moveDown },
-                            ) { Text("▼") }
+                                onClick = { if (isMoving) drop() else movingKey = category.key },
+                                modifier = Modifier.onPreviewKeyEvent { event ->
+                                    if (category.key != movingKey) return@onPreviewKeyEvent false
+                                    when (event.key) {
+                                        Key.DirectionUp, Key.DirectionDown -> {
+                                            // Držanje strelice ponavlja pritisak, pa kategorija brzo prolazi kroz spisak.
+                                            if (event.type == KeyEventType.KeyDown) {
+                                                val delta = if (event.key == Key.DirectionUp) -1 else 1
+                                                order = CategoryArrange.moved(order, order.indexOfFirst { it.key == movingKey }, delta)
+                                            }
+                                            true
+                                        }
+
+                                        // Dok je kategorija podignuta, fokus ne napušta njeno dugme.
+                                        Key.DirectionLeft, Key.DirectionRight -> true
+
+                                        else -> false
+                                    }
+                                },
+                            ) { Text(stringResource(if (isMoving) R.string.category_move_done else R.string.category_move)) }
                         }
                     }
                 }
             }
+        }
+    }
+    // Podignuta kategorija mora da ostane na ekranu dok putuje kroz spisak.
+    LaunchedEffect(movingIndex) {
+        if (movingIndex < 0) return@LaunchedEffect
+        // Jedan kadar, da spisak rasporedi redove po novom redosledu.
+        withFrameNanos { }
+        val info = listState.layoutInfo
+        val item = info.visibleItemsInfo.firstOrNull { it.index == movingIndex }
+        val bottom = info.viewportEndOffset - info.afterContentPadding
+        val above = if (item != null) item.offset < info.viewportStartOffset else movingIndex <= listState.firstVisibleItemIndex
+        val below = item == null || item.offset + item.size > bottom
+        if (above) {
+            runCatching { listState.scrollToItem((movingIndex - 1).coerceAtLeast(0)) }
+        } else if (below) {
+            val size = item?.size ?: info.visibleItemsInfo.firstOrNull()?.size ?: 0
+            // Red staje pri dnu, sa mestom za još jedan ispod njega.
+            val offset = (bottom - info.viewportStartOffset - 2 * size).coerceAtLeast(0)
+            runCatching { listState.scrollToItem(movingIndex, -offset) }
         }
     }
     LaunchedEffect(movedToTop) {
