@@ -41,67 +41,69 @@ fun TvEditPlaylistScreen(
     LaunchedEffect(playlistId) { viewModel.load(playlistId) }
     LaunchedEffect(state.saved) { if (state.saved) onClose() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary)
-            .verticalScroll(rememberScrollState())
-            // Margine zbog overscan-a na televizorima.
-            .padding(horizontal = 48.dp, vertical = 27.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = stringResource(if (playlistId == null) R.string.edit_title_add else R.string.edit_title_edit),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+    TvEdgeScroll {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .glowBackground(MaterialTheme.colorScheme.primary)
+                .verticalScroll(rememberScrollState())
+                // Margine zbog overscan-a na televizorima.
+                .padding(horizontal = 48.dp, vertical = 27.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = stringResource(if (playlistId == null) R.string.edit_title_add else R.string.edit_title_edit),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
 
-        // Tip liste se bira samo pri dodavanju; kod izmene ostaje isti.
-        if (playlistId == null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PlaylistType.entries.forEachIndexed { index, type ->
-                    val modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
-                    // Isto dugme za izabran i neizabran tip: zamena dugmeta bi izgubila fokus.
-                    TvOutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
-                        Text(if (state.type == type) "● ${type.label()}" else type.label())
+            // Tip liste se bira samo pri dodavanju; kod izmene ostaje isti.
+            if (playlistId == null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PlaylistType.entries.forEachIndexed { index, type ->
+                        val modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
+                        // Isto dugme za izabran i neizabran tip: zamena dugmeta bi izgubila fokus.
+                        TvOutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
+                            Text(if (state.type == type) "● ${type.label()}" else type.label())
+                        }
                     }
                 }
             }
-        }
 
-        PlaylistFormFields(
-            state = state,
-            viewModel = viewModel,
-            modifier = Modifier.fillMaxWidth(0.6f),
-            plainKeyboard = true,
-            pickFileButton = { label, onClick ->
-                TvOutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
-            },
-        )
-
-        state.error?.let { error ->
-            Text(
-                text = error.message(),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge,
+            PlaylistFormFields(
+                state = state,
+                viewModel = viewModel,
+                modifier = Modifier.fillMaxWidth(0.6f),
+                plainKeyboard = true,
+                pickFileButton = { label, onClick ->
+                    TvOutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
+                },
             )
-        }
 
-        if (state.saving) {
-            Text(
-                text = stringResource(R.string.edit_saving),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val saveModifier = if (playlistId != null) Modifier.focusRequester(firstFocus) else Modifier
-            // Dok traje čuvanje dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
-            TvButton(onClick = viewModel::save, modifier = saveModifier) {
-                Text(stringResource(R.string.action_save))
+            state.error?.let { error ->
+                Text(
+                    text = error.message(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
-            TvOutlinedButton(onClick = { if (!state.saving) onClose() }) {
-                Text(stringResource(R.string.action_cancel))
+
+            if (state.saving) {
+                Text(
+                    text = stringResource(R.string.edit_saving),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val saveModifier = if (playlistId != null) Modifier.focusRequester(firstFocus) else Modifier
+                // Dok traje čuvanje dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
+                TvButton(onClick = viewModel::save, modifier = saveModifier) {
+                    Text(stringResource(R.string.action_save))
+                }
+                TvOutlinedButton(onClick = { if (!state.saving) onClose() }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         }
     }
