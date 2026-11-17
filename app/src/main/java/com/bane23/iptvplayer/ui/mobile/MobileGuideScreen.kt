@@ -21,6 +21,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -65,6 +67,7 @@ fun MobileGuideScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val now = System.currentTimeMillis()
@@ -118,6 +121,7 @@ fun MobileGuideScreen(
                             now = now,
                             selection = ui.selection,
                             recordings = recordings,
+                            reminders = reminders,
                             viewModel = viewModel,
                         )
                     } else {
@@ -132,8 +136,19 @@ fun MobileGuideScreen(
                 val record = rememberRecordingToggle(isRecording = marked) {
                     if (program != null) viewModel.toggleRecording(selection.channel, program)
                 }
+                val hasReminder = program != null && GuideRecordings.key(selection.channel, program.startMs) in reminders
+                // Podsetnik traži istu dozvolu za obaveštenja kao snimanje.
+                val remind = rememberRecordingToggle(isRecording = hasReminder) {
+                    if (program != null) viewModel.toggleReminder(selection.channel, program)
+                }
                 SelectionPanel(
                     selection = selection,
+                    remindLabel = when {
+                        program == null || program.startMs <= now -> null
+                        hasReminder -> stringResource(R.string.reminder_remove)
+                        else -> stringResource(R.string.reminder_add)
+                    },
+                    onRemind = remind,
                     // Snimanje se nudi za emisiju koja još nije završena.
                     recordLabel = when {
                         program == null || program.stopMs <= now -> null
@@ -160,6 +175,7 @@ private fun GuideRow(
     now: Long,
     selection: GuideSelection?,
     recordings: GuideRecordings,
+    reminders: Set<String>,
     viewModel: GuideViewModel,
 ) {
     val cells by produceState(emptyList<GuideCell>(), channel.id, windowStart, reloadKey) {
@@ -209,7 +225,11 @@ private fun GuideRow(
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = if (recordings.marks(channel, program, now)) "● ${program.title}" else program.title,
+                            text = when {
+                                recordings.marks(channel, program, now) -> "● ${program.title}"
+                                GuideRecordings.key(channel, program.startMs) in reminders -> "🔔 ${program.title}"
+                                else -> program.title
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = textColor,
                             maxLines = 2,
@@ -237,6 +257,8 @@ private fun EmptyCell(modifier: Modifier, onClick: () -> Unit) {
 @Composable
 private fun SelectionPanel(
     selection: GuideSelection,
+    remindLabel: String?,
+    onRemind: () -> Unit,
     recordLabel: String?,
     onRecord: () -> Unit,
     onPlay: () -> Unit,
@@ -278,10 +300,14 @@ private fun SelectionPanel(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState(), reverseScrolling = true)
                     .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+                if (remindLabel != null) {
+                    TextButton(onClick = onRemind) { Text(remindLabel, maxLines = 1) }
+                }
                 if (recordLabel != null) {
                     TextButton(onClick = onRecord) { Text(recordLabel, maxLines = 1) }
                 }

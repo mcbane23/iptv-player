@@ -191,6 +191,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[vodOrderKey(playlistId, series)] = ids.joinToString(LIST_SEPARATOR) }
     }
 
+    /** Podsetnici za emisije, svaki kao jedan zapis (vidi `Reminder.encode`). */
+    val reminders: Flow<Set<String>> = dataStore.data.map { it[REMINDERS].orEmpty() }.distinctUntilChanged()
+
+    suspend fun editReminders(transform: (Set<String>) -> Set<String>) {
+        dataStore.edit { it[REMINDERS] = transform(it[REMINDERS].orEmpty()) }
+    }
+
     /** Redosled filmova, odnosno serija, u kategoriji (naziv iz `VodSort`). */
     fun vodSort(series: Boolean): Flow<String?> =
         dataStore.data.map { it[vodSortKey(series)] }.distinctUntilChanged()
@@ -326,6 +333,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")
+        val REMINDERS = stringSetPreferencesKey("reminders")
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")

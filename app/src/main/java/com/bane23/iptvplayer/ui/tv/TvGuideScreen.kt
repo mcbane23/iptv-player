@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import com.bane23.iptvplayer.domain.Program
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +79,27 @@ fun TvGuideScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val status by viewModel.status.collectAsStateWithLifecycle()
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
+    // Buduća emisija na kojoj je pritisnut OK: nudi se snimanje i podsetnik.
+    var futureMenu by remember { mutableStateOf<GuideSelection?>(null) }
+    futureMenu?.let { picked ->
+        val program = picked.program
+        if (program != null) {
+            val recorded = recordings.marks(picked.channel, program, System.currentTimeMillis())
+            val reminded = GuideRecordings.key(picked.channel, program.startMs) in reminders
+            TvActionDialog(
+                title = program.title,
+                options = listOf(
+                    stringResource(if (reminded) R.string.reminder_remove else R.string.reminder_add),
+                    stringResource(if (recorded) R.string.recording_schedule_cancel else R.string.recording_schedule),
+                ),
+                onSelect = { option ->
+                    if (option == 0) viewModel.toggleReminder(picked.channel, program) else viewModel.toggleRecording(picked.channel, program)
+                },
+                onClose = { futureMenu = null },
+            )
+        }
+    }
     RecordingNotices(viewModel.recordingNotice)
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val firstFocus = remember { FocusRequester() }
@@ -142,6 +164,8 @@ fun TvGuideScreen(
                         reloadKey = status.refreshedAt,
                         now = now,
                         recordings = recordings,
+                        reminders = reminders,
+                        onFuture = { program -> futureMenu = GuideSelection(channel, program) },
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
                         onArchive = { onArchive(channel.id) },
@@ -155,7 +179,7 @@ fun TvGuideScreen(
             }
         }
 
-        SelectionPanel(ui.selection, recordings)
+        SelectionPanel(ui.selection)
     }
     LaunchedEffect(Unit) {
         firstFocus.tryRequestFocus()
@@ -172,6 +196,8 @@ private fun GuideRow(
     reloadKey: Long?,
     now: Long,
     recordings: GuideRecordings,
+    reminders: Set<String>,
+    onFuture: (Program) -> Unit,
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
     onArchive: () -> Unit,
@@ -218,15 +244,19 @@ private fun GuideRow(
             val program = cell.program
             val marked = program != null && recordings.marks(channel, program, now)
             GuideBox(
-                text = if (marked) "● ${program?.title.orEmpty()}" else program?.title.orEmpty(),
+                text = when {
+                    marked -> "● ${program?.title.orEmpty()}"
+                    program != null && GuideRecordings.key(channel, program.startMs) in reminders -> "🔔 ${program.title}"
+                    else -> program?.title.orEmpty()
+                },
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
                 onFocused = {
                     onFocused()
                     viewModel.select(channel, program)
                 },
-                // Buduća emisija se zakazuje za snimanje (ili otkazuje); ostalo pušta kanal, odnosno arhivu.
+                // Buduća emisija nudi podsetnik i snimanje; ostalo pušta kanal, odnosno arhivu.
                 onClick = when {
-                    program != null && program.startMs > now -> ({ viewModel.toggleRecording(channel, program) })
+                    program != null && program.startMs > now -> ({ onFuture(program) })
                     hasArchive && program != null && program.stopMs <= now -> onArchive
                     else -> onPlay
                 },
@@ -288,7 +318,7 @@ private fun GuideBox(
 
 /** Detalji emisije koja ima fokus. Visina je stalna, da se mreža ne pomera dok se lista. */
 @Composable
-private fun SelectionPanel(selection: GuideSelection?, recordings: GuideRecordings) {
+private fun SelectionPanel(selection: GuideSelection?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -302,18 +332,8 @@ private fun SelectionPanel(selection: GuideSelection?, recordings: GuideRecordin
         val archiveHint = stringResource(R.string.archive_hint_tv).takeIf {
             selection.hasArchive && program != null && program.stopMs <= now
         }
-        // Kod buduće emisije piše šta OK radi: zakazuje snimanje ili ga otkazuje.
-        val recordHint = if (program != null && program.startMs > now) {
-            stringResource(
-                if (recordings.marks(selection.channel, program, now)) {
-                    R.string.recording_hint_cancel_tv
-                } else {
-                    R.string.recording_hint_schedule_tv
-                },
-            )
-        } else {
-            null
-        }
+        // Kod buduće emisije piše šta OK radi: nudi podsetnik i snimanje.
+        val recordHint = if (program != null && program.startMs > now) stringResource(R.string.guide_hint_future_tv) else null
         Text(
             text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint, recordHint).joinToString(" · "),
             style = MaterialTheme.typography.labelLarge,

@@ -452,8 +452,6 @@
     <string name="recording_schedule_cancelled">Scheduled recording cancelled</string>
     <string name="recording_scheduled_label">Scheduled</string>
     <string name="recording_until">until %1$s</string>
-    <string name="recording_hint_schedule_tv">OK schedules a recording</string>
-    <string name="recording_hint_cancel_tv">● Recording scheduled, OK cancels it</string>
     <string name="recording_error_missed">Missed: the device was off or asleep</string>
     <string name="recording_error_channel">The channel is no longer in the playlist</string>
     <string name="recording_storage_low">Low on space. Recordings: %1$s · Free: %2$s</string>
@@ -535,4 +533,12 @@
     <string name="vod_sort_name">By name</string>
     <string name="vod_sort_rating">Best rated</string>
     <string name="vod_sort_year">Newest by year</string>
+    <string name="guide_hint_future_tv">OK: reminder or recording</string>
+    <string name="reminder_add">Remind me</string>
+    <string name="reminder_remove">Remove reminder</string>
+    <string name="reminder_set">You will be reminded when it starts</string>
+    <string name="reminder_removed">Reminder removed</string>
+    <string name="reminder_channel">Programme reminders</string>
+    <string name="reminder_starts">Starting: %1$s</string>
+    <string name="reminder_watch">Watch</string>
 </resources>

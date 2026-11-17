@@ -6,6 +6,9 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import com.bane23.iptvplayer.ui.common.ReminderViewModel
+import com.bane23.iptvplayer.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -229,6 +232,24 @@ fun TvApp() {
             }
         },
     )
+    // Podsetnik za emisiju se javlja preko bilo kog ekrana.
+    val reminderViewModel: ReminderViewModel = hiltViewModel()
+    val dueReminder by reminderViewModel.due.collectAsStateWithLifecycle()
+    dueReminder?.let { reminder ->
+        TvActionDialog(
+            title = stringResource(R.string.reminder_starts, reminder.title) + " · " + reminder.channelName,
+            options = listOf(stringResource(R.string.reminder_watch), stringResource(R.string.action_close)),
+            onSelect = { option ->
+                if (option == 0) {
+                    reminderViewModel.watch(reminder) { channelId ->
+                        if (backStack.lastOrNull() is Player) backStack.removeLastOrNull()
+                        backStack.add(Player(channelId, null))
+                    }
+                }
+            },
+            onClose = { reminderViewModel.dismiss(reminder) },
+        )
+    }
     TvCastPairingCode(
         code = pairingCode,
         onExpired = castHost::dismissPairing,
