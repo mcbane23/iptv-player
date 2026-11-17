@@ -209,9 +209,10 @@
     <string name="buffer_normal">Običan</string>
     <string name="buffer_large">Veliki</string>
     <string name="settings_decoder">Dekoder</string>
-    <string name="settings_decoder_summary">Hardverski koristi čip uređaja, a na softverski prelazi samo kad ne može da se pokrene. Probajte softverski ako je slika crna ili zelena. Troši više baterije i ume da bude spor na visokim rezolucijama.</string>
+    <string name="settings_decoder_summary">Hardverski koristi čip uređaja, a na softverski prelazi samo kad ne može da se pokrene. Probajte softverski ako je slika crna ili zelena. Troši više baterije i ume da bude spor na visokim rezolucijama. „Hardverski (direktan)” prepušta uređaju usklađivanje slike sa zvukom; probajte ga ako slika povremeno zakoči dok zvuk ide.</string>
     <string name="decoder_auto">Hardverski</string>
     <string name="decoder_software">Softverski</string>
+    <string name="decoder_tunnel">Hardverski (direktan)</string>
     <string name="settings_audio_language">Jezik zvuka</string>
     <string name="settings_audio_language_summary">Koristi se kad strim ima više zvučnih zapisa. Prati i jezik koji izaberete u plejeru.</string>
     <string name="settings_subtitle_language">Titlovi</string>
@@ -363,6 +364,7 @@
     <string name="stream_info_technical">Tehnički podaci</string>
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
+    <string name="stream_info_tunnel">direktan</string>
     <string name="stream_info_dropped">ispušteno %1$d</string>
     <string name="stream_info_keyframe_skips">preskoka %1$d</string>
     <string name="stream_info_audio_underruns">prekida zvuka %1$d</string>
