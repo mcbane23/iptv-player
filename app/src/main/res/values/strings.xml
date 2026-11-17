@@ -500,6 +500,12 @@
     <string name="categories_hide_all">Hide all</string>
     <string name="categories_edit">Edit categories</string>
     <string name="category_move_top">To top</string>
+    <string name="categories_show_found">Show matches</string>
+    <string name="categories_hide_found">Hide matches</string>
+    <string name="category_drag">Drag to reorder</string>
+    <string name="category_move">Move</string>
+    <string name="category_move_done">Done</string>
+    <string name="categories_move_hint">Up and down move the category “%1$s”; hold the arrow to move faster. Press OK or Back when it is in place.</string>
     <string name="playlist_switch">Playlist: %1$s</string>
     <string name="playlists_select_hint">Tap a playlist to make it the active one.</string>
     <string name="playlist_advanced_show">Advanced settings</string>

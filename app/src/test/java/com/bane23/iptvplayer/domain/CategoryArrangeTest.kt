@@ -26,6 +26,12 @@ class CategoryArrangeTest {
     }
 
     @Test
+    fun `prevlacenje preko vise mesta pomera ostale za jedno`() {
+        assertEquals(listOf("Filmovi", "Dokumentarni", "Muzika", "Sport"), CategoryArrange.moved(names, 0, 3))
+        assertEquals(listOf("Sport", "Muzika", "Filmovi", "Dokumentarni"), CategoryArrange.moved(names, 3, -2))
+    }
+
+    @Test
     fun `pomeranje van granica ne menja spisak`() {
         assertSame(names, CategoryArrange.moved(names, 0, -1))
         assertSame(names, CategoryArrange.moved(names, 3, 1))

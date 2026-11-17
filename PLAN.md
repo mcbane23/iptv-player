@@ -481,6 +481,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       kategorije koje su bile sakrivene pri otvaranju stoje na dnu
 - [x] Uživo, Filmovi i Serije se otvaraju na kategoriji koja je poslednja bila otvorena (po listi)
 - [x] Broj kanala u spisku kategorija na telefonu
+- [x] Uređivanje kategorija: „Prikaži sve” i „Sakrij sve” su dugmad na vidiku i na telefonu (uz pretragu važe
+      samo za pronađene); na telefonu se redosled menja prevlačenjem za ručku, na TV-u dugme „Premesti” podiže
+      kategoriju pa je strelice gore i dole nose kroz spisak
 - [x] TV, Uživo: dugme u zaglavlju prelazi na sledeću listu (kad ih ima više)
 - [x] Liste: dodir (OK) na listu je bira kao aktivnu; Osveži, Izmeni, Obriši su u meniju („Opcije” na TV-u);
       potvrda brisanja na TV-u nosi naziv liste

@@ -499,6 +499,12 @@
     <string name="categories_hide_all">Sakrij sve</string>
     <string name="categories_edit">Uredi kategorije</string>
     <string name="category_move_top">Na vrh</string>
+    <string name="categories_show_found">Prikaži pronađene</string>
+    <string name="categories_hide_found">Sakrij pronađene</string>
+    <string name="category_drag">Prevuci za promenu redosleda</string>
+    <string name="category_move">Premesti</string>
+    <string name="category_move_done">Gotovo</string>
+    <string name="categories_move_hint">Strelice gore i dole pomeraju kategoriju „%1$s”; držite strelicu za brže pomeranje. OK ili Nazad kad je na svom mestu.</string>
     <string name="playlist_switch">Lista: %1$s</string>
     <string name="playlists_select_hint">Dodirnite listu da je izaberete kao aktivnu.</string>
     <string name="playlist_advanced_show">Napredna podešavanja</string>

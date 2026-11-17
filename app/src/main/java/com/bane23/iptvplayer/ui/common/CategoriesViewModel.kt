@@ -153,10 +153,26 @@ class CategoriesViewModel @Inject constructor(
         }
     }
 
-    /** Pomera kategoriju za jedno mesto gore ([delta] = -1) ili dole (+1). */
-    fun move(category: ManagedCategory, delta: Int) {
-        val list = state.value.categories
-        save(CategoryArrange.moved(list, list.indexOfFirst { it.key == category.key }, delta))
+    /** Sakriva ili prikazuje samo [categories], npr. one koje je pretraga našla. */
+    fun setHidden(categories: List<ManagedCategory>, hidden: Boolean) {
+        val current = state.value.section
+        viewModelScope.launch {
+            if (current == CategorySection.LIVE) {
+                channels.setCategoriesHidden(categories.mapNotNull { it.key.toLongOrNull() }, hidden)
+            } else {
+                vod.setCategoriesHidden(current.kind, categories.map { it.key }, hidden)
+            }
+        }
+    }
+
+    /**
+     * Pamti redosled koji je korisnik složio prevlačenjem (telefon) ili premeštanjem (TV).
+     * [ordered] su sve kategorije kartice, redom sa ekrana.
+     */
+    fun reorder(ordered: List<ManagedCategory>) {
+        val current = state.value.categories
+        if (ordered.size != current.size) return
+        save(ordered)
     }
 
     fun moveToTop(category: ManagedCategory) {
@@ -167,7 +183,7 @@ class CategoriesViewModel @Inject constructor(
     /** Pamti redosled sa ekrana kao redosled kategorija. */
     private fun save(ordered: List<ManagedCategory>) {
         val current = state.value
-        if (ordered === current.categories) return
+        if (ordered.map { it.key } == current.categories.map { it.key }) return
         viewModelScope.launch {
             if (current.section == CategorySection.LIVE) {
                 val playlistId = channels.activePlaylistIdNow() ?: return@launch
