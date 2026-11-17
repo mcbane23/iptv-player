@@ -342,7 +342,7 @@
     <string name="update_later">Later</string>
     <string name="update_downloading">Downloading…</string>
     <string name="update_downloading_percent">Downloading… %1$d%%</string>
-    <string name="update_installing">Confirm the installation on the next screen.</string>
+    <string name="update_installing">Installing…</string>
     <string name="update_permission_title">Permission needed</string>
     <string name="update_permission_text">To install the update, allow this app to install apps (Install unknown apps). Then come back and the installation starts.</string>
     <string name="update_open_settings">Open settings</string>

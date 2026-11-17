@@ -130,7 +130,9 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
         )
         is UpdateState.Installing -> AlertContent(
             title = stringResource(R.string.update_available_title),
+            // Bez uputstva o potvrdi: sistem je nekad traži, a nekad instalira bez pitanja.
             text = stringResource(R.string.update_installing),
+            progress = -1f,
             confirm = stringResource(R.string.update_close) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
         )
