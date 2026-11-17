@@ -61,6 +61,7 @@ fun TvSettingsScreen(
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
+    val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
@@ -170,6 +171,15 @@ fun TvSettingsScreen(
                     modifier = Modifier.focusRequester(firstFocus),
                 )
                 TvTextRow(
+                    text = stringResource(R.string.settings_auto_refresh),
+                    checked = autoRefreshPlaylists,
+                    onClick = { viewModel.setAutoRefreshPlaylists(!autoRefreshPlaylists) },
+                    onFocused = {
+                        focusedChoice = AUTO_REFRESH_ROW
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
                     text = stringResource(R.string.settings_tv_preview),
                     checked = channelPreview,
                     onClick = { viewModel.setTvChannelPreview(!channelPreview) },
@@ -276,6 +286,7 @@ fun TvSettingsScreen(
                         null -> stringResource(R.string.settings_resume_last_summary)
                         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
                         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
+                        AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
                         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
                         AUTOSTART_ROW -> stringResource(
                             when {
@@ -352,3 +363,4 @@ private const val AUTOSTART_ROW = -1
 private const val ACCENT_ROW = -2
 private const val LANGUAGE_ROW = -3
 private const val UPDATE_CHANNEL_ROW = -4
+private const val AUTO_REFRESH_ROW = -5

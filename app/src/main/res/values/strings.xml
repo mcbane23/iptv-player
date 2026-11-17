@@ -513,4 +513,19 @@
     <string name="sleep_timer">Sleep timer</string>
     <string name="sleep_timer_off">Off</string>
     <string name="sleep_timer_minutes">%1$d min</string>
+
+    <!-- Prethodno gledani kanal, podaci o nalogu, automatsko osvežavanje -->
+    <string name="player_last_channel">Last watched channel</string>
+    <string name="playlist_account_valid_until">Account valid until %1$s</string>
+    <string name="playlist_account_expires_today">expires today</string>
+    <plurals name="playlist_account_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <plurals name="playlist_connections">
+        <item quantity="one">%1$d connection</item>
+        <item quantity="other">%1$d connections</item>
+    </plurals>
+    <string name="settings_auto_refresh">Refresh playlists automatically</string>
+    <string name="settings_auto_refresh_summary">Playlists are downloaded again once a day so channels and movies stay current. Playlists loaded from a file are not refreshed.</string>
 </resources>

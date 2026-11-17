@@ -94,6 +94,8 @@ class PlaylistRepository @Inject constructor(
                     channelCount = row.channelCount,
                     lastRefreshedAt = p.lastRefreshedAt,
                     isActive = p.id == activeId,
+                    accountExpiresAt = p.accountExpiresAt,
+                    maxConnections = p.maxConnections,
                 )
             }
         }
@@ -131,6 +133,8 @@ class PlaylistRepository @Inject constructor(
             channelCount = channelDao.countByPlaylist(id),
             lastRefreshedAt = p.lastRefreshedAt,
             isActive = settings.activePlaylistId.first() == id,
+            accountExpiresAt = p.accountExpiresAt,
+            maxConnections = p.maxConnections,
         )
     }
 
@@ -164,6 +168,27 @@ class PlaylistRepository @Inject constructor(
         val entity = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
         db.withTransaction { importContent(entity) }
         epgScheduler.refreshNow(id)
+    }
+
+    /**
+     * Automatsko osvežavanje: ponovo preuzima liste koje nisu osvežene duže od [olderThanMs]. Liste
+     * iz fajla se preskaču (fajl se ne menja sam). Neuspeh jedne liste ne zaustavlja ostale; njen
+     * stari sadržaj ostaje, a greška se vidi tek pri ručnom osvežavanju.
+     */
+    suspend fun refreshStale(olderThanMs: Long) {
+        val cutoff = System.currentTimeMillis() - olderThanMs
+        val stale = withContext(Dispatchers.IO) { playlistDao.getAll() }
+            .filter { it.type != PlaylistType.M3U_FILE && (it.lastRefreshedAt ?: 0L) < cutoff }
+        for (playlist in stale) {
+            if (playlist.id in deleting.value) continue
+            try {
+                refreshPlaylist(playlist.id)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // sledeći pokušaj je pri narednom redovnom osvežavanju
+            }
+        }
     }
 
     /**
@@ -415,6 +440,8 @@ class PlaylistRepository @Inject constructor(
                 throw PlaylistException(Kind.ACCOUNT_EXPIRED)
             status == "banned" || status == "disabled" -> throw PlaylistException(Kind.ACCOUNT_DISABLED)
         }
+        // Posebnim upitom, da ga kasniji upisi cele liste (izmena, prelazak na http) ne pregaze starim.
+        playlistDao.setAccountInfo(playlist.id, expiresAt?.let { it * 1000 }, user.maxConnections)
 
         val writer = ChannelWriter(playlist.id)
         val categories = xtreamApi.liveCategories(

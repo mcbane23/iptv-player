@@ -28,6 +28,10 @@ data class PlaylistEntity(
     /** Pomak vodiča u satima (kad provajder šalje vremena u pogrešnoj zoni). */
     val epgShiftHours: Int = 0,
     val epgRefreshedAt: Long? = null,
+    /** Xtream nalog: kad ističe (ms), po poslednjem osvežavanju liste; null = ne ističe ili se ne zna. */
+    val accountExpiresAt: Long? = null,
+    /** Xtream nalog: koliko strimova sme da gleda istovremeno; null = panel to ne navodi. */
+    val maxConnections: Int? = null,
 )
 
 @Entity(

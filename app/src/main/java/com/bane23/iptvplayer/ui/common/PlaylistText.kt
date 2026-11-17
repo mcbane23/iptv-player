@@ -54,3 +54,34 @@ fun Playlist.summary(): String {
     }
     return listOfNotNull(type.label(), channels, refreshed).joinToString(" · ")
 }
+
+/** Xtream nalog ističe za manje od ovoliko dana: podatak o isteku se ističe bojom. */
+const val ACCOUNT_EXPIRY_WARNING_DAYS = 7
+
+/** Koliko celih dana je ostalo do isteka naloga; null kad nalog ne ističe ili se ne zna. */
+fun Playlist.accountDaysLeft(now: Long = System.currentTimeMillis()): Int? =
+    accountExpiresAt?.let { ((it - now) / 86_400_000L).toInt().coerceAtLeast(0) }
+
+/** Da li nalog uskoro ističe. */
+fun Playlist.accountExpiresSoon(now: Long = System.currentTimeMillis()): Boolean =
+    accountDaysLeft(now)?.let { it < ACCOUNT_EXPIRY_WARNING_DAYS } == true
+
+/**
+ * Treći red u spisku lista, samo za Xtream nalog: do kada važi i koliko veza dozvoljava. Null kad
+ * se ne zna nijedno (lista još nije osvežena otkad se ovi podaci pamte, ili nije Xtream).
+ */
+@Composable
+fun Playlist.accountLine(): String? {
+    val daysLeft = accountDaysLeft()
+    val expires = accountExpiresAt?.let {
+        val date = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))
+        val valid = stringResource(R.string.playlist_account_valid_until, date)
+        when {
+            daysLeft == null || daysLeft >= ACCOUNT_EXPIRY_WARNING_DAYS -> valid
+            daysLeft == 0 -> "$valid (${stringResource(R.string.playlist_account_expires_today)})"
+            else -> "$valid (${pluralStringResource(R.plurals.playlist_account_days_left, daysLeft, daysLeft)})"
+        }
+    }
+    val connections = maxConnections?.let { pluralStringResource(R.plurals.playlist_connections, it, it) }
+    return listOfNotNull(expires, connections).joinToString(" · ").takeIf { it.isNotEmpty() }
+}

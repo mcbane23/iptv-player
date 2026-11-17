@@ -307,6 +307,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setBackgroundPlay(enabled) }
     }
 
+    val autoRefreshPlaylists: StateFlow<Boolean> = settings.autoRefreshPlaylists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setAutoRefreshPlaylists(enabled: Boolean) {
+        viewModelScope.launch { settings.setAutoRefreshPlaylists(enabled) }
+    }
+
     val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

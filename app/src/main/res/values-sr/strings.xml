@@ -512,4 +512,21 @@
     <string name="sleep_timer">Tajmer gašenja</string>
     <string name="sleep_timer_off">Isključen</string>
     <string name="sleep_timer_minutes">%1$d min</string>
+
+    <!-- Prethodno gledani kanal, podaci o nalogu, automatsko osvežavanje -->
+    <string name="player_last_channel">Prethodno gledani kanal</string>
+    <string name="playlist_account_valid_until">Nalog važi do %1$s</string>
+    <string name="playlist_account_expires_today">ističe danas</string>
+    <plurals name="playlist_account_days_left">
+        <item quantity="one">još %1$d dan</item>
+        <item quantity="few">još %1$d dana</item>
+        <item quantity="other">još %1$d dana</item>
+    </plurals>
+    <plurals name="playlist_connections">
+        <item quantity="one">%1$d veza</item>
+        <item quantity="few">%1$d veze</item>
+        <item quantity="other">%1$d veza</item>
+    </plurals>
+    <string name="settings_auto_refresh">Automatsko osvežavanje lista</string>
+    <string name="settings_auto_refresh_summary">Liste se jednom dnevno same preuzimaju iznova, da kanali i filmovi budu sveži. Liste iz fajla se ne osvežavaju.</string>
 </resources>

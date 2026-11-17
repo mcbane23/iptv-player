@@ -179,6 +179,12 @@ fun TvPlayerScreen(
                         true
                     }
 
+                    // Taster „prethodni kanal” na daljinskim koji ga imaju.
+                    AndroidKeyEvent.KEYCODE_LAST_CHANNEL -> {
+                        if (isDown) viewModel.playLastChannel()
+                        true
+                    }
+
                     // Spisak i kontrole se otvaraju kad se taster pusti, da isti pritisak ne bi odmah nešto izabrao.
                     AndroidKeyEvent.KEYCODE_DPAD_LEFT -> {
                         if (isUp) channelList = true
@@ -403,6 +409,13 @@ private fun LiveControls(
                             description = stringResource(R.string.player_next),
                             onClick = viewModel::next,
                         )
+                        if (ui.lastChannel != null) {
+                            PlayerIconButton(
+                                icon = AppIcons.Swap,
+                                description = stringResource(R.string.player_last_channel),
+                                onClick = viewModel::playLastChannel,
+                            )
+                        }
                         PlayerIconButton(
                             icon = AppIcons.AspectRatio,
                             description = ui.aspectMode.label(),

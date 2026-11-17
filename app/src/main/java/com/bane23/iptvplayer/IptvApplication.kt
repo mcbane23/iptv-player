@@ -34,6 +34,7 @@ class IptvApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         epgScheduler.schedulePeriodic()
+        epgScheduler.schedulePlaylistRefresh()
         // Pri svakom pokretanju preuzima se ono što je na Trakt nalogu gledano drugde.
         // Bez prijave posao se odmah završava.
         if (traktTokens.isAvailable) traktScheduler.syncSoon()
