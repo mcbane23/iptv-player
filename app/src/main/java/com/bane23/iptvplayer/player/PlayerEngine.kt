@@ -140,6 +140,9 @@ class PlayerEngine(
     val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
         .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory), extractorsFactory))
         .apply { (if (shared) sharedLoadControl() else loadControl(settings.buffer))?.let { setLoadControl(it) } }
+        // Kad se slušalice odvoje (Bluetooth veza pukne ili se kabl izvuče), zvuk bi prešao na
+        // zvučnik uređaja; plejer se tada sam pauzira.
+        .setHandleAudioBecomingNoisy(true)
         .build()
 
     private val _state = MutableStateFlow(PlaybackState())
@@ -285,7 +288,7 @@ class PlayerEngine(
         attempts = 0
         playedCurrentUrl = false
         _state.value = PlaybackState(status = PlaybackStatus.LOADING)
-        prepareCurrent()
+        prepareCurrent(autoPlay = true)
     }
 
     /** Ručni ponovni pokušaj posle greške. */
@@ -318,7 +321,7 @@ class PlayerEngine(
     fun resume() {
         if (source == null || _state.value.status == PlaybackStatus.FAILED) return
         if (player.playbackState == Player.STATE_IDLE) {
-            prepareCurrent()
+            prepareCurrent(autoPlay = true)
         } else {
             if (player.isCurrentMediaItemLive) player.seekToDefaultPosition()
             player.play()
@@ -327,6 +330,19 @@ class PlayerEngine(
 
     fun pause() {
         player.pause()
+    }
+
+    /**
+     * Aplikacija je ponovo vidljiva posle [stop]. Gledanje se nastavlja samo ako je išlo kad je
+     * aplikacija otišla u pozadinu; sadržaj koji je korisnik pauzirao se priprema, ali ostaje pauziran.
+     */
+    fun restore() {
+        if (player.playWhenReady) {
+            resume()
+        } else if (source != null && _state.value.status != PlaybackStatus.FAILED && player.playbackState == Player.STATE_IDLE) {
+            _state.update { it.copy(status = PlaybackStatus.LOADING) }
+            prepareCurrent()
+        }
     }
 
     /** Zaustavlja puštanje i oslobađa vezu sa serverom (npr. kad aplikacija ode u pozadinu). */
@@ -398,7 +414,11 @@ class PlayerEngine(
             .build()
     }
 
-    private fun prepareCurrent() {
+    /**
+     * Priprema trenutnu adresu. Bez [autoPlay] se čuva ono što je korisnik izabrao: pauziran sadržaj
+     * ostaje pauziran i posle ponovnog pokušaja, promene dekodera ili dodavanja titla.
+     */
+    private fun prepareCurrent(autoPlay: Boolean = false) {
         wasReady = false
         val current = source ?: return
         val url = current.urls.getOrNull(urlIndex) ?: return
@@ -426,7 +446,7 @@ class PlayerEngine(
             player.setMediaItem(item)
         }
         player.prepare()
-        player.playWhenReady = true
+        if (autoPlay) player.playWhenReady = true
     }
 
     private fun handleError(error: PlaybackException) {

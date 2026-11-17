@@ -87,7 +87,7 @@ class CastPlayerViewModel @Inject constructor(
         if (engine.state.value.status == PlaybackStatus.FAILED) engine.retry() else engine.togglePlayPause()
     }
 
-    fun onForeground() = engine.resume()
+    fun onForeground() = engine.restore()
 
     fun onBackground() = engine.stop()
 

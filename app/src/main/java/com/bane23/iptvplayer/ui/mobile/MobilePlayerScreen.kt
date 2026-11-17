@@ -150,13 +150,17 @@ fun MobilePlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
             .pointerInput(locked) {
-                detectTapGestures(onTap = {
-                    when {
-                        locked -> unlockVisible = !unlockVisible
-                        panel != Panel.NONE -> panel = Panel.NONE
-                        else -> controlsVisible = !controlsVisible
-                    }
-                })
+                detectTapGestures(
+                    onTap = {
+                        when {
+                            locked -> unlockVisible = !unlockVisible
+                            panel != Panel.NONE -> panel = Panel.NONE
+                            else -> controlsVisible = !controlsVisible
+                        }
+                    },
+                    // Dupli tap na sliku pauzira ili pušta kanal.
+                    onDoubleTap = { if (!locked && panel == Panel.NONE) viewModel.togglePlayPause() },
+                )
             },
     ) {
         VideoSurface(

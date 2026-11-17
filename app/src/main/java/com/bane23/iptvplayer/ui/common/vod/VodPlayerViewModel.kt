@@ -376,7 +376,7 @@ class VodPlayerViewModel @Inject constructor(
         null
     }
 
-    fun onForeground() = engine.resume()
+    fun onForeground() = engine.restore()
 
     fun onBackground() {
         saveProgress(stopped = true)
