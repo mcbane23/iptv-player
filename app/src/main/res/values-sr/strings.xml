@@ -341,7 +341,7 @@
     <string name="update_later">Kasnije</string>
     <string name="update_downloading">Preuzimam…</string>
     <string name="update_downloading_percent">Preuzimam… %1$d%%</string>
-    <string name="update_installing">Potvrdite instalaciju na sledećem ekranu.</string>
+    <string name="update_installing">Instaliram…</string>
     <string name="update_permission_title">Potrebna dozvola</string>
     <string name="update_permission_text">Da bi se ažuriranje instaliralo, dozvolite ovoj aplikaciji da instalira aplikacije (Instaliranje nepoznatih aplikacija). Kad se vratite, instalacija kreće.</string>
     <string name="update_open_settings">Otvori podešavanja</string>
