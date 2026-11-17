@@ -544,4 +544,10 @@
     <string name="reminder_watch">Gledaj</string>
     <string name="settings_match_frame_rate">Uskladi osvežavanje TV-a sa snimkom</string>
     <string name="settings_match_frame_rate_summary">Dok se gleda, TV prelazi na osvežavanje koje odgovara snimku (50 Hz za kanale, 24 Hz za filmove), pa je kretanje slike glatko. Pri prebacivanju se ekran na trenutak zacrni. Ne podržava svaki TV.</string>
+    <string name="search_all_hint">Kanal, emisija, film ili serija</string>
+    <string name="search_all_intro">Traži odjednom kroz kanale, TV vodič, filmove i serije.</string>
+    <string name="search_all_searching">Tražim…</string>
+    <string name="search_group_channels">Kanali</string>
+    <string name="search_group_programs">U TV vodiču</string>
+    <string name="search_on_air">u toku, do %1$s</string>
 </resources>

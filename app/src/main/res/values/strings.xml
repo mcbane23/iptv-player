@@ -543,4 +543,10 @@
     <string name="reminder_watch">Watch</string>
     <string name="settings_match_frame_rate">Match TV refresh rate to video</string>
     <string name="settings_match_frame_rate_summary">While playing, the TV switches to a refresh rate that fits the video (50 Hz for TV channels, 24 Hz for films), so motion is smooth. The screen may go black for a moment when it switches. Not every TV supports it.</string>
+    <string name="search_all_hint">Channel, programme, film or series</string>
+    <string name="search_all_intro">Searches channels, the TV guide, films and series at once.</string>
+    <string name="search_all_searching">Searching…</string>
+    <string name="search_group_channels">Channels</string>
+    <string name="search_group_programs">In the TV guide</string>
+    <string name="search_on_air">on now, until %1$s</string>
 </resources>

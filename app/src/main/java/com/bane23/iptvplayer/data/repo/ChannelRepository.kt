@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.data.repo
 
+import com.bane23.iptvplayer.data.db.ProgramHit
+import com.bane23.iptvplayer.data.db.ChannelHit
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -131,6 +133,17 @@ class ChannelRepository @Inject constructor(
             pagingSourceFactory = { channelDao.searchPagingSource(playlistId, "%$escaped%", System.currentTimeMillis()) },
         ).flow.map { page -> page.map { it.toDomain() } }
     }
+
+    private fun likePattern(query: String): String =
+        "%" + query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+    /** Prvih [limit] kanala čiji naziv sadrži [query], za zajedničku pretragu. */
+    suspend fun searchTop(playlistId: Long, query: String, limit: Int): List<ChannelHit> =
+        channelDao.searchTop(playlistId, likePattern(query), limit)
+
+    /** Emisije iz vodiča (u toku ili buduće) čiji naslov sadrži [query]. */
+    suspend fun searchPrograms(playlistId: Long, query: String, limit: Int): List<ProgramHit> =
+        channelDao.searchPrograms(playlistId, likePattern(query), System.currentTimeMillis(), limit)
 
     /** ID-jevi kanala posebne grupe (favoriti, nedavno gledano), redom kojim se prikazuju. */
     suspend fun groupChannelIds(playlistId: Long, groupId: Long): List<Long> = when (groupId) {

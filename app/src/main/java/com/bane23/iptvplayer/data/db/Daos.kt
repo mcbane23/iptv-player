@@ -51,6 +51,23 @@ private const val NOT_HIDDEN =
 private const val CATEGORY_COUNT =
     "(SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = cat.playlistId AND ch.categoryId = cat.id) AS channelCount"
 
+/** Kanal u rezultatima zajedničke pretrage. */
+data class ChannelHit(val id: Long, val name: String, val logo: String?)
+
+/** Emisija u rezultatima zajedničke pretrage, sa kanalom na kom je. */
+data class ProgramHit(
+    val channelId: Long,
+    val channelName: String,
+    val playlistId: Long,
+    val stableKey: String,
+    val startMs: Long,
+    val stopMs: Long,
+    val title: String,
+) {
+    /** Isti oblik kao ključ emisije u vodiču i ključ podsetnika. */
+    val key: String get() = "$playlistId|$stableKey|$startMs"
+}
+
 @Dao
 interface PlaylistDao {
     @Query(
@@ -165,6 +182,24 @@ interface ChannelDao {
             "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN ORDER BY ch.name COLLATE NOCASE, ch.sortOrder",
     )
     fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
+
+    /** Prvih [limit] kanala čiji naziv odgovara, za zajedničku pretragu. Isti strim se računa jednom. */
+    @Query(
+        "SELECT ch.id AS id, ch.name AS name, ch.logo AS logo FROM channels ch WHERE ch.playlistId = :playlistId " +
+            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN GROUP BY ch.stableKey " +
+            "ORDER BY ch.name COLLATE NOCASE, ch.sortOrder LIMIT :limit",
+    )
+    suspend fun searchTop(playlistId: Long, pattern: String, limit: Int): List<ChannelHit>
+
+    /** Emisije iz vodiča čiji naslov odgovara, a još nisu završene; najskorije prve. */
+    @Query(
+        "SELECT ch.id AS channelId, ch.name AS channelName, ch.playlistId AS playlistId, ch.stableKey AS stableKey, " +
+            "e.startMs AS startMs, e.stopMs AS stopMs, e.title AS title " +
+            "FROM epg_programs e JOIN channels ch ON ch.playlistId = e.playlistId AND ch.epgKey = e.channelKey " +
+            "WHERE e.playlistId = :playlistId AND e.stopMs > :now AND e.title LIKE :pattern ESCAPE '\\' $NOT_HIDDEN " +
+            "GROUP BY ch.stableKey, e.startMs ORDER BY e.startMs, ch.sortOrder LIMIT :limit",
+    )
+    suspend fun searchPrograms(playlistId: Long, pattern: String, now: Long, limit: Int): List<ProgramHit>
 
     @Query("SELECT ch.id $FAVORITE_CHANNELS")
     suspend fun favoriteIds(playlistId: Long): List<Long>
