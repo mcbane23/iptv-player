@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -52,6 +53,7 @@ fun TvListRow(
     selected: Boolean = false,
     onFocused: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
+    container: Color = Color.Transparent,
     content: @Composable RowScope.(contentColor: Color) -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -59,7 +61,7 @@ fun TvListRow(
     val background = when {
         focused -> colors.primary
         selected -> colors.surfaceVariant
-        else -> Color.Transparent
+        else -> container
     }
     val contentColor = if (focused) colors.onPrimary else colors.onSurface
     Row(
@@ -92,6 +94,7 @@ fun TvTextRow(
     onFocused: () -> Unit = {},
     checked: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
+    icon: ImageVector? = null,
 ) {
     TvListRow(
         onClick = onClick,
@@ -107,6 +110,16 @@ fun TvTextRow(
         onFocused = onFocused,
         onLongClick = onLongClick,
     ) { color ->
+        if (icon != null) {
+            androidx.tv.material3.Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(20.dp),
+            )
+        }
         Text(
             text = text,
             color = color,

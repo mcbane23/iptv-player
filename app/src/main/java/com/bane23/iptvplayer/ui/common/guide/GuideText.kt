@@ -21,6 +21,18 @@ fun formatDayTime(timeMs: Long): String {
 
 fun Program.timeRange(): String = "${formatTime(startMs)} – ${formatTime(stopMs)}"
 
+/** Naziv tekuće emisije i do kada traje (npr. „Dnevnik · do 21:00”), za red kanala u listi. */
+@Composable
+fun nowUntil(title: String, stopMs: Long?): String =
+    if (stopMs == null) title else stringResource(R.string.epg_until, title, formatTime(stopMs))
+
+/** Vreme emisije i koliko je još ostalo (npr. „20:30 – 21:00 · još 18 min”). Bez ostatka kad emisija ne traje. */
+@Composable
+fun Program.timeRangeLeft(nowMs: Long): String {
+    val left = ((stopMs - nowMs + 59_999) / 60_000).toInt()
+    return if (nowMs < startMs || left <= 0) timeRange() else stringResource(R.string.epg_time_left, timeRange(), left)
+}
+
 /** Red „Sada: …” za plejer, ili null ako nema podataka. */
 @Composable
 fun NowNext.nowLine(): String? = now?.let { stringResource(R.string.epg_now, it.timeRange(), it.title) }
