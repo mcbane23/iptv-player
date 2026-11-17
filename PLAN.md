@@ -499,6 +499,25 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   brzinu puštanja. Tajmer gašenja pauzira ono što se gleda i ne pamti se posle gašenja aplikacije.
 - [x] TV plejer: odnos slike nema dugme ispod trake (ostaje ikonica na kraju trake i stavka u
   „Podešavanjima”), a plejer kanala na TV-u i telefonu nema dugme „Titlovi”, da red dugmadi stane na ekran.
+- [x] Plejer kanala: dugme „Prethodni kanal” vraća na kanal koji je gledan pre ovog (i taster
+  „Last channel” na daljinskom).
+- [x] Liste: kartica Xtream liste prikazuje do kada nalog važi i broj veza; poslednjih 7 dana je
+  istaknuto. Podatak se osvežava kad i lista (baza v13).
+- [x] Liste se jednom dnevno same osvežavaju u pozadini (prekidač u Podešavanjima, uključeno
+  podrazumevano; liste iz fajla se ne osvežavaju).
+- [x] Filmovi i serije: izbor redosleda u kategoriji (kao kod provajdera, nedavno dodato, po nazivu,
+  najbolje ocenjeno, najnovije po godini); pamti se posebno za filmove i za serije.
+- [x] Vodič: „Podseti me” za emisiju koja još nije počela (na TV-u OK na budućoj emisiji nudi
+  podsetnik i snimanje). Kad emisija počne, aplikacija nudi prelazak na kanal, a na telefonu stiže
+  i obaveštenje. Podsetnici su u podešavanjima, bez promene baze.
+- [x] TV: opcija „Uskladi osvežavanje TV-a sa snimkom” (isključeno podrazumevano). Radi samo kad
+  strim javlja broj sličica i kad TV ima odgovarajući režim u istoj rezoluciji.
+- [ ] Jedna pretraga za kanale, emisije iz vodiča, filmove i serije.
+- [ ] Pomeranje titla u vremenu (kad kasni ili žuri), u plejeru filmova i epizoda.
+- [ ] Rezervna kopija u fajl i vraćanje iz fajla (liste, favoriti, podešavanja), za prelazak na
+  novi uređaj bez telefona pored TV-a.
+- [ ] Pojačanje zvuka preko 100% za tihe kanale.
+- Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 
 ## 7. Testiranje
 

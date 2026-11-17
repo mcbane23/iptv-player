@@ -542,4 +542,6 @@
     <string name="reminder_channel">Podsetnici za emisije</string>
     <string name="reminder_starts">Počinje: %1$s</string>
     <string name="reminder_watch">Gledaj</string>
+    <string name="settings_match_frame_rate">Uskladi osvežavanje TV-a sa snimkom</string>
+    <string name="settings_match_frame_rate_summary">Dok se gleda, TV prelazi na osvežavanje koje odgovara snimku (50 Hz za kanale, 24 Hz za filmove), pa je kretanje slike glatko. Pri prebacivanju se ekran na trenutak zacrni. Ne podržava svaki TV.</string>
 </resources>

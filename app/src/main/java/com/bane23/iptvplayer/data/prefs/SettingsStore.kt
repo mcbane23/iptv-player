@@ -104,6 +104,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[AUTO_REFRESH_PLAYLISTS] = enabled }
     }
 
+    /** TV: osvežavanje ekrana se usklađuje sa brojem sličica snimka dok je plejer otvoren. */
+    val matchFrameRate: Flow<Boolean> = dataStore.data.map { it[MATCH_FRAME_RATE] ?: false }.distinctUntilChanged()
+
+    suspend fun setMatchFrameRate(enabled: Boolean) {
+        dataStore.edit { it[MATCH_FRAME_RATE] = enabled }
+    }
+
     /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
     val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
 
@@ -330,6 +337,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val BACKGROUND_PLAY = booleanPreferencesKey("background_play")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val AUTO_REFRESH_PLAYLISTS = booleanPreferencesKey("auto_refresh_playlists")
+        val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")

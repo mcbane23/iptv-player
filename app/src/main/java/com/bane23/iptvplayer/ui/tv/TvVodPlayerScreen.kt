@@ -102,6 +102,7 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
+    MatchDisplayFrameRate(playback.video.frameRate)
     BackHandler(enabled = tracks != null || onlineOpen || settingsOpen || controls) {
         when {
             settingsOpen -> settingsOpen = false

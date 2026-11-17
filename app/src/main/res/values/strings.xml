@@ -541,4 +541,6 @@
     <string name="reminder_channel">Programme reminders</string>
     <string name="reminder_starts">Starting: %1$s</string>
     <string name="reminder_watch">Watch</string>
+    <string name="settings_match_frame_rate">Match TV refresh rate to video</string>
+    <string name="settings_match_frame_rate_summary">While playing, the TV switches to a refresh rate that fits the video (50 Hz for TV channels, 24 Hz for films), so motion is smooth. The screen may go black for a moment when it switches. Not every TV supports it.</string>
 </resources>

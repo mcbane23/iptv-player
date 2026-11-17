@@ -115,6 +115,7 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
+    MatchDisplayFrameRate(playback.video.frameRate)
     BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
         when {
             tracks != null -> tracks = null

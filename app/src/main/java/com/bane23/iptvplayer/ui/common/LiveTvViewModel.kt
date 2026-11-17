@@ -307,6 +307,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setBackgroundPlay(enabled) }
     }
 
+    val matchFrameRate: StateFlow<Boolean> = settings.matchFrameRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setMatchFrameRate(enabled: Boolean) {
+        viewModelScope.launch { settings.setMatchFrameRate(enabled) }
+    }
+
     val autoRefreshPlaylists: StateFlow<Boolean> = settings.autoRefreshPlaylists
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
