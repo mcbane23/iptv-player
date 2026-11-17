@@ -521,9 +521,15 @@ internal fun PlayerPictureInPicture(status: PlaybackStatus, onTogglePlayPause: (
     val showPause = status == PlaybackStatus.PLAYING || status == PlaybackStatus.LOADING ||
         status == PlaybackStatus.RETRYING
 
+    // Pri prelasku sa jednog plejera na drugi oba su kratko na ekranu; dugme pripada onom koji je poslednji otvoren.
+    val owner = remember { Any() }
+    val inPip = rememberIsInPictureInPicture()
+
     DisposableEffect(activity) {
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) = toggle()
+            override fun onReceive(context: Context, intent: Intent) {
+                if (pipOwner === owner) toggle()
+            }
         }
         ContextCompat.registerReceiver(
             activity,
@@ -533,19 +539,30 @@ internal fun PlayerPictureInPicture(status: PlaybackStatus, onTogglePlayPause: (
         )
         onDispose {
             activity.unregisterReceiver(receiver)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                activity.setPictureInPictureParams(pipParams(autoEnter = false, actions = emptyList()))
+            // Plejer koji se zatvara ne sme da obriše dugme plejera koji se upravo otvorio.
+            if (pipOwner === owner) {
+                pipOwner = null
+                pipActions = emptyList()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    activity.setPictureInPictureParams(pipParams(autoEnter = false))
+                }
             }
         }
     }
-    LaunchedEffect(activity, autoEnter, showPause) {
+    // Ponavlja se i pri ulasku u mali prozor, da dugme sigurno stigne do sistema.
+    DisposableEffect(activity, autoEnter, showPause, inPip) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            activity.setPictureInPictureParams(
-                pipParams(autoEnter = autoEnter, actions = listOf(playPauseAction(activity, showPause))),
-            )
+            pipOwner = owner
+            pipActions = listOf(playPauseAction(activity, showPause))
+            activity.setPictureInPictureParams(pipParams(autoEnter = autoEnter))
         }
+        onDispose {}
     }
 }
+
+/** Plejer čije je dugme trenutno u malom prozoru, i samo dugme. Menja se samo sa glavne niti. */
+private var pipOwner: Any? = null
+private var pipActions: List<RemoteAction> = emptyList()
 
 @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
 private fun playPauseAction(context: Context, showPause: Boolean): RemoteAction {
@@ -560,11 +577,12 @@ private fun playPauseAction(context: Context, showPause: Boolean): RemoteAction 
     return RemoteAction(icon, label, label, intent)
 }
 
-/** Polja koja nisu zadata (actions = null) ostaju kakva su poslednji put podešena. */
+/** Svako podešavanje nosi i trenutno dugme, i kad se u mali prozor ulazi dugmetom iz plejera. */
 @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
-private fun pipParams(autoEnter: Boolean, actions: List<RemoteAction>? = null): PictureInPictureParams {
-    val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9))
-    if (actions != null) builder.setActions(actions)
+private fun pipParams(autoEnter: Boolean): PictureInPictureParams {
+    val builder = PictureInPictureParams.Builder()
+        .setAspectRatio(Rational(16, 9))
+        .setActions(pipActions)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
     return builder.build()
 }
