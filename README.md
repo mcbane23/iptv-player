@@ -57,6 +57,9 @@ i dozvoli joj instalaciju iz nepoznatih izvora. Poslednje zvanično izdanje je u
 https://github.com/mcbane23/apps/releases/download/iptv-player/glowbox.apk
 ```
 
+Da se adresa ne kuca daljinskim, u Downloader može da se upiše samo kratki kod `6087907`
+(isto što i `aftv.news/6087907`), koji vodi na tu adresu.
+
 ## Novo izdanje
 
 Jednom, pre prvog izdanja, pravi se ključ za potpis. Sačuvaj ga na sigurnom mestu (i kopiju van
