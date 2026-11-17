@@ -36,7 +36,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
-import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -129,8 +128,6 @@ fun MobileVodPlayerScreen(
 
         // U slici u slici ostaje samo video, kao kod kanala.
         if (inPip) return@Box
-        // Dok su kontrole na ekranu podaci se sklanjaju, da se tekstovi ne preklapaju.
-        if (!controlsVisible) StreamDebugLabel(playback.video, Modifier.align(Alignment.TopStart))
 
         statusMessage(ui.sourceMissing, playback)?.let { message ->
             Text(
@@ -148,6 +145,7 @@ fun MobileVodPlayerScreen(
         if (infoVisible) {
             PlayerStreamInfo(
                 player = viewModel.player,
+                technical = playback.video,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .safeDrawingPadding()

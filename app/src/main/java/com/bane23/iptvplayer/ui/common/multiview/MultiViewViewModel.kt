@@ -91,9 +91,6 @@ class MultiViewViewModel @Inject constructor(
                 _state.update { it.copy(connectionLimit = limit) }
             }
         }
-        viewModelScope.launch {
-            settings.playerSettings.collect { current -> _state.update { it.copy(showInfo = current.showStreamInfo) } }
-        }
     }
 
     /** Kategorije aktivne liste za izbor kanala (zaključane nose katanac u nazivu). */
@@ -122,6 +119,11 @@ class MultiViewViewModel @Inject constructor(
         for (index in count until MAX_TILES) clear(index)
         _state.update { it.copy(count = count, active = it.active.coerceAtMost(count - 1)) }
         applyVolume()
+    }
+
+    /** Uključuje ili isključuje tehničke podatke na poljima; važi dok je ekran otvoren. */
+    fun toggleInfo() {
+        _state.update { it.copy(showInfo = !it.showInfo) }
     }
 
     fun setActive(index: Int) {

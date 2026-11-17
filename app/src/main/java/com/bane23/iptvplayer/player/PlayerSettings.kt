@@ -32,8 +32,6 @@ data class PlayerSettings(
     val subtitleBackground: Boolean = true,
     val subtitleSize: SubtitleSize = SubtitleSize.NORMAL,
     val subtitlePosition: SubtitlePosition = SubtitlePosition.LOW,
-    /** Prikaz više kanala na svakom polju ispisuje dekoder, rezoluciju i broj ispuštenih slika. */
-    val showStreamInfo: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_SEEK_STEP_SECONDS = 10

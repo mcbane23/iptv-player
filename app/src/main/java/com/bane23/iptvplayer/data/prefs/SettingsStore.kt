@@ -252,7 +252,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             subtitleSize = SubtitleSize.entries.firstOrNull { it.name == prefs[SUBTITLE_SIZE] } ?: SubtitleSize.NORMAL,
             subtitlePosition = SubtitlePosition.entries.firstOrNull { it.name == prefs[SUBTITLE_POSITION] }
                 ?: SubtitlePosition.LOW,
-            showStreamInfo = prefs[SHOW_STREAM_INFO] ?: false,
         )
     }.distinctUntilChanged()
 
@@ -270,10 +269,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     suspend fun setSubtitleBackground(enabled: Boolean) {
         dataStore.edit { it[SUBTITLE_BACKGROUND] = enabled }
-    }
-
-    suspend fun setShowStreamInfo(enabled: Boolean) {
-        dataStore.edit { it[SHOW_STREAM_INFO] = enabled }
     }
 
     suspend fun setSubtitleSize(size: SubtitleSize) {
@@ -297,7 +292,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PLAYER_DECODER = stringPreferencesKey("player_decoder")
         val PLAYER_SEEK_STEP = intPreferencesKey("player_seek_step")
         val SUBTITLE_BACKGROUND = booleanPreferencesKey("subtitle_background")
-        val SHOW_STREAM_INFO = booleanPreferencesKey("show_stream_info")
         val SUBTITLE_SIZE = stringPreferencesKey("subtitle_size")
         val SUBTITLE_POSITION = stringPreferencesKey("subtitle_position")
         val PLAYER_AUDIO_LANGUAGE = stringPreferencesKey("player_audio_language")

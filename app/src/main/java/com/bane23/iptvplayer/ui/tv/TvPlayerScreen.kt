@@ -65,7 +65,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
-import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
+import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -96,6 +96,8 @@ fun TvPlayerScreen(
     var overlay by remember { mutableStateOf(Overlay.INFO) }
     var channelList by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    // Informacije o strimu; ostaju preko slike i kad se kontrole sklone, dok se ne ugase istim dugmetom.
+    var infoVisible by remember { mutableStateOf(false) }
     // Izbor trajanja snimanja je otvoren.
     var recordPanel by remember { mutableStateOf(false) }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
@@ -211,7 +213,15 @@ fun TvPlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
         )
-        StreamDebugLabel(playback.video, Modifier.align(Alignment.TopEnd))
+        if (infoVisible && !channelList) {
+            PlayerStreamInfo(
+                player = viewModel.player,
+                technical = playback.video,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 96.dp, end = 48.dp),
+            )
+        }
 
         statusMessage(ui, playback)?.let { message ->
             Text(
@@ -251,6 +261,8 @@ fun TvPlayerScreen(
                 onAudio = { tracks = TvTrackKind.AUDIO },
                 onAspect = viewModel::cycleAspectMode,
                 onDecoder = viewModel::cycleDecoder,
+                infoVisible = infoVisible,
+                onInfo = { infoVisible = !infoVisible },
                 onFavorite = viewModel::toggleFavorite,
                 isRecording = isRecording,
                 onRecord = record,
@@ -307,6 +319,8 @@ private fun LiveControls(
     onAudio: () -> Unit,
     onAspect: () -> Unit,
     onDecoder: () -> Unit,
+    infoVisible: Boolean,
+    onInfo: () -> Unit,
     onFavorite: () -> Unit,
     isRecording: Boolean,
     onRecord: () -> Unit,
@@ -423,6 +437,12 @@ private fun LiveControls(
                         ),
                         active = ui.decoder == DecoderMode.SOFTWARE,
                         onClick = onDecoder,
+                    )
+                    PlayerChip(
+                        icon = AppIcons.Info,
+                        label = stringResource(R.string.player_stream_info),
+                        active = infoVisible,
+                        onClick = onInfo,
                     )
                     PlayerChip(
                         icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,

@@ -129,14 +129,6 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             toggle = true,
             onSelect = { viewModel.setSubtitleBackground(it == 0) },
         ),
-        SettingChoice(
-            title = stringResource(R.string.settings_stream_info),
-            summary = stringResource(R.string.settings_stream_info_summary),
-            options = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off)),
-            selected = if (settings.showStreamInfo) 0 else 1,
-            toggle = true,
-            onSelect = { viewModel.setShowStreamInfo(it == 0) },
-        ),
     )
 }
 

@@ -50,7 +50,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
-import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
+import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
@@ -83,6 +83,8 @@ fun TvVodPlayerScreen(
     // Traka premotava tek kad se potvrdi sa OK; do tada levo/desno samo pomera fokus preko nje.
     var seekArmed by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
+    // Informacije o strimu; ostaju preko slike i kad se kontrole sklone, dok se ne ugase istim dugmetom.
+    var infoVisible by remember { mutableStateOf(false) }
     // Spisak titlova sa interneta; otvara se iz spiska titlova.
     var onlineOpen by remember { mutableStateOf(false) }
     val online by viewModel.online.collectAsStateWithLifecycle()
@@ -219,7 +221,15 @@ fun TvVodPlayerScreen(
             .focusable(),
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
-        StreamDebugLabel(playback.video, Modifier.align(Alignment.TopEnd))
+        if (infoVisible) {
+            PlayerStreamInfo(
+                player = viewModel.player,
+                technical = playback.video,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 96.dp, end = 48.dp),
+            )
+        }
 
         statusMessage(ui.sourceMissing, playback)?.let { message ->
             Text(
@@ -370,6 +380,12 @@ fun TvVodPlayerScreen(
                             ),
                             active = ui.decoder == DecoderMode.SOFTWARE,
                             onClick = viewModel::cycleDecoder,
+                        )
+                        PlayerChip(
+                            icon = AppIcons.Info,
+                            label = stringResource(R.string.player_stream_info),
+                            active = infoVisible,
+                            onClick = { infoVisible = !infoVisible },
                         )
                     }
                 }

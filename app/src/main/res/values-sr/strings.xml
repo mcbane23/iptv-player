@@ -354,8 +354,7 @@
     <string name="settings_subtitle_size">Veličina titlova</string>
     <string name="settings_subtitle_position">Položaj titlova</string>
     <string name="settings_subtitle_background">Crna pozadina titlova</string>
-    <string name="settings_stream_info">Tehnički podaci o slici</string>
-    <string name="settings_stream_info_summary">U plejeru i u prikazu više kanala ispisuje dekoder, rezoluciju i broj ispuštenih slika. Pomaže da se otkrije zašto slika secka ili koči.</string>
+    <string name="stream_info_technical">Tehnički podaci</string>
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
     <string name="stream_info_dropped">ispušteno %1$d</string>

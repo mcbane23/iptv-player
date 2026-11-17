@@ -165,6 +165,18 @@ fun MobileMultiViewScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(
+                    onClick = {
+                        touches++
+                        viewModel.toggleInfo()
+                    },
+                ) {
+                    Icon(
+                        AppIcons.Info,
+                        contentDescription = stringResource(R.string.player_stream_info),
+                        tint = if (state.showInfo) MaterialTheme.colorScheme.primary else Color.White,
+                    )
+                }
                 listOf(2 to R.string.multiview_two, MultiViewViewModel.MAX_TILES to R.string.multiview_four).forEach { (count, label) ->
                     TextButton(
                         onClick = {
