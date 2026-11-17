@@ -34,6 +34,12 @@ class TraktQueue @Inject constructor(
         scheduler.syncSoon()
     }
 
+    /** Odbacuje poziciju filma ili epizode koja još čeka slanje (korisnik ne želi nastavak). */
+    suspend fun dropPlayback(playlistId: Long, kind: String, itemId: Long) = dao.deletePlayback(playlistId, kind, itemId)
+
+    /** Odbacuje pozicije svih epizoda serije koje još čekaju slanje. */
+    suspend fun dropPlaybackOfSeries(playlistId: Long, seriesId: Long) = dao.deleteSeriesPlayback(playlistId, seriesId)
+
     /**
      * Odmah skida oznaku koja je stigla sa Trakt-a, da kvačica nestane bez čekanja na slanje.
      * Sa naloga se uklanja kad se promena pošalje.
