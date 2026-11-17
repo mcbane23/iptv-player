@@ -81,6 +81,25 @@ class TraktPayloadsTest {
     }
 
     @Test
+    fun `started shows are unfinished ones with a watched episode, oldest first`() {
+        val shows = TraktJson.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(WatchedShow.serializer()),
+            """[{"show":{"aired_episodes":3,"ids":{"tmdb":1}},"seasons":[{"number":1,"episodes":[
+                 {"number":1,"plays":1,"last_watched_at":"2026-03-01T00:00:00.000Z"}]}]},
+               {"show":{"aired_episodes":2,"ids":{"tmdb":2}},"seasons":[{"number":1,"episodes":[
+                 {"number":1,"plays":1},{"number":2,"plays":1}]}]},
+               {"show":{"aired_episodes":2,"ids":{"tmdb":3}},"seasons":[
+                 {"number":0,"episodes":[{"number":1,"plays":1}]},
+                 {"number":1,"episodes":[{"number":1,"plays":1,"last_watched_at":"2026-01-01T00:00:00.000Z"},{"number":2,"completed":false}]}]},
+               {"show":{"aired_episodes":5,"ids":{"tmdb":4}},"seasons":[{"number":0,"episodes":[{"number":1,"plays":1}]}]},
+               {"last_watched_at":"2026-02-01T00:00:00.000Z","show":{"ids":{"tmdb":5}},"seasons":[{"number":1,"episodes":[{"number":1}]}]},
+               {"show":{"aired_episodes":9,"ids":{"trakt":6}},"seasons":[{"number":1,"episodes":[{"number":1,"plays":1}]}]}]""",
+        )
+        // 2 je odgledana do kraja, 4 ima samo specijal, a poslednja nema TMDB ID.
+        assertEquals(listOf(3L, 5L, 1L), TraktPayloads.startedShows(shows))
+    }
+
+    @Test
     fun `time is sent in utc`() {
         assertEquals("1970-01-01T00:00:01.000Z", TraktPayloads.isoTime(1000))
     }

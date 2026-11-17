@@ -75,9 +75,15 @@ data class TraktUser(val username: String? = null, val name: String? = null)
 @Serializable
 data class TraktIds(val tmdb: Long? = null)
 
-/** Film ili serija u zahtevu ili odgovoru; od podataka je potreban samo TMDB ID. */
+/**
+ * Film ili serija u zahtevu ili odgovoru; od podataka je potreban TMDB ID. Za seriju sa spiska
+ * odgledanog Trakt šalje i koliko je epizoda do sada emitovano ([airedEpisodes], bez specijala).
+ */
 @Serializable
-data class TraktMedia(val ids: TraktIds = TraktIds())
+data class TraktMedia(
+    val ids: TraktIds = TraktIds(),
+    @SerialName("aired_episodes") val airedEpisodes: Int? = null,
+)
 
 @Serializable
 data class WatchedMovie(
@@ -87,6 +93,7 @@ data class WatchedMovie(
 
 @Serializable
 data class WatchedShow(
+    @SerialName("last_watched_at") val lastWatchedAt: String? = null,
     val show: TraktMedia? = null,
     val seasons: List<WatchedSeason> = emptyList(),
 )

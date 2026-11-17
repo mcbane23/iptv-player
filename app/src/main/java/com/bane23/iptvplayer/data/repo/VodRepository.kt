@@ -591,6 +591,32 @@ class VodRepository @Inject constructor(
         }
     }
 
+    /**
+     * Dodaje u omiljene serije liste [playlistId] sa datim TMDB ID-jevima (započete na Trakt nalogu),
+     * tako da poslednja u spisku bude prva u omiljenima. Vraća TMDB ID-jeve koji su nađeni u spisku
+     * serija; ostalih kod provajdera nema (ili su u zaključanoj kategoriji).
+     */
+    suspend fun addSeriesFavorites(playlistId: Long, tmdbIds: List<Long>): Set<Long> = withContext(Dispatchers.IO) {
+        if (session().playlistId != playlistId) return@withContext emptySet()
+        val wanted = tmdbIds.withIndex().associate { (index, id) -> id to index }
+        val found = allItems(VodKind.SERIES).filter { it.tmdbId != null && wanted.containsKey(it.tmdbId) }.distinctBy { it.id }
+        val now = System.currentTimeMillis()
+        favoriteDao.insertMissing(
+            found.map { item ->
+                VodFavoriteEntity(
+                    playlistId = playlistId,
+                    kind = KIND_SERIES,
+                    itemId = item.id,
+                    name = item.name,
+                    poster = item.poster,
+                    extension = null,
+                    addedAt = now + (item.tmdbId?.let { wanted[it] } ?: 0),
+                )
+            },
+        )
+        found.mapNotNullTo(HashSet()) { it.tmdbId }
+    }
+
     private val VodKind.favoriteKind: String get() = if (this == VodKind.MOVIES) KIND_MOVIE else KIND_SERIES
 
     private suspend fun session(): Session {
