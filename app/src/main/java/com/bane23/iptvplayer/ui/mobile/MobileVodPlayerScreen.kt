@@ -81,7 +81,7 @@ fun MobileVodPlayerScreen(
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
-    AutoPictureInPicture(enabled = playback.status == PlaybackStatus.PLAYING)
+    PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
 
