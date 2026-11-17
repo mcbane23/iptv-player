@@ -239,6 +239,9 @@
     <string name="transfer_nothing">Na ovom telefonu nema lista koje mogu da se pošalju.</string>
     <string name="transfer_bad_target">Ovaj link nije ispravan. Ponovo skenirajte kod sa TV-a.</string>
     <string name="transfer_unreachable">TV se ne javlja. Proverite da li je na TV-u i dalje otvoren ekran sa QR kodom i da li je telefon na istom Wi-Fi-ju.</string>
+    <string name="transfer_permission_needed">Dozvolite aplikaciji pristup uređajima u kućnoj mreži, pa ponovo pošaljite. Bez te dozvole telefon ne može da se obrati TV-u.</string>
+    <string name="transfer_open_settings">Otvori podešavanja aplikacije</string>
+    <string name="transfer_error_detail">Tehnički detalj: %1$s</string>
     <string name="transfer_refused">TV nije prihvatio liste. Ponovo skenirajte kod sa TV-a; ako ne pomogne, ažurirajte aplikaciju na TV-u.</string>
     <string name="transfer_tv_working">Liste su stigle sa telefona, učitava se %1$d od %2$d…</string>
 

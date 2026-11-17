@@ -45,6 +45,8 @@ data class SendToTvUiState(
     val sending: Boolean = false,
     val result: TransferResult? = null,
     val error: SendError? = null,
+    /** Tehnički razlog kada se TV ne javlja (vrsta greške veze), da kvar može da se prijavi. */
+    val errorDetail: String? = null,
 )
 
 /**
@@ -90,16 +92,20 @@ class SendToTvViewModel @Inject constructor(
         val url = target ?: return
         val payload = bundle ?: return
         if (_state.value.sending || payload.playlists.isEmpty()) return
-        _state.update { it.copy(sending = true, error = null, result = null) }
+        _state.update { it.copy(sending = true, error = null, errorDetail = null, result = null) }
         viewModelScope.launch {
             val outcome = withContext(Dispatchers.IO) { post(url + TransferTarget.BUNDLE_PATH, payload) }
             _state.update {
-                it.copy(sending = false, result = outcome as? TransferResult, error = outcome as? SendError)
+                when (outcome) {
+                    is TransferResult -> it.copy(sending = false, result = outcome)
+                    is Unreachable -> it.copy(sending = false, error = SendError.UNREACHABLE, errorDetail = outcome.detail)
+                    else -> it.copy(sending = false, error = outcome as? SendError)
+                }
             }
         }
     }
 
-    /** Vraća [TransferResult] ili [SendError]. */
+    /** Vraća [TransferResult], [SendError] ili [Unreachable]. */
     private fun post(url: String, payload: TransferBundle): Any {
         val request = Request.Builder()
             .url(url)
@@ -110,13 +116,17 @@ class SendToTvViewModel @Inject constructor(
                 val result = if (response.isSuccessful) TransferCodec.decodeResult(response.body.string()) else null
                 result ?: SendError.REFUSED
             }
-        } catch (_: IOException) {
-            SendError.UNREACHABLE
+        } catch (e: IOException) {
+            // Poruka sadrži samo adresu TV-a u kućnoj mreži, ne i sadržaj paketa.
+            Unreachable(listOfNotNull(e.javaClass.simpleName, e.message).joinToString(": ").take(MAX_DETAIL_LENGTH))
         }
     }
 
+    private class Unreachable(val detail: String)
+
     private companion object {
         const val READ_TIMEOUT_MINUTES = 15L
+        const val MAX_DETAIL_LENGTH = 200
         val JSON = "application/json; charset=utf-8".toMediaType()
     }
 }
