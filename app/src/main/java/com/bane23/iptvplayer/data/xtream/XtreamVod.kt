@@ -18,6 +18,10 @@ data class XtreamVodStream(
     @SerialName("stream_icon") val icon: FlexString = null,
     val rating: FlexString = null,
     @SerialName("container_extension") val extension: FlexString = null,
+    /** Kada je film dodat (sekunde od 1970), ako panel šalje. */
+    val added: FlexString = null,
+    val year: FlexString = null,
+    @SerialName("release_date") val releaseDate: FlexString = null,
 )
 
 @Serializable
@@ -29,6 +33,11 @@ data class XtreamSeries(
     @SerialName("series_id") val seriesId: FlexString = null,
     val cover: FlexString = null,
     val rating: FlexString = null,
+    /** Kada je serija poslednji put dopunjena (sekunde od 1970), ako panel šalje. */
+    @SerialName("last_modified") val lastModified: FlexString = null,
+    val year: FlexString = null,
+    val releaseDate: FlexString = null,
+    @SerialName("release_date") val releaseDateAlt: FlexString = null,
 )
 
 /** Detalji filma, onoliko koliko je panel poslao. */

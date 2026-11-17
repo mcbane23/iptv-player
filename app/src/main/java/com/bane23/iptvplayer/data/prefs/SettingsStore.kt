@@ -191,6 +191,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[vodOrderKey(playlistId, series)] = ids.joinToString(LIST_SEPARATOR) }
     }
 
+    /** Redosled filmova, odnosno serija, u kategoriji (naziv iz `VodSort`). */
+    fun vodSort(series: Boolean): Flow<String?> =
+        dataStore.data.map { it[vodSortKey(series)] }.distinctUntilChanged()
+
+    suspend fun setVodSort(series: Boolean, value: String) {
+        dataStore.edit { it[vodSortKey(series)] = value }
+    }
+
+    private fun vodSortKey(series: Boolean) = stringPreferencesKey(if (series) "vod_sort_series" else "vod_sort_movies")
+
     /**
      * Kategorija koja je poslednja bila otvorena u sekciji [section] (`live`, `movies`, `series`)
      * liste [playlistId], da se sekcija sledeći put otvori na njoj.

@@ -7,6 +7,8 @@ import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.data.repo.VodRepository
+import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.data.repo.sortVodItems
 import com.bane23.iptvplayer.data.repo.WatchProgress
 import com.bane23.iptvplayer.data.repo.WatchTarget
 import com.bane23.iptvplayer.data.trakt.TraktKey
@@ -46,6 +48,8 @@ data class VodBrowseUiState(
     val loadingItems: Boolean = false,
     val itemsFailed: Boolean = false,
     val items: List<VodItem> = emptyList(),
+    /** Redosled postera u kategoriji. */
+    val sort: VodSort = VodSort.DEFAULT,
     /**
      * Da li se sekcija otvara na „Nastavi gledanje” (kad ga ima). Netačno ako je korisnik poslednji
      * put izašao sa neke kategorije; tada se otvara ona.
@@ -65,6 +69,9 @@ class VodBrowseViewModel @Inject constructor(
 
     private var opened = false
     private var itemsJob: Job? = null
+
+    /** Sadržaj izabrane kategorije redom kojim ga šalje provajder. */
+    private var rawItems: List<VodItem> = emptyList()
     private val kind get() = if (_state.value.series) VodKind.SERIES else VodKind.MOVIES
 
     private val openedKind = MutableStateFlow<VodKind?>(null)
@@ -100,7 +107,26 @@ class VodBrowseViewModel @Inject constructor(
         opened = true
         _state.update { it.copy(series = series) }
         openedKind.value = if (series) VodKind.SERIES else VodKind.MOVIES
+        viewModelScope.launch {
+            val sort = repository.sort(kind)
+            if (sort != VodSort.DEFAULT) applySort(sort)
+        }
         loadCategories()
+    }
+
+    /** Menja redosled postera i pamti ga za sledeći put. */
+    fun setSort(sort: VodSort) {
+        if (sort == _state.value.sort) return
+        viewModelScope.launch { repository.setSort(kind, sort) }
+        viewModelScope.launch { applySort(sort) }
+    }
+
+    private suspend fun applySort(sort: VodSort) {
+        _state.update { it.copy(sort = sort) }
+        val raw = rawItems
+        val sorted = withContext(Dispatchers.Default) { sortVodItems(raw, sort) }
+        // Ako je u međuvremenu izabrana druga kategorija ili redosled, ovaj rezultat više ne važi.
+        if (rawItems === raw && _state.value.sort == sort) _state.update { it.copy(items = sorted) }
     }
 
     fun loadCategories() {
@@ -192,15 +218,22 @@ class VodBrowseViewModel @Inject constructor(
         if (category.id == FAVORITES_ID) {
             // Omiljeni su u bazi i stižu kroz [favorites], pa nema šta da se učitava.
             itemsJob?.cancel()
+            rawItems = emptyList()
             _state.update { it.copy(selected = category, items = emptyList(), loadingItems = false, itemsFailed = false) }
             return
         }
+        rawItems = emptyList()
         _state.update { it.copy(selected = category, items = emptyList(), loadingItems = true, itemsFailed = false) }
         itemsJob?.cancel()
         itemsJob = viewModelScope.launch {
             try {
                 val items = repository.items(kind, category.id)
-                _state.update { it.copy(loadingItems = false, items = items) }
+                rawItems = items
+                val sort = _state.value.sort
+                val sorted = withContext(Dispatchers.Default) { sortVodItems(items, sort) }
+                _state.update { it.copy(loadingItems = false, items = sorted) }
+                // Redosled je promenjen dok se spisak slagao.
+                if (_state.value.sort != sort) applySort(_state.value.sort)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -215,6 +248,7 @@ class VodBrowseViewModel @Inject constructor(
 
     fun clearCategory() {
         itemsJob?.cancel()
+        rawItems = emptyList()
         _state.update { it.copy(selected = null, items = emptyList(), loadingItems = false, itemsFailed = false) }
     }
 }

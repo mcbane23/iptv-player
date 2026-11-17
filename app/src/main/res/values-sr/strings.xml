@@ -529,4 +529,11 @@
     </plurals>
     <string name="settings_auto_refresh">Automatsko osvežavanje lista</string>
     <string name="settings_auto_refresh_summary">Liste se jednom dnevno same preuzimaju iznova, da kanali i filmovi budu sveži. Liste iz fajla se ne osvežavaju.</string>
+    <string name="vod_sort">Redosled</string>
+    <string name="vod_sort_current">Redosled: %1$s</string>
+    <string name="vod_sort_default">Kao kod provajdera</string>
+    <string name="vod_sort_added">Nedavno dodato</string>
+    <string name="vod_sort_name">Po nazivu</string>
+    <string name="vod_sort_rating">Najbolje ocenjeno</string>
+    <string name="vod_sort_year">Najnovije po godini</string>
 </resources>

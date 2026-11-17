@@ -528,4 +528,11 @@
     </plurals>
     <string name="settings_auto_refresh">Refresh playlists automatically</string>
     <string name="settings_auto_refresh_summary">Playlists are downloaded again once a day so channels and movies stay current. Playlists loaded from a file are not refreshed.</string>
+    <string name="vod_sort">Sort order</string>
+    <string name="vod_sort_current">Order: %1$s</string>
+    <string name="vod_sort_default">Provider order</string>
+    <string name="vod_sort_added">Recently added</string>
+    <string name="vod_sort_name">By name</string>
+    <string name="vod_sort_rating">Best rated</string>
+    <string name="vod_sort_year">Newest by year</string>
 </resources>

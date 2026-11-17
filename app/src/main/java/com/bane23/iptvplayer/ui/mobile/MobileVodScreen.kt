@@ -52,6 +52,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
@@ -100,6 +102,7 @@ fun MobileVodScreen(
             onDismissContinue = viewModel::dismissContinue,
             onOpen = onOpen,
             onSearch = onSearch,
+            onSort = viewModel::setSort,
             onRetry = { if (state.categoriesFailed) viewModel.loadCategories() else viewModel.retryItems() },
         )
         return
@@ -113,6 +116,7 @@ fun MobileVodScreen(
                 .padding(padding),
         ) {
             SectionTopBar(title = title, onBack = onBack) {
+                VodSortButton(sort = state.sort, onSort = viewModel::setSort)
                 ToolbarIcon(AppIcons.Search, searchLabel, onSearch)
             }
 
@@ -243,6 +247,31 @@ fun MobileVodScreen(
                 },
             ),
         )
+    }
+}
+
+/** Dugme za redosled postera: otvara meni sa načinima slaganja, izabrani je obeležen. */
+@Composable
+internal fun VodSortButton(sort: VodSort, onSort: (VodSort) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        ToolbarIcon(AppIcons.Sort, stringResource(R.string.vod_sort), { open = true })
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            for (option in VodSort.entries) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(option.label),
+                            color = if (option == sort) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                        )
+                    },
+                    onClick = {
+                        open = false
+                        onSort(option)
+                    },
+                )
+            }
+        }
     }
 }
 
