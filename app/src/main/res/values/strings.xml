@@ -352,6 +352,9 @@
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
     <string name="stream_info_dropped">dropped %1$d</string>
+    <string name="stream_info_keyframe_skips">skips %1$d</string>
+    <string name="stream_info_audio_underruns">audio underruns %1$d</string>
+    <string name="stream_info_rebuffers">rebuffers %1$d</string>
     <string name="subtitle_preview_text">This is how subtitles will look</string>
     <string name="settings_subtitle_look_summary">How subtitles look in the player. Changes apply right away.</string>
     <string name="subtitle_size_small">Small</string>

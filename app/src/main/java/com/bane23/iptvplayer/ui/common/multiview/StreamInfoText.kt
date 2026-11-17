@@ -15,6 +15,11 @@ fun VideoInfo.label(): String? {
         else -> stringResource(R.string.stream_info_hardware)
     }
     val size = if (width > 0) "$width×$height" else null
-    val dropped = stringResource(R.string.stream_info_dropped, droppedFrames)
-    return listOfNotNull(kind, size, dropped, decoder).joinToString(" · ")
+    val counters = listOf(
+        stringResource(R.string.stream_info_dropped, droppedFrames),
+        stringResource(R.string.stream_info_keyframe_skips, keyframeSkips),
+        stringResource(R.string.stream_info_audio_underruns, audioUnderruns),
+        stringResource(R.string.stream_info_rebuffers, rebuffers),
+    )
+    return (listOfNotNull(kind, size, container) + counters + listOfNotNull(decoder)).joinToString(" · ")
 }
