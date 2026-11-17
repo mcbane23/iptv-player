@@ -29,12 +29,19 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -108,6 +115,17 @@ fun TvHomeScreen(
     // što na slabijim TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
     val railWidth = if (railFocused) RailExpanded else RailCollapsed
     val selectedFocus = remember { FocusRequester() }
+    val contentFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    // Izlazak iz menija u sekciju. Kad desno od stavke nema ničega (prazan ekran: dugme je levo,
+    // ispod raširenog menija), fokus ide na prvi element sekcije, inače bi meni ostao raširen.
+    val leaveRail: () -> Boolean = {
+        focusManager.moveFocus(FocusDirection.Right) || contentFocus.tryRequestFocus()
+    }
+    // Nazad dok je fokus u meniju prvo sklanja meni.
+    BackHandler(enabled = railFocused) {
+        if (!leaveRail() && tab != TvTab.LIVE) tab = TvTab.LIVE
+    }
     // Stavka „Snima se” ostaje u meniju dok je fokus na njoj i kad se snimanje završi, da fokus ne nestane.
     var recordingFocused by remember { mutableStateOf(false) }
 
@@ -120,7 +138,9 @@ fun TvHomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = RailCollapsed - 32.dp),
+                .padding(start = RailCollapsed - 32.dp)
+                .focusRequester(contentFocus)
+                .focusGroup(),
         ) {
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
@@ -174,6 +194,11 @@ fun TvHomeScreen(
                 .shadow(if (railFocused) 24.dp else 0.dp)
                 .background(MaterialTheme.colorScheme.surface)
                 .onFocusChanged { railFocused = it.hasFocus }
+                .onKeyEvent { event ->
+                    if (event.key != Key.DirectionRight) return@onKeyEvent false
+                    if (event.type == KeyEventType.KeyDown) leaveRail()
+                    true
+                }
                 // Kad fokus uđe u meni, ide na izabranu sekciju, a ne na najbližu stavku.
                 .focusRestorer(selectedFocus)
                 .focusGroup()
