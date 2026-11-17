@@ -51,7 +51,8 @@ import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.work.Autostart
 
 /**
- * Podešavanja aplikacije na TV-u: levo spisak podešavanja, desno vrednosti onog koje je izabrano.
+ * Podešavanja aplikacije na TV-u: levo spisak podešavanja, desno objašnjenje onog na kome je fokus
+ * i vrednosti onog koje je izabrano.
  * OK na podešavanju otvara njegove vrednosti, OK na vrednosti je bira i vraća fokus levo.
  */
 @Composable
@@ -86,7 +87,7 @@ fun TvSettingsScreen(
     val optionFocus = remember { FocusRequester() }
     // Podešavanje čije se vrednosti trenutno biraju, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
-    // Podešavanje na kome je fokus, zbog objašnjenja ispod spiska.
+    // Podešavanje na kome je fokus, zbog objašnjenja desno od spiska; null kad red nema objašnjenje.
     var focusedChoice by remember { mutableStateOf<Int?>(null) }
     // Probni titl se vidi dok je fokus na podešavanju izgleda titlova ili se bira njegova vrednost.
     // Izvedeno stanje: ekran se ponovo iscrtava samo kad se ovo promeni, a ne na svaki pomeraj fokusa.
@@ -178,7 +179,7 @@ fun TvSettingsScreen(
                         checked = resumeLastChannel,
                         onClick = { viewModel.setResumeLastChannel(!resumeLastChannel) },
                         onFocused = {
-                            focusedChoice = null
+                            focusedChoice = RESUME_ROW
                             openChoice = null
                         },
                         modifier = Modifier.focusRequester(firstFocus),
@@ -313,21 +314,6 @@ fun TvSettingsScreen(
                             modifier = Modifier.focusRequester(rowFocus[index]),
                         )
                     }
-                    FocusedSummary(
-                        focusedChoice = { focusedChoice },
-                        choices = choices,
-                        autostartSummary = when {
-                            !autostart || autostartAllowed -> R.string.settings_autostart_summary
-                            permissionScreenMissing -> R.string.settings_autostart_manual
-                            else -> R.string.settings_autostart_permission
-                        },
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_player_note),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, top = 8.dp),
-                    )
                 }
 
                 val open = openChoice
@@ -337,6 +323,16 @@ fun TvSettingsScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    // Objašnjenje stoji van spiska koji se pomera, pa se vidi na kom god redu da je fokus.
+                    FocusedSummary(
+                        focusedChoice = { focusedChoice },
+                        choices = choices,
+                        autostartSummary = when {
+                            !autostart || autostartAllowed -> R.string.settings_autostart_summary
+                            permissionScreenMissing -> R.string.settings_autostart_manual
+                            else -> R.string.settings_autostart_permission
+                        },
+                    )
                     if (open != null) {
                         val choice = choices[open]
                         LazyColumn(
@@ -379,27 +375,39 @@ fun TvSettingsScreen(
 }
 
 /**
- * Objašnjenje podešavanja na kome je fokus. Fokus čita samo ovaj deo, pa pomeranje D-padom ne
- * iscrtava ponovo ceo ekran dok se spisak pomera.
+ * Objašnjenje podešavanja na kome je fokus; redovi bez objašnjenja ne prikazuju ništa. Fokus čita
+ * samo ovaj deo, pa pomeranje D-padom ne iscrtava ponovo ceo ekran dok se spisak pomera.
  */
 @Composable
 private fun FocusedSummary(focusedChoice: () -> Int?, choices: List<SettingChoice>, autostartSummary: Int) {
-    Text(
-        text = when (val focused = focusedChoice()) {
-            null -> stringResource(R.string.settings_resume_last_summary)
-            ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
-            UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
-            LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
-            AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
-            MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
-            UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
-            AUTOSTART_ROW -> stringResource(autostartSummary)
-            else -> choices.getOrNull(focused)?.summary.orEmpty()
-        },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp),
-    )
+    val focused = focusedChoice() ?: return
+    val summary = when (focused) {
+        RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
+        ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
+        UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
+        LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
+        AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
+        MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
+        UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
+        AUTOSTART_ROW -> stringResource(autostartSummary)
+        else -> choices.getOrNull(focused)?.summary.orEmpty()
+    }
+    // U visini teksta prvog reda spiska.
+    Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = summary,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // Napomena važi samo za podešavanja plejera.
+        if (focused >= 0) {
+            Text(
+                text = stringResource(R.string.settings_player_note),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
@@ -410,3 +418,4 @@ private const val UPDATE_CHANNEL_ROW = -4
 private const val AUTO_REFRESH_ROW = -5
 private const val MATCH_FRAME_RATE_ROW = -6
 private const val UI_SCALE_ROW = -7
+private const val RESUME_ROW = -8
