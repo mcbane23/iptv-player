@@ -519,6 +519,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   u panelu „Podešavanja”, korak pola sekunde, do 30 s u oba smera. Važi za titlove preuzete sa
   interneta (OpenSubtitles); titl ugrađen u snimak se ne može pomerati, pa se stavke tada ne
   prikazuju. Pomeraj važi dok se taj film ili epizoda gleda i ne pamti se.
+- [x] Telefon: odnos slike više nema dugme ispod trake u plejeru (kanali, filmovi, epizode); menja se
+  u panelu „Podešavanja” plejera, kao prva stavka.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 

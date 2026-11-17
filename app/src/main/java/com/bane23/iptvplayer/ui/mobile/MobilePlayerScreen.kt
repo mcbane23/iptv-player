@@ -80,7 +80,6 @@ import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
@@ -219,7 +218,6 @@ fun MobilePlayerScreen(
                     onRetry = viewModel::retry,
                     onChannels = { panel = Panel.CHANNELS },
                     onAudio = { panel = Panel.AUDIO },
-                    onAspect = viewModel::cycleAspectMode,
                     onSettings = { panel = Panel.SETTINGS },
                     infoVisible = infoVisible,
                     onInfo = { infoVisible = !infoVisible },
@@ -294,7 +292,6 @@ private fun LiveControls(
     onRetry: () -> Unit,
     onChannels: () -> Unit,
     onAudio: () -> Unit,
-    onAspect: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
     onInfo: () -> Unit,
@@ -360,7 +357,6 @@ private fun LiveControls(
         chips = {
             PlayerChip(icon = AppIcons.ChannelList, label = stringResource(R.string.player_channels), onClick = onChannels)
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
-            PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
             PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)
             PlayerChip(
                 icon = AppIcons.Info,

@@ -121,8 +121,17 @@ fun quickSettingChoices(
         )
     }.orEmpty()
 
+    val aspectChoice = SettingChoice(
+        title = stringResource(R.string.player_aspect),
+        summary = "",
+        options = AspectMode.entries.map { it.label() },
+        selected = AspectMode.entries.indexOf(aspectMode),
+        onSelect = { onAspectMode(AspectMode.entries[it]) },
+    )
+
     if (!tv) {
         return listOfNotNull(
+            aspectChoice,
             switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),
             switch(stringResource(R.string.settings_volume_slider), volumeSlider, settingsViewModel::setPlayerVolumeSlider),
             switch(stringResource(R.string.settings_background_play), backgroundPlay, settingsViewModel::setBackgroundPlay),
@@ -134,13 +143,7 @@ fun quickSettingChoices(
         ) + subtitleShiftChoices
     }
     return listOfNotNull(
-        SettingChoice(
-            title = stringResource(R.string.player_aspect),
-            summary = "",
-            options = AspectMode.entries.map { it.label() },
-            selected = AspectMode.entries.indexOf(aspectMode),
-            onSelect = { onAspectMode(AspectMode.entries[it]) },
-        ),
+        aspectChoice,
         decoderChoice,
         subtitleSizeChoice.takeIf { speed != null },
         *subtitleShiftChoices.toTypedArray(),

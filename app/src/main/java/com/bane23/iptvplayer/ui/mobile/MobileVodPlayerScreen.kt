@@ -36,7 +36,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
@@ -257,14 +256,6 @@ fun MobileVodPlayerScreen(
                         icon = AppIcons.Audio,
                         label = stringResource(R.string.player_audio),
                         onClick = { panel = VodPanel.AUDIO },
-                    )
-                    PlayerChip(
-                        icon = AppIcons.AspectRatio,
-                        label = ui.aspectMode.label(),
-                        onClick = {
-                            viewModel.cycleAspectMode()
-                            activity++
-                        },
                     )
                     PlayerChip(
                         icon = AppIcons.Settings,
