@@ -210,6 +210,8 @@
     <string name="buffer_large">Veliki</string>
     <string name="settings_decoder">Dekoder</string>
     <string name="settings_decoder_summary">Probajte softverski ako je slika crna, zelena ili secka. Troši više baterije i ume da bude spor na visokim rezolucijama.</string>
+    <string name="player_decoder_auto">Dekoder: auto</string>
+    <string name="player_decoder_software">Dekoder: softverski</string>
     <string name="decoder_auto">Automatski (hardverski)</string>
     <string name="decoder_software">Softverski</string>
     <string name="settings_audio_language">Jezik zvuka</string>
@@ -340,8 +342,8 @@
     <string name="settings_subtitle_size">Veličina titlova</string>
     <string name="settings_subtitle_position">Položaj titlova</string>
     <string name="settings_subtitle_background">Crna pozadina titlova</string>
-    <string name="settings_stream_info">Podaci o strimu u prikazu više kanala</string>
-    <string name="settings_stream_info_summary">Na svakom polju ispisuje dekoder, rezoluciju i broj ispuštenih slika. Pomaže da se otkrije zašto kanal secka.</string>
+    <string name="settings_stream_info">Tehnički podaci o slici</string>
+    <string name="settings_stream_info_summary">U plejeru i u prikazu više kanala ispisuje dekoder, rezoluciju i broj ispuštenih slika. Pomaže da se otkrije zašto slika secka ili koči.</string>
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
     <string name="stream_info_dropped">ispušteno %1$d</string>

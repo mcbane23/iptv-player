@@ -17,6 +17,7 @@ import com.bane23.iptvplayer.data.repo.PlaylistRepository
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,6 +59,8 @@ data class PlayerUiState(
     /** Redni broj trenutnog kanala u toj kategoriji (od nule). */
     val position: Int = 0,
     val aspectMode: AspectMode = AspectMode.FIT,
+    /** Dekoder koji plejer trenutno bira prvi. */
+    val decoder: DecoderMode = DecoderMode.AUTO,
     /** Broj kanala koji korisnik upravo kuca na daljinskom. */
     val typedNumber: String = "",
     /** Strim ne može ni da se sastavi (npr. lozinka više ne može da se pročita). */
@@ -78,11 +81,12 @@ class PlayerViewModel @Inject constructor(
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
-    private val engine = PlayerEngine(context, viewModelScope, runBlocking { settings.playerSettings.first() })
+    private val initialSettings = runBlocking { settings.playerSettings.first() }
+    private val engine = PlayerEngine(context, viewModelScope, initialSettings)
     val player get() = engine.player
     val playback: StateFlow<PlaybackState> = engine.state
 
-    private val _ui = MutableStateFlow(PlayerUiState())
+    private val _ui = MutableStateFlow(PlayerUiState(decoder = initialSettings.decoder))
     val ui: StateFlow<PlayerUiState> = _ui.asStateFlow()
 
     private val listScope = MutableStateFlow<ListScope?>(null)
@@ -220,6 +224,14 @@ class PlayerViewModel @Inject constructor(
 
     fun cycleAspectMode() = _ui.update {
         it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
+    }
+
+    /** Prelazi na drugi dekoder odmah, bez izlaska iz kanala. Izbor se pamti kao u podešavanjima. */
+    fun cycleDecoder() {
+        val next = DecoderMode.entries[(_ui.value.decoder.ordinal + 1) % DecoderMode.entries.size]
+        _ui.update { it.copy(decoder = next) }
+        engine.setDecoder(next)
+        viewModelScope.launch { settings.setPlayerDecoder(next) }
     }
 
     /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći kanal ili film krene isto. */

@@ -48,6 +48,7 @@ import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.recording.recordingChoices
 import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.ChannelLogo
@@ -64,6 +65,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
+import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -209,6 +211,7 @@ fun TvPlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
         )
+        StreamDebugLabel(playback.video, Modifier.align(Alignment.TopEnd))
 
         statusMessage(ui, playback)?.let { message ->
             Text(
@@ -247,6 +250,7 @@ fun TvPlayerScreen(
                 onSubtitles = { tracks = TvTrackKind.SUBTITLES },
                 onAudio = { tracks = TvTrackKind.AUDIO },
                 onAspect = viewModel::cycleAspectMode,
+                onDecoder = viewModel::cycleDecoder,
                 onFavorite = viewModel::toggleFavorite,
                 isRecording = isRecording,
                 onRecord = record,
@@ -302,6 +306,7 @@ private fun LiveControls(
     onSubtitles: () -> Unit,
     onAudio: () -> Unit,
     onAspect: () -> Unit,
+    onDecoder: () -> Unit,
     onFavorite: () -> Unit,
     isRecording: Boolean,
     onRecord: () -> Unit,
@@ -411,6 +416,14 @@ private fun LiveControls(
                     )
                     PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
                     PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
+                    PlayerChip(
+                        icon = AppIcons.Settings,
+                        label = stringResource(
+                            if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
+                        ),
+                        active = ui.decoder == DecoderMode.SOFTWARE,
+                        onClick = onDecoder,
+                    )
                     PlayerChip(
                         icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                         label = stringResource(R.string.category_favorites),
