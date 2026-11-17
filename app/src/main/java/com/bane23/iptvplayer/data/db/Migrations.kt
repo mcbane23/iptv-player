@@ -105,8 +105,16 @@ object Migrations {
         }
     }
 
+    /** 12 → 13: podaci o Xtream nalogu uz listu (istek i broj veza). */
+    private val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE playlists ADD COLUMN accountExpiresAt INTEGER")
+            db.execSQL("ALTER TABLE playlists ADD COLUMN maxConnections INTEGER")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-        MIGRATION_11_12,
+        MIGRATION_11_12, MIGRATION_12_13,
     )
 }

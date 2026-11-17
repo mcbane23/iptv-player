@@ -36,6 +36,8 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.message
+import com.bane23.iptvplayer.ui.common.accountExpiresSoon
+import com.bane23.iptvplayer.ui.common.accountLine
 import com.bane23.iptvplayer.ui.common.summary
 
 @Composable
@@ -183,6 +185,17 @@ private fun TvPlaylistRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    playlist.accountLine()?.let { line ->
+                        // Nalog koji uskoro ističe je u boji teme; na fokusiranom redu ostaje boja teksta.
+                        val warn = playlist.accountExpiresSoon() && color == MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = line,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (warn) MaterialTheme.colorScheme.primary else color.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 if (playlist.isActive) {
                     Text(

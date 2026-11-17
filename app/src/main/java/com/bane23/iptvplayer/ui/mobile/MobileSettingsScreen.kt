@@ -74,6 +74,7 @@ fun MobileSettingsScreen(
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
+    val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
@@ -128,6 +129,12 @@ fun MobileSettingsScreen(
                     summary = stringResource(R.string.settings_resume_last_summary),
                     checked = resumeLastChannel,
                     onChange = viewModel::setResumeLastChannel,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_auto_refresh),
+                    summary = stringResource(R.string.settings_auto_refresh_summary),
+                    checked = autoRefreshPlaylists,
+                    onChange = viewModel::setAutoRefreshPlaylists,
                 )
                 SettingsSwitchRow(
                     title = stringResource(R.string.settings_under_cutout),

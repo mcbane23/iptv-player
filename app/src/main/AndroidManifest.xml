@@ -95,6 +95,9 @@
             android:name=".data.recording.RecordingAlarmReceiver"
             android:exported="false" />
         <receiver
+            android:name=".data.reminder.ReminderAlarmReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".work.BootReceiver"
             android:exported="false">
             <intent-filter>

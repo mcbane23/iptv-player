@@ -60,6 +60,10 @@ data class VodItem(
     val extension: String?,
     /** ID na TMDB-u (za Trakt), ako ga panel šalje. */
     val tmdbId: Long? = null,
+    /** Kada je dodat na listu (sekunde od 1970); 0 kad panel to ne šalje. */
+    val added: Long = 0,
+    /** Godina izlaska; 0 kad panel to ne šalje. */
+    val year: Int = 0,
 )
 
 /**
@@ -135,6 +139,8 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
                     rating = stream.rating.cleanRating(),
                     extension = stream.extension?.takeIf { it.isNotBlank() },
                     tmdbId = XtreamVodParser.tmdbId(stream.tmdb) ?: XtreamVodParser.tmdbId(stream.tmdbId),
+                    added = stream.added?.trim()?.toLongOrNull() ?: 0,
+                    year = yearOf(stream.year, stream.releaseDate),
                 ),
             )
         }
@@ -149,12 +155,23 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
                     rating = series.rating.cleanRating(),
                     extension = null,
                     tmdbId = XtreamVodParser.tmdbId(series.tmdb) ?: XtreamVodParser.tmdbId(series.tmdbId),
+                    added = series.lastModified?.trim()?.toLongOrNull() ?: 0,
+                    year = yearOf(series.year, series.releaseDate, series.releaseDateAlt),
                 ),
             )
         }
     }
     items.trimToSize()
     return items
+}
+
+/** Godina iz prvog polja koje počinje sa četiri cifre (godina ili datum „2021-05-01”); inače 0. */
+private fun yearOf(vararg values: String?): Int {
+    for (value in values) {
+        val year = value?.trim()?.take(4)?.toIntOrNull() ?: continue
+        if (year in 1900..2100) return year
+    }
+    return 0
 }
 
 /** Ocena kao kratak tekst; "0" i prazno znače da ocene nema. */
@@ -266,6 +283,11 @@ class VodRepository @Inject constructor(
         val playlistId = settings.activePlaylistId.first() ?: return
         settings.setLastCategory(playlistId, kind.section, value)
     }
+
+    /** Zapamćen redosled filmova, odnosno serija (isti za sve liste). */
+    suspend fun sort(kind: VodKind): VodSort = VodSort.of(settings.vodSort(kind == VodKind.SERIES).first())
+
+    suspend fun setSort(kind: VodKind, sort: VodSort) = settings.setVodSort(kind == VodKind.SERIES, sort.name)
 
     private val VodKind.section get() = if (this == VodKind.SERIES) "series" else "movies"
 

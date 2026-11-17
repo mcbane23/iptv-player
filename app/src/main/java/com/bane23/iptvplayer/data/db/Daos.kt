@@ -83,6 +83,9 @@ interface PlaylistDao {
     @Query("UPDATE playlists SET epgRefreshedAt = :time WHERE id = :id")
     suspend fun markEpgRefreshed(id: Long, time: Long)
 
+    @Query("UPDATE playlists SET accountExpiresAt = :expiresAt, maxConnections = :maxConnections WHERE id = :id")
+    suspend fun setAccountInfo(id: Long, expiresAt: Long?, maxConnections: Int?)
+
     @Query("DELETE FROM playlists WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

@@ -19,6 +19,10 @@ data class Playlist(
     val channelCount: Int,
     val lastRefreshedAt: Long?,
     val isActive: Boolean,
+    /** Xtream nalog: kad ističe (ms), po poslednjem osvežavanju; null = ne ističe ili se ne zna. */
+    val accountExpiresAt: Long? = null,
+    /** Xtream nalog: broj istovremenih veza; null = nepoznato. */
+    val maxConnections: Int? = null,
 )
 
 /** Podaci koje korisnik unosi pri dodavanju ili izmeni liste. */

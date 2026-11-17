@@ -38,6 +38,8 @@ import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.message
+import com.bane23.iptvplayer.ui.common.accountExpiresSoon
+import com.bane23.iptvplayer.ui.common.accountLine
 import com.bane23.iptvplayer.ui.common.summary
 
 @Composable
@@ -182,6 +184,21 @@ private fun PlaylistCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                playlist.accountLine()?.let { line ->
+                    Text(
+                        text = line,
+                        style = MaterialTheme.typography.bodyMedium,
+                        // Nalog koji uskoro ističe je u boji teme, da se primeti.
+                        color = if (playlist.accountExpiresSoon()) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
             if (refreshing) {
                 CircularProgressIndicator(

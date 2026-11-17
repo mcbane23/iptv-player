@@ -61,6 +61,8 @@ import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
 import com.bane23.iptvplayer.ui.common.vod.SkeletonPoster
 import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
+import com.bane23.iptvplayer.ui.common.vod.label
+import com.bane23.iptvplayer.data.repo.VodSort
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
 
@@ -100,6 +102,7 @@ fun TvVodScreen(
     val categoryListState = rememberLazyListState()
     // Meni kategorije (dugi OK): sakrij, pomeri na vrh, uredi.
     var menuCategory by remember { mutableStateOf<VodCategory?>(null) }
+    var sortOpen by remember { mutableStateOf(false) }
     // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
     var focusTargetId by remember { mutableStateOf<String?>(null) }
@@ -160,6 +163,17 @@ fun TvVodScreen(
             delay(MOVE_SETTLE_MS)
             runCatching { categoryListState.scrollToItem(0) }
         }
+    }
+    if (sortOpen) {
+        TvActionDialog(
+            title = stringResource(R.string.vod_sort),
+            options = VodSort.entries.map { stringResource(it.label) },
+            onSelect = { option ->
+                lastItemId = null
+                viewModel.setSort(VodSort.entries[option])
+            },
+            onClose = { sortOpen = false },
+        )
     }
     menuCategory?.let { category ->
         TvActionDialog(
@@ -246,6 +260,17 @@ fun TvVodScreen(
                         Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(if (series) R.string.search_series else R.string.search_movies),
+                            color = color,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                    TvListRow(onClick = { sortOpen = true }) { color ->
+                        Icon(AppIcons.Sort, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = stringResource(R.string.vod_sort_current, stringResource(state.sort.label)),
                             color = color,
                             style = MaterialTheme.typography.bodyLarge,
                             maxLines = 1,

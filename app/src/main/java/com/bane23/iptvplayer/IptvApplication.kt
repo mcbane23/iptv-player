@@ -3,6 +3,10 @@ package com.bane23.iptvplayer
 import android.app.Application
 import android.content.Context
 import com.bane23.iptvplayer.data.recording.RecordingRepository
+import com.bane23.iptvplayer.data.reminder.ReminderRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.bane23.iptvplayer.data.trakt.TraktTokenStore
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.work.EpgScheduler
@@ -26,6 +30,9 @@ class IptvApplication : Application() {
     @Inject
     lateinit var recordings: RecordingRepository
 
+    @Inject
+    lateinit var reminders: ReminderRepository
+
     /** Jezik izabran u podešavanjima važi i za tekstove van aktivnosti (obaveštenja, kratke poruke). */
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(AppLocale.wrap(base))
@@ -34,6 +41,9 @@ class IptvApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         epgScheduler.schedulePeriodic()
+        epgScheduler.schedulePlaylistRefresh()
+        // Budilnici podsetnika ne preživljavaju gašenje uređaja.
+        CoroutineScope(Dispatchers.IO).launch { reminders.restoreAlarms() }
         // Pri svakom pokretanju preuzima se ono što je na Trakt nalogu gledano drugde.
         // Bez prijave posao se odmah završava.
         if (traktTokens.isAvailable) traktScheduler.syncSoon()

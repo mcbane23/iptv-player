@@ -43,6 +43,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.repo.VodSort
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
@@ -71,6 +72,7 @@ fun MobileVodLandscape(
     onDismissContinue: (ContinueItem) -> Unit,
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
+    onSort: (VodSort) -> Unit,
     onRetry: () -> Unit,
 ) {
     val favoritesLabel = stringResource(R.string.category_favorites)
@@ -180,6 +182,7 @@ fun MobileVodLandscape(
                         .weight(1f)
                         .padding(start = 12.dp),
                 )
+                VodSortButton(sort = state.sort, onSort = onSort)
                 ToolbarIcon(
                     AppIcons.Search,
                     stringResource(if (series) R.string.search_series else R.string.search_movies),
