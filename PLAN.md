@@ -485,6 +485,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   strelicama lako stigne do dugmadi desno od nje.
 - [x] TV bočni meni: desno ili Nazad ga uvek sklanja, i na praznom ekranu (bez lista), gde je ostajao
   raširen preko teksta.
+- [x] Ikonice: ispravljeno crtanje ikonica čiji je deo bio odsečen ili iskrivljen (vodič u TV meniju,
+  prethodni kanal u plejeru, obaveštenja).
 
 ## 7. Testiranje
 
