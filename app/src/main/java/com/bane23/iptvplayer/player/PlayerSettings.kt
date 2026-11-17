@@ -10,6 +10,12 @@ enum class DecoderMode {
 
     /** Prvo softverski dekoder; pomaže kad hardverski daje crnu ili iskidanu sliku. */
     SOFTWARE,
+
+    /**
+     * Hardverski dekoder u tunel režimu: uređaj sam usklađuje sliku sa zvukom, umesto plejera.
+     * Pomaže na TV uređajima gde slika zaostaje za zvukom; ako uređaj to ne podržava, radi kao [AUTO].
+     */
+    TUNNEL,
 }
 
 /** Veličina slova titlova, kao deo visine slike. */

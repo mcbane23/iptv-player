@@ -61,7 +61,11 @@ fun quickSettingChoices(
     val decoderChoice = SettingChoice(
         title = stringResource(R.string.settings_decoder),
         summary = "",
-        options = listOf(stringResource(R.string.decoder_auto), stringResource(R.string.decoder_software)),
+        options = listOf(
+            stringResource(R.string.decoder_auto),
+            stringResource(R.string.decoder_software),
+            stringResource(R.string.decoder_tunnel),
+        ),
         selected = DecoderMode.entries.indexOf(decoder),
         onSelect = { onDecoder(DecoderMode.entries[it]) },
     )
