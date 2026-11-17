@@ -36,7 +36,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
-import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
@@ -259,14 +258,6 @@ fun MobileVodPlayerScreen(
                         onClick = { panel = VodPanel.AUDIO },
                     )
                     PlayerChip(
-                        icon = AppIcons.AspectRatio,
-                        label = ui.aspectMode.label(),
-                        onClick = {
-                            viewModel.cycleAspectMode()
-                            activity++
-                        },
-                    )
-                    PlayerChip(
                         icon = AppIcons.Settings,
                         label = stringResource(R.string.settings_title),
                         // Brzina koja nije obična se vidi i na samom dugmetu.
@@ -282,6 +273,14 @@ fun MobileVodPlayerScreen(
                             activity++
                         },
                     )
+                    // Na TV-u je sledeća epizoda ikonica na traci; ovde bi suzila traku za premotavanje.
+                    if (ui.hasNext) {
+                        PlayerChip(
+                            icon = AppIcons.Next,
+                            label = stringResource(R.string.vod_next_episode),
+                            onClick = viewModel::next,
+                        )
+                    }
                 },
             )
         }

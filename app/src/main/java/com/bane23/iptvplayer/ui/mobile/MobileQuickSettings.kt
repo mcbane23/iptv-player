@@ -60,6 +60,15 @@ internal fun BoxScope.MobileQuickSettingsPanel(choices: List<SettingChoice>) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         choices.forEach { choice -> QuickSettingRow(choice) }
+        // Napomene uz stavke koje ne važe odmah (bafer).
+        choices.map { it.summary }.filter { it.isNotEmpty() }.forEach { note ->
+            Text(
+                text = note,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            )
+        }
     }
 }
 

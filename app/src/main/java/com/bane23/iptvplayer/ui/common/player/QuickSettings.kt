@@ -121,42 +121,42 @@ fun quickSettingChoices(
         )
     }.orEmpty()
 
-    if (!tv) {
-        return listOfNotNull(
-            switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),
-            switch(stringResource(R.string.settings_volume_slider), volumeSlider, settingsViewModel::setPlayerVolumeSlider),
-            switch(stringResource(R.string.settings_background_play), backgroundPlay, settingsViewModel::setBackgroundPlay),
-            decoderChoice,
-            sleepChoice,
-            speedChoice,
-            // Plejer kanala nema titlove, pa veličina stoji samo uz filmove i epizode.
-            subtitleSizeChoice.takeIf { speed != null },
-        ) + subtitleShiftChoices
-    }
-    return listOfNotNull(
-        SettingChoice(
-            title = stringResource(R.string.player_aspect),
-            summary = "",
-            options = AspectMode.entries.map { it.label() },
-            selected = AspectMode.entries.indexOf(aspectMode),
-            onSelect = { onAspectMode(AspectMode.entries[it]) },
+    val aspectChoice = SettingChoice(
+        title = stringResource(R.string.player_aspect),
+        summary = "",
+        options = AspectMode.entries.map { it.label() },
+        selected = AspectMode.entries.indexOf(aspectMode),
+        onSelect = { onAspectMode(AspectMode.entries[it]) },
+    )
+
+    val bufferChoice = SettingChoice(
+        title = stringResource(R.string.settings_buffer),
+        // Jedina stavka koja ne važi odmah, nego od sledećeg puštanja.
+        summary = stringResource(R.string.player_buffer_note),
+        options = listOf(
+            stringResource(R.string.buffer_small),
+            stringResource(R.string.buffer_normal),
+            stringResource(R.string.buffer_large),
         ),
+        selected = BufferSize.entries.indexOf(settings.buffer),
+        onSelect = { settingsViewModel.setBuffer(BufferSize.entries[it]) },
+    )
+    // Isti redosled na telefonu i na TV-u; plejer kanala nema titlove, pa su stavke o titlu samo uz
+    // filmove i epizode.
+    val shared = listOfNotNull(
+        aspectChoice,
         decoderChoice,
         subtitleSizeChoice.takeIf { speed != null },
         *subtitleShiftChoices.toTypedArray(),
         sleepChoice,
         speedChoice,
-        // Jedina stavka koja ne važi odmah, nego od sledećeg puštanja.
-        SettingChoice(
-            title = stringResource(R.string.settings_buffer),
-            summary = stringResource(R.string.player_buffer_note),
-            options = listOf(
-                stringResource(R.string.buffer_small),
-                stringResource(R.string.buffer_normal),
-                stringResource(R.string.buffer_large),
-            ),
-            selected = BufferSize.entries.indexOf(settings.buffer),
-            onSelect = { settingsViewModel.setBuffer(BufferSize.entries[it]) },
-        ),
+        bufferChoice,
+    )
+    if (tv) return shared
+    // Samo telefon: trake na dodir i puštanje u pozadini.
+    return shared + listOf(
+        switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),
+        switch(stringResource(R.string.settings_volume_slider), volumeSlider, settingsViewModel::setPlayerVolumeSlider),
+        switch(stringResource(R.string.settings_background_play), backgroundPlay, settingsViewModel::setBackgroundPlay),
     )
 }
