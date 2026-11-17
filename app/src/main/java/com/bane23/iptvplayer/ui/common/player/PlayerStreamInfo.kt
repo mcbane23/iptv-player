@@ -26,14 +26,17 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.player.VideoInfo
+import com.bane23.iptvplayer.ui.common.multiview.label
 
 /**
- * Informacije o strimu preko slike (rezolucija, kodek, protok, zvuk). Otvara ih i zatvara dugme
- * „Informacije”; ostaju vidljive i kad se kontrole sklone.
+ * Informacije o strimu preko slike (rezolucija, kodek, protok, zvuk) i tehnički podaci [technical]
+ * (dekoder, ispuštene slike, prekidi), koji pomažu da se otkrije zašto slika secka ili koči.
+ * Otvara ih i zatvara dugme „Informacije”; ostaju vidljive i kad se kontrole sklone.
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerStreamInfo(player: Player, modifier: Modifier = Modifier) {
+fun PlayerStreamInfo(player: Player, technical: VideoInfo, modifier: Modifier = Modifier) {
     // Menja se kad plejer javi nove trake ili novu veličinu slike, pa se tekst ponovo računa.
     var version by remember(player) { mutableIntStateOf(0) }
     DisposableEffect(player) {
@@ -78,11 +81,12 @@ fun PlayerStreamInfo(player: Player, modifier: Modifier = Modifier) {
             video?.let { InfoLine(stringResource(R.string.stream_info_video), it) }
             audio?.let { InfoLine(stringResource(R.string.player_audio), it) }
         }
+        technical.label()?.let { InfoLine(stringResource(R.string.stream_info_technical), it, maxLines = 4) }
     }
 }
 
 @Composable
-private fun InfoLine(label: String?, value: String) {
+private fun InfoLine(label: String?, value: String, maxLines: Int = 2) {
     if (label != null) {
         Text(
             text = label,
@@ -96,7 +100,7 @@ private fun InfoLine(label: String?, value: String) {
         color = Color.White,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
-        maxLines = 2,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(bottom = 4.dp),
     )

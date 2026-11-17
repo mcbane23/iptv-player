@@ -128,6 +128,11 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
             TileMenu(
                 tile = state.tiles[index],
                 count = state.count,
+                showInfo = state.showInfo,
+                onInfo = {
+                    menu = null
+                    viewModel.toggleInfo()
+                },
                 onOpen = { channelId ->
                     menu = null
                     onOpen(channelId)
@@ -159,6 +164,8 @@ private const val WARNING_MS = 10_000L
 private fun TileMenu(
     tile: MultiTile,
     count: Int,
+    showInfo: Boolean,
+    onInfo: () -> Unit,
     onOpen: (Long) -> Unit,
     onPick: () -> Unit,
     onRetry: () -> Unit,
@@ -180,6 +187,7 @@ private fun TileMenu(
                 onCount(MultiViewViewModel.MAX_TILES)
             },
         )
+        add(Triple(stringResource(R.string.player_stream_info), check.takeIf { showInfo }, onInfo))
     }
     val focus = remember(options.size) { List(options.size) { FocusRequester() } }
     var selected by remember(options.size) { mutableStateOf(0) }

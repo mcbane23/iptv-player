@@ -351,8 +351,7 @@
     <string name="settings_subtitle_size">Subtitle size</string>
     <string name="settings_subtitle_position">Subtitle position</string>
     <string name="settings_subtitle_background">Black subtitle background</string>
-    <string name="settings_stream_info">Technical video info</string>
-    <string name="settings_stream_info_summary">Shows the decoder, resolution and dropped frames in the player and in multi-view. Helps find out why the picture stutters or freezes.</string>
+    <string name="stream_info_technical">Technical details</string>
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
     <string name="stream_info_dropped">dropped %1$d</string>

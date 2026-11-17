@@ -82,7 +82,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
-import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -168,8 +167,6 @@ fun MobilePlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
         )
-        // Dok su kontrole na ekranu podaci se sklanjaju, da se tekstovi ne preklapaju.
-        if (!controlsVisible) StreamDebugLabel(playback.video, Modifier.align(Alignment.TopStart))
 
         if (!inPip) {
             statusMessage(ui, playback)?.let { message ->
@@ -188,6 +185,7 @@ fun MobilePlayerScreen(
             if (infoVisible && panel != Panel.CHANNELS) {
                 PlayerStreamInfo(
                     player = viewModel.player,
+                    technical = playback.video,
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .safeDrawingPadding()
