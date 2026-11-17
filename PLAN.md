@@ -480,6 +480,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] TV plejer za filmove i epizode: uklonjeno dugme „Od početka” (ostaje na ekranu detalja, pre puštanja)
 - [x] TV plejer filmova i serija: traka vremena u fokusu premotava tek posle potvrde sa OK, da se
   strelicama lako stigne do dugmadi desno od nje.
+- [x] TV bočni meni: desno ili Nazad ga uvek sklanja, i na praznom ekranu (bez lista), gde je ostajao
+  raširen preko teksta.
 
 ## 7. Testiranje
 
