@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.bane23.iptvplayer.ui.common.vod.firstUnwatchedIndex
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -27,6 +31,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -179,6 +188,16 @@ fun TvSeriesScreen(
     val details = state.details
     val firstFocus = remember { FocusRequester() }
     val resume = state.resumeEpisode
+    // Prelazak sa sezona na epizode vodi na prvu neodgledanu epizodu sezone.
+    val episodeFocus = remember { FocusRequester() }
+    val episodeListState = rememberLazyListState()
+    var targetEpisodeId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(state.selectedSeason, details != null, state.progress.isEmpty()) {
+        val index = firstUnwatchedIndex(state.episodes, state.progress)
+        targetEpisodeId = state.episodes.getOrNull(index)?.id
+        // Red sa tom epizodom mora da postoji da bi primio fokus; ispred epizoda je red „označi sezonu”.
+        if (details != null) runCatching { episodeListState.scrollToItem(if (index == 0) 0 else index + 1) }
+    }
 
     Backdrop(state.poster) {
         Row(
@@ -280,11 +299,19 @@ fun TvSeriesScreen(
                                 selected = season.number == state.selectedSeason,
                                 onFocused = { viewModel.selectSeason(season.number) },
                                 onClick = { viewModel.selectSeason(season.number) },
-                                modifier = if (isFirst) Modifier.focusRequester(firstFocus) else Modifier,
+                                modifier = (if (isFirst) Modifier.focusRequester(firstFocus) else Modifier)
+                                    // Desno sa sezone vodi na prvu neodgledanu epizodu; ako njen red još
+                                    // ne postoji, fokus ide uobičajenim putem.
+                                    .onPreviewKeyEvent { event ->
+                                        event.type == KeyEventType.KeyDown &&
+                                            event.key == Key.DirectionRight &&
+                                            episodeFocus.tryRequestFocus()
+                                    },
                             )
                         }
                     }
                     LazyColumn(
+                        state = episodeListState,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
@@ -327,6 +354,7 @@ fun TvSeriesScreen(
                                 onClick = { onPlay(episode.id, progress?.resumable != true) },
                                 // Dug pritisak na OK označava epizodu kao odgledanu, odnosno poništava.
                                 onLongClick = { viewModel.toggleWatched(episode) },
+                                modifier = if (episode.id == targetEpisodeId) Modifier.focusRequester(episodeFocus) else Modifier,
                             )
                         }
                     }
@@ -393,8 +421,9 @@ private fun EpisodeRow(
     fallbackImage: String?,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    TvListRow(onClick = onClick, onLongClick = onLongClick) { color ->
+    TvListRow(onClick = onClick, onLongClick = onLongClick, modifier = modifier) { color ->
         Box(
             modifier = Modifier
                 .width(112.dp)

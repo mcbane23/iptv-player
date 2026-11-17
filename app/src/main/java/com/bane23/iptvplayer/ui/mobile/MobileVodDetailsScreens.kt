@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import com.bane23.iptvplayer.ui.common.vod.firstUnwatchedIndex
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -128,6 +132,9 @@ fun MobileMovieScreen(
     }
 }
 
+/** Redovi ispred epizoda u spisku: zaglavlje, dugmad, opis, sezone i „označi sezonu”. */
+private const val ROWS_BEFORE_EPISODES = 5
+
 /** Detalji serije na telefonu: zaglavlje, nastavak gledanja, sezone kao čipovi i spisak epizoda. */
 @Composable
 fun MobileSeriesScreen(
@@ -141,9 +148,12 @@ fun MobileSeriesScreen(
     LaunchedEffect(seriesId) { viewModel.open(seriesId, name, poster) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val details = state.details
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     Scaffold { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
@@ -194,7 +204,14 @@ fun MobileSeriesScreen(
                             items(details.seasons, key = { it.number }) { season ->
                                 FilterChip(
                                     selected = season.number == state.selectedSeason,
-                                    onClick = { viewModel.selectSeason(season.number) },
+                                    onClick = {
+                                        viewModel.selectSeason(season.number)
+                                        // Sezona sa odgledanim epizodama se otvara na prvoj neodgledanoj.
+                                        val index = firstUnwatchedIndex(season.episodes, state.progress)
+                                        if (index > 0) {
+                                            scope.launch { listState.animateScrollToItem(ROWS_BEFORE_EPISODES + index) }
+                                        }
+                                    },
                                     label = { Text(stringResource(R.string.vod_season, season.number)) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primary,

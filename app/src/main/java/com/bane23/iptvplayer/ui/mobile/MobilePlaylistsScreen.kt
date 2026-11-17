@@ -3,7 +3,6 @@ package com.bane23.iptvplayer.ui.mobile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -76,6 +75,15 @@ fun MobilePlaylistsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 ) {
+                    if (state.playlists.size > 1) {
+                        item(key = "hint") {
+                            Text(
+                                text = stringResource(R.string.playlists_select_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     items(state.playlists, key = { it.id }) { playlist ->
                         PlaylistCard(
                             playlist = playlist,
@@ -120,7 +128,10 @@ fun MobilePlaylistsScreen(
     }
 }
 
-/** Lista: naziv, oznaka aktivne liste, kratki podaci i radnje kao ikonice. */
+/**
+ * Lista: naziv, oznaka aktivne liste i kratki podaci. Dodir na karticu bira listu kao aktivnu;
+ * Osveži, Izmeni i Obriši su u meniju iza tri tačke.
+ */
 @Composable
 private fun PlaylistCard(
     playlist: Playlist,
@@ -130,61 +141,84 @@ private fun PlaylistCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
-                Text(
-                    text = playlist.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                if (playlist.isActive) {
-                    Icon(
-                        imageVector = AppIcons.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .size(18.dp),
-                    )
+    var menuOpen by remember { mutableStateOf(false) }
+    Card(onClick = { if (!playlist.isActive) onSelect() }, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = stringResource(R.string.playlist_active),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        modifier = Modifier.padding(start = 4.dp),
-                    )
-                }
-            }
-            Text(
-                text = playlist.summary(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp, end = 8.dp),
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                if (refreshing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Text(
-                        text = stringResource(R.string.playlist_refreshing),
+                        text = playlist.name,
+                        style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 12.dp),
+                        modifier = Modifier.weight(1f, fill = false),
                     )
-                } else {
-                    if (!playlist.isActive) {
-                        TextButton(onClick = onSelect) { Text(stringResource(R.string.action_select)) }
+                    if (playlist.isActive) {
+                        Icon(
+                            imageVector = AppIcons.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .size(18.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.playlist_active),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    ToolbarIcon(AppIcons.Refresh, stringResource(R.string.action_refresh), onRefresh)
-                    ToolbarIcon(AppIcons.Edit, stringResource(R.string.action_edit), onEdit)
-                    ToolbarIcon(AppIcons.Delete, stringResource(R.string.action_delete), onDelete)
+                }
+                Text(
+                    text = if (refreshing) stringResource(R.string.playlist_refreshing) else playlist.summary(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            if (refreshing) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(horizontal = 14.dp)
+                        .size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Box {
+                    ToolbarIcon(AppIcons.More, stringResource(R.string.action_more)) { menuOpen = true }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_refresh)) },
+                            leadingIcon = { Icon(AppIcons.Refresh, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                onRefresh()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_edit)) },
+                            leadingIcon = { Icon(AppIcons.Edit, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                onEdit()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_delete)) },
+                            leadingIcon = { Icon(AppIcons.Delete, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                onDelete()
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -121,7 +121,7 @@
 
     <!-- Categories -->
     <string name="categories_manage_title">Categories</string>
-    <string name="categories_manage_hint">Hide categories you do not watch and change their order. This is kept when the playlist is refreshed.</string>
+    <string name="categories_manage_hint">Hide categories you do not watch and change their order. Channels of hidden categories are left out of “All channels” and search. This is kept when the playlist is refreshed.</string>
     <string name="category_move_up">Move up</string>
     <string name="category_move_down">Move down</string>
     <string name="category_shown">Show category</string>
@@ -473,4 +473,14 @@
     <string name="opensubtitles_page_intro">Enter the username and password of your opensubtitles.com account. They go straight to your TV over your home network.</string>
     <string name="opensubtitles_page_submit">Sign in on TV</string>
     <string name="opensubtitles_page_done_title">The TV is signed in</string>
+    <string name="action_more">More</string>
+    <string name="action_options">Options</string>
+    <string name="categories_show_all">Show all</string>
+    <string name="categories_hide_all">Hide all</string>
+    <string name="categories_edit">Edit categories</string>
+    <string name="category_move_top">To top</string>
+    <string name="playlist_switch">Playlist: %1$s</string>
+    <string name="playlists_select_hint">Tap a playlist to make it the active one.</string>
+    <string name="playlist_advanced_show">Advanced settings</string>
+    <string name="playlist_advanced_hide">Hide advanced settings</string>
 </resources>

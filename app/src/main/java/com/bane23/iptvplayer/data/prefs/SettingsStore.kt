@@ -135,6 +135,61 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /**
+     * Ključevi sakrivenih kategorija filmova i serija (isti oblik kao kod zaključavanja:
+     * `movies|<lista>|<kategorija>`). Kategorije kanala se sakrivaju u bazi.
+     */
+    val hiddenVodCategories: Flow<Set<String>> =
+        dataStore.data.map { it[HIDDEN_VOD_CATEGORIES] ?: emptySet() }.distinctUntilChanged()
+
+    suspend fun setVodCategoriesHidden(keys: Collection<String>, hidden: Boolean) {
+        dataStore.edit { prefs ->
+            val current = prefs[HIDDEN_VOD_CATEGORIES] ?: emptySet()
+            prefs[HIDDEN_VOD_CATEGORIES] = if (hidden) current + keys else current - keys.toSet()
+        }
+    }
+
+    /** Redosled kategorija filmova ([series] = false) ili serija koji je zadao korisnik (ID-jevi sa servera). */
+    fun vodCategoryOrder(playlistId: Long, series: Boolean): Flow<List<String>> =
+        dataStore.data.map { prefs ->
+            prefs[vodOrderKey(playlistId, series)]?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
+        }.distinctUntilChanged()
+
+    suspend fun setVodCategoryOrder(playlistId: Long, series: Boolean, ids: List<String>) {
+        dataStore.edit { it[vodOrderKey(playlistId, series)] = ids.joinToString(LIST_SEPARATOR) }
+    }
+
+    /**
+     * Kategorija koja je poslednja bila otvorena u sekciji [section] (`live`, `movies`, `series`)
+     * liste [playlistId], da se sekcija sledeći put otvori na njoj.
+     */
+    fun lastCategory(playlistId: Long, section: String): Flow<String?> =
+        dataStore.data.map { it[lastCategoryKey(playlistId, section)] }.distinctUntilChanged()
+
+    suspend fun setLastCategory(playlistId: Long, section: String, value: String) {
+        dataStore.edit { it[lastCategoryKey(playlistId, section)] = value }
+    }
+
+    /** Briše sve što je zapamćeno o kategorijama obrisane liste. */
+    suspend fun clearPlaylistCategoryPrefs(playlistId: Long) {
+        dataStore.edit { prefs ->
+            for (series in listOf(false, true)) prefs.remove(vodOrderKey(playlistId, series))
+            for (section in listOf("live", "movies", "series")) prefs.remove(lastCategoryKey(playlistId, section))
+            val hidden = prefs[HIDDEN_VOD_CATEGORIES]
+            if (hidden != null) {
+                prefs[HIDDEN_VOD_CATEGORIES] = hidden.filterNot { key ->
+                    key.startsWith("movies|$playlistId|") || key.startsWith("series|$playlistId|")
+                }.toSet()
+            }
+        }
+    }
+
+    private fun vodOrderKey(playlistId: Long, series: Boolean) =
+        stringPreferencesKey("vod_category_order_${if (series) "series" else "movies"}_$playlistId")
+
+    private fun lastCategoryKey(playlistId: Long, section: String) =
+        stringPreferencesKey("last_category_${section}_$playlistId")
+
     /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
     val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
 
@@ -234,6 +289,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
+        val HIDDEN_VOD_CATEGORIES = stringSetPreferencesKey("hidden_vod_categories")
+        const val LIST_SEPARATOR = "\n"
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")

@@ -64,6 +64,7 @@ fun MobileVodScreen(
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
     onBack: (() -> Unit)? = null,
+    onCategories: () -> Unit = {},
     viewModel: VodBrowseViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
@@ -87,6 +88,9 @@ fun MobileVodScreen(
             favorites = favorites,
             watched = watched,
             onSelectCategory = viewModel::selectCategory,
+            onHideCategory = viewModel::hideCategory,
+            onMoveCategoryToTop = viewModel::moveCategoryToTop,
+            onCategories = onCategories,
             onToggleFavorite = viewModel::toggleFavorite,
             onOpen = onOpen,
             onSearch = onSearch,
@@ -225,6 +229,14 @@ fun MobileVodScreen(
                 viewModel.selectCategory(category)
             },
             onDismiss = { pickerOpen = false },
+            actions = CategoryActions(
+                onHide = { key -> state.categories.firstOrNull { it.id == key }?.let(viewModel::hideCategory) },
+                onMoveToTop = { key -> state.categories.firstOrNull { it.id == key }?.let(viewModel::moveCategoryToTop) },
+                onManage = {
+                    pickerOpen = false
+                    onCategories()
+                },
+            ),
         )
     }
 }

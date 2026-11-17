@@ -7,11 +7,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +25,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -30,6 +33,9 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 
@@ -85,6 +91,7 @@ fun TvTextRow(
     selected: Boolean = false,
     onFocused: () -> Unit = {},
     checked: Boolean? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     TvListRow(
         onClick = onClick,
@@ -98,6 +105,7 @@ fun TvTextRow(
         },
         selected = selected,
         onFocused = onFocused,
+        onLongClick = onLongClick,
     ) { color ->
         Text(
             text = text,
@@ -144,6 +152,21 @@ private fun TvSwitch(checked: Boolean, color: Color) {
             else -> Color.White
         }
         Box(modifier = Modifier.size(14.dp).background(thumb, androidx.compose.foundation.shape.CircleShape))
+    }
+}
+
+/**
+ * Kratak meni radnji uz desnu ivicu ekrana, u svom prozoru (npr. posle dugog pritiska na
+ * kategoriju). OK bira i zatvara, Nazad samo zatvara.
+ */
+@Composable
+fun TvActionDialog(title: String, options: List<String>, onSelect: (Int) -> Unit, onClose: () -> Unit) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setWindowAnimations(0) }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+            TvChoicePanel(title = title, options = options, onSelect = onSelect, onClose = onClose)
+        }
     }
 }
 

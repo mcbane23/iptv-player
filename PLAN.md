@@ -461,6 +461,23 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] Pozadina sa blagim sjajem akcentne boje gore levo (vlasnik izabrao varijantu B): svi ekrani
       na TV-u (osim više kanala odjednom) i početni ekrani na telefonu
 
+Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
+
+- [x] Kanali sakrivenih kategorija ne izlaze u „Svi kanali”, pretrazi, ukupnom broju ni pri listanju
+      kanala u plejeru; ostaju u Favoritima i Nedavno
+- [x] Sakrivanje i redosled kategorija i za Filmove i Serije (pamti se u podešavanjima, bez promene baze);
+      ekran „Kategorije” ima kartice Uživo, Filmovi, Serije
+- [x] Dugi pritisak na kategoriju (dugi OK na TV-u): Sakrij, Na vrh, Uredi kategorije
+- [x] Ekran „Kategorije”: Na vrh, Sakrij sve, Prikaži sve, filtriranje po nazivu, broj kanala;
+      kategorije koje su bile sakrivene pri otvaranju stoje na dnu
+- [x] Uživo, Filmovi i Serije se otvaraju na kategoriji koja je poslednja bila otvorena (po listi)
+- [x] Broj kanala u spisku kategorija na telefonu
+- [x] TV, Uživo: dugme u zaglavlju prelazi na sledeću listu (kad ih ima više)
+- [x] Liste: dodir (OK) na listu je bira kao aktivnu; Osveži, Izmeni, Obriši su u meniju („Opcije” na TV-u);
+      potvrda brisanja na TV-u nosi naziv liste
+- [x] Forma za listu: User-Agent i polja vodiča iza dugmeta „Napredna podešavanja”
+- [x] Serije: prelazak sa sezone na epizode vodi na prvu neodgledanu epizodu te sezone
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.

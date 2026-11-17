@@ -14,6 +14,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -33,7 +38,9 @@ import com.bane23.iptvplayer.domain.PlaylistType
  * [plainKeyboard] traži tastaturu bez predloga i ispravki i za adrese i korisničko ime. Koristi se na
  * TV-u, gde tastature umeju da ubace razmak ili veliko slovo i kad je polje označeno kao adresa.
  *
- * [pickFileButton] crta dugme za izbor fajla u stilu platforme (telefon ili TV).
+ * [pickFileButton] crta dugme u stilu platforme (telefon ili TV): za izbor fajla i za otvaranje
+ * naprednih polja. User-Agent i polja vodiča su sakrivena iza tog dugmeta, jer retko trebaju;
+ * otvorena su sama kad lista koja se menja već ima nešto u njima.
  */
 @Composable
 fun PlaylistFormFields(
@@ -47,6 +54,9 @@ fun PlaylistFormFields(
     // Polje tipa lozinke (bez sakrivanja teksta) je jedino kod koga tastature pouzdano ne diraju unos.
     val addressKeyboard = if (plainKeyboard) KeyboardType.Password else KeyboardType.Uri
     val plainTextKeyboard = if (plainKeyboard) KeyboardType.Password else KeyboardType.Text
+    var advancedOpen by rememberSaveable { mutableStateOf(false) }
+    val hasAdvanced = state.userAgent.isNotEmpty() || state.epgUrl.isNotEmpty() || state.epgShift.isNotEmpty()
+    LaunchedEffect(hasAdvanced) { if (hasAdvanced) advancedOpen = true }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         FormField(
             value = state.name,
@@ -104,32 +114,38 @@ fun PlaylistFormFields(
                 )
             }
         }
-        if (state.type != PlaylistType.M3U_FILE) {
+        // Dugme ostaje isto i kad su polja otvorena (menja mu se samo natpis), da fokus na TV-u ne nestane.
+        pickFileButton(
+            stringResource(if (advancedOpen) R.string.playlist_advanced_hide else R.string.playlist_advanced_show),
+        ) { advancedOpen = !advancedOpen }
+        if (advancedOpen) {
+            if (state.type != PlaylistType.M3U_FILE) {
+                FormField(
+                    value = state.userAgent,
+                    onValueChange = viewModel::setUserAgent,
+                    label = stringResource(R.string.field_user_agent),
+                    enabled = enabled,
+                    supportingText = stringResource(R.string.field_user_agent_hint),
+                )
+            }
             FormField(
-                value = state.userAgent,
-                onValueChange = viewModel::setUserAgent,
-                label = stringResource(R.string.field_user_agent),
+                value = state.epgUrl,
+                onValueChange = viewModel::setEpgUrl,
+                label = stringResource(R.string.field_epg_url),
                 enabled = enabled,
-                supportingText = stringResource(R.string.field_user_agent_hint),
+                keyboardType = addressKeyboard,
+                supportingText = stringResource(R.string.field_epg_url_hint),
+            )
+            FormField(
+                value = state.epgShift,
+                onValueChange = viewModel::setEpgShift,
+                label = stringResource(R.string.field_epg_shift),
+                enabled = enabled,
+                // Tastatura za brojeve na mnogim uređajima nema minus, zato obična.
+                imeAction = ImeAction.Done,
+                supportingText = stringResource(R.string.field_epg_shift_hint),
             )
         }
-        FormField(
-            value = state.epgUrl,
-            onValueChange = viewModel::setEpgUrl,
-            label = stringResource(R.string.field_epg_url),
-            enabled = enabled,
-            keyboardType = addressKeyboard,
-            supportingText = stringResource(R.string.field_epg_url_hint),
-        )
-        FormField(
-            value = state.epgShift,
-            onValueChange = viewModel::setEpgShift,
-            label = stringResource(R.string.field_epg_shift),
-            enabled = enabled,
-            // Tastatura za brojeve na mnogim uređajima nema minus, zato obična.
-            imeAction = ImeAction.Done,
-            supportingText = stringResource(R.string.field_epg_shift_hint),
-        )
     }
 }
 

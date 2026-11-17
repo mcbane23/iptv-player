@@ -57,6 +57,7 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
+import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
@@ -84,7 +85,7 @@ fun MobileHomeScreen(
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
     onSearchVod: (series: Boolean) -> Unit,
     onPlaylists: () -> Unit,
-    onCategories: () -> Unit,
+    onCategories: (CategorySection) -> Unit,
     onParental: () -> Unit,
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
@@ -107,6 +108,7 @@ fun MobileHomeScreen(
     BackHandler(enabled = tab != MobileTab.LIVE) { tab = MobileTab.LIVE }
     ExitOnDoubleBack(enabled = tab == MobileTab.LIVE)
 
+    val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
     val tabContent: @Composable () -> Unit = {
         // Spisak filmova i serija pripada aktivnoj listi, pa se posle promene liste učitava iznova.
         holder.SaveableStateProvider(tab.name) {
@@ -117,6 +119,7 @@ fun MobileHomeScreen(
                     onSearch = onSearch,
                     onGuide = onGuide,
                     onMultiView = onMultiView,
+                    onCategories = { onCategories(CategorySection.LIVE) },
                     viewModel = liveTvViewModel,
                 )
 
@@ -124,6 +127,7 @@ fun MobileHomeScreen(
                     series = false,
                     onOpen = { onOpenVod(it, false) },
                     onSearch = { onSearchVod(false) },
+                    onCategories = { onCategories(CategorySection.MOVIES) },
                     viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}"),
                 )
 
@@ -131,12 +135,13 @@ fun MobileHomeScreen(
                     series = true,
                     onOpen = { onOpenVod(it, true) },
                     onSearch = { onSearchVod(true) },
+                    onCategories = { onCategories(CategorySection.SERIES) },
                     viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
                 )
 
                 MobileTab.SETTINGS -> MobileSettingsScreen(
                     onPlaylists = onPlaylists,
-                    onCategories = onCategories.takeIf { liveState.playlistId != null },
+                    onCategories = openLiveCategories.takeIf { liveState.playlistId != null },
                     onParental = onParental.takeIf { liveState.playlistId != null },
                     onTrakt = onTrakt.takeIf { isTraktConfigured },
                     onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
