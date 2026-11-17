@@ -378,9 +378,10 @@ class VodPlayerViewModel @Inject constructor(
 
     fun onForeground() = engine.restore()
 
-    fun onBackground() {
-        saveProgress(stopped = true)
-        engine.stop()
+    /** Sa [keepPlaying] telefon nastavlja da pušta u pozadini; pozicija se pamti u oba slučaja. */
+    fun onBackground(keepPlaying: Boolean = false) {
+        saveProgress(stopped = !keepPlaying)
+        if (!keepPlaying) engine.stop()
     }
 
     private suspend fun playEpisode(seriesId: Long, details: SeriesDetails, episode: Episode, startOver: Boolean) {

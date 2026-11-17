@@ -321,6 +321,7 @@ class PlayerEngine(
     fun resume() {
         if (source == null || _state.value.status == PlaybackStatus.FAILED) return
         if (player.playbackState == Player.STATE_IDLE) {
+            retryJob?.cancel()
             prepareCurrent(autoPlay = true)
         } else {
             if (player.isCurrentMediaItemLive) player.seekToDefaultPosition()
@@ -337,6 +338,8 @@ class PlayerEngine(
      * aplikacija otišla u pozadinu; sadržaj koji je korisnik pauzirao se priprema, ali ostaje pauziran.
      */
     fun restore() {
+        // Plejer koji je nastavio da pušta u pozadini nije ni stajao.
+        if (player.playbackState != Player.STATE_IDLE) return
         if (player.playWhenReady) {
             resume()
         } else if (source != null && _state.value.status != PlaybackStatus.FAILED && player.playbackState == Player.STATE_IDLE) {

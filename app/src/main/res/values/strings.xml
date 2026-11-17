@@ -268,6 +268,10 @@
     <string name="settings_brightness_slider_summary">In the player, a bar along the left screen edge that changes brightness</string>
     <string name="settings_volume_slider">Volume bar</string>
     <string name="settings_volume_slider_summary">In the player, a bar along the right screen edge that changes volume</string>
+    <string name="settings_background_play">Background play</string>
+    <string name="settings_background_play_summary">On the phone, audio keeps playing when the screen turns off or the app goes to the background</string>
+    <string name="background_play_channel">Background playback</string>
+    <string name="background_play_stop">Stop</string>
     <string name="settings_under_cutout">Full screen width</string>
     <string name="settings_under_cutout_summary">With the phone turned sideways, content reaches the screen edge, also under the camera</string>
     <string name="vod_total">Total: %1$d</string>

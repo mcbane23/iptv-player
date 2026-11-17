@@ -57,8 +57,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -122,8 +120,14 @@ fun MobilePlayerScreen(
     var unlockVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
+    PlayerLifecycle(
+        player = viewModel.player,
+        title = ui.channel?.name.orEmpty(),
+        inPip = inPip,
+        onTogglePlayPause = viewModel::togglePlayPause,
+        onForeground = viewModel::onForeground,
+        onBackground = viewModel::onBackground,
+    )
     KeepScreenOn()
     ImmersiveMode()
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)

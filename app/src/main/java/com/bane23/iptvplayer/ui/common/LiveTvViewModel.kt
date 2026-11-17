@@ -298,6 +298,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setPlayerVolumeSlider(enabled) }
     }
 
+    val backgroundPlay: StateFlow<Boolean> = settings.backgroundPlay
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setBackgroundPlay(enabled: Boolean) {
+        viewModelScope.launch { settings.setBackgroundPlay(enabled) }
+    }
+
     val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

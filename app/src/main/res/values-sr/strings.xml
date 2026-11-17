@@ -266,6 +266,10 @@
     <string name="settings_brightness_slider_summary">U plejeru, uz levu ivicu ekrana, traka kojom se menja osvetljenje</string>
     <string name="settings_volume_slider">Traka za zvuk</string>
     <string name="settings_volume_slider_summary">U plejeru, uz desnu ivicu ekrana, traka kojom se menja jačina zvuka</string>
+    <string name="settings_background_play">Puštanje u pozadini</string>
+    <string name="settings_background_play_summary">Na telefonu zvuk nastavlja da ide kad se ekran ugasi ili aplikacija ode u pozadinu</string>
+    <string name="background_play_channel">Puštanje u pozadini</string>
+    <string name="background_play_stop">Zaustavi</string>
     <string name="settings_under_cutout">Cela širina ekrana</string>
     <string name="settings_under_cutout_summary">Kad je telefon položen, sadržaj ide do ivice ekrana, i ispod kamere</string>
     <string name="vod_total">Ukupno: %1$d</string>

@@ -269,8 +269,13 @@ class PlayerViewModel @Inject constructor(
     /** Aplikacija je ponovo vidljiva. */
     fun onForeground() = engine.restore()
 
-    /** Aplikacija više nije vidljiva: strim se zaustavlja da ne troši mrežu u pozadini. */
-    fun onBackground() = engine.stop()
+    /**
+     * Aplikacija više nije vidljiva: strim se zaustavlja da ne troši mrežu u pozadini, osim kad
+     * telefon nastavlja da pušta u pozadini ([keepPlaying]).
+     */
+    fun onBackground(keepPlaying: Boolean = false) {
+        if (!keepPlaying) engine.stop()
+    }
 
     private fun step(pick: suspend (Channel) -> Channel?) {
         val current = _ui.value.channel ?: return

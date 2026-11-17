@@ -78,6 +78,7 @@ fun MobileSettingsScreen(
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
+    val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
@@ -167,6 +168,12 @@ fun MobileSettingsScreen(
                     summary = stringResource(R.string.settings_volume_slider_summary),
                     checked = volumeSlider,
                     onChange = viewModel::setPlayerVolumeSlider,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_background_play),
+                    summary = stringResource(R.string.settings_background_play_summary),
+                    checked = backgroundPlay,
+                    onChange = viewModel::setBackgroundPlay,
                 )
                 choices.forEachIndexed { index, choice ->
                     if (choice.toggle) {
