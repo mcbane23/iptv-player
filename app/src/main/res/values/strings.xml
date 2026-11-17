@@ -394,6 +394,7 @@
     <string name="trakt_error_expired">The code has expired. Try again.</string>
     <string name="trakt_error_denied">The sign-in was declined on Trakt.</string>
     <string name="trakt_sync_failed">Sync failed. It will be retried later.</string>
+    <string name="trakt_sync_paused">Automatic sync is paused because it was interrupted several times. It resumes once “Sync now” succeeds.</string>
     <string name="cast_button">Play on TV</string>
     <string name="cast_pick_title">Play on TV</string>
     <string name="cast_searching">Looking for devices…</string>

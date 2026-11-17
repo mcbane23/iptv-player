@@ -27,11 +27,15 @@ interface XtreamApi {
     @GET
     suspend fun categories(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamCategory>
 
+    /** Spisak filmova; kao i spisak kanala čita se strimovano (ceo spisak ume da ima desetine MB). */
+    @Streaming
     @GET
-    suspend fun vodStreams(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamVodStream>
+    suspend fun vodStreams(@Url url: String, @Header("User-Agent") userAgent: String? = null): ResponseBody
 
+    /** Spisak serija, strimovano kao i [vodStreams]. */
+    @Streaming
     @GET
-    suspend fun series(@Url url: String, @Header("User-Agent") userAgent: String? = null): List<XtreamSeries>
+    suspend fun series(@Url url: String, @Header("User-Agent") userAgent: String? = null): ResponseBody
 
     /** Detalji filma ili serije. Oblik odgovora se razlikuje od panela do panela, vidi [XtreamVodParser]. */
     @GET

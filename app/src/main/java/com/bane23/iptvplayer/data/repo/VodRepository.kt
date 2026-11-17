@@ -11,12 +11,16 @@ import com.bane23.iptvplayer.data.trakt.TraktQueue
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.data.xtream.XtreamApi
+import com.bane23.iptvplayer.data.xtream.XtreamJson
+import com.bane23.iptvplayer.data.xtream.XtreamSeries
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.data.xtream.XtreamVodParser
+import com.bane23.iptvplayer.data.xtream.XtreamVodStream
 import com.bane23.iptvplayer.domain.CategoryArrange
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.domain.StreamSource
 import java.io.IOException
+import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,6 +38,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.DecodeSequenceMode
+import kotlinx.serialization.json.decodeToSequence
 import okhttp3.HttpUrl
 
 enum class VodKind { MOVIES, SERIES }
@@ -108,6 +115,52 @@ data class ContinueItem(
 internal fun watchedVersions(series: List<VodItem>, watchedSeriesIds: Set<Long>): List<VodItem> {
     val watchedTmdb = series.filter { it.id in watchedSeriesIds }.mapNotNullTo(HashSet()) { it.tmdbId }
     return series.filter { it.tmdbId !in watchedTmdb || it.id in watchedSeriesIds }
+}
+
+/**
+ * Spisak filmova, odnosno serija, iz odgovora panela. Čita se stavka po stavka, bez učitavanja celog
+ * odgovora u memoriju: ceo spisak velikog provajdera inače ne staje u memoriju TV uređaja.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
+    val items = ArrayList<VodItem>()
+    if (kind == VodKind.MOVIES) {
+        for (stream in XtreamJson.decodeToSequence(input, XtreamVodStream.serializer(), DecodeSequenceMode.ARRAY_WRAPPED)) {
+            val id = stream.streamId?.toLongOrNull() ?: continue
+            items.add(
+                VodItem(
+                    id = id,
+                    name = stream.name?.takeIf { it.isNotBlank() } ?: id.toString(),
+                    poster = stream.icon?.takeIf { it.isNotBlank() },
+                    rating = stream.rating.cleanRating(),
+                    extension = stream.extension?.takeIf { it.isNotBlank() },
+                    tmdbId = XtreamVodParser.tmdbId(stream.tmdb) ?: XtreamVodParser.tmdbId(stream.tmdbId),
+                ),
+            )
+        }
+    } else {
+        for (series in XtreamJson.decodeToSequence(input, XtreamSeries.serializer(), DecodeSequenceMode.ARRAY_WRAPPED)) {
+            val id = series.seriesId?.toLongOrNull() ?: continue
+            items.add(
+                VodItem(
+                    id = id,
+                    name = series.name?.takeIf { it.isNotBlank() } ?: id.toString(),
+                    poster = series.cover?.takeIf { it.isNotBlank() },
+                    rating = series.rating.cleanRating(),
+                    extension = null,
+                    tmdbId = XtreamVodParser.tmdbId(series.tmdb) ?: XtreamVodParser.tmdbId(series.tmdbId),
+                ),
+            )
+        }
+    }
+    items.trimToSize()
+    return items
+}
+
+/** Ocena kao kratak tekst; "0" i prazno znače da ocene nema. */
+private fun String?.cleanRating(): String? {
+    val value = this?.trim()?.toDoubleOrNull() ?: return null
+    return if (value <= 0.0) null else ((value * 10).toInt() / 10.0).toString()
 }
 
 /** Lista nije Xtream nalog, pa nema filmove i serije. */
@@ -272,33 +325,9 @@ class VodRepository @Inject constructor(
     private suspend fun loadItems(kind: VodKind, categoryId: String): List<VodItem> = withContext(Dispatchers.IO) {
         val session = session()
         itemCache.getOrPutSuspending("${session.playlistId}/$kind/$categoryId") {
-            if (kind == VodKind.MOVIES) {
-                api.vodStreams(session.listUrl(XtreamUrls.ACTION_VOD_STREAMS, categoryId), session.userAgent)
-                    .mapNotNull { stream ->
-                        val id = stream.streamId?.toLongOrNull() ?: return@mapNotNull null
-                        VodItem(
-                            id = id,
-                            name = stream.name?.takeIf { it.isNotBlank() } ?: id.toString(),
-                            poster = stream.icon?.takeIf { it.isNotBlank() },
-                            rating = stream.rating.cleanRating(),
-                            extension = stream.extension?.takeIf { it.isNotBlank() },
-                            tmdbId = XtreamVodParser.tmdbId(stream.tmdb) ?: XtreamVodParser.tmdbId(stream.tmdbId),
-                        )
-                    }
-            } else {
-                api.series(session.listUrl(XtreamUrls.ACTION_SERIES, categoryId), session.userAgent)
-                    .mapNotNull { series ->
-                        val id = series.seriesId?.toLongOrNull() ?: return@mapNotNull null
-                        VodItem(
-                            id = id,
-                            name = series.name?.takeIf { it.isNotBlank() } ?: id.toString(),
-                            poster = series.cover?.takeIf { it.isNotBlank() },
-                            rating = series.rating.cleanRating(),
-                            extension = null,
-                            tmdbId = XtreamVodParser.tmdbId(series.tmdb) ?: XtreamVodParser.tmdbId(series.tmdbId),
-                        )
-                    }
-            }
+            val url = session.listUrl(if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_STREAMS else XtreamUrls.ACTION_SERIES, categoryId)
+            val body = if (kind == VodKind.MOVIES) api.vodStreams(url, session.userAgent) else api.series(url, session.userAgent)
+            body.use { readVodItems(kind, it.byteStream()) }
         }
     }
 
@@ -683,12 +712,6 @@ class VodRepository @Inject constructor(
 
     private fun Session.api(action: String, parameter: String, value: String): String =
         XtreamUrls.playerApi(server, username, password, action, parameter, value)
-
-    /** Ocena kao kratak tekst; "0" i prazno znače da ocene nema. */
-    private fun String?.cleanRating(): String? {
-        val value = this?.trim()?.toDoubleOrNull() ?: return null
-        return if (value <= 0.0) null else ((value * 10).toInt() / 10.0).toString()
-    }
 
     private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs, watched = watchedAt != null)
 

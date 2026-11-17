@@ -73,6 +73,13 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (state.syncPaused) {
+                            Text(
+                                text = stringResource(R.string.trakt_sync_paused),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         Button(onClick = viewModel::syncNow, enabled = !state.syncing, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(if (state.syncing) R.string.trakt_syncing else R.string.trakt_sync_now))
                         }

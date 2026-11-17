@@ -23,7 +23,7 @@ class TraktSyncWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val repository = EntryPointAccessors
             .fromApplication(applicationContext, Dependencies::class.java)
             .traktRepository()
-        return when (repository.sync()) {
+        return when (repository.sync(automatic = true)) {
             // Mreža ili Trakt trenutno ne rade: WorkManager pokušava ponovo, sve ređe.
             TraktSyncResult.FAILED -> if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
             else -> Result.success()

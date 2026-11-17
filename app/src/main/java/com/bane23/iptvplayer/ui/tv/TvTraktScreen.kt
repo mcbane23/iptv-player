@@ -82,6 +82,13 @@ fun TvTraktScreen(viewModel: TraktViewModel = hiltViewModel()) {
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (state.syncPaused) {
+                        Text(
+                            text = stringResource(R.string.trakt_sync_paused),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         // Dugme ostaje isto i dok traje sinhronizacija (menja se samo natpis), da fokus ne pobegne.
                         Button(onClick = viewModel::syncNow, modifier = Modifier.focusRequester(primary)) {
