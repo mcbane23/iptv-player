@@ -99,7 +99,7 @@ fun quickSettingChoices(
             decoderChoice,
             sleepChoice,
             speedChoice,
-            // Kanali uživo retko imaju titlove, pa veličina stoji samo uz filmove i epizode.
+            // Plejer kanala nema titlove, pa veličina stoji samo uz filmove i epizode.
             subtitleSizeChoice.takeIf { speed != null },
         )
     }
@@ -112,7 +112,7 @@ fun quickSettingChoices(
             onSelect = { onAspectMode(AspectMode.entries[it]) },
         ),
         decoderChoice,
-        subtitleSizeChoice,
+        subtitleSizeChoice.takeIf { speed != null },
         sleepChoice,
         speedChoice,
         // Jedina stavka koja ne važi odmah, nego od sledećeg puštanja.

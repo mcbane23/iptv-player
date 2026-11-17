@@ -66,6 +66,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
@@ -78,7 +79,7 @@ private enum class Overlay { HIDDEN, INFO, ACTIVE }
  * Plejer kanala na TV-u, upravlja se samo daljinskim. Dok su kontrole sklonjene: gore/dole menja
  * kanal, levo otvara listu kanala, OK (ili desno) prikazuje kontrole, cifre biraju kanal po broju.
  * Kontrole izgledaju kao u plejeru filmova: naziv kanala gore, a dole emisija sa trakom i dugmad
- * Kanali, Titlovi, Audio, Podešavanja i Omiljeni. Odnos slike se menja u Podešavanjima. Nazad prvo zatvara spisak ili kontrole.
+ * Kanali, Audio, Podešavanja i Omiljeni. Odnos slike se menja na kraju trake i u Podešavanjima. Nazad prvo zatvara spisak ili kontrole.
  */
 @Composable
 fun TvPlayerScreen(
@@ -259,7 +260,6 @@ fun TvPlayerScreen(
                 isFavorite = isFavorite,
                 firstChipFocus = firstChipFocus,
                 onChannels = { channelList = true },
-                onSubtitles = { tracks = TvTrackKind.SUBTITLES },
                 onAudio = { tracks = TvTrackKind.AUDIO },
                 onSettings = { settingsOpen = true },
                 infoVisible = infoVisible,
@@ -329,7 +329,6 @@ private fun LiveControls(
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
     onChannels: () -> Unit,
-    onSubtitles: () -> Unit,
     onAudio: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
@@ -404,6 +403,11 @@ private fun LiveControls(
                             description = stringResource(R.string.player_next),
                             onClick = viewModel::next,
                         )
+                        PlayerIconButton(
+                            icon = AppIcons.AspectRatio,
+                            description = ui.aspectMode.label(),
+                            onClick = viewModel::cycleAspectMode,
+                        )
                     },
                 ) { barModifier ->
                     val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
@@ -429,12 +433,6 @@ private fun LiveControls(
                         icon = AppIcons.ChannelList,
                         label = stringResource(R.string.player_channels),
                         onClick = onChannels,
-                    )
-                    PlayerChip(
-                        icon = AppIcons.Subtitles,
-                        label = stringResource(R.string.player_subtitles),
-                        active = playback.textEnabled,
-                        onClick = onSubtitles,
                     )
                     PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
                     PlayerChip(

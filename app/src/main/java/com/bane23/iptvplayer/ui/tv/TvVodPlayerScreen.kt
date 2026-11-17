@@ -51,6 +51,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -67,7 +68,7 @@ private enum class VodFocus { PLAY, SEEK }
  * levo/desno premotava (držanje premotava sve brže; plejer skače tek kad se strelica pusti, a dotle
  * se na traci vidi vreme na koje se stiže). Kad su kontrole prikazane, traka u fokusu premotava tek
  * posle potvrde sa OK, da se strelicama lako pređe preko nje do dugmadi. Kontrole su iste kao na telefonu: naslov gore,
- * a dole traka sa vremenom i dugmad Titlovi, Audio i Podešavanja (tu je i odnos slike). Nazad prvo skloni kontrole.
+ * a dole traka sa vremenom i dugmad Titlovi, Audio i Podešavanja; odnos slike je na kraju trake. Nazad prvo skloni kontrole.
  * [start] pokreće puštanje (poziva se jednom).
  */
 @Composable
@@ -339,6 +340,11 @@ fun TvVodPlayerScreen(
                                     onClick = viewModel::next,
                                 )
                             }
+                            PlayerIconButton(
+                                icon = AppIcons.AspectRatio,
+                                description = ui.aspectMode.label(),
+                                onClick = viewModel::cycleAspectMode,
+                            )
                         },
                     ) { barModifier ->
                         PlayerSeekBar(
