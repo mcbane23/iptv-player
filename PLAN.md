@@ -540,6 +540,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   sa logom levo, pa na ekran staje oko 18 kanala umesto 10; omiljeni se menja dugim pritiskom, zvezdica
   samo pokazuje stanje. Položen telefon ima raspored kao TV: levo spisak (pretraga, omiljeni, nedavno, svi
   kanali, kategorije sa menijem na dugi pritisak), desno kanali, bez zaglavlja i bez čipova.
+- [x] Položen telefon, Uživo (Bane izabrao predlog 1 od tri sa slikama): naslov nad kanalima je uklonjen,
+  a izbor liste, vodič, više kanala i pretraga su red na vrhu spiska levo, pa kanali počinju u istoj
+  visini kao spisak i staje red kanala više.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 
