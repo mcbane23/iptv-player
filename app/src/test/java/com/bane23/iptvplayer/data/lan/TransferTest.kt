@@ -54,6 +54,26 @@ class TransferTest {
     }
 
     @Test
+    fun `accounts travel with the bundle and their outcome comes back`() {
+        val withAccounts = bundle.copy(
+            accounts = TransferAccounts(
+                openSubtitles = TransferLogin(username = "izmisljen", password = "izmisljena lozinka"),
+                trakt = TransferTraktLogin(accessToken = "a-izmisljen", refreshToken = "r-izmisljen", expiresIn = 604800, createdAt = 1_700_000_000),
+            ),
+        )
+        assertEquals(withAccounts, TransferCodec.decode(TransferCodec.encode(withAccounts)))
+        // Paket bez naloga (starija verzija na telefonu) i dalje važi.
+        assertNull(TransferCodec.decode(TransferCodec.encode(bundle))!!.accounts)
+
+        val result = TransferResult(added = 1, openSubtitles = true, trakt = false)
+        assertEquals(result, TransferCodec.decodeResult(TransferCodec.encodeResult(result)))
+        // Odgovor starije verzije na TV-u ne pominje naloge.
+        val old = TransferCodec.decodeResult("""{"added":2}""")!!
+        assertNull(old.openSubtitles)
+        assertNull(old.trakt)
+    }
+
+    @Test
     fun `decoding rejects garbage and newer versions`() {
         assertNull(TransferCodec.decode("not json"))
         assertNull(TransferCodec.decode("""{"playlists":"oops"}"""))
