@@ -24,8 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.DecoderMode
@@ -74,11 +72,17 @@ fun MobileVodPlayerScreen(
     val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
 
     LaunchedEffect(Unit) { start(viewModel) }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn()
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
+    PlayerLifecycle(
+        player = viewModel.player,
+        title = ui.title,
+        inPip = inPip,
+        onTogglePlayPause = viewModel::togglePlayPause,
+        onForeground = viewModel::onForeground,
+        onBackground = viewModel::onBackground,
+    )
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.

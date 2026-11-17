@@ -12,6 +12,8 @@
     <!-- Snimanje kanala traje i kad aplikacija nije na ekranu (obaveštenje sa dugmetom za zaustavljanje). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Puštanje u pozadini na telefonu (opcija u podešavanjima): zvuk ide i kad je ekran ugašen. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Snimanje ne sme da stane kad se ekran ugasi. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -83,6 +85,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Recording a live TV stream chosen by the user to a local file" />
         </service>
+
+        <service
+            android:name=".player.background.PlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <receiver
             android:name=".data.recording.RecordingAlarmReceiver"
