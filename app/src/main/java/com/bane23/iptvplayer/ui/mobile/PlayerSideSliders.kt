@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -144,6 +145,17 @@ internal fun BoxScope.PlayerSideSliders(
     )
 }
 
+/**
+ * Koliko je panel sa podacima o strimu odmaknut od leve ivice. Kad je traka za osvetljenje
+ * uključena, panel stoji desno od nje, da se ne preklapaju; stoji tu i dok su kontrole sklonjene,
+ * da ne poskakuje.
+ */
+@Composable
+internal fun streamInfoStartPadding(settingsViewModel: SettingsViewModel = hiltViewModel()): Dp {
+    val showBrightness by settingsViewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
+    return if (showBrightness) SLIDER_SIDE_SPACE + 8.dp else 16.dp
+}
+
 @Composable
 private fun SideSlider(
     icon: ImageVector,
@@ -163,7 +175,7 @@ private fun SideSlider(
             .fillMaxHeight()
             .safeDrawingPadding()
             // Mesto za gornji red dugmadi i donju traku sa kontrolama, da se ništa ne preklapa.
-            .padding(start = 8.dp, end = 8.dp, top = SLIDER_TOP_SPACE, bottom = SLIDER_BOTTOM_SPACE),
+            .padding(start = SLIDER_EDGE_PADDING, end = SLIDER_EDGE_PADDING, top = SLIDER_TOP_SPACE, bottom = SLIDER_BOTTOM_SPACE),
     ) {
         // Vrednost se vidi samo dok se traka pomera; mesto ostaje zauzeto da traka ne poskakuje.
         Text(
@@ -241,6 +253,10 @@ private fun SideSlider(
 }
 
 private val SLIDER_TOUCH_WIDTH = 40.dp
+private val SLIDER_EDGE_PADDING = 8.dp
+
+/** Širina koju traka zauzima uz ivicu ekrana, sa okvirom pločice. */
+private val SLIDER_SIDE_SPACE = SLIDER_EDGE_PADDING + SLIDER_TOUCH_WIDTH + 4.dp
 private val SLIDER_MAX_HEIGHT = 160.dp
 private val SLIDER_TOP_SPACE = 76.dp
 private val SLIDER_BOTTOM_SPACE = 164.dp

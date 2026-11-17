@@ -142,7 +142,7 @@ fun MobileVodPlayerScreen(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .safeDrawingPadding()
-                    .padding(start = 16.dp, top = 76.dp, end = 16.dp),
+                    .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
             )
         }
 
