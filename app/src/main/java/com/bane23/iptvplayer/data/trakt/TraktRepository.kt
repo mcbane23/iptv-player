@@ -96,7 +96,7 @@ class TraktRepository @Inject constructor(
             } catch (_: IOException) {
                 continue // Mreža je zastala; kod važi i dalje.
             } catch (_: Exception) {
-                return@withContext TraktLoginResult.FAILED // Odgovor koji nije Trakt-ov (npr. stranica mreže).
+                return@withContext TraktLoginResult.FAILED to null // Odgovor koji nije Trakt-ov (npr. stranica mreže).
             }
             when (response.code()) {
                 200 -> {
