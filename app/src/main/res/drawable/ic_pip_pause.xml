@@ -1,9 +1,16 @@
+<!-- Sistem razvlači ikonicu preko celog dugmeta u malom prozoru, pa je znak nacrtan upola manji. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M6,19h4V5H6v14zM14,5v14h4V5h-4z" />
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.5"
+        android:scaleY="0.5">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M6,19h4V5H6v14zM14,5v14h4V5h-4z" />
+    </group>
 </vector>
