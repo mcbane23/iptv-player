@@ -478,6 +478,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Forma za listu: User-Agent i polja vodiča iza dugmeta „Napredna podešavanja”
 - [x] Serije: prelazak sa sezone na epizode vodi na prvu neodgledanu epizodu te sezone
 - [x] TV plejer za filmove i epizode: uklonjeno dugme „Od početka” (ostaje na ekranu detalja, pre puštanja)
+- [x] TV plejer filmova i serija: traka vremena u fokusu premotava tek posle potvrde sa OK, da se
+  strelicama lako stigne do dugmadi desno od nje.
 
 ## 7. Testiranje
 

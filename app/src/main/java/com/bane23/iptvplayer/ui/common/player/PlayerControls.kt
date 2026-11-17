@@ -231,6 +231,10 @@ fun PlayerTime(timeMs: Long, modifier: Modifier = Modifier) {
  * u fokusu na TV-u (držanje strelice premotava sve brže, [onSeekEnd] javlja da je strelica puštena).
  * Dok se prevlači, [onPreview] javlja
  * poziciju pod prstom, a premotava se tek kad se prst podigne.
+ *
+ * Kad je [armed] zadat (TV), traka u fokusu ne premotava dok se ne potvrdi sa OK: strelice levo i
+ * desno do tada samo prenose fokus na susedna dugmad. OK uključuje i isključuje premotavanje, a
+ * [onArmedChange] javlja promenu. Kad traka izgubi fokus, premotavanje se isključuje.
  */
 @Composable
 fun PlayerSeekBar(
@@ -242,20 +246,35 @@ fun PlayerSeekBar(
     onPreview: (Long?) -> Unit = {},
     stepMs: Long = 10_000L,
     onSeekEnd: () -> Unit = {},
+    armed: Boolean? = null,
+    onArmedChange: (Boolean) -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
+    val seeking = armed ?: true
     var dragged by remember { mutableStateOf<Float?>(null) }
     val enabled = durationMs > 0
     val fraction = dragged ?: if (enabled) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val active = focused || dragged != null
+    val active = (focused && seeking) || dragged != null
     val accent = MaterialTheme.colorScheme.primary
 
     BoxWithConstraints(
         modifier = modifier
             .height(32.dp)
-            .onFocusChanged { focused = it.isFocused }
+            .onFocusChanged {
+                if (focused && !it.isFocused && armed == true) onArmedChange(false)
+                focused = it.isFocused
+            }
             .onKeyEvent { event ->
                 if (!enabled) return@onKeyEvent false
+                if (armed != null && event.key in ConfirmKeys) {
+                    if (event.type == KeyEventType.KeyDown && event.nativeKeyEvent.repeatCount == 0) {
+                        if (armed) onSeekEnd()
+                        onArmedChange(!armed)
+                    }
+                    return@onKeyEvent true
+                }
+                // Bez potvrde strelice prolaze dalje i pomeraju fokus.
+                if (!seeking) return@onKeyEvent false
                 val direction = when (event.key) {
                     Key.DirectionLeft -> -1
                     Key.DirectionRight -> 1
@@ -315,17 +334,21 @@ fun PlayerSeekBar(
             )
         }
         if (enabled) {
-            val thumb = if (active) 16.dp else 12.dp
+            val thumb = if (active || focused) 16.dp else 12.dp
             Box(
                 modifier = Modifier
                     .offset(x = (maxWidth - thumb) * fraction)
                     .size(thumb)
                     .clip(CircleShape)
-                    .background(if (focused) Color.White else accent),
+                    // U fokusu bez potvrde: beli prsten. Dok se premotava: pun beli krug.
+                    .background(if (focused && seeking) Color.White else accent)
+                    .then(if (focused && !seeking) Modifier.border(2.dp, Color.White, CircleShape) else Modifier),
             )
         }
     }
 }
+
+private val ConfirmKeys = setOf(Key.DirectionCenter, Key.Enter, Key.NumPadEnter)
 
 /**
  * Korak premotavanja za strelicu na daljinskom: prvi pritisak je [baseMs] (iz podešavanja), a dok
