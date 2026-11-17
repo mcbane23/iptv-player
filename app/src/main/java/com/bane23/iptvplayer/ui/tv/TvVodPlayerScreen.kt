@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -49,6 +50,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.PlayerClock
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
+import com.bane23.iptvplayer.ui.common.player.StreamDebugLabel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
@@ -208,6 +210,7 @@ fun TvVodPlayerScreen(
             .focusable(),
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
+        StreamDebugLabel(playback.video, Modifier.align(Alignment.TopEnd))
 
         statusMessage(ui.sourceMissing, playback)?.let { message ->
             Text(
@@ -348,6 +351,14 @@ fun TvVodPlayerScreen(
                             icon = AppIcons.AspectRatio,
                             label = ui.aspectMode.label(),
                             onClick = viewModel::cycleAspectMode,
+                        )
+                        PlayerChip(
+                            icon = AppIcons.Settings,
+                            label = stringResource(
+                                if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
+                            ),
+                            active = ui.decoder == DecoderMode.SOFTWARE,
+                            onClick = viewModel::cycleDecoder,
                         )
                         PlayerChip(
                             icon = AppIcons.Previous,

@@ -17,6 +17,7 @@ import com.bane23.iptvplayer.data.subtitles.SubtitleResult
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.domain.StreamSource
+import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.ExternalSubtitle
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
@@ -51,6 +52,8 @@ data class VodPlayerUiState(
     /** Pozicija sa koje je premotavanje krenulo, za prikaz pomaka. */
     val scrubFromMs: Long = 0,
     val aspectMode: AspectMode = AspectMode.FIT,
+    /** Dekoder koji plejer trenutno bira prvi. */
+    val decoder: DecoderMode = DecoderMode.AUTO,
     val hasNext: Boolean = false,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
@@ -92,7 +95,7 @@ class VodPlayerViewModel @Inject constructor(
     val player get() = engine.player
     val playback: StateFlow<PlaybackState> = engine.state
 
-    private val _ui = MutableStateFlow(VodPlayerUiState())
+    private val _ui = MutableStateFlow(VodPlayerUiState(decoder = playerSettings.decoder))
     val ui: StateFlow<VodPlayerUiState> = _ui.asStateFlow()
 
     private val _online = MutableStateFlow(OnlineSubtitlesState())
@@ -275,6 +278,14 @@ class VodPlayerViewModel @Inject constructor(
 
     fun cycleAspectMode() = _ui.update {
         it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
+    }
+
+    /** Prelazi na drugi dekoder odmah; gledanje se nastavlja sa istog mesta. Izbor se pamti kao u podešavanjima. */
+    fun cycleDecoder() {
+        val next = DecoderMode.entries[(_ui.value.decoder.ordinal + 1) % DecoderMode.entries.size]
+        _ui.update { it.copy(decoder = next) }
+        engine.setDecoder(next)
+        viewModelScope.launch { settings.setPlayerDecoder(next) }
     }
 
     /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći film ili epizoda krene isto. */
