@@ -67,7 +67,7 @@ private enum class VodFocus { PLAY, SEEK }
  * Plejer za film ili epizodu na TV-u. Dok su kontrole sklonjene: OK (ili gore/dole) ih prikazuje,
  * levo/desno premotava (držanje premotava sve brže; plejer skače tek kad se strelica pusti, a dotle
  * se na traci vidi vreme na koje se stiže). Kontrole su iste kao na telefonu: naslov gore,
- * a dole traka sa vremenom i dugmad Titlovi, Audio, Format i Od početka. Nazad prvo skloni kontrole.
+ * a dole traka sa vremenom i dugmad Titlovi, Audio i Format. Nazad prvo skloni kontrole.
  * [start] pokreće puštanje (poziva se jednom).
  */
 @Composable
@@ -359,11 +359,6 @@ fun TvVodPlayerScreen(
                             ),
                             active = ui.decoder == DecoderMode.SOFTWARE,
                             onClick = viewModel::cycleDecoder,
-                        )
-                        PlayerChip(
-                            icon = AppIcons.Previous,
-                            label = stringResource(R.string.vod_start_over),
-                            onClick = { viewModel.seekTo(0) },
                         )
                     }
                 }
