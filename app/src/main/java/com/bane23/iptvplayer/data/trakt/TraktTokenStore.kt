@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.bane23.iptvplayer.BuildConfig
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
@@ -82,8 +83,23 @@ class TraktTokenStore @Inject constructor(
         dataStore.edit { it[LAST_PLAYBACK] = millis }
     }
 
+    /**
+     * Serije koje je sinhronizacija već dodala u omiljene, kao "lista/TMDB ID". Svaka se dodaje
+     * samo jednom, da se serija koju korisnik ukloni iz omiljenih ne bi vraćala.
+     */
+    suspend fun autoFavorites(): Set<String> = dataStore.data.first()[AUTO_FAVORITES].orEmpty()
+
+    suspend fun addAutoFavorites(keys: Collection<String>) {
+        dataStore.edit { it[AUTO_FAVORITES] = it[AUTO_FAVORITES].orEmpty() + keys }
+    }
+
+    /** Briše prijavu. Spisak već dodatih u omiljene ostaje, da ponovna prijava ne vrati uklonjene. */
     suspend fun clear() {
-        dataStore.edit { it.clear() }
+        dataStore.edit { prefs ->
+            val autoFavorites = prefs[AUTO_FAVORITES]
+            prefs.clear()
+            if (autoFavorites != null) prefs[AUTO_FAVORITES] = autoFavorites
+        }
     }
 
     private companion object {
@@ -93,5 +109,6 @@ class TraktTokenStore @Inject constructor(
         val USERNAME = stringPreferencesKey("username")
         val LAST_SYNC = longPreferencesKey("last_sync")
         val LAST_PLAYBACK = longPreferencesKey("last_playback")
+        val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
     }
 }

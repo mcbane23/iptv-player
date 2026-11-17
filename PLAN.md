@@ -350,6 +350,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [x] Preko Trakt-a i nastavak gledanja između TV-a i telefona (pokriva stavku ispod, za ono što
       Trakt prepozna): pozicija ide na Trakt kad se plejer zatvori, a pri sinhronizaciji se
       preuzima novija pozicija sa drugog uređaja (baza v10)
+- [x] Pri sinhronizaciji se započete serije sa Trakt naloga (bar jedna odgledana epizoda, a nisu
+      odgledane sve emitovane) dodaju u omiljene serije aktivne liste. Svaka samo jednom: serija
+      koju korisnik ukloni iz omiljenih se ne vraća
 
 **Sinhronizacija gledanog sadržaja preko naloga**
 

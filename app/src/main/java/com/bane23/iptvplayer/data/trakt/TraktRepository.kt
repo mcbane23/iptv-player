@@ -206,6 +206,26 @@ class TraktRepository @Inject constructor(
             dao.clearWatched()
             dao.insertWatched(rows)
         }
+        favoriteStartedShows(shows)
+    }
+
+    /**
+     * Započete serije sa naloga dodaje u omiljene aktivne liste, svaku samo jednom. Kad spisak
+     * serija trenutno nije dostupan, pokušava se pri sledećoj sinhronizaciji.
+     */
+    private suspend fun favoriteStartedShows(shows: List<WatchedShow>) {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        val done = tokens.autoFavorites()
+        val fresh = TraktPayloads.startedShows(shows).filter { "$playlistId/$it" !in done }
+        if (fresh.isEmpty()) return
+        val added = try {
+            vod.addSeriesFavorites(playlistId, fresh)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: IOException) {
+            return
+        }
+        if (added.isNotEmpty()) tokens.addAutoFavorites(added.map { "$playlistId/$it" })
     }
 
     /**

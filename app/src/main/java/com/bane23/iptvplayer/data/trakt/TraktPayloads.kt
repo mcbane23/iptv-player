@@ -61,6 +61,25 @@ object TraktPayloads {
     }
 
     /**
+     * TMDB ID-jevi započetih serija: bar jedna odgledana epizoda, a nisu odgledane sve do sada
+     * emitovane (specijali se ne računaju). Serija za koju Trakt ne šalje broj emitovanih epizoda
+     * računa se kao započeta. Redom od najdavnije do poslednje gledane.
+     */
+    fun startedShows(shows: List<WatchedShow>): List<Long> {
+        val started = ArrayList<Pair<Long, Long>>()
+        for (show in shows) {
+            val tmdb = show.show?.ids?.tmdb ?: continue
+            val watched = show.seasons.filter { it.number > 0 }.flatMap { it.episodes }.filter { it.isWatched }
+            if (watched.isEmpty()) continue
+            val aired = show.show?.airedEpisodes
+            if (aired != null && aired > 0 && watched.size >= aired) continue
+            val lastWatched = (watched.map { it.lastWatchedAt } + show.lastWatchedAt).mapNotNull { parseTime(it) }.maxOrNull() ?: 0
+            started.add(tmdb to lastWatched)
+        }
+        return started.sortedBy { it.second }.map { it.first }.distinct()
+    }
+
+    /**
      * Od više promena iste stavke važi samo poslednja (npr. označeno pa poništeno ne šalje ništa
      * osim poništavanja). Redosled ostaje redosled poslednjih promena.
      */

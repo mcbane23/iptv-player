@@ -382,6 +382,10 @@ interface VodFavoriteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(favorite: VodFavoriteEntity)
 
+    /** Dodaje samo ono što još nije u omiljenima; postojeće ostaje kako jeste. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMissing(favorites: List<VodFavoriteEntity>)
+
     @Query("DELETE FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun delete(playlistId: Long, kind: String, itemId: Long)
 
