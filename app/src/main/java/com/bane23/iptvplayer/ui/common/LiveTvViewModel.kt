@@ -284,6 +284,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setDrawUnderCutout(enabled) }
     }
 
+    val playerBrightnessSlider: StateFlow<Boolean> = settings.playerBrightnessSlider
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setPlayerBrightnessSlider(enabled: Boolean) {
+        viewModelScope.launch { settings.setPlayerBrightnessSlider(enabled) }
+    }
+
+    val playerVolumeSlider: StateFlow<Boolean> = settings.playerVolumeSlider
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setPlayerVolumeSlider(enabled: Boolean) {
+        viewModelScope.launch { settings.setPlayerVolumeSlider(enabled) }
+    }
+
     val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

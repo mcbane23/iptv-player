@@ -72,6 +72,22 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[DRAW_UNDER_CUTOUT] = enabled }
     }
 
+    /** Traka za osvetljenje uz levu ivicu plejera na telefonu. Isključena dok je korisnik ne uključi. */
+    val playerBrightnessSlider: Flow<Boolean> =
+        dataStore.data.map { it[PLAYER_BRIGHTNESS_SLIDER] ?: false }.distinctUntilChanged()
+
+    suspend fun setPlayerBrightnessSlider(enabled: Boolean) {
+        dataStore.edit { it[PLAYER_BRIGHTNESS_SLIDER] = enabled }
+    }
+
+    /** Traka za jačinu zvuka uz desnu ivicu plejera na telefonu. Isključena dok je korisnik ne uključi. */
+    val playerVolumeSlider: Flow<Boolean> =
+        dataStore.data.map { it[PLAYER_VOLUME_SLIDER] ?: false }.distinctUntilChanged()
+
+    suspend fun setPlayerVolumeSlider(enabled: Boolean) {
+        dataStore.edit { it[PLAYER_VOLUME_SLIDER] = enabled }
+    }
+
     /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
     val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
 
@@ -282,6 +298,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val TV_VOD_PREVIEW = booleanPreferencesKey("tv_vod_preview")
         val DRAW_UNDER_CUTOUT = booleanPreferencesKey("draw_under_cutout")
+        val PLAYER_BRIGHTNESS_SLIDER = booleanPreferencesKey("player_brightness_slider")
+        val PLAYER_VOLUME_SLIDER = booleanPreferencesKey("player_volume_slider")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
