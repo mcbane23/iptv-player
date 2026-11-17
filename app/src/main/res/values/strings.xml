@@ -210,10 +210,10 @@
     <string name="buffer_normal">Normal</string>
     <string name="buffer_large">Large</string>
     <string name="settings_decoder">Decoder</string>
-    <string name="settings_decoder_summary">Try software if the picture is black, green or stutters. It uses more battery and can be slow at high resolutions.</string>
-    <string name="player_decoder_auto">Decoder: auto</string>
+    <string name="settings_decoder_summary">Hardware uses the device chip and falls back to software only when it cannot start. Try software if the picture is black or green. It uses more battery and can be slow at high resolutions.</string>
+    <string name="player_decoder_auto">Decoder: hardware</string>
     <string name="player_decoder_software">Decoder: software</string>
-    <string name="decoder_auto">Automatic (hardware)</string>
+    <string name="decoder_auto">Hardware</string>
     <string name="decoder_software">Software</string>
     <string name="settings_audio_language">Audio language</string>
     <string name="settings_audio_language_summary">Used when a stream has more than one audio track. It also follows the language you pick in the player.</string>
