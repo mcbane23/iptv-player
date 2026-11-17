@@ -78,6 +78,7 @@ class PlayerViewModel @Inject constructor(
     private val locks: LockRepository,
     private val recordings: RecordingRepository,
     private val playlists: PlaylistRepository,
+    private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -140,6 +141,11 @@ class PlayerViewModel @Inject constructor(
 
     private var started = false
     private var numberJob: Job? = null
+
+    init {
+        // Tajmer gašenja je istekao: kanal se pauzira, pa uređaj posle sam ugasi ekran.
+        viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
+    }
 
     /** Poziva se jednom, pri otvaranju plejera. */
     fun start(channelId: Long, categoryId: Long?) {
@@ -222,16 +228,17 @@ class PlayerViewModel @Inject constructor(
         playChannel(channel)
     }
 
-    fun cycleAspectMode() = _ui.update {
-        it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
-    }
+    fun cycleAspectMode() =
+        setAspectMode(AspectMode.entries[(_ui.value.aspectMode.ordinal + 1) % AspectMode.entries.size])
+
+    fun setAspectMode(mode: AspectMode) = _ui.update { it.copy(aspectMode = mode) }
 
     /** Prelazi na drugi dekoder odmah, bez izlaska iz kanala. Izbor se pamti kao u podešavanjima. */
-    fun cycleDecoder() {
-        val next = DecoderMode.entries[(_ui.value.decoder.ordinal + 1) % DecoderMode.entries.size]
-        _ui.update { it.copy(decoder = next) }
-        engine.setDecoder(next)
-        viewModelScope.launch { settings.setPlayerDecoder(next) }
+    fun setDecoder(mode: DecoderMode) {
+        if (_ui.value.decoder == mode) return
+        _ui.update { it.copy(decoder = mode) }
+        engine.setDecoder(mode)
+        viewModelScope.launch { settings.setPlayerDecoder(mode) }
     }
 
     /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći kanal ili film krene isto. */

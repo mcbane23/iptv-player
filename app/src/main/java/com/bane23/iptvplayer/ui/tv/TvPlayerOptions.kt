@@ -22,6 +22,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.TrackOption
 import com.bane23.iptvplayer.data.subtitles.SubtitleResult
+import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.subtitles.details
 import com.bane23.iptvplayer.ui.common.subtitles.message
 import com.bane23.iptvplayer.ui.common.vod.OnlineSubtitlesState
@@ -144,6 +145,53 @@ fun TvChoicePanel(
                     onClose()
                 },
                 modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            )
+        }
+    }
+    LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
+}
+
+/**
+ * Panel „Brza podešavanja” uz desnu ivicu ekrana. OK na stavci prelazi na sledeću vrednost, a panel
+ * ostaje otvoren; Nazad ga zatvara (to rešava ekran plejera).
+ */
+@Composable
+fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
+    val firstFocus = remember { FocusRequester() }
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.4f)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.player_quick_settings),
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            )
+        }
+        items(choices.size) { index ->
+            val choice = choices[index]
+            TvTextRow(
+                text = choice.title,
+                trailing = if (choice.toggle) null else choice.value,
+                checked = if (choice.toggle) choice.checked else null,
+                onClick = { if (choice.toggle) choice.flip() else choice.cycle() },
+                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            )
+        }
+        // Napomene uz stavke koje ne važe odmah (bafer).
+        val notes = choices.map { it.summary }.filter { it.isNotEmpty() }
+        items(notes.size) { index ->
+            Text(
+                text = notes[index],
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 10.dp),
             )
         }
     }

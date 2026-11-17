@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -38,12 +37,13 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
 
-private enum class VodPanel { NONE, AUDIO, SUBTITLES, ONLINE_SUBTITLES }
+private enum class VodPanel { NONE, AUDIO, SUBTITLES, ONLINE_SUBTITLES, SETTINGS }
 
 /**
  * Plejer za film ili epizodu na telefonu, sa istim kontrolama kao na TV-u. Dodir prikazuje i
@@ -87,6 +87,7 @@ fun MobileVodPlayerScreen(
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
+    BackHandler(enabled = panel == VodPanel.SETTINGS) { panel = VodPanel.NONE }
 
     LaunchedEffect(controlsVisible, panel, playback.status, activity, preview) {
         if (controlsVisible && panel == VodPanel.NONE && preview == null && playback.status == PlaybackStatus.PLAYING) {
@@ -108,11 +109,15 @@ fun MobileVodPlayerScreen(
             .pointerInput(locked) {
                 detectTapGestures(
                     onTap = {
-                        if (locked) unlockVisible = !unlockVisible else controlsVisible = !controlsVisible
+                        when {
+                            locked -> unlockVisible = !unlockVisible
+                            panel == VodPanel.SETTINGS -> panel = VodPanel.NONE
+                            else -> controlsVisible = !controlsVisible
+                        }
                     },
                     // Dupli tap: leva i desna trećina slike premotavaju, sredina pauzira ili pušta.
                     onDoubleTap = { offset ->
-                        if (!locked) {
+                        if (!locked && panel != VodPanel.SETTINGS) {
                             when {
                                 offset.x < size.width / 3 -> viewModel.seekBy(-viewModel.seekStepMs)
                                 offset.x > size.width * 2 / 3 -> viewModel.seekBy(viewModel.seekStepMs)
@@ -162,7 +167,21 @@ fun MobileVodPlayerScreen(
             return@Box
         }
 
-        if (controlsVisible) {
+        if (panel == VodPanel.SETTINGS) {
+            // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
+            PlayerSideSliders(levels) { }
+            MobileQuickSettingsPanel(
+                quickSettingChoices(
+                    tv = false,
+                    aspectMode = ui.aspectMode,
+                    onAspectMode = viewModel::setAspectMode,
+                    decoder = ui.decoder,
+                    onDecoder = viewModel::setDecoder,
+                    speed = ui.speed,
+                    onSpeed = viewModel::setSpeed,
+                ),
+            )
+        } else if (controlsVisible) {
             PlayerSideSliders(levels) { activity++ }
             val season = ui.season
             val episode = ui.episode
@@ -247,14 +266,10 @@ fun MobileVodPlayerScreen(
                     )
                     PlayerChip(
                         icon = AppIcons.Settings,
-                        label = stringResource(
-                            if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
-                        ),
-                        active = ui.decoder == DecoderMode.SOFTWARE,
-                        onClick = {
-                            viewModel.cycleDecoder()
-                            activity++
-                        },
+                        label = stringResource(R.string.settings_title),
+                        // Brzina koja nije obična se vidi i na samom dugmetu.
+                        active = ui.speed != 1f,
+                        onClick = { panel = VodPanel.SETTINGS },
                     )
                     PlayerChip(
                         icon = AppIcons.Info,
@@ -310,7 +325,7 @@ fun MobileVodPlayerScreen(
             )
         }
 
-        VodPanel.NONE -> Unit
+        VodPanel.NONE, VodPanel.SETTINGS -> Unit
     }
 }
 

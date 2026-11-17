@@ -48,7 +48,6 @@ import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.recording.recordingChoices
 import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
-import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.ChannelLogo
@@ -68,6 +67,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
@@ -100,6 +100,8 @@ fun TvPlayerScreen(
     var infoVisible by remember { mutableStateOf(false) }
     // Izbor trajanja snimanja je otvoren.
     var recordPanel by remember { mutableStateOf(false) }
+    // Panel „Brza podešavanja” je otvoren.
+    var settingsOpen by remember { mutableStateOf(false) }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
         if (isRecording) viewModel.toggleRecording() else recordPanel = true
@@ -107,7 +109,7 @@ fun TvPlayerScreen(
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
-    val panelOpen = channelList || tracks != null || recordPanel
+    val panelOpen = channelList || tracks != null || recordPanel || settingsOpen
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -117,6 +119,7 @@ fun TvPlayerScreen(
         when {
             tracks != null -> tracks = null
             recordPanel -> recordPanel = false
+            settingsOpen -> settingsOpen = false
             channelList -> channelList = false
             else -> overlay = Overlay.HIDDEN
         }
@@ -260,7 +263,7 @@ fun TvPlayerScreen(
                 onSubtitles = { tracks = TvTrackKind.SUBTITLES },
                 onAudio = { tracks = TvTrackKind.AUDIO },
                 onAspect = viewModel::cycleAspectMode,
-                onDecoder = viewModel::cycleDecoder,
+                onSettings = { settingsOpen = true },
                 infoVisible = infoVisible,
                 onInfo = { infoVisible = !infoVisible },
                 onFavorite = viewModel::toggleFavorite,
@@ -292,6 +295,19 @@ fun TvPlayerScreen(
             )
         }
 
+        if (settingsOpen) {
+            TvQuickSettingsPanel(
+                choices = quickSettingChoices(
+                    tv = true,
+                    aspectMode = ui.aspectMode,
+                    onAspectMode = viewModel::setAspectMode,
+                    decoder = ui.decoder,
+                    onDecoder = viewModel::setDecoder,
+                ),
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+
         if (recordPanel) {
             val choices = recordingChoices(nowNext.now?.stopMs)
             TvChoicePanel(
@@ -318,7 +334,7 @@ private fun LiveControls(
     onSubtitles: () -> Unit,
     onAudio: () -> Unit,
     onAspect: () -> Unit,
-    onDecoder: () -> Unit,
+    onSettings: () -> Unit,
     infoVisible: Boolean,
     onInfo: () -> Unit,
     onFavorite: () -> Unit,
@@ -432,11 +448,8 @@ private fun LiveControls(
                     PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
                     PlayerChip(
                         icon = AppIcons.Settings,
-                        label = stringResource(
-                            if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
-                        ),
-                        active = ui.decoder == DecoderMode.SOFTWARE,
-                        onClick = onDecoder,
+                        label = stringResource(R.string.settings_title),
+                        onClick = onSettings,
                     )
                     PlayerChip(
                         icon = AppIcons.Info,

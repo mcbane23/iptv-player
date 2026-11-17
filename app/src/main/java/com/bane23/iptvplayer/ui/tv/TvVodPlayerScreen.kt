@@ -38,7 +38,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
@@ -53,6 +52,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.subtitles.appliedSubtitleToast
@@ -87,6 +87,8 @@ fun TvVodPlayerScreen(
     var infoVisible by remember { mutableStateOf(false) }
     // Spisak titlova sa interneta; otvara se iz spiska titlova.
     var onlineOpen by remember { mutableStateOf(false) }
+    // Panel „Brza podešavanja” je otvoren.
+    var settingsOpen by remember { mutableStateOf(false) }
     val online by viewModel.online.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // Svaki pritisak tastera povećava brojač, čime se kontrole zadržavaju još nekoliko sekundi.
@@ -100,8 +102,9 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
-    BackHandler(enabled = tracks != null || onlineOpen || controls) {
+    BackHandler(enabled = tracks != null || onlineOpen || settingsOpen || controls) {
         when {
+            settingsOpen -> settingsOpen = false
             onlineOpen -> {
                 onlineOpen = false
                 viewModel.closeOnlineSubtitles()
@@ -123,17 +126,17 @@ fun TvVodPlayerScreen(
         }
     }
 
-    LaunchedEffect(controls, tracks, onlineOpen, activity, playback.status, ui.scrubMs) {
+    LaunchedEffect(controls, tracks, onlineOpen, settingsOpen, activity, playback.status, ui.scrubMs) {
         // Dok traje premotavanje kontrole ostaju, da se vidi pregled vremena.
-        if (controls && tracks == null && !onlineOpen && ui.scrubMs == null && playback.status == PlaybackStatus.PLAYING) {
+        if (controls && tracks == null && !onlineOpen && !settingsOpen && ui.scrubMs == null && playback.status == PlaybackStatus.PLAYING) {
             delay(CONTROLS_TIMEOUT_MS)
             controls = false
         }
     }
     // Fokus prati ono što je na ekranu, inače tasteri ne bi stizali nikuda.
-    LaunchedEffect(controls, tracks, onlineOpen, focusOn) {
+    LaunchedEffect(controls, tracks, onlineOpen, settingsOpen, focusOn) {
         when {
-            tracks != null || onlineOpen -> Unit
+            tracks != null || onlineOpen || settingsOpen -> Unit
             controls -> repeat(FOCUS_ATTEMPTS) {
                 val target = if (focusOn == VodFocus.SEEK) seekFocus else playFocus
                 if (target.tryRequestFocus()) return@LaunchedEffect
@@ -375,11 +378,10 @@ fun TvVodPlayerScreen(
                         )
                         PlayerChip(
                             icon = AppIcons.Settings,
-                            label = stringResource(
-                                if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
-                            ),
-                            active = ui.decoder == DecoderMode.SOFTWARE,
-                            onClick = viewModel::cycleDecoder,
+                            label = stringResource(R.string.settings_title),
+                            // Brzina koja nije obična se vidi i na samom dugmetu.
+                            active = ui.speed != 1f,
+                            onClick = { settingsOpen = true },
                         )
                         PlayerChip(
                             icon = AppIcons.Info,
@@ -409,6 +411,20 @@ fun TvVodPlayerScreen(
                 } else {
                     null
                 },
+            )
+        }
+        if (settingsOpen) {
+            TvQuickSettingsPanel(
+                choices = quickSettingChoices(
+                    tv = true,
+                    aspectMode = ui.aspectMode,
+                    onAspectMode = viewModel::setAspectMode,
+                    decoder = ui.decoder,
+                    onDecoder = viewModel::setDecoder,
+                    speed = ui.speed,
+                    onSpeed = viewModel::setSpeed,
+                ),
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
         if (onlineOpen) {
