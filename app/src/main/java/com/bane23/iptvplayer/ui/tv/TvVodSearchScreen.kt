@@ -24,7 +24,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
@@ -79,7 +78,7 @@ fun TvVodSearchScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                 )
-                Button(onClick = viewModel::retry, modifier = Modifier.padding(top = 12.dp)) {
+                TvButton(onClick = viewModel::retry, modifier = Modifier.padding(top = 12.dp)) {
                     Text(stringResource(R.string.player_retry))
                 }
             }

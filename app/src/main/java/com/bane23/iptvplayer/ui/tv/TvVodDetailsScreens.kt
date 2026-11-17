@@ -45,10 +45,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
@@ -113,27 +111,27 @@ fun TvMovieScreen(
                 ) {
                     val progress = state.progress
                     if (progress != null && progress.resumable) {
-                        Button(onClick = { onPlay(playExtension, false) }, modifier = Modifier.focusRequester(firstFocus)) {
+                        TvButton(onClick = { onPlay(playExtension, false) }, modifier = Modifier.focusRequester(firstFocus)) {
                             ButtonIcon(AppIcons.Play)
                             Text(stringResource(R.string.vod_resume_from, formatDuration(progress.positionMs)))
                         }
-                        OutlinedButton(onClick = { onPlay(playExtension, true) }) {
+                        TvOutlinedButton(onClick = { onPlay(playExtension, true) }) {
                             ButtonIcon(AppIcons.Previous)
                             Text(stringResource(R.string.vod_start_over))
                         }
                     } else {
-                        Button(onClick = { onPlay(playExtension, true) }, modifier = Modifier.focusRequester(firstFocus)) {
+                        TvButton(onClick = { onPlay(playExtension, true) }, modifier = Modifier.focusRequester(firstFocus)) {
                             ButtonIcon(AppIcons.Play)
                             Text(stringResource(R.string.vod_play))
                         }
                     }
                     // Dugme ostaje isto, menja se samo ikonica i natpis, da fokus ne pobegne.
-                    OutlinedButton(onClick = viewModel::toggleFavorite) {
+                    TvOutlinedButton(onClick = viewModel::toggleFavorite) {
                         ButtonIcon(if (state.favorite) AppIcons.Star else AppIcons.StarOutline)
                         Text(stringResource(if (state.favorite) R.string.favorite_remove else R.string.favorite_add))
                     }
                     val watched = state.progress?.watched == true
-                    OutlinedButton(onClick = viewModel::toggleWatched) {
+                    TvOutlinedButton(onClick = viewModel::toggleWatched) {
                         ButtonIcon(AppIcons.Check)
                         Text(stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched))
                     }
@@ -244,7 +242,7 @@ fun TvSeriesScreen(
                         color = MaterialTheme.colorScheme.error,
                     )
                     // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-                    Button(onClick = viewModel::load, modifier = Modifier.focusRequester(firstFocus)) {
+                    TvButton(onClick = viewModel::load, modifier = Modifier.focusRequester(firstFocus)) {
                         Text(stringResource(R.string.player_retry))
                     }
                 }

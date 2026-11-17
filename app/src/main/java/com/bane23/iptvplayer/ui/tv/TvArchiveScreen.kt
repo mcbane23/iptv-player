@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
@@ -65,7 +64,7 @@ fun TvArchiveScreen(
             state.failed -> {
                 Note(stringResource(R.string.archive_failed))
                 // Jedini element na ekranu: mora da ima fokus, inače daljinski ne radi ništa.
-                Button(
+                TvButton(
                     onClick = viewModel::retry,
                     modifier = Modifier
                         .padding(top = 16.dp)

@@ -19,9 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
@@ -91,10 +89,10 @@ fun TvTraktScreen(viewModel: TraktViewModel = hiltViewModel()) {
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         // Dugme ostaje isto i dok traje sinhronizacija (menja se samo natpis), da fokus ne pobegne.
-                        Button(onClick = viewModel::syncNow, modifier = Modifier.focusRequester(primary)) {
+                        TvButton(onClick = viewModel::syncNow, modifier = Modifier.focusRequester(primary)) {
                             Text(stringResource(if (state.syncing) R.string.trakt_syncing else R.string.trakt_sync_now))
                         }
-                        OutlinedButton(onClick = viewModel::disconnect) {
+                        TvOutlinedButton(onClick = viewModel::disconnect) {
                             Text(stringResource(R.string.trakt_disconnect))
                         }
                     }
@@ -117,14 +115,14 @@ fun TvTraktScreen(viewModel: TraktViewModel = hiltViewModel()) {
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    OutlinedButton(onClick = viewModel::cancelLogin, modifier = Modifier.focusRequester(primary)) {
+                    TvOutlinedButton(onClick = viewModel::cancelLogin, modifier = Modifier.focusRequester(primary)) {
                         Text(stringResource(R.string.trakt_cancel))
                     }
                 }
 
                 else -> {
                     val starting = login is TraktLogin.Starting
-                    Button(
+                    TvButton(
                         onClick = { if (!starting) viewModel.connect() },
                         modifier = Modifier.focusRequester(primary),
                     ) {

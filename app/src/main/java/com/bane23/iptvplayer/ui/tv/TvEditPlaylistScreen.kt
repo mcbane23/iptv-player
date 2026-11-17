@@ -20,9 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
@@ -64,7 +62,7 @@ fun TvEditPlaylistScreen(
                 PlaylistType.entries.forEachIndexed { index, type ->
                     val modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
                     // Isto dugme za izabran i neizabran tip: zamena dugmeta bi izgubila fokus.
-                    OutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
+                    TvOutlinedButton(onClick = { viewModel.setType(type) }, modifier = modifier) {
                         Text(if (state.type == type) "● ${type.label()}" else type.label())
                     }
                 }
@@ -77,7 +75,7 @@ fun TvEditPlaylistScreen(
             modifier = Modifier.fillMaxWidth(0.6f),
             plainKeyboard = true,
             pickFileButton = { label, onClick ->
-                OutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
+                TvOutlinedButton(onClick = onClick, enabled = !state.saving) { Text(label) }
             },
         )
 
@@ -99,10 +97,10 @@ fun TvEditPlaylistScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             val saveModifier = if (playlistId != null) Modifier.focusRequester(firstFocus) else Modifier
             // Dok traje čuvanje dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
-            Button(onClick = viewModel::save, modifier = saveModifier) {
+            TvButton(onClick = viewModel::save, modifier = saveModifier) {
                 Text(stringResource(R.string.action_save))
             }
-            OutlinedButton(onClick = { if (!state.saving) onClose() }) {
+            TvOutlinedButton(onClick = { if (!state.saving) onClose() }) {
                 Text(stringResource(R.string.action_cancel))
             }
         }

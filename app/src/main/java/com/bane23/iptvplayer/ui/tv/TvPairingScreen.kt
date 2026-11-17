@@ -19,9 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
@@ -97,11 +95,11 @@ fun TvPairingScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 8.dp)) {
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-                Button(onClick = onClose, modifier = Modifier.focusRequester(firstFocus)) {
+                TvButton(onClick = onClose, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(if (state.addedName != null || transfer != null) R.string.pairing_finish else R.string.action_cancel))
                 }
                 if (!state.starting && url == null) {
-                    OutlinedButton(onClick = viewModel::start) { Text(stringResource(R.string.player_retry)) }
+                    TvOutlinedButton(onClick = viewModel::start) { Text(stringResource(R.string.player_retry)) }
                 }
             }
         }

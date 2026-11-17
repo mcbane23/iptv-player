@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
@@ -102,7 +101,7 @@ fun TvPinEntry(
                         if (label.isEmpty()) {
                             Box(modifier = Modifier.width(72.dp))
                         } else {
-                            Button(
+                            TvButton(
                                 onClick = {
                                     if (label == DELETE_KEY) digits = digits.dropLast(1) else typeDigit(label[0])
                                 },
