@@ -76,6 +76,8 @@ fun MobileSettingsScreen(
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
+    val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
+    val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
@@ -154,6 +156,18 @@ fun MobileSettingsScreen(
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
             }
             SettingsGroup(stringResource(R.string.settings_player_header)) {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_brightness_slider),
+                    summary = stringResource(R.string.settings_brightness_slider_summary),
+                    checked = brightnessSlider,
+                    onChange = viewModel::setPlayerBrightnessSlider,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_volume_slider),
+                    summary = stringResource(R.string.settings_volume_slider_summary),
+                    checked = volumeSlider,
+                    onChange = viewModel::setPlayerVolumeSlider,
+                )
                 choices.forEachIndexed { index, choice ->
                     if (choice.toggle) {
                         SettingsSwitchRow(choice.title, choice.summary, choice.checked) { choice.flip() }

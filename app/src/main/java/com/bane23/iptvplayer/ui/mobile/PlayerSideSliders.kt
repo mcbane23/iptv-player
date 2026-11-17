@@ -45,7 +45,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.playerPanel
 import kotlin.math.roundToInt
@@ -104,13 +107,20 @@ internal fun rememberPlayerLevels(): PlayerLevels {
 
 /**
  * Dve tanke uspravne trake uz ivice, u stilu vremenske trake: levo osvetljenje, desno jačina zvuka.
+ * Svaka se posebno uključuje u Podešavanjima i obe su isključene dok ih korisnik ne uključi.
  * Vide se samo uz ostale kontrole; prevlačenje van njih ne menja ništa. [onInteraction] se javlja
  * na svaki dodir, da se kontrole ne sklone dok se traka pomera.
  */
 @Composable
-internal fun BoxScope.PlayerSideSliders(levels: PlayerLevels, onInteraction: () -> Unit) {
+internal fun BoxScope.PlayerSideSliders(
+    levels: PlayerLevels,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    onInteraction: () -> Unit,
+) {
+    val showBrightness by settingsViewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
+    val showVolume by settingsViewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     LaunchedEffect(levels) { levels.refreshVolume() }
-    SideSlider(
+    if (showBrightness) SideSlider(
         icon = AppIcons.Brightness,
         description = stringResource(R.string.gesture_brightness),
         fraction = levels.brightness,
@@ -121,7 +131,7 @@ internal fun BoxScope.PlayerSideSliders(levels: PlayerLevels, onInteraction: () 
         onInteraction = onInteraction,
         modifier = Modifier.align(Alignment.CenterStart),
     )
-    SideSlider(
+    if (showVolume) SideSlider(
         icon = AppIcons.VolumeUp,
         description = stringResource(R.string.gesture_volume),
         fraction = levels.volume,
