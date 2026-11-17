@@ -178,7 +178,7 @@ class MultiViewViewModel @Inject constructor(
 
     fun onForeground() {
         foreground = true
-        engines.forEach { it?.resume() }
+        engines.forEach { it?.restore() }
     }
 
     fun onBackground() {

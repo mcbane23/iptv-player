@@ -267,7 +267,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     /** Aplikacija je ponovo vidljiva. */
-    fun onForeground() = engine.resume()
+    fun onForeground() = engine.restore()
 
     /** Aplikacija više nije vidljiva: strim se zaustavlja da ne troši mrežu u pozadini. */
     fun onBackground() = engine.stop()

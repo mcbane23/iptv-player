@@ -229,6 +229,7 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 - [x] Podešavanje User-Agent-a po listi (neki provajderi ga zahtevaju)
 - [x] Ekran ostaje upaljen tokom gledanja; pravilno ponašanje pri izlasku i povratku
 - [x] Telefon: rotacija, jačina zvuka i osvetljenje (od 16. 11. 2026. dve tanke trake uz ivice umesto prevlačenja bilo gde; od 17. 11. 2026. svaka se posebno uključuje u Podešavanjima, podrazumevano su isključene), slika u slici (PiP; od 17. 11. 2026. mali prozor ima dugme za pauzu i puštanje)
+- [x] Pauza i puštanje (17. 11. 2026): sadržaj koji je korisnik pauzirao ostaje pauziran kad se aplikacija vrati iz pozadine; na telefonu dupli dodir na sliku pauzira i pušta (u filmovima i serijama srednja trećina, leva i desna i dalje premotavaju); kad se slušalice odvoje (Bluetooth ili kabl), plejer se pauzira
 - [x] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
 
 ### Faza 3: Favoriti, istorija, pretraga

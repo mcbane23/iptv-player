@@ -107,9 +107,14 @@ fun MobileVodPlayerScreen(
                     onTap = {
                         if (locked) unlockVisible = !unlockVisible else controlsVisible = !controlsVisible
                     },
+                    // Dupli tap: leva i desna trećina slike premotavaju, sredina pauzira ili pušta.
                     onDoubleTap = { offset ->
                         if (!locked) {
-                            viewModel.seekBy(if (offset.x < size.width / 2) -viewModel.seekStepMs else viewModel.seekStepMs)
+                            when {
+                                offset.x < size.width / 3 -> viewModel.seekBy(-viewModel.seekStepMs)
+                                offset.x > size.width * 2 / 3 -> viewModel.seekBy(viewModel.seekStepMs)
+                                else -> viewModel.togglePlayPause()
+                            }
                             activity++
                         }
                     },
