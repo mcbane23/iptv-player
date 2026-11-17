@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import com.bane23.iptvplayer.ui.common.AppLanguage
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -81,6 +82,7 @@ fun MobileSettingsScreen(
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
+    val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
@@ -162,6 +164,32 @@ fun MobileSettingsScreen(
                     )
                 }
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
+                // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.setUiScale(UiScale.next(uiScale, isTv = false)) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_ui_scale),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_ui_scale_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = uiScale.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
             }
             SettingsGroup(stringResource(R.string.settings_player_header)) {
                 SettingsSwitchRow(

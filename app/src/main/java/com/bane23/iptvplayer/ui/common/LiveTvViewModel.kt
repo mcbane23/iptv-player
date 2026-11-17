@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.common
 
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.UiScale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -267,6 +268,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setAccentColor(color: AccentColor) {
         viewModelScope.launch { settings.setAccentColor(color.name) }
+    }
+
+    /** Sačuvano ime veličine prikaza (vidi `UiScale`); null dok korisnik ništa nije izabrao. */
+    val uiScale: StateFlow<String?> = settings.uiScale
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setUiScale(scale: UiScale) {
+        viewModelScope.launch { settings.setUiScale(scale.name) }
     }
 
     val tvChannelPreview: StateFlow<Boolean> = settings.tvChannelPreview

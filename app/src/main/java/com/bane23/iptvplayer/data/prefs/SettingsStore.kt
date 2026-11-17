@@ -253,6 +253,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[ACCENT_COLOR] = name }
     }
 
+    /** Ime veličine prikaza koju je korisnik izabrao (vidi `UiScale`), ili null za podrazumevanu. */
+    val uiScale: Flow<String?> = dataStore.data.map { it[UI_SCALE] }.distinctUntilChanged()
+
+    suspend fun setUiScale(name: String) {
+        dataStore.edit { it[UI_SCALE] = name }
+    }
+
     /**
      * Oznaka kanala ažuriranja koji je korisnik izabrao (vidi `UpdateChannel`), ili null dok nije birao
      * (tada važi kanal iz koga je build).
@@ -349,6 +356,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         const val LIST_SEPARATOR = "\n"
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val UI_SCALE = stringPreferencesKey("ui_scale")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }

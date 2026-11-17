@@ -16,6 +16,8 @@ import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.IptvTheme
+import com.bane23.iptvplayer.ui.common.theme.ScaledUi
+import com.bane23.iptvplayer.ui.common.theme.UiScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
@@ -44,15 +46,20 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) sendTarget = sendTargetOf(intent)
         // Boja se čita pre prvog crtanja, da se pri pokretanju ne vidi podrazumevana pa tek onda izabrana.
         val savedAccent = runBlocking { settingsStore.accentColor.first() }
+        // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
+        val savedScale = runBlocking { settingsStore.uiScale.first() }
         setContent {
             val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
+            val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
             IptvTheme(accent = AccentColor.fromName(accent)) {
-                if (isTv) {
-                    TvApp()
-                } else {
-                    MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                ScaledUi(UiScale.fromName(scale, isTv)) {
+                    if (isTv) {
+                        TvApp()
+                    } else {
+                        MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                    }
+                    UpdateDialog()
                 }
-                UpdateDialog()
             }
         }
     }

@@ -313,6 +313,8 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
   traka, rezolucija, format), a ispod nje red dugmadi samo sa nazivom. Fokus na TV-u je prsten u boji teme
 - [x] 7. Boja aplikacije: izbor akcentne boje u Podešavanjima (šest boja), podrazumevana svetlo
   narandžasta; važi odmah, na telefonu i TV-u
+- [x] 8. Veličina prikaza: podešavanje koje umanjuje ceo interfejs (100%, 85%, 75%, na TV-u i 65%),
+  da stane više redova i duži nazivi; početna vrednost 75% na TV-u, 100% na telefonu
 
 ### Faza 8: Izdanje
 
