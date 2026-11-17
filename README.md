@@ -51,7 +51,11 @@ fajl menadžera na TV-u. Aplikacija se pojavljuje i u običnom launcher-u telefo
 i u Android TV launcher-u.
 
 Bez računara: na TV-u instaliraj aplikaciju „Downloader” iz prodavnice, upiši u nju link ka APK-u
-i dozvoli joj instalaciju iz nepoznatih izvora.
+i dozvoli joj instalaciju iz nepoznatih izvora. Poslednje zvanično izdanje je uvek na istoj adresi:
+
+```
+https://github.com/mcbane23/apps/releases/download/iptv-player/glowbox.apk
+```
 
 ## Novo izdanje
 
