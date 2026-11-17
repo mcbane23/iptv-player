@@ -66,7 +66,8 @@ private enum class VodFocus { PLAY, SEEK }
 /**
  * Plejer za film ili epizodu na TV-u. Dok su kontrole sklonjene: OK (ili gore/dole) ih prikazuje,
  * levo/desno premotava (držanje premotava sve brže; plejer skače tek kad se strelica pusti, a dotle
- * se na traci vidi vreme na koje se stiže). Kontrole su iste kao na telefonu: naslov gore,
+ * se na traci vidi vreme na koje se stiže). Kad su kontrole prikazane, traka u fokusu premotava tek
+ * posle potvrde sa OK, da se strelicama lako pređe preko nje do dugmadi. Kontrole su iste kao na telefonu: naslov gore,
  * a dole traka sa vremenom i dugmad Titlovi, Audio i Format. Nazad prvo skloni kontrole.
  * [start] pokreće puštanje (poziva se jednom).
  */
@@ -79,6 +80,8 @@ fun TvVodPlayerScreen(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     var controls by remember { mutableStateOf(true) }
     var focusOn by remember { mutableStateOf(VodFocus.PLAY) }
+    // Traka premotava tek kad se potvrdi sa OK; do tada levo/desno samo pomera fokus preko nje.
+    var seekArmed by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
     // Spisak titlova sa interneta; otvara se iz spiska titlova.
     var onlineOpen by remember { mutableStateOf(false) }
@@ -102,6 +105,10 @@ fun TvVodPlayerScreen(
                 viewModel.closeOnlineSubtitles()
             }
             tracks != null -> tracks = null
+            seekArmed -> {
+                viewModel.commitScrub()
+                seekArmed = false
+            }
             else -> controls = false
         }
     }
@@ -136,6 +143,8 @@ fun TvVodPlayerScreen(
 
     fun show(focus: VodFocus) {
         focusOn = focus
+        // Premotavanje započeto strelicom dok su kontrole sklonjene nastavlja se bez potvrde.
+        seekArmed = focus == VodFocus.SEEK
         controls = true
         activity++
     }
@@ -333,6 +342,8 @@ fun TvVodPlayerScreen(
                             modifier = barModifier.focusRequester(seekFocus),
                             stepMs = viewModel.seekStepMs,
                             onSeekEnd = viewModel::commitScrub,
+                            armed = seekArmed,
+                            onArmedChange = { seekArmed = it },
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

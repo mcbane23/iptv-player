@@ -228,7 +228,7 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 - [x] Automatski ponovni pokušaj kad strim pukne, jasna poruka kad ne može da se pusti
 - [x] Podešavanje User-Agent-a po listi (neki provajderi ga zahtevaju)
 - [x] Ekran ostaje upaljen tokom gledanja; pravilno ponašanje pri izlasku i povratku
-- [x] Telefon: rotacija, jačina zvuka i osvetljenje (od 16. 11. 2026. dve tanke trake uz ivice umesto prevlačenja bilo gde), slika u slici (PiP)
+- [x] Telefon: rotacija, jačina zvuka i osvetljenje (od 16. 11. 2026. dve tanke trake uz ivice umesto prevlačenja bilo gde; od 17. 11. 2026. svaka se posebno uključuje u Podešavanjima, podrazumevano su isključene), slika u slici (PiP)
 - [x] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
 
 ### Faza 3: Favoriti, istorija, pretraga
@@ -478,6 +478,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Forma za listu: User-Agent i polja vodiča iza dugmeta „Napredna podešavanja”
 - [x] Serije: prelazak sa sezone na epizode vodi na prvu neodgledanu epizodu te sezone
 - [x] TV plejer za filmove i epizode: uklonjeno dugme „Od početka” (ostaje na ekranu detalja, pre puštanja)
+- [x] TV plejer filmova i serija: traka vremena u fokusu premotava tek posle potvrde sa OK, da se
+  strelicama lako stigne do dugmadi desno od nje.
 
 ## 7. Testiranje
 
