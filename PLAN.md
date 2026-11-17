@@ -493,6 +493,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   raširen preko teksta.
 - [x] Ikonice: ispravljeno crtanje ikonica čiji je deo bio odsečen ili iskrivljen (vodič u TV meniju,
   prethodni kanal u plejeru, obaveštenja).
+- [x] Plejer: dugme „Dekoder” zamenjeno dugmetom „Podešavanja”, koje otvara panel „Brza podešavanja”
+  preko slike. Telefon: trake za osvetljenje i zvuk, puštanje u pozadini, dekoder, tajmer gašenja.
+  TV: odnos slike, dekoder, veličina titlova, tajmer gašenja, bafer. Filmovi i epizode imaju i
+  brzinu puštanja. Tajmer gašenja pauzira ono što se gleda i ne pamti se posle gašenja aplikacije.
 
 ## 7. Testiranje
 

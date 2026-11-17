@@ -29,6 +29,11 @@ data class SettingChoice(
 
     /** Za [toggle]: prelazi u drugo stanje. */
     fun flip() = onSelect(if (checked) 1 else 0)
+
+    /** Prelazi na sledeću vrednost, ukrug. Tako se podešavanje menja jednim dodirom ili tasterom OK. */
+    fun cycle() {
+        if (options.isNotEmpty()) onSelect((selected + 1) % options.size)
+    }
 }
 
 /** Jezici koji se nude za zvuk i titlove (ISO 639-1). Nazivi se prikazuju na jeziku uređaja. */

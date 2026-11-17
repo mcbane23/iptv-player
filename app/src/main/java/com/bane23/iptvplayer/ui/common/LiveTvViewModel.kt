@@ -214,7 +214,13 @@ class SearchViewModel @Inject constructor(
 class SettingsViewModel @Inject constructor(
     private val repository: ChannelRepository,
     private val settings: SettingsStore,
+    private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
 ) : ViewModel() {
+
+    /** Tajmer gašenja u minutima; 0 dok je isključen. */
+    val sleepTimerMinutes: StateFlow<Int> = sleepTimer.minutes
+
+    fun setSleepTimer(minutes: Int) = sleepTimer.set(minutes)
 
     val playerSettings: StateFlow<PlayerSettings> = settings.playerSettings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerSettings())

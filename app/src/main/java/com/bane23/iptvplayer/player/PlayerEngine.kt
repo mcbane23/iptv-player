@@ -347,6 +347,11 @@ class PlayerEngine(
         player.pause()
     }
 
+    /** Brzina puštanja (1 = obična). Ostaje i kad se sadržaj pripremi iznova ili pređe na sledeću epizodu. */
+    fun setSpeed(speed: Float) {
+        player.setPlaybackSpeed(speed)
+    }
+
     /**
      * Aplikacija je ponovo vidljiva posle [stop]. Gledanje se nastavlja samo ako je išlo kad je
      * aplikacija otišla u pozadinu; sadržaj koji je korisnik pauzirao se priprema, ali ostaje pauziran.

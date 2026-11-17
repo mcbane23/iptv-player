@@ -67,7 +67,6 @@ import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.ui.common.guide.nextLine
 import com.bane23.iptvplayer.ui.common.guide.formatTime
-import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -82,10 +81,11 @@ import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
 
-private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD }
+private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD, SETTINGS }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -220,7 +220,7 @@ fun MobilePlayerScreen(
                     onAudio = { panel = Panel.AUDIO },
                     onSubtitles = { panel = Panel.SUBTITLES },
                     onAspect = viewModel::cycleAspectMode,
-                    onDecoder = viewModel::cycleDecoder,
+                    onSettings = { panel = Panel.SETTINGS },
                     infoVisible = infoVisible,
                     onInfo = { infoVisible = !infoVisible },
                     isFavorite = isFavorite,
@@ -232,6 +232,20 @@ fun MobilePlayerScreen(
                     onCast = cast,
                 )
                 PlayerSideSliders(levels) { sliderTouches++ }
+            }
+
+            if (panel == Panel.SETTINGS) {
+                // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
+                PlayerSideSliders(levels) { }
+                MobileQuickSettingsPanel(
+                    quickSettingChoices(
+                        tv = false,
+                        aspectMode = ui.aspectMode,
+                        onAspectMode = viewModel::setAspectMode,
+                        decoder = ui.decoder,
+                        onDecoder = viewModel::setDecoder,
+                    ),
+                )
             }
 
             if (panel == Panel.CHANNELS) {
@@ -292,7 +306,7 @@ private fun LiveControls(
     onAudio: () -> Unit,
     onSubtitles: () -> Unit,
     onAspect: () -> Unit,
-    onDecoder: () -> Unit,
+    onSettings: () -> Unit,
     infoVisible: Boolean,
     onInfo: () -> Unit,
     isFavorite: Boolean,
@@ -361,14 +375,7 @@ private fun LiveControls(
             )
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
             PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
-            PlayerChip(
-                icon = AppIcons.Settings,
-                label = stringResource(
-                    if (ui.decoder == DecoderMode.SOFTWARE) R.string.player_decoder_software else R.string.player_decoder_auto,
-                ),
-                active = ui.decoder == DecoderMode.SOFTWARE,
-                onClick = onDecoder,
-            )
+            PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)
             PlayerChip(
                 icon = AppIcons.Info,
                 label = stringResource(R.string.player_stream_info),

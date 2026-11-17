@@ -54,6 +54,8 @@ data class VodPlayerUiState(
     val aspectMode: AspectMode = AspectMode.FIT,
     /** Dekoder koji plejer trenutno bira prvi. */
     val decoder: DecoderMode = DecoderMode.AUTO,
+    /** Brzina puštanja; 1 = obična. Važi dok je plejer otvoren, i za sledeću epizodu. */
+    val speed: Float = 1f,
     val hasNext: Boolean = false,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
@@ -84,6 +86,7 @@ class VodPlayerViewModel @Inject constructor(
     private val archive: ArchiveRepository,
     private val recordings: RecordingRepository,
     private val subtitles: OpenSubtitlesRepository,
+    private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -126,6 +129,8 @@ class VodPlayerViewModel @Inject constructor(
     private var scrubJob: Job? = null
 
     init {
+        // Tajmer gašenja je istekao: gledanje se pauzira, pa uređaj posle sam ugasi ekran.
+        viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
         // Pozicija se osvežava dok se gleda i povremeno pamti.
         viewModelScope.launch {
             while (isActive) {
@@ -278,16 +283,23 @@ class VodPlayerViewModel @Inject constructor(
         seekTo(target)
     }
 
-    fun cycleAspectMode() = _ui.update {
-        it.copy(aspectMode = AspectMode.entries[(it.aspectMode.ordinal + 1) % AspectMode.entries.size])
-    }
+    fun cycleAspectMode() =
+        setAspectMode(AspectMode.entries[(_ui.value.aspectMode.ordinal + 1) % AspectMode.entries.size])
+
+    fun setAspectMode(mode: AspectMode) = _ui.update { it.copy(aspectMode = mode) }
 
     /** Prelazi na drugi dekoder odmah; gledanje se nastavlja sa istog mesta. Izbor se pamti kao u podešavanjima. */
-    fun cycleDecoder() {
-        val next = DecoderMode.entries[(_ui.value.decoder.ordinal + 1) % DecoderMode.entries.size]
-        _ui.update { it.copy(decoder = next) }
-        engine.setDecoder(next)
-        viewModelScope.launch { settings.setPlayerDecoder(next) }
+    fun setDecoder(mode: DecoderMode) {
+        if (_ui.value.decoder == mode) return
+        _ui.update { it.copy(decoder = mode) }
+        engine.setDecoder(mode)
+        viewModelScope.launch { settings.setPlayerDecoder(mode) }
+    }
+
+    /** Brzina puštanja filma ili epizode. Ne pamti se u podešavanjima. */
+    fun setSpeed(speed: Float) {
+        engine.setSpeed(speed)
+        _ui.update { it.copy(speed = speed) }
     }
 
     /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći film ili epizoda krene isto. */
