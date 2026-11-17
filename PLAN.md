@@ -497,6 +497,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   preko slike. Telefon: trake za osvetljenje i zvuk, puštanje u pozadini, dekoder, tajmer gašenja.
   TV: odnos slike, dekoder, veličina titlova, tajmer gašenja, bafer. Filmovi i epizode imaju i
   brzinu puštanja. Tajmer gašenja pauzira ono što se gleda i ne pamti se posle gašenja aplikacije.
+- [x] TV plejer: odnos slike nema dugme ispod trake (ostaje ikonica na kraju trake i stavka u
+  „Podešavanjima”), a plejer kanala na TV-u i telefonu nema dugme „Titlovi”, da red dugmadi stane na ekran.
 
 ## 7. Testiranje
 

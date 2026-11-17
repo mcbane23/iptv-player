@@ -68,7 +68,7 @@ private enum class VodFocus { PLAY, SEEK }
  * levo/desno premotava (držanje premotava sve brže; plejer skače tek kad se strelica pusti, a dotle
  * se na traci vidi vreme na koje se stiže). Kad su kontrole prikazane, traka u fokusu premotava tek
  * posle potvrde sa OK, da se strelicama lako pređe preko nje do dugmadi. Kontrole su iste kao na telefonu: naslov gore,
- * a dole traka sa vremenom i dugmad Titlovi, Audio i Format. Nazad prvo skloni kontrole.
+ * a dole traka sa vremenom i dugmad Titlovi, Audio i Podešavanja; odnos slike je na kraju trake. Nazad prvo skloni kontrole.
  * [start] pokreće puštanje (poziva se jednom).
  */
 @Composable
@@ -370,11 +370,6 @@ fun TvVodPlayerScreen(
                             icon = AppIcons.Audio,
                             label = stringResource(R.string.player_audio),
                             onClick = { tracks = TvTrackKind.AUDIO },
-                        )
-                        PlayerChip(
-                            icon = AppIcons.AspectRatio,
-                            label = ui.aspectMode.label(),
-                            onClick = viewModel::cycleAspectMode,
                         )
                         PlayerChip(
                             icon = AppIcons.Settings,

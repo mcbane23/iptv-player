@@ -79,7 +79,7 @@ private enum class Overlay { HIDDEN, INFO, ACTIVE }
  * Plejer kanala na TV-u, upravlja se samo daljinskim. Dok su kontrole sklonjene: gore/dole menja
  * kanal, levo otvara listu kanala, OK (ili desno) prikazuje kontrole, cifre biraju kanal po broju.
  * Kontrole izgledaju kao u plejeru filmova: naziv kanala gore, a dole emisija sa trakom i dugmad
- * Kanali, Titlovi, Audio, Format i Omiljeni. Nazad prvo zatvara spisak ili kontrole.
+ * Kanali, Audio, Podešavanja i Omiljeni. Odnos slike se menja na kraju trake i u Podešavanjima. Nazad prvo zatvara spisak ili kontrole.
  */
 @Composable
 fun TvPlayerScreen(
@@ -260,9 +260,7 @@ fun TvPlayerScreen(
                 isFavorite = isFavorite,
                 firstChipFocus = firstChipFocus,
                 onChannels = { channelList = true },
-                onSubtitles = { tracks = TvTrackKind.SUBTITLES },
                 onAudio = { tracks = TvTrackKind.AUDIO },
-                onAspect = viewModel::cycleAspectMode,
                 onSettings = { settingsOpen = true },
                 infoVisible = infoVisible,
                 onInfo = { infoVisible = !infoVisible },
@@ -331,9 +329,7 @@ private fun LiveControls(
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
     onChannels: () -> Unit,
-    onSubtitles: () -> Unit,
     onAudio: () -> Unit,
-    onAspect: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
     onInfo: () -> Unit,
@@ -410,7 +406,7 @@ private fun LiveControls(
                         PlayerIconButton(
                             icon = AppIcons.AspectRatio,
                             description = ui.aspectMode.label(),
-                            onClick = onAspect,
+                            onClick = viewModel::cycleAspectMode,
                         )
                     },
                 ) { barModifier ->
@@ -438,14 +434,7 @@ private fun LiveControls(
                         label = stringResource(R.string.player_channels),
                         onClick = onChannels,
                     )
-                    PlayerChip(
-                        icon = AppIcons.Subtitles,
-                        label = stringResource(R.string.player_subtitles),
-                        active = playback.textEnabled,
-                        onClick = onSubtitles,
-                    )
                     PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
-                    PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
                     PlayerChip(
                         icon = AppIcons.Settings,
                         label = stringResource(R.string.settings_title),

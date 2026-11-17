@@ -85,7 +85,7 @@ import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
 
-private enum class Panel { NONE, CHANNELS, AUDIO, SUBTITLES, RECORD, SETTINGS }
+private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -218,7 +218,6 @@ fun MobilePlayerScreen(
                     onRetry = viewModel::retry,
                     onChannels = { panel = Panel.CHANNELS },
                     onAudio = { panel = Panel.AUDIO },
-                    onSubtitles = { panel = Panel.SUBTITLES },
                     onAspect = viewModel::cycleAspectMode,
                     onSettings = { panel = Panel.SETTINGS },
                     infoVisible = infoVisible,
@@ -268,17 +267,6 @@ fun MobilePlayerScreen(
             onDismiss = { panel = Panel.NONE },
         )
 
-        Panel.SUBTITLES -> TrackDialog(
-            title = stringResource(R.string.player_subtitles),
-            options = listOf(stringResource(R.string.player_subtitles_off) to !playback.textEnabled) +
-                playback.textTracks.map { it.label to it.selected },
-            emptyText = null,
-            onSelect = { index ->
-                viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
-            },
-            onDismiss = { panel = Panel.NONE },
-        )
-
         Panel.RECORD -> TrackDialog(
             title = stringResource(R.string.recording_duration_title),
             options = recordChoices.map { it.label to false },
@@ -304,7 +292,6 @@ private fun LiveControls(
     onRetry: () -> Unit,
     onChannels: () -> Unit,
     onAudio: () -> Unit,
-    onSubtitles: () -> Unit,
     onAspect: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
@@ -367,12 +354,6 @@ private fun LiveControls(
         },
         chips = {
             PlayerChip(icon = AppIcons.ChannelList, label = stringResource(R.string.player_channels), onClick = onChannels)
-            PlayerChip(
-                icon = AppIcons.Subtitles,
-                label = stringResource(R.string.player_subtitles),
-                active = playback.textEnabled,
-                onClick = onSubtitles,
-            )
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
             PlayerChip(icon = AppIcons.AspectRatio, label = ui.aspectMode.label(), onClick = onAspect)
             PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)
