@@ -73,7 +73,17 @@ class TraktRepository @Inject constructor(
     }
 
     /** Čeka da korisnik odobri kod na trakt.tv/activate. Prekida se otkazivanjem korutine. */
-    suspend fun awaitLogin(login: PendingLogin): TraktLoginResult = withContext(Dispatchers.IO) {
+    suspend fun awaitLogin(login: PendingLogin): TraktLoginResult {
+        val (result, token) = awaitToken(login)
+        if (token != null) withContext(Dispatchers.IO) { signedIn(token) }
+        return result
+    }
+
+    /**
+     * Kao [awaitLogin], ali prijavu ne čuva ovde nego je vraća: tako telefon dobija posebnu prijavu
+     * za TV i šalje je uz liste. Prijava je null osim kad je ishod [TraktLoginResult.SUCCESS].
+     */
+    suspend fun awaitToken(login: PendingLogin): Pair<TraktLoginResult, TokenResponse?> = withContext(Dispatchers.IO) {
         val code = login.code
         var intervalMs = code.interval.coerceAtLeast(1) * 1000
         val deadline = System.currentTimeMillis() + code.expiresIn * 1000
@@ -90,18 +100,38 @@ class TraktRepository @Inject constructor(
             }
             when (response.code()) {
                 200 -> {
-                    val token = response.body() ?: return@withContext TraktLoginResult.FAILED
-                    signedIn(token)
-                    return@withContext TraktLoginResult.SUCCESS
+                    val token = response.body() ?: return@withContext TraktLoginResult.FAILED to null
+                    return@withContext TraktLoginResult.SUCCESS to token
                 }
                 400 -> Unit // Korisnik još nije odobrio.
                 429 -> intervalMs += 1000
-                418 -> return@withContext TraktLoginResult.DENIED
-                404, 409, 410 -> return@withContext TraktLoginResult.EXPIRED
-                else -> return@withContext TraktLoginResult.FAILED
+                418 -> return@withContext TraktLoginResult.DENIED to null
+                404, 409, 410 -> return@withContext TraktLoginResult.EXPIRED to null
+                else -> return@withContext TraktLoginResult.FAILED to null
             }
         }
-        TraktLoginResult.EXPIRED
+        TraktLoginResult.EXPIRED to null
+    }
+
+    /**
+     * Prihvata prijavu dobijenu na drugom uređaju (prenos sa telefona). Postojeća prijava se ne
+     * dira. Vraća true ako je nalog posle ovoga povezan.
+     */
+    suspend fun adoptLogin(token: TokenResponse): Boolean = withContext(Dispatchers.IO) {
+        if (!isAvailable) return@withContext false
+        if (!tokens.isSignedIn()) signedIn(token)
+        true
+    }
+
+    /** Opoziva prijavu koja nije upotrebljena (npr. prenos na TV je otkazan). */
+    suspend fun discard(token: TokenResponse) = withContext(Dispatchers.IO) {
+        try {
+            api.revoke(RevokeRequest(token.accessToken, CLIENT_ID, CLIENT_SECRET))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Neupotrebljena prijava samo ostaje na nalogu dok ne istekne.
+        }
     }
 
     private suspend fun signedIn(token: TokenResponse) {

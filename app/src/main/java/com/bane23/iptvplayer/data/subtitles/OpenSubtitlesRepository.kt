@@ -183,6 +183,25 @@ class OpenSubtitlesRepository @Inject constructor(
         }
     }
 
+    /**
+     * Prijavljuje se nalogom koji je stigao sa telefona. Postojeći nalog se ne dira. Vraća true ako
+     * je nalog posle ovoga prijavljen.
+     */
+    suspend fun adoptLogin(username: String, password: String): Boolean {
+        if (!isOpenSubtitlesConfigured) return false
+        if (store.account() != null) return true
+        return try {
+            login(username, password)
+            true
+        } catch (_: SubtitleException) {
+            false
+        }
+    }
+
+    /** Podaci za prijavu koji se šalju na TV, ili null kad naloga nema. */
+    suspend fun credentials(): Pair<String, String>? =
+        store.account()?.takeIf { isOpenSubtitlesConfigured }?.let { it.username to it.password }
+
     suspend fun logout() = withContext(Dispatchers.IO) {
         val token = store.account()?.token
         store.clear()

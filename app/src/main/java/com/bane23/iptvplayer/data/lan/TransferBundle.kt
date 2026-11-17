@@ -16,6 +16,8 @@ data class TransferBundle(
     val version: Int = VERSION,
     val playlists: List<TransferPlaylist> = emptyList(),
     val settings: TransferSettings? = null,
+    /** Nalozi za Trakt i OpenSubtitles; starija verzija na TV-u ih samo preskače. */
+    val accounts: TransferAccounts? = null,
 ) {
     companion object {
         const val VERSION = 1
@@ -63,6 +65,25 @@ data class TransferSettings(
     val subtitleLanguage: String = "",
 )
 
+@Serializable
+data class TransferAccounts(
+    val openSubtitles: TransferLogin? = null,
+    val trakt: TransferTraktLogin? = null,
+)
+
+/** Korisničko ime i lozinka; TV se njima prijavljuje sam. */
+@Serializable
+data class TransferLogin(val username: String, val password: String)
+
+/** Posebna Trakt prijava koju je telefon dobio za TV (ne ona kojom je sam prijavljen). */
+@Serializable
+data class TransferTraktLogin(
+    val accessToken: String,
+    val refreshToken: String,
+    val expiresIn: Long,
+    val createdAt: Long,
+)
+
 /** Šta je TV uradio sa primljenim paketom. */
 @Serializable
 data class TransferResult(
@@ -72,6 +93,9 @@ data class TransferResult(
     val existing: Int = 0,
     /** Liste koje nisu mogle da se učitaju. */
     val failed: Int = 0,
+    /** Da li je nalog na TV-u povezan; null ako nije ni poslat (ili je na TV-u starija verzija). */
+    val openSubtitles: Boolean? = null,
+    val trakt: Boolean? = null,
 )
 
 object TransferCodec {
