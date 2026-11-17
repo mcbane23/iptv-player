@@ -477,6 +477,7 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       potvrda brisanja na TV-u nosi naziv liste
 - [x] Forma za listu: User-Agent i polja vodiča iza dugmeta „Napredna podešavanja”
 - [x] Serije: prelazak sa sezone na epizode vodi na prvu neodgledanu epizodu te sezone
+- [x] TV plejer za filmove i epizode: uklonjeno dugme „Od početka” (ostaje na ekranu detalja, pre puštanja)
 
 ## 7. Testiranje
 
