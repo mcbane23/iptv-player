@@ -9,6 +9,7 @@ import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.domain.Program
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,6 +54,10 @@ class ChannelPreviewViewModel @Inject constructor(
     private val _nowNext = MutableStateFlow(NowNext())
     val nowNext: StateFlow<NowNext> = _nowNext.asStateFlow()
 
+    private val _later = MutableStateFlow<List<Program>>(emptyList())
+    /** Emisije koje slede na kanalu u fokusu, za kratak program ispod pregleda. */
+    val later: StateFlow<List<Program>> = _later.asStateFlow()
+
     private var focusJob: Job? = null
     private var stateJob: Job? = null
     private var shownId: Long? = null
@@ -67,9 +72,11 @@ class ChannelPreviewViewModel @Inject constructor(
         focusJob?.cancel()
         focusJob = viewModelScope.launch {
             _nowNext.value = NowNext()
+            _later.value = emptyList()
             // Dok se taster drži i fokus brzo prelazi preko kanala, vodič se ne čita za svaki.
             delay(NOW_NEXT_DELAY_MS)
             _nowNext.value = epg.nowNext(channelId)
+            _later.value = epg.later(channelId, LATER_COUNT)
             if (!enabled.first()) {
                 stop()
                 return@launch
@@ -114,5 +121,6 @@ class ChannelPreviewViewModel @Inject constructor(
     private companion object {
         const val NOW_NEXT_DELAY_MS = 150L
         const val PREVIEW_DELAY_MS = 650L
+        const val LATER_COUNT = 3
     }
 }

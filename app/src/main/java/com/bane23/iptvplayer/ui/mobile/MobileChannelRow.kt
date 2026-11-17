@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.guide.nowUntil
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SkeletonLogo
@@ -104,7 +105,7 @@ fun MobileChannelRow(
                     )
                     channel.nowTitle?.let { nowTitle ->
                         Text(
-                            text = nowTitle,
+                            text = nowUntil(nowTitle, channel.nowStopMs),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
