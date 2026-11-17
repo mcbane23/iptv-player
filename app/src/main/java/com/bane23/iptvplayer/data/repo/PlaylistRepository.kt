@@ -36,10 +36,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import javax.net.ssl.SSLException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -66,9 +72,15 @@ class PlaylistRepository @Inject constructor(
     private val categoryDao = db.categoryDao()
     private val channelDao = db.channelDao()
 
+    /** Liste čije je brisanje u toku. Brisanje velike liste traje, pa se ona odmah sklanja iz prikaza. */
+    private val deleting = MutableStateFlow<Set<Long>>(emptySet())
+
+    /** Brisanje ne sme da stane na pola kad korisnik napusti ekran, pa ne zavisi od ekrana. */
+    private val deleteScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     fun observePlaylists(): Flow<List<Playlist>> =
-        combine(playlistDao.observeAllWithCount(), settings.activePlaylistId) { rows, activeId ->
-            rows.map { row ->
+        combine(playlistDao.observeAllWithCount(), settings.activePlaylistId, deleting) { rows, activeId, gone ->
+            rows.filter { it.playlist.id !in gone }.map { row ->
                 val p = row.playlist
                 Playlist(
                     id = p.id,
@@ -154,14 +166,30 @@ class PlaylistRepository @Inject constructor(
         epgScheduler.refreshNow(id)
     }
 
-    suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
-        val entity = playlistDao.getById(id)
-        playlistDao.deleteById(id)
-        settings.clearPlaylistCategoryPrefs(id)
-        if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
-        if (settings.activePlaylistId.first() == id) {
-            settings.setActivePlaylistId(playlistDao.firstId())
-        }
+    /**
+     * Lista nestaje iz prikaza odmah, a podaci (kanali, vodič, filmovi) se brišu u pozadini. Drugi
+     * poziv za istu listu dok brisanje traje ne radi ništa.
+     */
+    suspend fun deletePlaylist(id: Long) {
+        val started = deleting.getAndUpdate { it + id }
+        if (id in started) return
+        deleteScope.launch {
+            try {
+                val entity = playlistDao.getById(id)
+                // Aktivna lista se menja pre brisanja, da ostatak aplikacije ne čeka na obrisanu.
+                if (settings.activePlaylistId.first() == id) {
+                    val next = playlistDao.getAll()
+                        .filter { it.id !in deleting.value }
+                        .minByOrNull { it.name.lowercase() }
+                    settings.setActivePlaylistId(next?.id)
+                }
+                playlistDao.deleteById(id)
+                settings.clearPlaylistCategoryPrefs(id)
+                if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
+            } finally {
+                deleting.update { it - id }
+            }
+        }.join()
     }
 
     suspend fun setActivePlaylist(id: Long) = settings.setActivePlaylistId(id)
