@@ -536,6 +536,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   kaže do kada emisija traje, a desno su kanal, preostalo vreme i emisije koje slede. Telefon: isti naslov
   nad kanalima i kanali na podlozi. Nije urađeno: „sledi” u redu kanala (traži izmenu upita liste) i stalna
   pomoć za tastere (pravilo: uputstva samo prvi put).
+- [x] Uživo na telefonu (Bane izabrao predlog D posle druge runde slika): kanali su pločice u dve kolone
+  sa logom levo, pa na ekran staje oko 18 kanala umesto 10; omiljeni se menja dugim pritiskom, zvezdica
+  samo pokazuje stanje. Položen telefon ima raspored kao TV: levo spisak (pretraga, omiljeni, nedavno, svi
+  kanali, kategorije sa menijem na dugi pritisak), desno kanali, bez zaglavlja i bez čipova.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 
