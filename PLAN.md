@@ -356,6 +356,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 Vlasnik je 16. 11. 2026. odlučio da sopstvena prijava (Google ili email) nije potrebna, pa je
 ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 
+- [x] Sklanjanje pojedinih filmova i serija iz reda „Nastavi gledanje” (telefon: dugi pritisak na poster,
+  TV: dugo OK). Pozicija ostaje zapamćena; stavka se vraća tek kad se ponovo gleda, a Trakt
+  sinhronizacija je ne vraća (baza v12, `watch_progress.dismissedAt`).
 - [x] Sinhronizacija pozicije gledanja: film ili serija započeti na TV-u nastavljaju se
       na telefonu od istog mesta, i obrnuto (preko Trakt-a, za ono što Trakt prepozna)
 

@@ -68,6 +68,7 @@ fun MobileVodLandscape(
     onMoveCategoryToTop: (VodCategory) -> Unit,
     onCategories: () -> Unit,
     onToggleFavorite: (VodItem) -> Unit,
+    onDismissContinue: (ContinueItem) -> Unit,
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
     onRetry: () -> Unit,
@@ -189,12 +190,7 @@ fun MobileVodLandscape(
                 when {
                     showContinue -> PosterGrid {
                         items(continueItems, key = { it.id }) { item ->
-                            PosterTile(
-                                name = item.name,
-                                poster = item.poster,
-                                progress = item.progress,
-                                onClick = { onOpen(item.toVodItem()) },
-                            )
+                            ContinueTile(item = item, onOpen = onOpen, onRemove = onDismissContinue)
                         }
                     }
 

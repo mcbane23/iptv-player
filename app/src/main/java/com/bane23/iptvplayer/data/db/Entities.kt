@@ -164,6 +164,12 @@ data class WatchProgressEntity(
      * null znači da nije odgledan (od verzije baze 8).
      */
     val watchedAt: Long? = null,
+    /**
+     * Kad je korisnik sklonio film, odnosno seriju (upisuje se u sve njene epizode), iz reda
+     * „Nastavi gledanje”. Pozicija ostaje zapamćena. Novo gledanje briše oznaku, pa se stavka vraća
+     * u red; null znači da nije sklonjeno (od verzije baze 12).
+     */
+    val dismissedAt: Long? = null,
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */

@@ -34,4 +34,21 @@ class WatchProgressTest {
         assertFalse(atEnd.resumable)
         assertFalse(atEnd.finished)
     }
+
+    @Test
+    fun `remote position older than removal from continue watching is ignored`() {
+        val removedAt = 10 * hour
+        assertFalse(WatchProgress.remoteAllowed(dismissedAtMs = removedAt, pausedAtMs = removedAt - 1))
+        assertFalse(WatchProgress.remoteAllowed(dismissedAtMs = removedAt, pausedAtMs = removedAt))
+    }
+
+    @Test
+    fun `remote position newer than removal brings the item back`() {
+        assertTrue(WatchProgress.remoteAllowed(dismissedAtMs = 10 * hour, pausedAtMs = 11 * hour))
+    }
+
+    @Test
+    fun `remote position is applied when nothing was removed`() {
+        assertTrue(WatchProgress.remoteAllowed(dismissedAtMs = null, pausedAtMs = hour))
+    }
 }

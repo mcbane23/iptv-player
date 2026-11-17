@@ -51,6 +51,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
+import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -105,6 +106,40 @@ fun TvVodScreen(
     val moveFocus = remember { FocusRequester() }
     var movedToTop by remember { mutableIntStateOf(0) }
     var shownCategoryIds by remember { mutableStateOf(emptyList<String>()) }
+    // Meni postera u „Nastavi gledanje” (dugi OK): skloni iz reda.
+    var menuContinue by remember { mutableStateOf<ContinueItem?>(null) }
+    // Stavka koja čeka sklanjanje i poster na koji fokus prelazi pre nego što njen poster nestane.
+    var pendingDismiss by remember { mutableStateOf<ContinueItem?>(null) }
+    var dismissFocusId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(pendingDismiss) {
+        val item = pendingDismiss ?: return@LaunchedEffect
+        var moved = false
+        var attempts = 0
+        while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            moved = moveFocus.tryRequestFocus()
+            attempts++
+        }
+        viewModel.dismissContinue(item)
+        dismissFocusId = null
+        focusTargetId = null
+        pendingDismiss = null
+    }
+    menuContinue?.let { item ->
+        TvActionDialog(
+            title = item.name,
+            options = listOf(stringResource(R.string.vod_continue_remove)),
+            onSelect = {
+                val index = continueItems.indexOfFirst { it.id == item.id }
+                val neighbor = continueItems.getOrNull(index + 1) ?: continueItems.getOrNull(index - 1)
+                // Poslednja stavka: red nestaje ceo, pa fokus ide na Favorite, koji uvek postoje.
+                if (neighbor != null) dismissFocusId = neighbor.id else focusTargetId = FAVORITES_ID
+                pendingDismiss = item
+            },
+            onClose = { menuContinue = null },
+        )
+    }
 
     LaunchedEffect(pendingHide) {
         val category = pendingHide ?: return@LaunchedEffect
@@ -291,12 +326,17 @@ fun TvVodScreen(
                                     name = item.name,
                                     poster = item.poster,
                                     progress = item.progress,
+                                    onLongClick = { menuContinue = item },
                                     onClick = { onOpen(item.toVodItem()) },
                                     onFocused = {
                                         lastItemId = item.id
                                         previewViewModel.focus(item.toVodItem(), series)
                                     },
-                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                    modifier = when (item.id) {
+                                        dismissFocusId -> Modifier.focusRequester(moveFocus)
+                                        lastItemId -> Modifier.focusRequester(posterFocus)
+                                        else -> Modifier
+                                    },
                                 )
                             }
                         }
@@ -439,6 +479,7 @@ fun PosterCard(
     favorite: Boolean = false,
     watched: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = onToggleFavorite,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(10.dp)
@@ -458,8 +499,8 @@ fun PosterCard(
             }
             .background(if (focused) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, shape)
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
-            // Dug pritisak na OK dodaje u omiljene, odnosno uklanja.
-            .combinedClickable(onClick = onClick, onLongClick = onToggleFavorite)
+            // Dug pritisak na OK dodaje u omiljene, odnosno uklanja; u „Nastavi gledanje” otvara meni.
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(5.dp),
     ) {
         Box {

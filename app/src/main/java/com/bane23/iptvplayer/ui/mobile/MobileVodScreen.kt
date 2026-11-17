@@ -1,6 +1,11 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import com.bane23.iptvplayer.data.repo.ContinueItem
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Arrangement
@@ -92,6 +97,7 @@ fun MobileVodScreen(
             onMoveCategoryToTop = viewModel::moveCategoryToTop,
             onCategories = onCategories,
             onToggleFavorite = viewModel::toggleFavorite,
+            onDismissContinue = viewModel::dismissContinue,
             onOpen = onOpen,
             onSearch = onSearch,
             onRetry = { if (state.categoriesFailed) viewModel.loadCategories() else viewModel.retryItems() },
@@ -139,11 +145,10 @@ fun MobileVodScreen(
                                 )
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     items(continueItems, key = { it.id }) { item ->
-                                        PosterTile(
-                                            name = item.name,
-                                            poster = item.poster,
-                                            progress = item.progress,
-                                            onClick = { onOpen(item.toVodItem()) },
+                                        ContinueTile(
+                                            item = item,
+                                            onOpen = onOpen,
+                                            onRemove = viewModel::dismissContinue,
                                             modifier = Modifier.width(104.dp),
                                         )
                                     }
@@ -242,9 +247,42 @@ fun MobileVodScreen(
 }
 
 /**
+ * Poster u „Nastavi gledanje”. Dugi pritisak otvara meni kojim se film, odnosno serija, sklanja
+ * iz reda; vraća se kad se ponovo gleda.
+ */
+@Composable
+fun ContinueTile(
+    item: ContinueItem,
+    onOpen: (VodItem) -> Unit,
+    onRemove: (ContinueItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        PosterTile(
+            name = item.name,
+            poster = item.poster,
+            progress = item.progress,
+            onClick = { onOpen(item.toVodItem()) },
+            onLongClick = { menuOpen = true },
+        )
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.vod_continue_remove)) },
+                onClick = {
+                    menuOpen = false
+                    onRemove(item)
+                },
+            )
+        }
+    }
+}
+
+/**
  * Poster sa nazivom ispod (najviše dva reda, pa „…”). Kad je [favorite] zadat, u uglu postera je
  * zvezdica kojom se film ili serija brzo dodaje u omiljene.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PosterTile(
     name: String,
@@ -255,8 +293,9 @@ fun PosterTile(
     favorite: Boolean? = null,
     watched: Boolean = false,
     onToggleFavorite: () -> Unit = {},
+    onLongClick: (() -> Unit)? = null,
 ) {
-    Column(modifier = modifier.clickable(onClick = onClick)) {
+    Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
         Box {
             Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite != null) {

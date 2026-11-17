@@ -337,10 +337,10 @@ interface WatchProgressDao {
     )
     fun observeSeries(playlistId: Long, seriesId: Long): Flow<List<WatchProgressEntity>>
 
-    /** Filmovi koji su započeti, a nisu odgledani do kraja; poslednje gledan prvi. */
+    /** Filmovi koji su započeti, a nisu odgledani do kraja ni sklonjeni iz reda; poslednje gledan prvi. */
     @Query(
         "SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = 'movie' AND title IS NOT NULL " +
-            "AND positionMs >= :minPositionMs AND positionMs * 100 < durationMs * :finishedPercent " +
+            "AND dismissedAt IS NULL AND positionMs >= :minPositionMs AND positionMs * 100 < durationMs * :finishedPercent " +
             "ORDER BY updatedAt DESC LIMIT :limit",
     )
     fun observeContinueMovies(
@@ -350,10 +350,13 @@ interface WatchProgressDao {
         limit: Int,
     ): Flow<List<WatchProgressEntity>>
 
-    /** Poslednje gledana epizoda svake serije; poslednje gledana serija prva. */
+    /**
+     * Poslednje gledana epizoda svake serije; poslednje gledana serija prva. Serija sklonjena iz reda
+     * se vraća tek kad se neka njena epizoda gleda posle sklanjanja.
+     */
     @Query(
         "SELECT * FROM watch_progress w WHERE w.playlistId = :playlistId AND w.kind = 'episode' " +
-            "AND w.title IS NOT NULL AND w.updatedAt = (SELECT MAX(w2.updatedAt) FROM watch_progress w2 " +
+            "AND w.title IS NOT NULL AND w.dismissedAt IS NULL AND w.updatedAt = (SELECT MAX(w2.updatedAt) FROM watch_progress w2 " +
             "WHERE w2.playlistId = w.playlistId AND w2.kind = 'episode' AND w2.seriesId = w.seriesId) " +
             "ORDER BY w.updatedAt DESC LIMIT :limit",
     )
@@ -367,6 +370,21 @@ interface WatchProgressDao {
 
     @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
     suspend fun deleteMany(playlistId: Long, kind: String, itemIds: List<Long>)
+
+    /** Sklanja film iz reda „Nastavi gledanje”; pozicija ostaje. */
+    @Query("UPDATE watch_progress SET dismissedAt = :at WHERE playlistId = :playlistId AND kind = 'movie' AND itemId = :movieId")
+    suspend fun dismissMovie(playlistId: Long, movieId: Long, at: Long)
+
+    /** Sklanja seriju iz reda „Nastavi gledanje”: oznaku dobijaju sve njene do sada gledane epizode. */
+    @Query("UPDATE watch_progress SET dismissedAt = :at WHERE playlistId = :playlistId AND kind = 'episode' AND seriesId = :seriesId")
+    suspend fun dismissSeries(playlistId: Long, seriesId: Long, at: Long)
+
+    /** Kad je serija poslednji put sklonjena iz reda „Nastavi gledanje”; null ako nije. */
+    @Query(
+        "SELECT MAX(dismissedAt) FROM watch_progress WHERE playlistId = :playlistId AND kind = 'episode' " +
+            "AND seriesId = :seriesId",
+    )
+    suspend fun seriesDismissedAt(playlistId: Long, seriesId: Long): Long?
 
     /** Sve što je označeno kao odgledano, za prvo slanje na Trakt posle prijave. */
     @Query("SELECT * FROM watch_progress WHERE watchedAt IS NOT NULL")
@@ -432,6 +450,9 @@ interface TraktDao {
 
     @Query("DELETE FROM trakt_playback_pending WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun deletePlayback(playlistId: Long, kind: String, itemId: Long)
+
+    @Query("DELETE FROM trakt_playback_pending WHERE playlistId = :playlistId AND kind = 'episode' AND seriesId = :seriesId")
+    suspend fun deleteSeriesPlayback(playlistId: Long, seriesId: Long)
 
     @Query("DELETE FROM trakt_playback_pending")
     suspend fun clearPlayback()

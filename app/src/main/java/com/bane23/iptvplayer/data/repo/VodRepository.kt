@@ -73,6 +73,15 @@ data class WatchProgress(val itemId: Long, val positionMs: Long, val durationMs:
         /** Da li je pozicija stigla do kraja (95%), posle čega se film ili epizoda smatra odgledanim. */
         fun reachedEnd(positionMs: Long, durationMs: Long): Boolean =
             durationMs > 0 && positionMs * 100 >= durationMs * FINISHED_PERCENT
+
+        /**
+         * Da li pozicija sa Trakt naloga, zabeležena u [pausedAtMs], sme da se upiše za film ili seriju
+         * koju je korisnik u [dismissedAtMs] sklonio iz reda „Nastavi gledanje” (null: nije sklonjeno).
+         * Sme samo ako je nastala posle sklanjanja, to jest ako je gledano ponovo na drugom uređaju;
+         * inače bi sinhronizacija vratila ono što je korisnik upravo sklonio.
+         */
+        fun remoteAllowed(dismissedAtMs: Long?, pausedAtMs: Long): Boolean =
+            dismissedAtMs == null || pausedAtMs > dismissedAtMs
     }
 }
 
@@ -357,6 +366,23 @@ class VodRepository @Inject constructor(
     }
 
     /**
+     * Sklanja film, odnosno seriju, iz reda „Nastavi gledanje”. Zapamćena pozicija i oznake
+     * „odgledano” ostaju. Stavka se vraća u red tek kad se ponovo gleda, ovde ili na drugom uređaju
+     * (Trakt), a pozicija koja je čekala slanje na Trakt se odbacuje.
+     */
+    suspend fun dismissContinue(item: ContinueItem) = withContext(Dispatchers.IO) {
+        val playlistId = settings.activePlaylistId.first() ?: return@withContext
+        val now = System.currentTimeMillis()
+        if (item.isSeries) {
+            progressDao.dismissSeries(playlistId, item.id, now)
+            trakt.dropPlaybackOfSeries(playlistId, item.id)
+        } else {
+            progressDao.dismissMovie(playlistId, item.id, now)
+            trakt.dropPlayback(playlistId, KIND_MOVIE, item.id)
+        }
+    }
+
+    /**
      * Svi filmovi, odnosno sve serije liste, za pretragu kroz sve kategorije.
      * Učitava se jednim zahtevom (bez kategorije) i čuva u memoriji kao i spiskovi kategorija.
      */
@@ -436,6 +462,9 @@ class VodRepository @Inject constructor(
         val kind = if (isMovie) KIND_MOVIE else KIND_EPISODE
         val existing = progressDao.get(playlistId, kind, target.itemId)
         if (existing != null && existing.updatedAt >= pausedAtMs) return@withContext
+        // Sklonjeno iz reda „Nastavi gledanje” ne vraća pozicija starija od sklanjanja.
+        val dismissedAt = target.seriesId?.let { progressDao.seriesDismissedAt(playlistId, it) } ?: existing?.dismissedAt
+        if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return@withContext
         val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return@withContext
         val positionMs = (durationMs * progress / 100).toLong()
         if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return@withContext

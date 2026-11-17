@@ -180,6 +180,11 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch { repository.setLastCategory(kind, CONTINUE_ID) }
     }
 
+    /** Sklanja film, odnosno seriju, iz reda „Nastavi gledanje” (vraća se kad se ponovo gleda). */
+    fun dismissContinue(item: ContinueItem) {
+        viewModelScope.launch { repository.dismissContinue(item) }
+    }
+
     fun selectCategory(category: VodCategory) = select(category, remember = true)
 
     private fun select(category: VodCategory, remember: Boolean) {
