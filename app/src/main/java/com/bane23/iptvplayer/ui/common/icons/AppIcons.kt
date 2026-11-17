@@ -144,5 +144,5 @@ private fun icon(pathData: String) = lazy(LazyThreadSafetyMode.NONE) {
         defaultHeight = 24.dp,
         viewportWidth = 24f,
         viewportHeight = 24f,
-    ).addPath(pathData = addPathNodes(pathData), fill = SolidColor(Color.Black)).build()
+    ).addPath(pathData = absoluteMoves(addPathNodes(pathData)), fill = SolidColor(Color.Black)).build()
 }
