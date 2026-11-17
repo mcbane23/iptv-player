@@ -22,9 +22,11 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.AppLocale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -79,14 +81,32 @@ class PlaybackService : Service() {
                     if (foreground) shutdown()
                     return@collectLatest
                 }
+                // Zaboravljena pauza ne drži servis i vezu sa serverom: posle nekog vremena se sve zaustavlja.
+                var pauseJob: Job? = null
+                fun watchPause() {
+                    pauseJob?.cancel()
+                    pauseJob = if (target.player.playWhenReady) {
+                        null
+                    } else {
+                        scope.launch {
+                            delay(PAUSE_STOP_MS)
+                            stopPlayback()
+                        }
+                    }
+                }
                 val listener = object : Player.Listener {
-                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = publish(target)
+                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                        publish(target)
+                        watchPause()
+                    }
                 }
                 target.player.addListener(listener)
                 try {
                     publish(target)
+                    watchPause()
                     awaitCancellation()
                 } finally {
+                    pauseJob?.cancel()
                     target.player.removeListener(listener)
                 }
             }
@@ -232,5 +252,8 @@ class PlaybackService : Service() {
         const val ACTION_TOGGLE = "com.bane23.iptvplayer.playback.TOGGLE"
         const val ACTION_STOP = "com.bane23.iptvplayer.playback.STOP"
         const val CUSTOM_STOP = "stop"
+
+        /** Koliko pauza u pozadini sme da traje pre nego što se puštanje samo zaustavi. */
+        const val PAUSE_STOP_MS = 10 * 60 * 1000L
     }
 }
