@@ -88,6 +88,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[PLAYER_VOLUME_SLIDER] = enabled }
     }
 
+    /** Telefon: zvuk nastavlja kad se ekran ugasi ili aplikacija ode u pozadinu. Isključeno dok korisnik ne uključi. */
+    val backgroundPlay: Flow<Boolean> =
+        dataStore.data.map { it[BACKGROUND_PLAY] ?: false }.distinctUntilChanged()
+
+    suspend fun setBackgroundPlay(enabled: Boolean) {
+        dataStore.edit { it[BACKGROUND_PLAY] = enabled }
+    }
+
     /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
     val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
 
@@ -300,6 +308,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val DRAW_UNDER_CUTOUT = booleanPreferencesKey("draw_under_cutout")
         val PLAYER_BRIGHTNESS_SLIDER = booleanPreferencesKey("player_brightness_slider")
         val PLAYER_VOLUME_SLIDER = booleanPreferencesKey("player_volume_slider")
+        val BACKGROUND_PLAY = booleanPreferencesKey("background_play")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
