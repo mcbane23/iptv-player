@@ -34,7 +34,7 @@ object SrtShift {
             ((bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte()) || (bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte()))
         target.parentFile?.mkdirs()
         if (utf16) {
-            target.writeText(shift(String(bytes, Charsets.UTF_16).removePrefix("﻿"), offsetMs), Charsets.UTF_8)
+            target.writeText(shift(String(bytes, Charsets.UTF_16).removePrefix("\uFEFF"), offsetMs), Charsets.UTF_8)
         } else {
             target.writeBytes(shift(String(bytes, Charsets.ISO_8859_1), offsetMs).toByteArray(Charsets.ISO_8859_1))
         }
