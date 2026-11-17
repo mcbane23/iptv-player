@@ -259,6 +259,9 @@
     <string name="settings_language_tv_summary">Pritisni OK za sledeći jezik.</string>
     <string name="settings_accent_color">Boja aplikacije</string>
     <string name="settings_accent_color_tv_summary">Pritisni OK za sledeću boju. Promena se vidi odmah.</string>
+    <string name="settings_ui_scale">Veličina prikaza</string>
+    <string name="settings_ui_scale_summary">Sitniji tekst i stavke, da više stane na ekran. Dodirni za sledeću veličinu.</string>
+    <string name="settings_ui_scale_tv_summary">Sitniji tekst i stavke, da više stane na ekran. Pritisni OK za sledeću veličinu. Promena se vidi odmah.</string>
     <string name="accent_orange">Narandžasta</string>
     <string name="accent_blue">Plava</string>
     <string name="accent_green">Zelena</string>

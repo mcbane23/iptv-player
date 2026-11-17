@@ -36,6 +36,7 @@ import com.bane23.iptvplayer.ui.common.AppLanguage
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.UpdateChannel
@@ -67,6 +68,7 @@ fun TvSettingsScreen(
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
+    val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = true)
     val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // Dozvola se menja u sistemskim podešavanjima, pa se proverava pri svakom povratku na ekran.
@@ -249,6 +251,16 @@ fun TvSettingsScreen(
                     },
                 )
                 TvTextRow(
+                    text = stringResource(R.string.settings_ui_scale),
+                    trailing = uiScale.label,
+                    // Svaki pritisak prelazi na sledeću veličinu; promena se vidi odmah.
+                    onClick = { viewModel.setUiScale(UiScale.next(uiScale, isTv = true)) },
+                    onFocused = {
+                        focusedChoice = UI_SCALE_ROW
+                        openChoice = null
+                    },
+                )
+                TvTextRow(
                     text = stringResource(R.string.update_check),
                     trailing = updateViewModel.installedVersion,
                     onClick = updateViewModel::check,
@@ -295,6 +307,7 @@ fun TvSettingsScreen(
                     text = when (val focused = focusedChoice) {
                         null -> stringResource(R.string.settings_resume_last_summary)
                         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
+                        UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
                         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
                         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
                         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
@@ -376,3 +389,4 @@ private const val LANGUAGE_ROW = -3
 private const val UPDATE_CHANNEL_ROW = -4
 private const val AUTO_REFRESH_ROW = -5
 private const val MATCH_FRAME_RATE_ROW = -6
+private const val UI_SCALE_ROW = -7
