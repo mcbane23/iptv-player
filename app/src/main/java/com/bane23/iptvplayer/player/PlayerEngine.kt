@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -15,6 +16,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
@@ -67,6 +69,14 @@ data class VideoInfo(
     val height: Int = 0,
     /** Koliko je slika ispušteno od puštanja, jer uređaj nije stigao da ih prikaže. */
     val droppedFrames: Int = 0,
+    /** Koliko puta je slika toliko zaostala za zvukom da je plejer preskočio do sledeće ključne slike. */
+    val keyframeSkips: Int = 0,
+    /** Koliko puta je zvuk ostao bez podataka. */
+    val audioUnderruns: Int = 0,
+    /** Koliko puta je gledanje stalo da se sadržaj učita (posle prvog pokretanja). */
+    val rebuffers: Int = 0,
+    /** Vrsta fajla ili strima (npr. "matroska", "mp4", "mp2t"), ako je poznata. */
+    val container: String? = null,
 )
 
 data class PlaybackState(
@@ -162,6 +172,11 @@ class PlayerEngine(
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_READY) {
+                wasReady = true
+            } else if (playbackState == Player.STATE_BUFFERING && wasReady) {
+                _state.update { it.copy(video = it.video.copy(rebuffers = it.video.rebuffers + 1)) }
+            }
             if (playbackState == Player.STATE_ENDED && !seekable && source != null) {
                 reconnectLive()
             } else {
@@ -199,14 +214,50 @@ class PlayerEngine(
             _state.update { it.copy(video = it.video.copy(decoder = decoderName, software = isSoftwareDecoder(decoderName))) }
         }
 
-        override fun onDroppedVideoFrames(eventTime: AnalyticsListener.EventTime, droppedFrames: Int, elapsedMs: Long) {
-            _state.update { it.copy(video = it.video.copy(droppedFrames = it.video.droppedFrames + droppedFrames)) }
+        override fun onVideoInputFormatChanged(
+            eventTime: AnalyticsListener.EventTime,
+            format: Format,
+            decoderReuseEvaluation: DecoderReuseEvaluation?,
+        ) {
+            val container = format.containerMimeType?.substringAfter('/')?.removePrefix("x-") ?: return
+            _state.update { it.copy(video = it.video.copy(container = container)) }
+        }
+
+        override fun onAudioUnderrun(
+            eventTime: AnalyticsListener.EventTime,
+            bufferSize: Int,
+            bufferSizeMs: Long,
+            elapsedSinceLastFeedMs: Long,
+        ) {
+            _state.update { it.copy(video = it.video.copy(audioUnderruns = it.video.audioUnderruns + 1)) }
+        }
+    }
+
+    /** Da li je sadržaj već jednom krenuo; posle toga se svako novo učitavanje broji kao zastoj. */
+    private var wasReady = false
+    private var statsJob: Job? = null
+
+    /** Brojači dekodera slike se čitaju jednom u sekundi; plejer ih sam javlja tek posle 50 ispuštenih slika. */
+    private fun readVideoCounters() {
+        val counters = player.videoDecoderCounters ?: return
+        counters.ensureUpdated()
+        val dropped = counters.droppedBufferCount
+        val skips = counters.droppedToKeyframeCount
+        val video = _state.value.video
+        if (video.droppedFrames != dropped || video.keyframeSkips != skips) {
+            _state.update { it.copy(video = it.video.copy(droppedFrames = dropped, keyframeSkips = skips)) }
         }
     }
 
     init {
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
+        statsJob = scope.launch {
+            while (true) {
+                delay(STATS_INTERVAL_MS)
+                readVideoCounters()
+            }
+        }
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
             .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
@@ -333,6 +384,7 @@ class PlayerEngine(
 
     fun release() {
         retryJob?.cancel()
+        statsJob?.cancel()
         player.removeListener(listener)
         player.removeAnalyticsListener(analyticsListener)
         player.release()
@@ -347,6 +399,7 @@ class PlayerEngine(
     }
 
     private fun prepareCurrent() {
+        wasReady = false
         val current = source ?: return
         val url = current.urls.getOrNull(urlIndex) ?: return
         val headers = buildMap {
@@ -565,6 +618,7 @@ class PlayerEngine(
 
     private companion object {
         const val SHARED_BUFFER_BYTES = 24 * 1024 * 1024
+        const val STATS_INTERVAL_MS = 1_000L
         const val MAX_ATTEMPTS = 3
         const val RETRY_DELAY_MS = 1_500L
     }

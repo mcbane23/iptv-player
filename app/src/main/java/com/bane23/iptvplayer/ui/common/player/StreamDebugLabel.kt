@@ -29,7 +29,7 @@ fun StreamDebugLabel(video: VideoInfo, modifier: Modifier = Modifier, settingsVi
     BasicText(
         text = text,
         style = TextStyle(color = Color.White, fontSize = 12.sp),
-        maxLines = 2,
+        maxLines = 3,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .padding(8.dp)
