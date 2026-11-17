@@ -178,3 +178,51 @@ jobs:
           gh release upload "$CHANNEL" -R "$APK_REPO" iptv-player.json --clobber
           gh release edit "$CHANNEL" -R "$APK_REPO" \
             --notes "Verzija $RELEASE_VERSION, commit: ${GITHUB_SHA::7}."
+
+  # Stalna adresa za ručno preuzimanje (npr. aplikacija Downloader na televizoru):
+  #   https://github.com/mcbane23/apps/releases/download/iptv-player/glowbox.apk
+  # Fajl glowbox.apk je kopija APK-a na koji pokazuje iptv-player.json. Aplikacija ga ne koristi:
+  # ona preuzima fajl čije ime piše u opisu, pa zamena ovog fajla u mestu ne kvari ažuriranje.
+  # Posao radi i kad novo izdanje nije potrebno, pa izmena ovog workflow-a dopuni i postojeće izdanje.
+  fixed-name:
+    name: Stalni link za preuzimanje
+    needs: [version, release]
+    if: ${{ !cancelled() && needs.version.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Kopiraj poslednje izdanje u glowbox.apk
+        env:
+          APK_REPO_TOKEN: ${{ secrets.APK_REPO_TOKEN }}
+          APK_REPO: mcbane23/apps
+          CHANNEL: iptv-player
+          FIXED: glowbox.apk
+        run: |
+          if [ -z "$APK_REPO_TOKEN" ]; then
+            echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
+            exit 0
+          fi
+          BASE="https://github.com/$APK_REPO/releases/download/$CHANNEL"
+          if ! curl -fsSL "$BASE/iptv-player.json" -o manifest.json; then
+            echo "U javnom repou još nema izdanja."
+            exit 0
+          fi
+          APK=$(jq -r '.apk' manifest.json)
+          SHA=$(jq -r '.sha256' manifest.json)
+          if ! [[ "$APK" =~ ^[A-Za-z0-9._-]+\.apk$ ]] || ! [[ "$SHA" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Opis izdanja nije ispravan."
+            exit 1
+          fi
+          if curl -fsSL "$BASE/$FIXED" -o current.apk 2>/dev/null \
+            && [ "$(sha256sum current.apk | cut -d' ' -f1)" = "$SHA" ]; then
+            echo "$FIXED je već verzija $(jq -r '.versionName' manifest.json)."
+            exit 0
+          fi
+          curl -fsSL "$BASE/$APK" -o "$FIXED"
+          if [ "$(sha256sum "$FIXED" | cut -d' ' -f1)" != "$SHA" ]; then
+            echo "Preuzeti APK se ne poklapa sa kontrolnim zbirom iz opisa."
+            exit 1
+          fi
+          export GH_TOKEN="$APK_REPO_TOKEN"
+          gh release upload "$CHANNEL" -R "$APK_REPO" "$FIXED" --clobber
+          echo "$FIXED je sada verzija $(jq -r '.versionName' manifest.json)."
