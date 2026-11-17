@@ -72,7 +72,7 @@ fun MobileVodPlayerScreen(
     val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
 
     LaunchedEffect(Unit) { start(viewModel) }
-    KeepScreenOn()
+    KeepScreenOn(playback.status)
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
     PlayerLifecycle(

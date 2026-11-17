@@ -20,13 +20,21 @@ class EpgScheduler @Inject constructor(@ApplicationContext private val context: 
 
     private val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-    /** Redovno osvežavanje vodiča svih lista i brisanje starih emisija. */
+    /**
+     * Redovno osvežavanje vodiča svih lista i brisanje starih emisija. Vodič je veliki fajl, pa se
+     * u pozadini ne preuzima dok je baterija pri kraju; ručno osvežavanje radi uvek.
+     */
     fun schedulePeriodic() {
-        val request = PeriodicWorkRequestBuilder<EpgRefreshWorker>(REFRESH_HOURS, TimeUnit.HOURS)
-            .setConstraints(network)
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
             .build()
+        val request = PeriodicWorkRequestBuilder<EpgRefreshWorker>(REFRESH_HOURS, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        // UPDATE menja uslove već zakazanog posla, a ne pomera vreme sledećeg pokretanja.
         WorkManager.getInstance(context)
-            .enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+            .enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 
     /** Učitava vodič jedne liste što pre (posle dodavanja ili osvežavanja liste, ili na zahtev). */

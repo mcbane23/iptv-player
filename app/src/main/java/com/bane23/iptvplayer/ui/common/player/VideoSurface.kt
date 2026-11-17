@@ -13,6 +13,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
+import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import androidx.media3.ui.PlayerView
 
@@ -69,12 +70,23 @@ fun VideoSurface(
     )
 }
 
-/** Drži ekran upaljen dok je plejer na ekranu. */
+/**
+ * Drži ekran upaljen dok se nešto pušta ili učitava. Pauziran ili neuspeo sadržaj ne drži ekran:
+ * uređaj ga tada gasi po svom podešavanju, da zaboravljena pauza ne prazni bateriju.
+ */
 @Composable
-fun KeepScreenOn() {
+fun KeepScreenOn(status: PlaybackStatus) {
+    KeepScreenOn(
+        active = status == PlaybackStatus.PLAYING || status == PlaybackStatus.LOADING || status == PlaybackStatus.RETRYING,
+    )
+}
+
+/** Drži ekran upaljen dok je [active]. */
+@Composable
+fun KeepScreenOn(active: Boolean = true) {
     val view = LocalView.current
-    DisposableEffect(view) {
-        view.keepScreenOn = true
+    DisposableEffect(view, active) {
+        view.keepScreenOn = active
         onDispose { view.keepScreenOn = false }
     }
 }

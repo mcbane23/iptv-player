@@ -194,6 +194,7 @@ class PlayerEngine(
                 attempts = 0
                 playedCurrentUrl = true
             }
+            watchVideoCounters(isPlaying)
             publishStatus()
         }
 
@@ -240,7 +241,26 @@ class PlayerEngine(
     private var wasReady = false
     private var statsJob: Job? = null
 
-    /** Brojači dekodera slike se čitaju jednom u sekundi; plejer ih sam javlja tek posle 50 ispuštenih slika. */
+    /**
+     * Brojači dekodera slike se čitaju jednom u sekundi; plejer ih sam javlja tek posle 50 ispuštenih slika.
+     * Čitaju se samo dok slika ide: pauziran ili zaustavljen plejer ne budi procesor.
+     */
+    private fun watchVideoCounters(playing: Boolean) {
+        statsJob?.cancel()
+        statsJob = if (playing) {
+            scope.launch {
+                while (true) {
+                    delay(STATS_INTERVAL_MS)
+                    readVideoCounters()
+                }
+            }
+        } else {
+            // Poslednje stanje, da prikaz ne ostane sekundu iza.
+            readVideoCounters()
+            null
+        }
+    }
+
     private fun readVideoCounters() {
         val counters = player.videoDecoderCounters ?: return
         counters.ensureUpdated()
@@ -255,12 +275,6 @@ class PlayerEngine(
     init {
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
-        statsJob = scope.launch {
-            while (true) {
-                delay(STATS_INTERVAL_MS)
-                readVideoCounters()
-            }
-        }
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
             .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
