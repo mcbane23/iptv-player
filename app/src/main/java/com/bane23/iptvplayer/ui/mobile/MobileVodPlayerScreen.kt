@@ -179,6 +179,8 @@ fun MobileVodPlayerScreen(
                     onDecoder = viewModel::setDecoder,
                     speed = ui.speed,
                     onSpeed = viewModel::setSpeed,
+                    subtitleOffsetMs = ui.subtitleOffsetMs,
+                    onShiftSubtitle = viewModel::shiftSubtitle,
                 ),
             )
         } else if (controlsVisible) {

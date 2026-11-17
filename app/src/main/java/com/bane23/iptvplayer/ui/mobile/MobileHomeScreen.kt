@@ -60,6 +60,7 @@ import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.SearchAllViewModel
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
@@ -68,6 +69,7 @@ private enum class MobileTab(val icon: ImageVector, val label: Int) {
     LIVE(AppIcons.LiveTv, R.string.nav_live),
     MOVIES(AppIcons.Movies, R.string.vod_movies),
     SERIES(AppIcons.Series, R.string.vod_series),
+    SEARCH(AppIcons.Search, R.string.action_search),
     SETTINGS(AppIcons.Settings, R.string.settings_title),
 }
 
@@ -98,7 +100,7 @@ fun MobileHomeScreen(
     val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(MobileTab.LIVE) }
-    val tabs = if (liveState.hasVod) MobileTab.entries else listOf(MobileTab.LIVE, MobileTab.SETTINGS)
+    val tabs = if (liveState.hasVod) MobileTab.entries else listOf(MobileTab.LIVE, MobileTab.SEARCH, MobileTab.SETTINGS)
     // Kad aktivna lista nema filmove i serije, kartica koja je nestala vraća na Uživo.
     LaunchedEffect(liveState.loading, liveState.hasVod) {
         if (!liveState.loading && tab !in tabs) tab = MobileTab.LIVE
@@ -137,6 +139,12 @@ fun MobileHomeScreen(
                     onSearch = { onSearchVod(true) },
                     onCategories = { onCategories(CategorySection.SERIES) },
                     viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
+                )
+
+                MobileTab.SEARCH -> MobileSearchAllScreen(
+                    onPlay = { onPlay(it, null) },
+                    onOpenVod = onOpenVod,
+                    viewModel = hiltViewModel<SearchAllViewModel>(key = "search-all-${liveState.playlistId}"),
                 )
 
                 MobileTab.SETTINGS -> MobileSettingsScreen(

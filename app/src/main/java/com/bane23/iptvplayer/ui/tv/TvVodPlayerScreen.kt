@@ -419,6 +419,8 @@ fun TvVodPlayerScreen(
                     onDecoder = viewModel::setDecoder,
                     speed = ui.speed,
                     onSpeed = viewModel::setSpeed,
+                    subtitleOffsetMs = ui.subtitleOffsetMs,
+                    onShiftSubtitle = viewModel::shiftSubtitle,
                 ),
                 modifier = Modifier.align(Alignment.CenterEnd),
             )

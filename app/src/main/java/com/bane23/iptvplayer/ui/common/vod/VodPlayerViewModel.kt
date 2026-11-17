@@ -19,6 +19,7 @@ import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.domain.StreamSource
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.ExternalSubtitle
+import com.bane23.iptvplayer.player.SrtShift
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.TrackOption
@@ -28,6 +29,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,6 +59,11 @@ data class VodPlayerUiState(
     val decoder: DecoderMode = DecoderMode.AUTO,
     /** Brzina puštanja; 1 = obična. Važi dok je plejer otvoren, i za sledeću epizodu. */
     val speed: Float = 1f,
+    /**
+     * Pomeraj titla u milisekundama (pozitivno = titl izlazi kasnije); null kad nema titla iz fajla,
+     * jer se titl ugrađen u snimak ne može pomerati.
+     */
+    val subtitleOffsetMs: Long? = null,
     val hasNext: Boolean = false,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
@@ -302,6 +310,43 @@ class VodPlayerViewModel @Inject constructor(
         _ui.update { it.copy(speed = speed) }
     }
 
+    private var subtitleShiftJob: Job? = null
+
+    /**
+     * Pomera titl za [deltaMs] (kad kasni ili žuri). Primenjuje se kratko posle poslednjeg pritiska,
+     * jer se sadržaj priprema iznova. Važi dok se ovaj film ili epizoda gleda.
+     */
+    fun shiftSubtitle(deltaMs: Long) {
+        val current = _ui.value.subtitleOffsetMs ?: return
+        val offset = (current + deltaMs).coerceIn(-MAX_SUBTITLE_SHIFT_MS, MAX_SUBTITLE_SHIFT_MS)
+        if (offset == current) return
+        _ui.update { it.copy(subtitleOffsetMs = offset) }
+        subtitleShiftJob?.cancel()
+        subtitleShiftJob = viewModelScope.launch {
+            delay(SUBTITLE_SHIFT_DELAY_MS)
+            val uris = withContext(Dispatchers.IO) {
+                if (offset == 0L) return@withContext emptyMap()
+                buildMap {
+                    for (subtitle in engine.externalSubtitles()) {
+                        val path = android.net.Uri.parse(subtitle.uri).path ?: continue
+                        val original = java.io.File(path)
+                        val folder = java.io.File(original.parentFile, "pomereno")
+                        // Stare kopije više nisu potrebne.
+                        folder.listFiles()?.forEach { it.delete() }
+                        val copy = java.io.File(folder, "$offset-${original.name}")
+                        try {
+                            SrtShift.shiftFile(original, copy, offset)
+                            put(subtitle.id, android.net.Uri.fromFile(copy).toString())
+                        } catch (_: java.io.IOException) {
+                            // Bez kopije titl ostaje kakav je bio.
+                        }
+                    }
+                }
+            }
+            engine.setShiftedSubtitles(uris)
+        }
+    }
+
     /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći film ili epizoda krene isto. */
     fun selectAudio(option: TrackOption) {
         engine.selectAudio(option)
@@ -367,6 +412,7 @@ class VodPlayerViewModel @Inject constructor(
                 )
                 // Izbor se pamti: sledeći put kad se ovo pusti, titl je već uključen.
                 savedSubtitleName = result.name
+                _ui.update { it.copy(subtitleOffsetMs = 0) }
                 item?.let { subtitles.remember(it.id, episode = it.seriesId != null, result = result) }
                 _online.update { it.copy(downloadingId = null, appliedId = result.fileId, remaining = downloaded.remaining) }
             } catch (e: SubtitleException) {
@@ -430,6 +476,8 @@ class VodPlayerViewModel @Inject constructor(
             // Titl sa interneta izabran ranije za ovaj film ili epizodu uključuje se sam, iz fajla na uređaju.
             val saved = item?.let { subtitles.saved(it.id, episode = it.seriesId != null) }
             savedSubtitleName = saved?.first?.name
+            subtitleShiftJob?.cancel()
+            _ui.update { it.copy(subtitleOffsetMs = if (saved != null) 0L else null) }
             engine.play(
                 source,
                 startPositionMs = if (startOver) 0 else savedPosition ?: 0,
@@ -479,6 +527,8 @@ class VodPlayerViewModel @Inject constructor(
 
     private companion object {
         const val POSITION_TICK_MS = 500L
+        const val MAX_SUBTITLE_SHIFT_MS = 30_000L
+        const val SUBTITLE_SHIFT_DELAY_MS = 800L
         const val SAVE_EVERY_MS = 10_000L
         const val SCRUB_COMMIT_MS = 1_200L
     }

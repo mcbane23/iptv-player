@@ -28,6 +28,7 @@ import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.cast.CastHostViewModel
 import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkAccess
 import com.bane23.iptvplayer.ui.common.navigation.CastPlayback
+import com.bane23.iptvplayer.ui.common.navigation.SearchAll
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
@@ -97,6 +98,7 @@ fun TvApp() {
                     liveTvViewModel = liveTvViewModel,
                     onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
                     onSearch = { backStack.add(Search) },
+                    onSearchAll = { backStack.add(SearchAll) },
                     onGuide = { playlistId -> backStack.add(Guide(playlistId, null)) },
                     onOpenVod = { item, series ->
                         if (series) {
@@ -115,6 +117,18 @@ fun TvApp() {
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
                     onRecordings = { backStack.add(Recordings) },
                     onMultiView = { backStack.add(MultiView) },
+                )
+            }
+            entry<SearchAll> {
+                TvSearchAllScreen(
+                    onPlay = { channelId -> backStack.add(Player(channelId, null)) },
+                    onOpenVod = { item, series ->
+                        if (series) {
+                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                        } else {
+                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                        }
+                    },
                 )
             }
             entry<Search> {

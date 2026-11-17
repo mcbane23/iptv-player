@@ -81,6 +81,7 @@ fun TvHomeScreen(
     liveTvViewModel: LiveTvViewModel,
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onSearch: () -> Unit,
+    onSearchAll: () -> Unit,
     onGuide: (playlistId: Long) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
     onSearchVod: (series: Boolean) -> Unit,
@@ -222,7 +223,7 @@ fun TvHomeScreen(
                 )
             }
             if (playlistId != null) {
-                RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railFocused, onClick = onSearch)
+                RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railFocused, onClick = onSearchAll)
             }
             RailItem(
                 icon = AppIcons.LiveTv,

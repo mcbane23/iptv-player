@@ -73,6 +73,10 @@ data class PlayArchive(
     val startToken: String?,
 ) : NavKey
 
+/** Jedna pretraga za sve: kanali, emisije iz vodiča, filmovi i serije aktivne liste. Koristi se na TV-u. */
+@Serializable
+data object SearchAll : NavKey
+
 /** Pretraga kanala kroz celu aktivnu listu. */
 @Serializable
 data object Search : NavKey

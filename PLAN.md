@@ -512,12 +512,15 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   i obaveštenje. Podsetnici su u podešavanjima, bez promene baze.
 - [x] TV: opcija „Uskladi osvežavanje TV-a sa snimkom” (isključeno podrazumevano). Radi samo kad
   strim javlja broj sličica i kad TV ima odgovarajući režim u istoj rezoluciji.
-- [ ] Jedna pretraga za kanale, emisije iz vodiča, filmove i serije.
-- [ ] Pomeranje titla u vremenu (kad kasni ili žuri), u plejeru filmova i epizoda.
-- [ ] Rezervna kopija u fajl i vraćanje iz fajla (liste, favoriti, podešavanja), za prelazak na
-  novi uređaj bez telefona pored TV-a.
-- [ ] Pojačanje zvuka preko 100% za tihe kanale.
+- [x] Jedna pretraga za kanale, emisije iz vodiča (u toku i buduće), filmove i serije: nova kartica
+  „Pretraga” na telefonu, stavka „Pretraga” u bočnom meniju na TV-u. Emisija koja traje pušta kanal,
+  buduća dobija podsetnik. Posebne pretrage kanala, filmova i serija ostaju kakve jesu.
+- [x] Pomeranje titla u vremenu (plejer filmova i epizoda): stavke „Titl ranije” i „Titl kasnije”
+  u panelu „Podešavanja”, korak pola sekunde, do 30 s u oba smera. Važi za titlove preuzete sa
+  interneta (OpenSubtitles); titl ugrađen u snimak se ne može pomerati, pa se stavke tada ne
+  prikazuju. Pomeraj važi dok se taj film ili epizoda gleda i ne pamti se.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
+- Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 
 ## 7. Testiranje
 

@@ -175,6 +175,9 @@ class PlayerEngine(
     /** Titlovi dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. */
     private var externalSubtitles: List<ExternalSubtitle> = emptyList()
 
+    /** Pomerene kopije titlova (ID titla i adresa kopije), kad je korisnik ispravio vreme titla. */
+    private var shiftedSubtitleUris: Map<String, String> = emptyMap()
+
     /** Dodat titl koji treba uključiti čim se pojavi među zapisima. */
     private var pendingSubtitleId: String? = null
 
@@ -309,6 +312,7 @@ class PlayerEngine(
         retryJob?.cancel()
         seekable = startPositionMs != null
         resumePositionMs = startPositionMs ?: 0
+        if (subtitles != null || source != this.source) shiftedSubtitleUris = emptyMap()
         if (subtitles != null) {
             // Titlovi zapamćeni za ovaj sadržaj: poslednji se uključuje čim ga plejer prijavi.
             externalSubtitles = subtitles
@@ -423,6 +427,22 @@ class PlayerEngine(
         prepareCurrent()
     }
 
+    /** Titlovi iz fajla koji su sada dodati uz sadržaj. */
+    fun externalSubtitles(): List<ExternalSubtitle> = externalSubtitles
+
+    /**
+     * Zamenjuje fajlove titlova pomerenim kopijama ([uris]: ID titla i adresa kopije; prazno vraća
+     * originale). Sadržaj se priprema iznova, pa se gledanje nastavlja sa istog mesta.
+     */
+    fun setShiftedSubtitles(uris: Map<String, String>) {
+        if (source == null || externalSubtitles.isEmpty() || uris == shiftedSubtitleUris) return
+        retryJob?.cancel()
+        shiftedSubtitleUris = uris
+        pendingSubtitleId = externalSubtitles.last().id
+        rememberPosition()
+        prepareCurrent()
+    }
+
     /**
      * Menja dekoder u toku gledanja. Sadržaj se priprema iznova, da se dekoder ponovo izabere; film
      * ili epizoda nastavljaju sa istog mesta.
@@ -483,7 +503,7 @@ class PlayerEngine(
             .setUri(url)
             .setSubtitleConfigurations(
                 externalSubtitles.map { subtitle ->
-                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.uri))
+                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(shiftedSubtitleUris[subtitle.id] ?: subtitle.uri))
                         .setId(subtitle.id)
                         .setMimeType(MimeTypes.APPLICATION_SUBRIP)
                         .setLanguage(subtitle.language)
