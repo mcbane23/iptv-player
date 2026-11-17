@@ -273,6 +273,14 @@ fun MobileVodPlayerScreen(
                             activity++
                         },
                     )
+                    // Na TV-u je sledeća epizoda ikonica na traci; ovde bi suzila traku za premotavanje.
+                    if (ui.hasNext) {
+                        PlayerChip(
+                            icon = AppIcons.Next,
+                            label = stringResource(R.string.vod_next_episode),
+                            onClick = viewModel::next,
+                        )
+                    }
                 },
             )
         }
