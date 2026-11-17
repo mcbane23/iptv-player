@@ -353,7 +353,8 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
       preuzima novija pozicija sa drugog uređaja (baza v10)
 - [x] Pri sinhronizaciji se započete serije sa Trakt naloga (bar jedna odgledana epizoda, a nisu
       odgledane sve emitovane) dodaju u omiljene serije aktivne liste. Svaka samo jednom: serija
-      koju korisnik ukloni iz omiljenih se ne vraća
+      koju korisnik ukloni iz omiljenih se ne vraća. Od više verzija iste serije kod provajdera
+      (npr. po jezicima) dodaje se samo ona gledana u aplikaciji, ako takva postoji
 
 **Sinhronizacija gledanog sadržaja preko naloga**
 

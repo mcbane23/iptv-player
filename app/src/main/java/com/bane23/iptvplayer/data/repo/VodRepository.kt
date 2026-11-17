@@ -101,6 +101,15 @@ data class ContinueItem(
     val isSeries: Boolean,
 )
 
+/**
+ * Od više verzija iste serije (isti TMDB ID) ostavlja samo one čije su epizode gledane u aplikaciji
+ * ([watchedSeriesIds]); serije bez ijedne gledane verzije ostaju sa svim verzijama.
+ */
+internal fun watchedVersions(series: List<VodItem>, watchedSeriesIds: Set<Long>): List<VodItem> {
+    val watchedTmdb = series.filter { it.id in watchedSeriesIds }.mapNotNullTo(HashSet()) { it.tmdbId }
+    return series.filter { it.tmdbId !in watchedTmdb || it.id in watchedSeriesIds }
+}
+
 /** Lista nije Xtream nalog, pa nema filmove i serije. */
 class VodUnavailableException : IOException("Playlist has no movies or series")
 
@@ -622,13 +631,15 @@ class VodRepository @Inject constructor(
 
     /**
      * Dodaje u omiljene serije liste [playlistId] sa datim TMDB ID-jevima (započete na Trakt nalogu),
-     * tako da poslednja u spisku bude prva u omiljenima. Vraća TMDB ID-jeve koji su nađeni u spisku
+     * tako da poslednja u spisku bude prva u omiljenima. Kad provajder istu seriju ima u više verzija
+     * (npr. po jezicima), dodaje se samo ona koja je gledana u aplikaciji, ako takva postoji. Vraća TMDB ID-jeve koji su nađeni u spisku
      * serija; ostalih kod provajdera nema (ili su u zaključanoj kategoriji).
      */
     suspend fun addSeriesFavorites(playlistId: Long, tmdbIds: List<Long>): Set<Long> = withContext(Dispatchers.IO) {
         if (session().playlistId != playlistId) return@withContext emptySet()
         val wanted = tmdbIds.withIndex().associate { (index, id) -> id to index }
-        val found = allItems(VodKind.SERIES).filter { it.tmdbId != null && wanted.containsKey(it.tmdbId) }.distinctBy { it.id }
+        val matches = allItems(VodKind.SERIES).filter { it.tmdbId != null && wanted.containsKey(it.tmdbId) }.distinctBy { it.id }
+        val found = watchedVersions(matches, progressDao.seriesWithProgress(playlistId).toSet())
         val now = System.currentTimeMillis()
         favoriteDao.insertMissing(
             found.map { item ->
