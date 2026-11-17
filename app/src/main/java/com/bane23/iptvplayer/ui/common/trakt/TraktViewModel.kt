@@ -36,6 +36,8 @@ data class TraktUiState(
     val lastSyncMs: Long? = null,
     val login: TraktLogin = TraktLogin.Idle,
     val syncing: Boolean = false,
+    /** Automatska sinhronizacija je zaustavljena dok ručna ne uspe. */
+    val syncPaused: Boolean = false,
     @StringRes val message: Int? = null,
 ) {
     val connected: Boolean get() = username != null
@@ -50,8 +52,8 @@ class TraktViewModel @Inject constructor(
     private val local = MutableStateFlow(TraktUiState())
     private var loginJob: Job? = null
 
-    val state: StateFlow<TraktUiState> = combine(local, trakt.username, trakt.lastSyncMs) { current, name, lastSync ->
-        current.copy(username = name, lastSyncMs = lastSync)
+    val state: StateFlow<TraktUiState> = combine(local, trakt.username, trakt.lastSyncMs, trakt.syncPaused) { current, name, lastSync, paused ->
+        current.copy(username = name, lastSyncMs = lastSync, syncPaused = paused)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TraktUiState())
 
     fun connect() {

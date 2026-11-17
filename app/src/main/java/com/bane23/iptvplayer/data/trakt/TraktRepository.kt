@@ -13,6 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -25,7 +26,8 @@ import retrofit2.HttpException
 /** Kako se završila prijava kodom. */
 enum class TraktLoginResult { SUCCESS, EXPIRED, DENIED, FAILED }
 
-enum class TraktSyncResult { DONE, NOT_SIGNED_IN, FAILED }
+/** [PAUSED]: automatska sinhronizacija je zaustavljena jer je više puta zaredom ugasila aplikaciju. */
+enum class TraktSyncResult { DONE, NOT_SIGNED_IN, FAILED, PAUSED }
 
 /**
  * Trakt nalog: prijava kodom (trakt.tv/activate), slanje oznaka „odgledano” i preuzimanje onoga
@@ -51,6 +53,9 @@ class TraktRepository @Inject constructor(
     val username: Flow<String?> = tokens.username
 
     val lastSyncMs: Flow<Long?> = tokens.lastSyncMs
+
+    /** Automatska sinhronizacija je zaustavljena dok ručna ne uspe (vidi [TraktTokenStore.unfinishedSyncs]). */
+    val syncPaused: Flow<Boolean> = tokens.syncPaused
 
     /** TMDB ID-jevi filmova odgledanih na nalogu. */
     val watchedMovies: Flow<Set<Long>> = dao.observeWatchedMovies().map { it.toSet() }
@@ -90,6 +95,8 @@ class TraktRepository @Inject constructor(
                 throw e
             } catch (_: IOException) {
                 continue // Mreža je zastala; kod važi i dalje.
+            } catch (_: Exception) {
+                return@withContext TraktLoginResult.FAILED to null // Odgovor koji nije Trakt-ov (npr. stranica mreže).
             }
             when (response.code()) {
                 200 -> {
@@ -167,9 +174,18 @@ class TraktRepository @Inject constructor(
         }
     }
 
-    /** Šalje promene koje čekaju, pa preuzima sve odgledano sa naloga. */
-    suspend fun sync(): TraktSyncResult = withContext(Dispatchers.IO) {
+    /**
+     * Šalje promene koje čekaju, pa preuzima sve odgledano sa naloga. Nijedna greška ne izlazi odavde
+     * (osim otkazivanja). [automatic] je sinhronizacija u pozadini: preskače se kad je prethodnih
+     * nekoliko puta aplikacija ugašena usred sinhronizacije.
+     */
+    suspend fun sync(automatic: Boolean = false): TraktSyncResult = withContext(Dispatchers.IO) {
         syncLock.withLock {
+            if (tokens.session() == null) return@withLock TraktSyncResult.NOT_SIGNED_IN
+            if (automatic && tokens.unfinishedSyncs() >= TraktTokenStore.MAX_UNFINISHED_SYNCS) {
+                return@withLock TraktSyncResult.PAUSED
+            }
+            tokens.syncStarted()
             try {
                 val auth = authorization() ?: return@withLock TraktSyncResult.NOT_SIGNED_IN
                 push(auth)
@@ -188,9 +204,11 @@ class TraktRepository @Inject constructor(
                 } else {
                     TraktSyncResult.FAILED
                 }
-            } catch (_: Exception) {
-                // Mreža, Trakt ili neočekivan odgovor: pokušava se ponovo kasnije.
+            } catch (_: Throwable) {
+                // Mreža, Trakt, neočekivan odgovor ili nedostatak memorije: pokušava se ponovo kasnije.
                 TraktSyncResult.FAILED
+            } finally {
+                withContext(NonCancellable) { tokens.syncFinished() }
             }
         }
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -93,6 +94,26 @@ class TraktTokenStore @Inject constructor(
         dataStore.edit { it[AUTO_FAVORITES] = it[AUTO_FAVORITES].orEmpty() + keys }
     }
 
+    /**
+     * Koliko je sinhronizacija zaredom započeto a nije završeno, jer se aplikacija usred nje ugasila.
+     * Posle [MAX_UNFINISHED_SYNCS] takvih automatska sinhronizacija staje dok ručna ne uspe, da
+     * greška u njoj ne bi gasila aplikaciju pri svakom pokretanju.
+     */
+    suspend fun unfinishedSyncs(): Int = dataStore.data.first()[UNFINISHED_SYNCS] ?: 0
+
+    val syncPaused: Flow<Boolean> = dataStore.data
+        .map { (it[UNFINISHED_SYNCS] ?: 0) >= MAX_UNFINISHED_SYNCS }
+        .distinctUntilChanged()
+
+    suspend fun syncStarted() {
+        dataStore.edit { it[UNFINISHED_SYNCS] = (it[UNFINISHED_SYNCS] ?: 0) + 1 }
+    }
+
+    /** Sinhronizacija je stigla do kraja, uspešno ili sa greškom koja nije ugasila aplikaciju. */
+    suspend fun syncFinished() {
+        dataStore.edit { it.remove(UNFINISHED_SYNCS) }
+    }
+
     /** Briše prijavu. Spisak već dodatih u omiljene ostaje, da ponovna prijava ne vrati uklonjene. */
     suspend fun clear() {
         dataStore.edit { prefs ->
@@ -102,13 +123,16 @@ class TraktTokenStore @Inject constructor(
         }
     }
 
-    private companion object {
-        val ACCESS = stringPreferencesKey("access")
-        val REFRESH = stringPreferencesKey("refresh")
-        val EXPIRES = longPreferencesKey("expires_at")
-        val USERNAME = stringPreferencesKey("username")
-        val LAST_SYNC = longPreferencesKey("last_sync")
-        val LAST_PLAYBACK = longPreferencesKey("last_playback")
-        val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
+    companion object {
+        const val MAX_UNFINISHED_SYNCS = 3
+
+        private val UNFINISHED_SYNCS = intPreferencesKey("unfinished_syncs")
+        private val ACCESS = stringPreferencesKey("access")
+        private val REFRESH = stringPreferencesKey("refresh")
+        private val EXPIRES = longPreferencesKey("expires_at")
+        private val USERNAME = stringPreferencesKey("username")
+        private val LAST_SYNC = longPreferencesKey("last_sync")
+        private val LAST_PLAYBACK = longPreferencesKey("last_playback")
+        private val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
     }
 }

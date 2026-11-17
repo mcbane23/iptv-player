@@ -401,6 +401,7 @@
     <string name="trakt_error_expired">Kod je istekao. Pokušaj ponovo.</string>
     <string name="trakt_error_denied">Prijava je odbijena na Trakt-u.</string>
     <string name="trakt_sync_failed">Sinhronizacija nije uspela. Pokušaće ponovo kasnije.</string>
+    <string name="trakt_sync_paused">Automatska sinhronizacija je zaustavljena jer je više puta prekinuta. Nastaviće se kad „Sinhronizuj sada” uspe.</string>
     <string name="cast_button">Pusti na TV-u</string>
     <string name="cast_pick_title">Pusti na TV-u</string>
     <string name="cast_searching">Tražim uređaje…</string>
