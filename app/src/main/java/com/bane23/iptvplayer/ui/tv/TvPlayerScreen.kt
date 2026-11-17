@@ -115,6 +115,7 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
+    MatchDisplayFrameRate(playback.video.frameRate)
     BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
         when {
             tracks != null -> tracks = null
@@ -176,6 +177,12 @@ fun TvPlayerScreen(
 
                     AndroidKeyEvent.KEYCODE_DPAD_DOWN, AndroidKeyEvent.KEYCODE_CHANNEL_UP -> {
                         if (isDown) viewModel.next()
+                        true
+                    }
+
+                    // Taster „prethodni kanal” na daljinskim koji ga imaju.
+                    AndroidKeyEvent.KEYCODE_LAST_CHANNEL -> {
+                        if (isDown) viewModel.playLastChannel()
                         true
                     }
 
@@ -403,6 +410,13 @@ private fun LiveControls(
                             description = stringResource(R.string.player_next),
                             onClick = viewModel::next,
                         )
+                        if (ui.lastChannel != null) {
+                            PlayerIconButton(
+                                icon = AppIcons.Swap,
+                                description = stringResource(R.string.player_last_channel),
+                                onClick = viewModel::playLastChannel,
+                            )
+                        }
                         PlayerIconButton(
                             icon = AppIcons.AspectRatio,
                             description = ui.aspectMode.label(),

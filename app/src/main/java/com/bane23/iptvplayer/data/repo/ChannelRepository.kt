@@ -178,6 +178,10 @@ class ChannelRepository @Inject constructor(
             if (key == null) emit(false) else emitAll(block(key))
         }
 
+    /** ID kanala po stalnom ključu (ID se menja kad se lista osveži), ili null ako ga više nema. */
+    suspend fun channelIdByKey(playlistId: Long, stableKey: String): Long? =
+        channelDao.byStableKey(playlistId, stableKey)?.id
+
     suspend fun getChannel(id: Long): Channel? = channelDao.getById(id)?.toDomain()
 
     /** Redni broj kanala (od nule) u svojoj kategoriji, odnosno u celoj listi. */

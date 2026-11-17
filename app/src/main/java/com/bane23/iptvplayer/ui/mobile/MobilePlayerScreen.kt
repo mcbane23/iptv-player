@@ -214,6 +214,7 @@ fun MobilePlayerScreen(
                     },
                     onPrevious = viewModel::previous,
                     onNext = viewModel::next,
+                    onLastChannel = viewModel::playLastChannel,
                     onPlayPause = viewModel::togglePlayPause,
                     onRetry = viewModel::retry,
                     onChannels = { panel = Panel.CHANNELS },
@@ -288,6 +289,7 @@ private fun LiveControls(
     onLock: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onLastChannel: () -> Unit,
     onPlayPause: () -> Unit,
     onRetry: () -> Unit,
     onChannels: () -> Unit,
@@ -331,6 +333,9 @@ private fun LiveControls(
                 },
                 trailing = {
                     PlayerIconButton(AppIcons.Next, stringResource(R.string.player_next), onNext)
+                    if (ui.lastChannel != null) {
+                        PlayerIconButton(AppIcons.Swap, stringResource(R.string.player_last_channel), onLastChannel)
+                    }
                 },
             ) { barModifier ->
                 val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }

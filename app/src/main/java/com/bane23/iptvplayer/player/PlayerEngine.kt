@@ -80,6 +80,8 @@ data class VideoInfo(
     val container: String? = null,
     /** Dekoder radi u tunel režimu (uređaj sam usklađuje sliku sa zvukom). */
     val tunneled: Boolean = false,
+    /** Broj sličica u sekundi koji strim javlja; 0 kad se ne zna. */
+    val frameRate: Float = 0f,
 )
 
 data class PlaybackState(
@@ -239,6 +241,7 @@ class PlayerEngine(
             format: Format,
             decoderReuseEvaluation: DecoderReuseEvaluation?,
         ) {
+            if (format.frameRate > 0f) _state.update { it.copy(video = it.video.copy(frameRate = format.frameRate)) }
             val container = format.containerMimeType?.substringAfter('/')?.removePrefix("x-") ?: return
             _state.update { it.copy(video = it.video.copy(container = container)) }
         }

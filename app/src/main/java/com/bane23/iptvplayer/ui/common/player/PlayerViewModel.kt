@@ -65,6 +65,8 @@ data class PlayerUiState(
     val typedNumber: String = "",
     /** Strim ne može ni da se sastavi (npr. lozinka više ne može da se pročita). */
     val sourceMissing: Boolean = false,
+    /** Kanal koji se gledao pre ovog, za brz povratak; null dok se kanal nijednom nije promenio. */
+    val lastChannel: Channel? = null,
 )
 
 private data class ListScope(val playlistId: Long, val categoryId: Long?, val startIndex: Int)
@@ -170,6 +172,12 @@ class PlayerViewModel @Inject constructor(
     fun next() = step { neighbor(it, 1) }
 
     fun previous() = step { neighbor(it, -1) }
+
+    /** Vraća na kanal koji se gledao pre ovog; dva kanala se tako smenjuju jednim dugmetom. */
+    fun playLastChannel() {
+        val last = _ui.value.lastChannel ?: return
+        viewModelScope.launch { if (!locks.isChannelLocked(last.id)) show(last) }
+    }
 
     /**
      * Počinje snimanje kanala koji se gleda, ili ga zaustavlja ako se već snima. [stopAtMs] je vreme
@@ -319,7 +327,15 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun show(channel: Channel) {
         val position = positionOf(channel)
-        _ui.update { it.copy(channel = channel, position = position, sourceMissing = false) }
+        _ui.update {
+            val before = it.channel
+            it.copy(
+                channel = channel,
+                position = position,
+                sourceMissing = false,
+                lastChannel = if (before != null && before.id != channel.id) before else it.lastChannel,
+            )
+        }
         val source = repository.streamSource(channel.id)
         if (source == null) {
             engine.stop()

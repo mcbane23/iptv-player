@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Zakazuje učitavanje TV vodiča u pozadini (WorkManager). */
+/** Zakazuje učitavanje TV vodiča i dnevno osvežavanje lista u pozadini (WorkManager). */
 @Singleton
 class EpgScheduler @Inject constructor(@ApplicationContext private val context: Context) {
 
@@ -37,6 +37,24 @@ class EpgScheduler @Inject constructor(@ApplicationContext private val context: 
             .enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 
+    /**
+     * Dnevno osvežavanje lista. Posao se zakazuje uvek, a sam proverava da li je osvežavanje
+     * uključeno u podešavanjima; kao i vodič, ne radi dok je baterija pri kraju.
+     */
+    fun schedulePlaylistRefresh() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val request = PeriodicWorkRequestBuilder<PlaylistRefreshWorker>(PLAYLIST_REFRESH_HOURS, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            // Ne odmah pri prvom zakazivanju, da se ne poklopi sa pokretanjem aplikacije.
+            .setInitialDelay(PLAYLIST_FIRST_DELAY_HOURS, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(PLAYLIST_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
     /** Učitava vodič jedne liste što pre (posle dodavanja ili osvežavanja liste, ili na zahtev). */
     fun refreshNow(playlistId: Long) {
         val request = OneTimeWorkRequestBuilder<EpgRefreshWorker>()
@@ -50,6 +68,9 @@ class EpgScheduler @Inject constructor(@ApplicationContext private val context: 
     private companion object {
         const val REFRESH_HOURS = 12L
         const val PERIODIC_WORK = "epg-refresh"
+        const val PLAYLIST_REFRESH_HOURS = 24L
+        const val PLAYLIST_FIRST_DELAY_HOURS = 1L
+        const val PLAYLIST_WORK = "playlist-refresh"
         const val ONE_TIME_WORK = "epg-refresh-"
     }
 }

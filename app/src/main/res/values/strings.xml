@@ -454,8 +454,6 @@
     <string name="recording_schedule_cancelled">Scheduled recording cancelled</string>
     <string name="recording_scheduled_label">Scheduled</string>
     <string name="recording_until">until %1$s</string>
-    <string name="recording_hint_schedule_tv">OK schedules a recording</string>
-    <string name="recording_hint_cancel_tv">● Recording scheduled, OK cancels it</string>
     <string name="recording_error_missed">Missed: the device was off or asleep</string>
     <string name="recording_error_channel">The channel is no longer in the playlist</string>
     <string name="recording_storage_low">Low on space. Recordings: %1$s · Free: %2$s</string>
@@ -515,4 +513,36 @@
     <string name="sleep_timer">Sleep timer</string>
     <string name="sleep_timer_off">Off</string>
     <string name="sleep_timer_minutes">%1$d min</string>
+
+    <!-- Prethodno gledani kanal, podaci o nalogu, automatsko osvežavanje -->
+    <string name="player_last_channel">Last watched channel</string>
+    <string name="playlist_account_valid_until">Account valid until %1$s</string>
+    <string name="playlist_account_expires_today">expires today</string>
+    <plurals name="playlist_account_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <plurals name="playlist_connections">
+        <item quantity="one">%1$d connection</item>
+        <item quantity="other">%1$d connections</item>
+    </plurals>
+    <string name="settings_auto_refresh">Refresh playlists automatically</string>
+    <string name="settings_auto_refresh_summary">Playlists are downloaded again once a day so channels and movies stay current. Playlists loaded from a file are not refreshed.</string>
+    <string name="vod_sort">Sort order</string>
+    <string name="vod_sort_current">Order: %1$s</string>
+    <string name="vod_sort_default">Provider order</string>
+    <string name="vod_sort_added">Recently added</string>
+    <string name="vod_sort_name">By name</string>
+    <string name="vod_sort_rating">Best rated</string>
+    <string name="vod_sort_year">Newest by year</string>
+    <string name="guide_hint_future_tv">OK: reminder or recording</string>
+    <string name="reminder_add">Remind me</string>
+    <string name="reminder_remove">Remove reminder</string>
+    <string name="reminder_set">You will be reminded when it starts</string>
+    <string name="reminder_removed">Reminder removed</string>
+    <string name="reminder_channel">Programme reminders</string>
+    <string name="reminder_starts">Starting: %1$s</string>
+    <string name="reminder_watch">Watch</string>
+    <string name="settings_match_frame_rate">Match TV refresh rate to video</string>
+    <string name="settings_match_frame_rate_summary">While playing, the TV switches to a refresh rate that fits the video (50 Hz for TV channels, 24 Hz for films), so motion is smooth. The screen may go black for a moment when it switches. Not every TV supports it.</string>
 </resources>

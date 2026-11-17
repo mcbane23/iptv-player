@@ -9,6 +9,9 @@ import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.epg.GuideLayout
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.recording.RecordingStartError
+import com.bane23.iptvplayer.data.reminder.Reminder
+import com.bane23.iptvplayer.data.reminder.ReminderRepository
+import kotlinx.coroutines.flow.map
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.EpgStatus
@@ -72,6 +75,7 @@ class GuideViewModel @Inject constructor(
     private val channels: ChannelRepository,
     private val epg: EpgRepository,
     private val recorder: RecordingRepository,
+    private val reminderRepository: ReminderRepository,
 ) : ViewModel() {
 
     private data class Scope(val playlistId: Long, val categoryId: Long?)
@@ -98,6 +102,22 @@ class GuideViewModel @Inject constructor(
             activeChannels = active.map { it.channelId }.toSet(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GuideRecordings())
+
+    /** Ključevi emisija ([GuideRecordings.key]) koje imaju podsetnik, za zvonce u vodiču. */
+    val reminders: StateFlow<Set<String>> = reminderRepository.reminders
+        .map { list -> list.mapTo(HashSet<String>()) { it.key } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** Uključuje podsetnik za emisiju koja još nije počela, odnosno uklanja ga. */
+    fun toggleReminder(channel: Channel, program: Program) {
+        val reminder = Reminder(channel.playlistId, channel.stableKey, program.startMs, channel.name, program.title)
+        val exists = reminder.key in reminders.value
+        if (!exists && program.startMs <= System.currentTimeMillis()) return
+        viewModelScope.launch {
+            if (exists) reminderRepository.remove(reminder) else reminderRepository.add(reminder)
+            _recordingNotice.tryEmit(if (exists) R.string.reminder_removed else R.string.reminder_set)
+        }
+    }
 
     private val _recordingNotice = MutableSharedFlow<Int>(extraBufferCapacity = 1)
 

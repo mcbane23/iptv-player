@@ -1,6 +1,13 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bane23.iptvplayer.ui.common.ReminderViewModel
+import com.bane23.iptvplayer.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -261,4 +268,27 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
         },
     )
+    // Podsetnik za emisiju se javlja preko bilo kog ekrana.
+    val reminderViewModel: ReminderViewModel = hiltViewModel()
+    val dueReminder by reminderViewModel.due.collectAsStateWithLifecycle()
+    dueReminder?.let { reminder ->
+        AlertDialog(
+            onDismissRequest = { reminderViewModel.dismiss(reminder) },
+            title = { Text(stringResource(R.string.reminder_starts, reminder.title)) },
+            text = { Text(reminder.channelName) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        reminderViewModel.watch(reminder) { channelId ->
+                            if (backStack.lastOrNull() is Player) backStack.removeLastOrNull()
+                            backStack.add(Player(channelId, null))
+                        }
+                    },
+                ) { Text(stringResource(R.string.reminder_watch)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { reminderViewModel.dismiss(reminder) }) { Text(stringResource(R.string.action_close)) }
+            },
+        )
+    }
 }

@@ -453,8 +453,6 @@
     <string name="recording_schedule_cancelled">Zakazano snimanje je otkazano</string>
     <string name="recording_scheduled_label">Zakazano</string>
     <string name="recording_until">do %1$s</string>
-    <string name="recording_hint_schedule_tv">OK zakazuje snimanje</string>
-    <string name="recording_hint_cancel_tv">● Snimanje je zakazano, OK ga otkazuje</string>
     <string name="recording_error_missed">Propušteno: uređaj je bio ugašen ili uspavan</string>
     <string name="recording_error_channel">Kanala više nema u listi</string>
     <string name="recording_storage_low">Ponestaje prostora. Snimci: %1$s · Slobodno: %2$s</string>
@@ -514,4 +512,38 @@
     <string name="sleep_timer">Tajmer gašenja</string>
     <string name="sleep_timer_off">Isključen</string>
     <string name="sleep_timer_minutes">%1$d min</string>
+
+    <!-- Prethodno gledani kanal, podaci o nalogu, automatsko osvežavanje -->
+    <string name="player_last_channel">Prethodno gledani kanal</string>
+    <string name="playlist_account_valid_until">Nalog važi do %1$s</string>
+    <string name="playlist_account_expires_today">ističe danas</string>
+    <plurals name="playlist_account_days_left">
+        <item quantity="one">još %1$d dan</item>
+        <item quantity="few">još %1$d dana</item>
+        <item quantity="other">još %1$d dana</item>
+    </plurals>
+    <plurals name="playlist_connections">
+        <item quantity="one">%1$d veza</item>
+        <item quantity="few">%1$d veze</item>
+        <item quantity="other">%1$d veza</item>
+    </plurals>
+    <string name="settings_auto_refresh">Automatsko osvežavanje lista</string>
+    <string name="settings_auto_refresh_summary">Liste se jednom dnevno same preuzimaju iznova, da kanali i filmovi budu sveži. Liste iz fajla se ne osvežavaju.</string>
+    <string name="vod_sort">Redosled</string>
+    <string name="vod_sort_current">Redosled: %1$s</string>
+    <string name="vod_sort_default">Kao kod provajdera</string>
+    <string name="vod_sort_added">Nedavno dodato</string>
+    <string name="vod_sort_name">Po nazivu</string>
+    <string name="vod_sort_rating">Najbolje ocenjeno</string>
+    <string name="vod_sort_year">Najnovije po godini</string>
+    <string name="guide_hint_future_tv">OK: podsetnik ili snimanje</string>
+    <string name="reminder_add">Podseti me</string>
+    <string name="reminder_remove">Ukloni podsetnik</string>
+    <string name="reminder_set">Podsetićemo te kad emisija počne</string>
+    <string name="reminder_removed">Podsetnik je uklonjen</string>
+    <string name="reminder_channel">Podsetnici za emisije</string>
+    <string name="reminder_starts">Počinje: %1$s</string>
+    <string name="reminder_watch">Gledaj</string>
+    <string name="settings_match_frame_rate">Uskladi osvežavanje TV-a sa snimkom</string>
+    <string name="settings_match_frame_rate_summary">Dok se gleda, TV prelazi na osvežavanje koje odgovara snimku (50 Hz za kanale, 24 Hz za filmove), pa je kretanje slike glatko. Pri prebacivanju se ekran na trenutak zacrni. Ne podržava svaki TV.</string>
 </resources>
