@@ -13,6 +13,7 @@ import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.data.xtream.XtreamApi
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.data.xtream.XtreamVodParser
+import com.bane23.iptvplayer.domain.CategoryArrange
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.domain.StreamSource
 import java.io.IOException
@@ -24,8 +25,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +39,9 @@ import okhttp3.HttpUrl
 enum class VodKind { MOVIES, SERIES }
 
 data class VodCategory(val id: String, val name: String)
+
+/** Sakrivene kategorije (ID-jevi) i redosled koji je zadao korisnik. */
+data class VodCategoryPrefs(val hidden: Set<String> = emptySet(), val order: List<String> = emptyList())
 
 /** Film ili serija u spisku. */
 data class VodItem(
@@ -119,17 +127,76 @@ class VodRepository @Inject constructor(
     /** Upis pozicije mora da se završi i kad se ekran plejera zatvori. */
     private val writeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** Kategorije za prikaz. Kategorija koja je sada zaključana ima katanac ispred naziva. */
+    /**
+     * Kategorije za prikaz: bez sakrivenih, redom koji je zadao korisnik. Kategorija koja je sada
+     * zaključana ima katanac ispred naziva.
+     */
     suspend fun categories(kind: VodKind): List<VodCategory> {
         val all = allCategories(kind)
-        val keys = locks.activeKeysNow()
-        if (keys.isEmpty()) return all
         val playlistId = settings.activePlaylistId.first() ?: return all
-        return all.map { category ->
+        val prefs = observeCategoryPrefs(playlistId, kind).first()
+        val visible = CategoryArrange.ordered(all.filter { it.id !in prefs.hidden }, prefs.order) { it.id }
+        val keys = locks.activeKeysNow()
+        if (keys.isEmpty()) return visible
+        return visible.map { category ->
             val locked = LockRepository.vodKey(playlistId, kind == VodKind.SERIES, category.id) in keys
             if (locked) category.copy(name = LockRepository.LOCK_MARK + category.name) else category
         }
     }
+
+    /** Šta je korisnik sakrio i kako je poređao kategorije filmova, odnosno serija, liste [playlistId]. */
+    fun observeCategoryPrefs(playlistId: Long, kind: VodKind): Flow<VodCategoryPrefs> {
+        val series = kind == VodKind.SERIES
+        val prefix = LockRepository.vodKey(playlistId, series, "")
+        return combine(settings.hiddenVodCategories, settings.vodCategoryOrder(playlistId, series)) { hidden, order ->
+            VodCategoryPrefs(
+                hidden = hidden.filter { it.startsWith(prefix) }.mapTo(HashSet()) { it.removePrefix(prefix) },
+                order = order,
+            )
+        }.distinctUntilChanged()
+    }
+
+    /** Isto, za aktivnu listu (prati i promenu liste). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeActiveCategoryPrefs(kind: VodKind): Flow<VodCategoryPrefs> =
+        settings.activePlaylistId.flatMapLatest { playlistId ->
+            if (playlistId == null) flowOf(VodCategoryPrefs()) else observeCategoryPrefs(playlistId, kind)
+        }
+
+    /** Sakriva ili vraća kategorije (ID-jevi sa servera) aktivne liste. */
+    suspend fun setCategoriesHidden(kind: VodKind, categoryIds: Collection<String>, hidden: Boolean) {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        val series = kind == VodKind.SERIES
+        settings.setVodCategoriesHidden(categoryIds.map { LockRepository.vodKey(playlistId, series, it) }, hidden)
+    }
+
+    /** Pamti redosled kategorija aktivne liste; [categoryIds] su sve kategorije, redom prikaza. */
+    suspend fun setCategoryOrder(kind: VodKind, categoryIds: List<String>) {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        settings.setVodCategoryOrder(playlistId, kind == VodKind.SERIES, categoryIds)
+    }
+
+    /** Prebacuje kategoriju na vrh spiska. */
+    suspend fun moveCategoryToTop(kind: VodKind, categoryId: String) {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        val prefs = observeCategoryPrefs(playlistId, kind).first()
+        val ids = CategoryArrange.ordered(allCategories(kind), prefs.order) { it.id }.map { it.id }
+        val index = ids.indexOf(categoryId)
+        if (index > 0) setCategoryOrder(kind, CategoryArrange.movedToTop(ids, index))
+    }
+
+    /** Šta je u sekciji bilo otvoreno poslednji put (ID kategorije ili posebna oznaka), ili null. */
+    suspend fun lastCategory(kind: VodKind): String? {
+        val playlistId = settings.activePlaylistId.first() ?: return null
+        return settings.lastCategory(playlistId, kind.section).first()
+    }
+
+    suspend fun setLastCategory(kind: VodKind, value: String) {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        settings.setLastCategory(playlistId, kind.section, value)
+    }
+
+    private val VodKind.section get() = if (this == VodKind.SERIES) "series" else "movies"
 
     /** Kategorije onako kako ih šalje server, za ekran roditeljske zaštite. */
     suspend fun allCategories(kind: VodKind): List<VodCategory> = withContext(Dispatchers.IO) {

@@ -25,6 +25,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
 import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
+import com.bane23.iptvplayer.ui.common.categorySection
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
 import com.bane23.iptvplayer.ui.common.navigation.MultiView
@@ -91,7 +92,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     },
                     onSearchVod = { series -> backStack.add(VodSearch(series)) },
                     onPlaylists = { backStack.add(Playlists) },
-                    onCategories = { backStack.add(ManageCategories) },
+                    onCategories = { section -> backStack.add(ManageCategories(section.name)) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
@@ -105,8 +106,11 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
-            entry<ManageCategories> {
-                MobileCategoriesScreen(onBack = { backStack.removeLastOrNull() })
+            entry<ManageCategories> { key ->
+                MobileCategoriesScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    initialSection = categorySection(key.section),
+                )
             }
             entry<Guide> { key ->
                 MobileGuideScreen(

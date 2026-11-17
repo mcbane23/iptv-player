@@ -36,6 +36,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
 import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
+import com.bane23.iptvplayer.ui.common.categorySection
 import com.bane23.iptvplayer.ui.common.navigation.ManageCategories
 import com.bane23.iptvplayer.ui.common.navigation.MovieDetails
 import com.bane23.iptvplayer.ui.common.navigation.MultiView
@@ -105,7 +106,7 @@ fun TvApp() {
                     onAddPlaylist = { backStack.add(EditPlaylist()) },
                     onAddFromPhone = { backStack.add(PairPlaylist) },
                     onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
-                    onCategories = { backStack.add(ManageCategories) },
+                    onCategories = { section -> backStack.add(ManageCategories(section.name)) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
@@ -128,7 +129,7 @@ fun TvApp() {
                     },
                 )
             }
-            entry<ManageCategories> { TvCategoriesScreen() }
+            entry<ManageCategories> { key -> TvCategoriesScreen(initialSection = categorySection(key.section)) }
             entry<Guide> { key ->
                 TvGuideScreen(
                     playlistId = key.playlistId,

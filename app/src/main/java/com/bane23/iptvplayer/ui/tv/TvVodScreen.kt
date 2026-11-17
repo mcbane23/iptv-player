@@ -22,10 +22,12 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,6 +72,7 @@ fun TvVodScreen(
     series: Boolean,
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
+    onCategories: () -> Unit = {},
     viewModel: VodBrowseViewModel = hiltViewModel(),
     // Filmovi i serije imaju odvojen opis (isti broj može biti i film i serija).
     previewViewModel: TvVodPreviewViewModel = hiltViewModel(key = "vod-preview-$series"),
@@ -87,11 +90,70 @@ fun TvVodScreen(
     val posterFocus = remember { FocusRequester() }
     // Poster na kome je fokus bio poslednji put, da se posle povratka iz detalja nastavi odatle.
     var lastItemId by rememberSaveable { mutableStateOf<Long?>(null) }
-    // „Nastavi gledanje” je prikazano dok korisnik ne izabere neku kategoriju.
-    var continueChosen by rememberSaveable { mutableStateOf(true) }
+    // „Nastavi gledanje” je prikazano dok korisnik ne izabere neku kategoriju, osim ako je prošli
+    // put izašao sa kategorije; tada se otvara ona.
+    var continueChosen by rememberSaveable(state.loadingCategories) { mutableStateOf(state.startOnContinue) }
     val showContinue = continueChosen && continueItems.isNotEmpty()
     val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
     var categoryFilter by rememberSaveable { mutableStateOf("") }
+    val categoryListState = rememberLazyListState()
+    // Meni kategorije (dugi OK): sakrij, pomeri na vrh, uredi.
+    var menuCategory by remember { mutableStateOf<VodCategory?>(null) }
+    // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
+    var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
+    var focusTargetId by remember { mutableStateOf<String?>(null) }
+    val moveFocus = remember { FocusRequester() }
+    var movedToTop by remember { mutableIntStateOf(0) }
+    var shownCategoryIds by remember { mutableStateOf(emptyList<String>()) }
+
+    LaunchedEffect(pendingHide) {
+        val category = pendingHide ?: return@LaunchedEffect
+        var moved = false
+        var attempts = 0
+        while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            moved = moveFocus.tryRequestFocus()
+            attempts++
+        }
+        viewModel.hideCategory(category)
+        focusTargetId = null
+        pendingHide = null
+    }
+    LaunchedEffect(movedToTop) {
+        if (movedToTop > 0) {
+            // Kratka pauza da se spisak složi iznova; kategorija (i fokus) je sada na vrhu.
+            delay(MOVE_SETTLE_MS)
+            runCatching { categoryListState.scrollToItem(0) }
+        }
+    }
+    menuCategory?.let { category ->
+        TvActionDialog(
+            title = category.name,
+            options = listOf(
+                stringResource(R.string.category_hide),
+                stringResource(R.string.category_move_top),
+                stringResource(R.string.categories_edit),
+            ),
+            onSelect = { option ->
+                when (option) {
+                    0 -> {
+                        val index = shownCategoryIds.indexOf(category.id)
+                        // Bez susedne kategorije fokus ide na Favorite, koji uvek postoje.
+                        focusTargetId = shownCategoryIds.getOrNull(index + 1) ?: shownCategoryIds.getOrNull(index - 1) ?: FAVORITES_ID
+                        pendingHide = category
+                    }
+
+                    1 -> {
+                        viewModel.moveCategoryToTop(category)
+                        movedToTop++
+                    }
+
+                    else -> onCategories()
+                }
+            },
+            onClose = { menuCategory = null },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -166,7 +228,8 @@ fun TvVodScreen(
                             continueChosen = false
                             viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
                         },
-                        modifier = if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier,
+                        modifier = (if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier)
+                            .then(if (focusTargetId == FAVORITES_ID) Modifier.focusRequester(moveFocus) else Modifier),
                     )
                     if (continueItems.isNotEmpty()) {
                         PinnedRow(
@@ -177,6 +240,7 @@ fun TvVodScreen(
                             onClick = {
                                 lastItemId = null
                                 continueChosen = true
+                                viewModel.rememberContinue()
                             },
                             modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
                         )
@@ -191,7 +255,9 @@ fun TvVodScreen(
                         val text = categoryFilter.trim()
                         if (text.isEmpty()) state.categories else state.categories.filter { it.name.contains(text, ignoreCase = true) }
                     }
+                    LaunchedEffect(shownCategories) { shownCategoryIds = shownCategories.map { it.id } }
                     LazyColumn(
+                        state = categoryListState,
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
@@ -205,7 +271,9 @@ fun TvVodScreen(
                                     continueChosen = false
                                     viewModel.selectCategory(category)
                                 },
-                                modifier = if (selected) Modifier.focusRequester(firstFocus) else Modifier,
+                                onLongClick = { menuCategory = category },
+                                modifier = (if (selected) Modifier.focusRequester(firstFocus) else Modifier)
+                                    .then(if (focusTargetId == category.id) Modifier.focusRequester(moveFocus) else Modifier),
                             )
                         }
                     }
@@ -284,6 +352,11 @@ fun TvVodScreen(
                             delay(FOCUS_RESTORE_STEP_MS)
                         }
                     }
+                    // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
+                    if (!showContinue && !showFavorites) {
+                        val row = state.categories.indexOfFirst { it.id == state.selected?.id }
+                        if (row > 3) runCatching { categoryListState.scrollToItem(row - 3) }
+                    }
                     repeat(FOCUS_RESTORE_ATTEMPTS) {
                         if (firstFocus.tryRequestFocus()) return@LaunchedEffect
                         delay(FOCUS_RESTORE_STEP_MS)
@@ -348,6 +421,7 @@ private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val SKELETON_CATEGORIES = 8
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
+private const val MOVE_SETTLE_MS = 150L
 
 /**
  * Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji, omiljeni imaju zvezdicu

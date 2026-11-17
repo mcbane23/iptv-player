@@ -54,7 +54,7 @@ import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
 /** Oznaka za „Svi kanali” među čipovima (pravi ID-jevi kategorija su pozitivni, posebne grupe negativne). */
-private const val ALL_CHANNELS = 0L
+private const val ALL_CHANNELS = ChannelGroups.ALL
 
 /**
  * Sekcija Uživo na telefonu: kategorije kao čipovi na vrhu, ispod kanali izabrane kategorije.
@@ -67,6 +67,7 @@ fun MobileLiveTvScreen(
     onSearch: () -> Unit,
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onMultiView: () -> Unit,
+    onCategories: () -> Unit = {},
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
     playlistsViewModel: PlaylistsViewModel = hiltViewModel(),
@@ -74,7 +75,8 @@ fun MobileLiveTvScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
     val playlistId = state.playlistId
-    // Izabrani čip; null dok korisnik ništa ne izabere (tada omiljeni ako ih ima, inače svi kanali).
+    // Izabrani čip; null dok korisnik ništa ne izabere (tada grupa od prošlog puta, inače omiljeni
+    // ako ih ima, pa svi kanali).
     var chosen by rememberSaveable { mutableStateOf<Long?>(null) }
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val groups = buildList {
@@ -84,7 +86,12 @@ fun MobileLiveTvScreen(
         state.categories.forEach { add(it.id) }
     }
     val selected = chosen?.takeIf { it in groups }
+        ?: state.lastCategoryId?.takeIf { it in groups }
         ?: if (state.favoriteCount > 0) ChannelGroups.FAVORITES else ALL_CHANNELS
+    val choose: (Long) -> Unit = { group ->
+        chosen = group
+        viewModel.rememberCategory(group)
+    }
     val categoryId = selected.takeIf { it != ALL_CHANNELS }
 
     LaunchedEffect(playlistId, categoryId) {
@@ -130,12 +137,12 @@ fun MobileLiveTvScreen(
 
                 else -> {
                     // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
-                    val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name) }
+                    val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name, count = it.channelCount) }
                     QuickGroupChips(
                         selected = selected,
                         showRecent = state.recentCount > 0,
                         categoryName = state.categories.firstOrNull { it.id == selected }?.name,
-                        onSelect = { chosen = it },
+                        onSelect = choose,
                         onMore = { pickerOpen = true },
                     )
                     if (pickerOpen) {
@@ -145,9 +152,17 @@ fun MobileLiveTvScreen(
                             selectedKey = selected.toString(),
                             onPick = { key ->
                                 pickerOpen = false
-                                chosen = key.toLong()
+                                choose(key.toLong())
                             },
                             onDismiss = { pickerOpen = false },
+                            actions = CategoryActions(
+                                onHide = { key -> viewModel.hideCategory(key.toLong()) },
+                                onMoveToTop = { key -> viewModel.moveCategoryToTop(key.toLong()) },
+                                onManage = {
+                                    pickerOpen = false
+                                    onCategories()
+                                },
+                            ),
                         )
                     }
 

@@ -15,6 +15,9 @@ object ChannelGroups {
     const val FAVORITES = -1L
     const val RECENT = -2L
 
+    /** „Svi kanali”: u upitima je to kategorija null, a u izboru na ekranu ova vrednost. */
+    const val ALL = 0L
+
     fun isVirtual(categoryId: Long?): Boolean = categoryId != null && categoryId < 0
 }
 

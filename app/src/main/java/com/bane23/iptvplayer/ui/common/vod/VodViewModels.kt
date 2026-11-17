@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -45,6 +46,11 @@ data class VodBrowseUiState(
     val loadingItems: Boolean = false,
     val itemsFailed: Boolean = false,
     val items: List<VodItem> = emptyList(),
+    /**
+     * Da li se sekcija otvara na „Nastavi gledanje” (kad ga ima). Netačno ako je korisnik poslednji
+     * put izašao sa neke kategorije; tada se otvara ona.
+     */
+    val startOnContinue: Boolean = true,
 )
 
 /** Kategorije filmova ili serija i sadržaj izabrane kategorije. */
@@ -102,9 +108,24 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val categories = repository.categories(kind)
-                _state.update { it.copy(loadingCategories = false, categories = categories) }
-                // Kategorije su čipovi iznad postera, pa je jedna uvek izabrana: prva, dok korisnik ne izabere.
-                if (_state.value.selected == null) categories.firstOrNull()?.let(::selectCategory)
+                val first = _state.value.selected == null
+                val last = if (first) repository.lastCategory(kind) else null
+                _state.update {
+                    it.copy(
+                        loadingCategories = false,
+                        categories = categories,
+                        startOnContinue = if (first) last == null || last == CONTINUE_ID else it.startOnContinue,
+                    )
+                }
+                // Jedna kategorija je uvek izabrana: ona od prošlog puta, inače prva.
+                if (_state.value.selected == null) {
+                    val restored = when (last) {
+                        FAVORITES_ID -> VodCategory(FAVORITES_ID, "")
+                        else -> categories.firstOrNull { it.id == last } ?: categories.firstOrNull()
+                    }
+                    restored?.let { select(it, remember = false) }
+                }
+                watchCategoryPrefs()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -113,7 +134,56 @@ class VodBrowseViewModel @Inject constructor(
         }
     }
 
-    fun selectCategory(category: VodCategory) {
+    private var prefsJob: Job? = null
+
+    /** Kad korisnik sakrije ili premesti kategoriju (i na ekranu za uređivanje), spisak se slaže iznova. */
+    private fun watchCategoryPrefs() {
+        if (prefsJob != null) return
+        prefsJob = viewModelScope.launch {
+            repository.observeActiveCategoryPrefs(kind).drop(1).collect {
+                try {
+                    val categories = repository.categories(kind)
+                    _state.update { it.copy(categories = categories) }
+                    val selected = _state.value.selected
+                    if (selected != null && selected.id != FAVORITES_ID && categories.none { it.id == selected.id }) {
+                        // Izabrana kategorija je upravo sakrivena.
+                        categories.firstOrNull()?.let { select(it, remember = false) } ?: clearCategory()
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Spisak ostaje kakav je bio; sledeće otvaranje sekcije ga učitava iznova.
+                }
+            }
+        }
+    }
+
+    /** Sakriva kategoriju; vraća se na ekranu „Uredi kategorije”. */
+    fun hideCategory(category: VodCategory) {
+        viewModelScope.launch { repository.setCategoriesHidden(kind, listOf(category.id), hidden = true) }
+    }
+
+    fun moveCategoryToTop(category: VodCategory) {
+        viewModelScope.launch {
+            try {
+                repository.moveCategoryToTop(kind, category.id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Bez spiska sa servera nema šta da se premesti.
+            }
+        }
+    }
+
+    /** Pamti da je korisnik otvorio „Nastavi gledanje”, da se sekcija sledeći put otvori na njemu. */
+    fun rememberContinue() {
+        viewModelScope.launch { repository.setLastCategory(kind, CONTINUE_ID) }
+    }
+
+    fun selectCategory(category: VodCategory) = select(category, remember = true)
+
+    private fun select(category: VodCategory, remember: Boolean) {
+        if (remember) viewModelScope.launch { repository.setLastCategory(kind, category.id) }
         if (category.id == FAVORITES_ID) {
             // Omiljeni su u bazi i stižu kroz [favorites], pa nema šta da se učitava.
             itemsJob?.cancel()
@@ -135,7 +205,7 @@ class VodBrowseViewModel @Inject constructor(
     }
 
     fun retryItems() {
-        _state.value.selected?.let(::selectCategory)
+        _state.value.selected?.let { select(it, remember = false) }
     }
 
     fun clearCategory() {
@@ -146,6 +216,9 @@ class VodBrowseViewModel @Inject constructor(
 
 /** Oznaka za grupu „Omiljeni” među kategorijama (pravi ID-jevi kategorija nikad nisu ovakvi). */
 const val FAVORITES_ID = "__favorites"
+
+/** Oznaka za „Nastavi gledanje” kad se pamti šta je poslednje bilo otvoreno. */
+const val CONTINUE_ID = "__continue"
 
 data class MovieUiState(
     val movieId: Long = 0,
@@ -366,6 +439,13 @@ class SeriesViewModel @Inject constructor(
         viewModelScope.launch { repository.setWatched(id, targets, watched, keys) }
     }
 }
+
+/**
+ * Mesto prve neodgledane epizode u spisku, da se spisak otvori na njoj. Kad nijedna nije odgledana
+ * ili su sve odgledane, to je početak spiska.
+ */
+fun firstUnwatchedIndex(episodes: List<Episode>, progress: Map<Long, WatchProgress>): Int =
+    episodes.indexOfFirst { progress[it.id]?.watched != true }.coerceAtLeast(0)
 
 /** Da li su sve epizode sezone odgledane. */
 fun SeriesUiState.isSeasonWatched(season: Int): Boolean {

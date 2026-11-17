@@ -131,6 +131,10 @@ fun TvPlaylistsScreen(
     }
 }
 
+/**
+ * Lista na TV-u: OK na samoj listi je bira kao aktivnu, a dugme „Opcije” otvara Osveži, Izmeni i
+ * Obriši ispod nje. Brisanje se potvrđuje u istom redu, uz naziv liste.
+ */
 @Composable
 private fun TvPlaylistRow(
     playlist: Playlist,
@@ -140,10 +144,10 @@ private fun TvPlaylistRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    var expanded by remember { mutableStateOf(false) }
     // Brisanje se potvrđuje u samom redu: dijalozi na TV-u lako izgube fokus.
     var confirmDelete by remember { mutableStateOf(false) }
     val cancelFocus = remember { FocusRequester() }
-    val refreshFocus = remember { FocusRequester() }
     val deleteFocus = remember { FocusRequester() }
     // Dugmad se menjaju u mestu, pa fokus mora ručno da pređe na novo dugme.
     var confirmWasOpen by remember { mutableStateOf(false) }
@@ -151,67 +155,87 @@ private fun TvPlaylistRow(
         if (confirmDelete) cancelFocus.tryRequestFocus() else if (confirmWasOpen) deleteFocus.tryRequestFocus()
         confirmWasOpen = confirmDelete
     }
-    var wasActive by remember { mutableStateOf(playlist.isActive) }
-    LaunchedEffect(playlist.isActive) {
-        // Dugme „Izaberi” nestaje kad lista postane aktivna.
-        if (playlist.isActive && !wasActive) refreshFocus.tryRequestFocus()
-        wasActive = playlist.isActive
-    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(16.dp),
+            .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = playlist.name,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TvListRow(
+                onClick = { if (!playlist.isActive) onSelect() },
                 modifier = Modifier.weight(1f),
-            )
-            if (playlist.isActive) {
-                Text(
-                    text = stringResource(R.string.playlist_active),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 12.dp),
-                )
+            ) { color ->
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = playlist.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = color,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = if (refreshing) stringResource(R.string.playlist_refreshing) else playlist.summary(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = color.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (playlist.isActive) {
+                    Text(
+                        text = stringResource(R.string.playlist_active),
+                        style = MaterialTheme.typography.labelLarge,
+                        // Na fokusiranom redu (akcentna podloga) oznaka je u boji teksta, da se vidi.
+                        color = if (color == MaterialTheme.colorScheme.onSurface) MaterialTheme.colorScheme.primary else color,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
+            }
+            // Dugme ostaje isto i kad su opcije otvorene, da fokus ne nestane sa njega.
+            OutlinedButton(onClick = {
+                expanded = !expanded
+                if (!expanded) confirmDelete = false
+            }) {
+                Text(stringResource(R.string.action_options))
             }
         }
-        Text(
-            text = if (refreshing) stringResource(R.string.playlist_refreshing) else playlist.summary(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (confirmDelete) {
-                Button(onClick = onDelete) { Text(stringResource(R.string.action_confirm_delete)) }
-                OutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.focusRequester(cancelFocus)) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            } else {
-                if (!playlist.isActive) {
-                    OutlinedButton(onClick = onSelect) { Text(stringResource(R.string.action_select)) }
-                }
-                // Tokom osvežavanja dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
-                OutlinedButton(onClick = { if (!refreshing) onRefresh() }, modifier = Modifier.focusRequester(refreshFocus)) {
-                    Text(stringResource(R.string.action_refresh))
-                }
-                OutlinedButton(onClick = { if (!refreshing) onEdit() }) {
-                    Text(stringResource(R.string.action_edit))
-                }
-                OutlinedButton(
-                    onClick = { if (!refreshing) confirmDelete = true },
-                    modifier = Modifier.focusRequester(deleteFocus),
-                ) {
-                    Text(stringResource(R.string.action_delete))
+        if (expanded) {
+            Row(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (confirmDelete) {
+                    Text(
+                        text = stringResource(R.string.delete_message, playlist.name),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Button(onClick = onDelete) { Text(stringResource(R.string.action_confirm_delete)) }
+                    OutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.focusRequester(cancelFocus)) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                } else {
+                    // Tokom osvežavanja dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
+                    OutlinedButton(onClick = { if (!refreshing) onRefresh() }) {
+                        Text(stringResource(R.string.action_refresh))
+                    }
+                    OutlinedButton(onClick = { if (!refreshing) onEdit() }) {
+                        Text(stringResource(R.string.action_edit))
+                    }
+                    OutlinedButton(
+                        onClick = { if (!refreshing) confirmDelete = true },
+                        modifier = Modifier.focusRequester(deleteFocus),
+                    ) {
+                        Text(stringResource(R.string.action_delete))
+                    }
                 }
             }
         }

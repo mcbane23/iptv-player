@@ -157,6 +157,7 @@ class PlaylistRepository @Inject constructor(
     suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
         val entity = playlistDao.getById(id)
         playlistDao.deleteById(id)
+        settings.clearPlaylistCategoryPrefs(id)
         if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
         if (settings.activePlaylistId.first() == id) {
             settings.setActivePlaylistId(playlistDao.firstId())

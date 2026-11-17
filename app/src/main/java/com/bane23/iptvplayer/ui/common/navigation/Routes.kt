@@ -77,9 +77,12 @@ data class PlayArchive(
 @Serializable
 data object Search : NavKey
 
-/** Sakrivanje kategorija i promena njihovog redosleda. */
+/**
+ * Sakrivanje kategorija i promena njihovog redosleda. [section] je kartica koja se otvara prva
+ * (ime vrednosti iz `CategorySection`).
+ */
 @Serializable
-data object ManageCategories : NavKey
+data class ManageCategories(val section: String = "LIVE") : NavKey
 
 /** Trakt nalog: prijava i sinhronizacija odgledanog. */
 @Serializable
