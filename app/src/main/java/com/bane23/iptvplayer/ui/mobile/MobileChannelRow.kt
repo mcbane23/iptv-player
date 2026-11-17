@@ -28,6 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.guide.nowUntil
 import com.bane23.iptvplayer.domain.Channel
@@ -151,6 +155,128 @@ fun MobileChannelRow(
         }
     }
 }
+
+/**
+ * Kanal kao pločica u mreži sa dve kolone (Uživo na telefonu): logo levo, desno naziv, emisija
+ * koja je na programu i traka koliko je odmakla. Zvezdica samo pokazuje omiljeni kanal; dugi
+ * pritisak otvara meni (omiljeni, vodič). [channel] je null dok se ta strana liste učitava.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MobileChannelTile(
+    channel: Channel?,
+    onClick: (Long) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
+    onGuide: (Channel) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val now by rememberNow()
+    var menuOpen by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(TileShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.07f), TileShape)
+                .combinedClickable(
+                    enabled = channel != null,
+                    onClick = { channel?.let { onClick(it.id) } },
+                    onLongClick = { menuOpen = true },
+                )
+                .heightIn(min = 58.dp)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (channel == null) {
+                SkeletonLogo()
+                SkeletonTextLines(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp),
+                )
+            } else {
+                ChannelLogo(url = channel.logo, name = channel.name)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = channel.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (channel.favorite) {
+                            Icon(
+                                imageVector = AppIcons.Star,
+                                contentDescription = stringResource(R.string.category_favorites),
+                                tint = FavoriteColor,
+                                modifier = Modifier
+                                    .padding(start = 4.dp)
+                                    .size(14.dp),
+                            )
+                        }
+                    }
+                    channel.nowTitle?.let { nowTitle ->
+                        Text(
+                            text = nowTitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    channel.nowProgress(now)?.let { progress ->
+                        // Traka u akcentnoj boji, ali tanka: jedina boja na pločici.
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 5.dp)
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(progress)
+                                    .fillMaxHeight()
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (channel != null) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(if (channel.favorite) R.string.favorite_remove else R.string.favorite_add)) },
+                    leadingIcon = {
+                        Icon(if (channel.favorite) AppIcons.Star else AppIcons.StarOutline, contentDescription = null)
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onToggleFavorite(channel.id)
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.guide_title)) },
+                    leadingIcon = { Icon(AppIcons.Guide, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        onGuide(channel)
+                    },
+                )
+            }
+        }
+    }
+}
+
+private val TileShape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
 
 /** Zvezdica za dodavanje u omiljene i uklanjanje iz njih. */
 @Composable
