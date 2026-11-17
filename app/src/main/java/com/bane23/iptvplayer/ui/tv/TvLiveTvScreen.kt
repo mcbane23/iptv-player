@@ -62,8 +62,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.tv.material3.Icon
 import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
-import com.bane23.iptvplayer.ui.common.guide.nextLine
-import com.bane23.iptvplayer.ui.common.guide.timeRange
+import com.bane23.iptvplayer.ui.common.guide.formatTime
+import com.bane23.iptvplayer.ui.common.guide.nowUntil
+import com.bane23.iptvplayer.ui.common.guide.timeRangeLeft
+import androidx.compose.foundation.border
+import androidx.compose.ui.res.pluralStringResource
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -274,11 +277,14 @@ fun TvLiveTvScreen(
                     state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), PanelShape)
+                        .border(1.dp, Color.White.copy(alpha = 0.06f), PanelShape)
+                        .padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     item(key = "search") {
-                        TvListRow(onClick = onSearch, modifier = Modifier.padding(bottom = 8.dp)) { color ->
+                        TvListRow(onClick = onSearch) { color ->
                             Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                             Text(
                                 text = stringResource(R.string.search_channels),
@@ -290,8 +296,10 @@ fun TvLiveTvScreen(
                             )
                         }
                     }
+                    item(key = "divider-top") { PanelDivider() }
                     item(key = ChannelGroups.FAVORITES) {
                         TvTextRow(
+                            icon = AppIcons.Star,
                             text = stringResource(R.string.category_favorites),
                             trailing = state.favoriteCount.toString(),
                             selected = selectedCategory == ChannelGroups.FAVORITES,
@@ -303,6 +311,7 @@ fun TvLiveTvScreen(
                     if (state.recentCount > 0) {
                         item(key = ChannelGroups.RECENT) {
                             TvTextRow(
+                                icon = AppIcons.History,
                                 text = stringResource(R.string.category_recent),
                                 trailing = state.recentCount.toString(),
                                 selected = selectedCategory == ChannelGroups.RECENT,
@@ -314,6 +323,7 @@ fun TvLiveTvScreen(
                     }
                     item(key = ALL_CHANNELS) {
                         TvTextRow(
+                            icon = AppIcons.LiveTv,
                             text = stringResource(R.string.category_all),
                             trailing = state.totalChannels.toString(),
                             selected = selectedCategory == ALL_CHANNELS,
@@ -322,6 +332,18 @@ fun TvLiveTvScreen(
                             modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
                                 .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
                         )
+                    }
+                    if (state.categories.isNotEmpty()) {
+                        item(key = "categories-label") {
+                            PanelDivider()
+                            Text(
+                                text = stringResource(R.string.categories_label).uppercase(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 4.dp),
+                            )
+                        }
                     }
                     items(state.categories, key = { it.id }) { category ->
                         TvTextRow(
@@ -343,10 +365,24 @@ fun TvLiveTvScreen(
                         .weight(0.42f)
                         .fillMaxHeight(),
                 ) {
+                ChannelsHeading(
+                    title = when (selectedCategory) {
+                        ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
+                        ChannelGroups.RECENT -> stringResource(R.string.category_recent)
+                        ALL_CHANNELS -> stringResource(R.string.category_all)
+                        else -> state.categories.firstOrNull { it.id == selectedCategory }?.name.orEmpty()
+                    },
+                    count = when (selectedCategory) {
+                        ChannelGroups.FAVORITES -> state.favoriteCount
+                        ChannelGroups.RECENT -> state.recentCount
+                        ALL_CHANNELS -> state.totalChannels
+                        else -> state.categories.firstOrNull { it.id == selectedCategory }?.channelCount ?: 0
+                    },
+                )
                 TvFavoriteHint()
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                         val channel = channels[index]
@@ -367,6 +403,7 @@ fun TvLiveTvScreen(
                                 }
                             },
                             modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
+                            container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                         ) { color ->
                             Text(
                                 text = channel?.number?.toString().orEmpty(),
@@ -380,14 +417,14 @@ fun TvLiveTvScreen(
                             )
                             if (channel == null) {
                                 // Strana liste se još učitava: obrisi umesto praznog reda.
-                                SkeletonLogo(size = 36.dp)
+                                SkeletonLogo(size = 40.dp)
                                 SkeletonTextLines(
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
                                 )
                             } else {
-                                ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
+                                ChannelLogo(url = channel.logo, name = channel.name, size = 40.dp)
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
@@ -402,7 +439,7 @@ fun TvLiveTvScreen(
                                     )
                                     channel.nowTitle?.let { nowTitle ->
                                         Text(
-                                            text = nowTitle,
+                                            text = nowUntil(nowTitle, channel.nowStopMs),
                                             color = color.copy(alpha = 0.7f),
                                             style = MaterialTheme.typography.bodySmall,
                                             maxLines = 1,
@@ -451,12 +488,13 @@ fun TvLiveTvScreen(
                         }
                     }
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
-                    val headerRows = if (state.recentCount > 0) 4 else 3
+                    // Redovi pre kategorija: pretraga, linija, omiljeni, (nedavno), svi kanali, natpis „Kategorije”.
+                    val allRow = if (state.recentCount > 0) 4 else 3
                     val selectedRow = when (selectedCategory) {
-                        ChannelGroups.FAVORITES -> 1
-                        ChannelGroups.RECENT -> 2
-                        ALL_CHANNELS -> headerRows - 1
-                        else -> headerRows + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
+                        ChannelGroups.FAVORITES -> 2
+                        ChannelGroups.RECENT -> 3
+                        ALL_CHANNELS -> allRow
+                        else -> allRow + 2 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
                     }
                     runCatching { categoryListState.scrollToItem((selectedRow - 3).coerceAtLeast(0)) }
                     repeat(FOCUS_RESTORE_ATTEMPTS) {
@@ -515,6 +553,7 @@ private fun ChannelPreviewPane(
     val player by viewModel.player.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
+    val later by viewModel.later.collectAsStateWithLifecycle()
     Column(modifier = modifier) {
         Box(
             modifier = Modifier
@@ -549,6 +588,19 @@ private fun ChannelPreviewPane(
                     )
                 }
             }
+            if (current != null) {
+                Text(
+                    text = stringResource(R.string.live_badge),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(10.dp)
+                        .background(LiveRed, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
             val status = statusMessage(sourceMissing = false, playback = playback)
             if (current != null && status != null) {
                 Text(
@@ -562,6 +614,19 @@ private fun ChannelPreviewPane(
                 )
             }
         }
+        if (channel != null) {
+            Row(modifier = Modifier.padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                ChannelLogo(url = channel.logo, name = channel.name, size = 28.dp)
+                Text(
+                    text = listOfNotNull(channel.number?.toString(), channel.name).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 10.dp),
+                )
+            }
+        }
         val program = nowNext.now
         if (program != null) {
             Text(
@@ -570,10 +635,10 @@ private fun ChannelPreviewPane(
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(top = 8.dp),
             )
             Text(
-                text = program.timeRange(),
+                text = program.timeRangeLeft(now),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -592,21 +657,86 @@ private fun ChannelPreviewPane(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 4,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 12.dp),
                 )
             }
         }
-        nowNext.nextLine()?.let { line ->
-            Text(
-                text = line,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 12.dp),
-            )
+        // Program za naredne sate: vreme i naziv, po jedan red.
+        Column(modifier = Modifier.padding(top = 12.dp)) {
+            later.forEach { next ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.White.copy(alpha = 0.07f)),
+                )
+                Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        text = formatTime(next.startMs),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        modifier = Modifier.width(56.dp),
+                    )
+                    Text(
+                        text = next.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
     }
 }
+
+/** Naslov nad spiskom kanala: izabrana kategorija i koliko kanala ima. */
+@Composable
+private fun ChannelsHeading(title: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Text(
+            text = pluralStringResource(R.plurals.channel_count, count, count),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        )
+    }
+}
+
+/** Tanka linija koja u spisku kategorija odvaja pretragu, stalne grupe i kategorije. */
+@Composable
+private fun PanelDivider() {
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color.White.copy(alpha = 0.08f)),
+    )
+}
+
+private val PanelShape = RoundedCornerShape(16.dp)
+
+/** Oznaka „uživo” na slici pregleda. */
+private val LiveRed = Color(0xFFE5484D)

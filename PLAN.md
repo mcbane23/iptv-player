@@ -529,6 +529,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   kraju ima još trake za osvetljenje i zvuk i puštanje u pozadini. Plejer epizoda na telefonu dobio
   je dugme „Sledeća epizoda”. Namerno različito: TV ima odnos slike i rezoluciju na traci i sat,
   telefon zaključavanje ekrana, sliku u slici i slanje na TV.
+- [x] Uživo, doterana lista (Bane izabrao predlog 1 od tri sa slikama): na TV-u su kategorije na podlozi
+  sa ikonicama uz Omiljene, Nedavno i Sve kanale, nad kanalima je naziv grupe i broj kanala, red kanala
+  kaže do kada emisija traje, a desno su kanal, preostalo vreme i emisije koje slede. Telefon: isti naslov
+  nad kanalima i kanali na podlozi. Nije urađeno: „sledi” u redu kanala (traži izmenu upita liste) i stalna
+  pomoć za tastere (pravilo: uputstva samo prvi put).
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 

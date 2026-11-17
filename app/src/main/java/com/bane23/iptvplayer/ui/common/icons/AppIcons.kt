@@ -72,6 +72,10 @@ object AppIcons {
     val Play by icon("M8 5v14l11-7z")
     val Pause by icon("M6 19h4V5H6v14zm8-14v14h4V5h-4z")
     val Next by icon("M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z")
+    val History by icon(
+        "M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8" +
+            "s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z",
+    )
     val Swap by icon("M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z")
     val Sort by icon("M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z")
     val Bell by icon(

@@ -46,6 +46,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
@@ -178,6 +182,42 @@ fun MobileLiveTvScreen(
                             listState.scrollToItem(0)
                         }
                     }
+                    // Naslov nad kanalima: izabrana grupa i koliko kanala ima, kao na TV-u.
+                    val headingCount = when (selected) {
+                        ChannelGroups.FAVORITES -> state.favoriteCount
+                        ChannelGroups.RECENT -> state.recentCount
+                        ALL_CHANNELS -> state.totalChannels
+                        else -> state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = when (selected) {
+                                ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
+                                ChannelGroups.RECENT -> stringResource(R.string.category_recent)
+                                ALL_CHANNELS -> stringResource(R.string.category_all)
+                                else -> state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text(
+                            text = pluralStringResource(R.plurals.channel_count, headingCount, headingCount),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .padding(start = 10.dp)
+                                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                        )
+                    }
                     Box(modifier = Modifier.weight(1f)) {
                         if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.Loading) {
                             MobileChannelSkeletonList()
@@ -200,6 +240,11 @@ fun MobileLiveTvScreen(
                                     onClick = { channelId -> onPlay(channelId, categoryId) },
                                     onToggleFavorite = channelsViewModel::toggleFavorite,
                                     onGuide = { channel -> onGuide(channel.playlistId, categoryId) },
+                                    // Svaki kanal na svojoj podlozi, kao redovi na TV-u.
+                                    modifier = Modifier
+                                        .padding(horizontal = 12.dp, vertical = 3.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
                                 )
                             }
                         }

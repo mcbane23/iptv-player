@@ -137,6 +137,17 @@ class EpgRepository @Inject constructor(
         return NowNext(current, next)
     }
 
+    /** Emisije kanala koje tek počinju, najviše [limit], po redu. */
+    suspend fun later(channelId: Long, limit: Int): List<Program> {
+        val channel = channelDao.getById(channelId) ?: return emptyList()
+        val key = channel.epgKey ?: return emptyList()
+        val now = System.currentTimeMillis()
+        return epgDao.upcoming(channel.playlistId, key, now, limit = limit + 1)
+            .map { it.toDomain() }
+            .filter { it.startMs > now }
+            .take(limit)
+    }
+
     /** Emisije kanala koje se bar delom prikazuju u periodu od [from] do [to]. */
     suspend fun programs(channelId: Long, from: Long, to: Long): List<Program> {
         val channel = channelDao.getById(channelId) ?: return emptyList()
