@@ -50,91 +50,89 @@ fun TvOpenSubtitlesScreen(
     val signedInAs = state.username
 
     val pairingUrl = pairingState.url.takeIf { signedInAs == null }
-    TvEdgeScroll {
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .glowBackground(MaterialTheme.colorScheme.primary)
+            // Margine zbog overscan-a na televizorima.
+            .padding(horizontal = 48.dp, vertical = 27.dp),
+        horizontalArrangement = Arrangement.spacedBy(48.dp),
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .glowBackground(MaterialTheme.colorScheme.primary)
-                // Margine zbog overscan-a na televizorima.
-                .padding(horizontal = 48.dp, vertical = 27.dp),
-            horizontalArrangement = Arrangement.spacedBy(48.dp),
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
+            Text(
+                text = stringResource(R.string.opensubtitles_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = stringResource(R.string.opensubtitles_summary),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(if (pairingUrl == null) 0.7f else 1f),
+            )
+            if (signedInAs != null) {
                 Text(
-                    text = stringResource(R.string.opensubtitles_title),
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = stringResource(R.string.opensubtitles_signed_in_as, signedInAs),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                TvOutlinedButton(
+                    onClick = {
+                        password = ""
+                        viewModel.signOut()
+                    },
+                    modifier = Modifier.focusRequester(primary),
+                ) {
+                    Text(stringResource(R.string.opensubtitles_sign_out))
+                }
+            } else {
+                OpenSubtitlesLoginFields(
+                    username = username,
+                    onUsername = { username = it },
+                    password = password,
+                    onPassword = { password = it },
+                    readOnly = state.signingIn || pairingState.working,
+                    onDone = { viewModel.signIn(username, password) },
+                    modifier = Modifier.fillMaxWidth(if (pairingUrl == null) 0.5f else 0.8f),
+                )
+                TvButton(
+                    onClick = { viewModel.signIn(username, password) },
+                    modifier = Modifier.focusRequester(primary),
+                ) {
+                    Text(
+                        stringResource(
+                            if (state.signingIn || pairingState.working) {
+                                R.string.opensubtitles_signing_in
+                            } else {
+                                R.string.opensubtitles_sign_in
+                            },
+                        ),
+                    )
+                }
+            }
+            state.message?.let { message ->
+                Text(text = stringResource(message), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
+            }
+        }
+        if (pairingUrl != null) {
+            // Prijava preko telefona: isti podaci, ali se kucaju na telefonu umesto daljinskim.
+            Column(modifier = Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                QrCode(content = pairingUrl, modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = stringResource(R.string.opensubtitles_qr_hint),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = stringResource(R.string.opensubtitles_summary),
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = stringResource(R.string.pairing_manual_address, pairingUrl),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(if (pairingUrl == null) 0.7f else 1f),
                 )
-                if (signedInAs != null) {
-                    Text(
-                        text = stringResource(R.string.opensubtitles_signed_in_as, signedInAs),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    TvOutlinedButton(
-                        onClick = {
-                            password = ""
-                            viewModel.signOut()
-                        },
-                        modifier = Modifier.focusRequester(primary),
-                    ) {
-                        Text(stringResource(R.string.opensubtitles_sign_out))
-                    }
-                } else {
-                    OpenSubtitlesLoginFields(
-                        username = username,
-                        onUsername = { username = it },
-                        password = password,
-                        onPassword = { password = it },
-                        readOnly = state.signingIn || pairingState.working,
-                        onDone = { viewModel.signIn(username, password) },
-                        modifier = Modifier.fillMaxWidth(if (pairingUrl == null) 0.5f else 0.8f),
-                    )
-                    TvButton(
-                        onClick = { viewModel.signIn(username, password) },
-                        modifier = Modifier.focusRequester(primary),
-                    ) {
-                        Text(
-                            stringResource(
-                                if (state.signingIn || pairingState.working) {
-                                    R.string.opensubtitles_signing_in
-                                } else {
-                                    R.string.opensubtitles_sign_in
-                                },
-                            ),
-                        )
-                    }
-                }
-                state.message?.let { message ->
-                    Text(text = stringResource(message), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
-                }
-            }
-            if (pairingUrl != null) {
-                // Prijava preko telefona: isti podaci, ali se kucaju na telefonu umesto daljinskim.
-                Column(modifier = Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QrCode(content = pairingUrl, modifier = Modifier.fillMaxWidth())
-                    Text(
-                        text = stringResource(R.string.opensubtitles_qr_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = stringResource(R.string.pairing_manual_address, pairingUrl),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
     }

@@ -14,7 +14,8 @@ import kotlin.math.min
 /**
  * Mirno pomeranje spiska za fokusom. Na TV-u Compose podrazumevano drži fokusiran red na istom
  * mestu (oko trećine visine), pa se na svaki pritisak D-pada pomera ceo spisak i tekst „skače”.
- * Unutar [content] se umesto toga pomera samo fokus, a spisak tek kad fokus priđe ivici.
+ * Unutar [content] se umesto toga pomera samo fokus, a spisak tek kad fokus priđe ivici. Važi za
+ * sve liste, mreže i prozore unutar [content], pa se postavlja jednom, oko celog TV interfejsa.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
