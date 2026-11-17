@@ -122,6 +122,7 @@ class VodPlayerViewModel @Inject constructor(
     private var source: StreamSource? = null
     private var started = false
     private var lastSavedAt = 0L
+    private var lastSavedPositionMs = -1L
     private var scrubJob: Job? = null
 
     init {
@@ -133,7 +134,8 @@ class VodPlayerViewModel @Inject constructor(
                 if (duration > 0) {
                     _ui.update { it.copy(positionMs = engine.positionMs, durationMs = duration) }
                     val now = System.currentTimeMillis()
-                    if (now - lastSavedAt >= SAVE_EVERY_MS) saveProgress()
+                    // Dok je pauzirano pozicija stoji, pa nema šta novo da se upiše u bazu.
+                    if (now - lastSavedAt >= SAVE_EVERY_MS && engine.positionMs != lastSavedPositionMs) saveProgress()
                 }
             }
         }
@@ -445,6 +447,7 @@ class VodPlayerViewModel @Inject constructor(
         if (duration <= 0) return
         lastSavedAt = System.currentTimeMillis()
         val position = if (finished) duration else engine.positionMs
+        lastSavedPositionMs = position
         repository.saveProgress(
             itemId = current.id,
             seriesId = current.seriesId,

@@ -112,7 +112,7 @@ fun TvPlayerScreen(
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
-    KeepScreenOn()
+    KeepScreenOn(playback.status)
     BackHandler(enabled = panelOpen || overlay != Overlay.HIDDEN) {
         when {
             tracks != null -> tracks = null

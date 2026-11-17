@@ -99,7 +99,7 @@ fun TvVodPlayerScreen(
     LaunchedEffect(Unit) { start(viewModel) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
-    KeepScreenOn()
+    KeepScreenOn(playback.status)
     BackHandler(enabled = tracks != null || onlineOpen || controls) {
         when {
             onlineOpen -> {

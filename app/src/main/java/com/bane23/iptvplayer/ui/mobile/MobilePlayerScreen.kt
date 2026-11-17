@@ -127,7 +127,7 @@ fun MobilePlayerScreen(
         onForeground = viewModel::onForeground,
         onBackground = viewModel::onBackground,
     )
-    KeepScreenOn()
+    KeepScreenOn(playback.status)
     ImmersiveMode()
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
 
