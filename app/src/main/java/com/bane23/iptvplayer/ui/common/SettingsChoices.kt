@@ -75,7 +75,11 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
         SettingChoice(
             title = stringResource(R.string.settings_decoder),
             summary = stringResource(R.string.settings_decoder_summary),
-            options = listOf(stringResource(R.string.decoder_auto), stringResource(R.string.decoder_software)),
+            options = listOf(
+                stringResource(R.string.decoder_auto),
+                stringResource(R.string.decoder_software),
+                stringResource(R.string.decoder_tunnel),
+            ),
             selected = DecoderMode.entries.indexOf(settings.decoder),
             onSelect = { viewModel.setDecoder(DecoderMode.entries[it]) },
         ),

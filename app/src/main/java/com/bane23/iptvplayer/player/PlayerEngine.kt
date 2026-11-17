@@ -23,6 +23,7 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import com.bane23.iptvplayer.domain.StreamSource
@@ -77,6 +78,8 @@ data class VideoInfo(
     val rebuffers: Int = 0,
     /** Vrsta fajla ili strima (npr. "matroska", "mp4", "mp2t"), ako je poznata. */
     val container: String? = null,
+    /** Dekoder radi u tunel režimu (uređaj sam usklađuje sliku sa zvukom). */
+    val tunneled: Boolean = false,
 )
 
 data class PlaybackState(
@@ -119,15 +122,17 @@ class PlayerEngine(
     @Volatile
     private var decoderMode = settings.decoder
 
+    /** Da li je poslednji izabrani dekoder slike tražen za tunel režim; čita se kad dekoder krene. */
+    @Volatile
+    private var videoTunneled = false
+
     private val renderersFactory = DefaultRenderersFactory(appContext)
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
-        // Dekoder prima i vraća slike na posebnoj niti. Na Androidu 12 i novijem to je već tako; na
-        // starijim uređajima (TV kutije, projektori) bez ovoga slika lakše zaostane za zvukom.
-        .forceEnableMediaCodecAsynchronousQueueing()
         .setMediaCodecSelector(
             MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
                 val decoders = MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
+                if (MimeTypes.isVideo(mimeType)) videoTunneled = requiresTunnelingDecoder
                 if (decoderMode == DecoderMode.SOFTWARE) decoders.sortedByDescending { it.softwareOnly } else decoders
             },
         )
@@ -218,7 +223,15 @@ class PlayerEngine(
             initializedTimestampMs: Long,
             initializationDurationMs: Long,
         ) {
-            _state.update { it.copy(video = it.video.copy(decoder = decoderName, software = isSoftwareDecoder(decoderName))) }
+            _state.update {
+                it.copy(
+                    video = it.video.copy(
+                        decoder = decoderName,
+                        software = isSoftwareDecoder(decoderName),
+                        tunneled = videoTunneled,
+                    ),
+                )
+            }
         }
 
         override fun onVideoInputFormatChanged(
@@ -282,6 +295,7 @@ class PlayerEngine(
             .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
             .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
             .build()
+        applyTunneling()
     }
 
     /**
@@ -413,6 +427,7 @@ class PlayerEngine(
     fun setDecoder(mode: DecoderMode) {
         if (decoderMode == mode) return
         decoderMode = mode
+        applyTunneling()
         if (source == null) return
         retryJob?.cancel()
         rememberPosition()
@@ -421,6 +436,15 @@ class PlayerEngine(
         // Zaustavljanje oslobađa trenutni dekoder; bez toga bi plejer nastavio sa istim.
         player.stop()
         prepareCurrent()
+    }
+
+    /**
+     * Uključuje tunel režim kad je izabran. U prikazu više kanala ostaje isključen, jer uređaji
+     * podržavaju samo jedan takav dekoder.
+     */
+    private fun applyTunneling() {
+        val selector = player.trackSelector as? DefaultTrackSelector ?: return
+        selector.setParameters(selector.buildUponParameters().setTunnelingEnabled(!shared && decoderMode == DecoderMode.TUNNEL))
     }
 
     fun release() {

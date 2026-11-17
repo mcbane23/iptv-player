@@ -210,9 +210,10 @@
     <string name="buffer_normal">Normal</string>
     <string name="buffer_large">Large</string>
     <string name="settings_decoder">Decoder</string>
-    <string name="settings_decoder_summary">Hardware uses the device chip and falls back to software only when it cannot start. Try software if the picture is black or green. It uses more battery and can be slow at high resolutions.</string>
+    <string name="settings_decoder_summary">Hardware uses the device chip and falls back to software only when it cannot start. Try software if the picture is black or green. It uses more battery and can be slow at high resolutions. \"Hardware, tunneled\" lets the device keep picture and sound in sync; try it if the picture briefly freezes while sound continues.</string>
     <string name="decoder_auto">Hardware</string>
     <string name="decoder_software">Software</string>
+    <string name="decoder_tunnel">Hardware, tunneled</string>
     <string name="settings_audio_language">Audio language</string>
     <string name="settings_audio_language_summary">Used when a stream has more than one audio track. It also follows the language you pick in the player.</string>
     <string name="settings_subtitle_language">Subtitles</string>
@@ -364,6 +365,7 @@
     <string name="stream_info_technical">Technical details</string>
     <string name="stream_info_hardware">HW</string>
     <string name="stream_info_software">SW</string>
+    <string name="stream_info_tunnel">tunneled</string>
     <string name="stream_info_dropped">dropped %1$d</string>
     <string name="stream_info_keyframe_skips">skips %1$d</string>
     <string name="stream_info_audio_underruns">audio underruns %1$d</string>
