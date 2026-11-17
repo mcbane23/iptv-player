@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common.multiview
 
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
@@ -21,5 +22,5 @@ fun VideoInfo.label(): String? {
         stringResource(R.string.stream_info_audio_underruns, audioUnderruns),
         stringResource(R.string.stream_info_rebuffers, rebuffers),
     )
-    return (listOfNotNull(kind, size, container) + counters + listOfNotNull(decoder)).joinToString(" · ")
+    return (listOfNotNull(kind, size, container) + counters + listOfNotNull(decoder, "Android ${Build.VERSION.RELEASE}")).joinToString(" · ")
 }

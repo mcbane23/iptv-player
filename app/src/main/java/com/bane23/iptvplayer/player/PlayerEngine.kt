@@ -122,6 +122,9 @@ class PlayerEngine(
     private val renderersFactory = DefaultRenderersFactory(appContext)
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
+        // Dekoder prima i vraća slike na posebnoj niti. Na Androidu 12 i novijem to je već tako; na
+        // starijim uređajima (TV kutije, projektori) bez ovoga slika lakše zaostane za zvukom.
+        .forceEnableMediaCodecAsynchronousQueueing()
         .setMediaCodecSelector(
             MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
                 val decoders = MediaCodecUtil.getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
