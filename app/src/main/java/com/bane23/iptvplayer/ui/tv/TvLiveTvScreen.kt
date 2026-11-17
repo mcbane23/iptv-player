@@ -30,8 +30,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import androidx.tv.material3.Button
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
@@ -214,7 +212,7 @@ fun TvLiveTvScreen(
             val all = playlists.playlists
             val activeIndex = all.indexOfFirst { it.id == playlistId }
             if (all.size > 1 && activeIndex >= 0) {
-                OutlinedButton(
+                TvOutlinedButton(
                     onClick = { playlistsViewModel.setActive(all[(activeIndex + 1) % all.size].id) },
                     modifier = Modifier
                         .padding(end = 24.dp)
@@ -266,7 +264,7 @@ fun TvLiveTvScreen(
             playlistId == null -> {
                 TvEmptyState(icon = AppIcons.Playlists, text = stringResource(R.string.playlists_empty))
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-                Button(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
+                TvButton(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(R.string.action_add_playlist))
                 }
                 LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }

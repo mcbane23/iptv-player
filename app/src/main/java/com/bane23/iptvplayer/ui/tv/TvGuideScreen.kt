@@ -42,7 +42,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
@@ -133,13 +132,13 @@ fun TvGuideScreen(
                 )
             }
             // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-            OutlinedButton(onClick = { viewModel.shift(-1) }, modifier = Modifier.focusRequester(firstFocus)) {
+            TvOutlinedButton(onClick = { viewModel.shift(-1) }, modifier = Modifier.focusRequester(firstFocus)) {
                 Text(stringResource(R.string.guide_earlier))
             }
-            OutlinedButton(onClick = viewModel::jumpToNow) { Text(stringResource(R.string.guide_now)) }
-            OutlinedButton(onClick = { viewModel.shift(1) }) { Text(stringResource(R.string.guide_later)) }
+            TvOutlinedButton(onClick = viewModel::jumpToNow) { Text(stringResource(R.string.guide_now)) }
+            TvOutlinedButton(onClick = { viewModel.shift(1) }) { Text(stringResource(R.string.guide_later)) }
             // Dok traje osvežavanje dugme samo ne radi ništa: isključeno dugme bi izgubilo fokus.
-            OutlinedButton(onClick = { if (!status.loading) viewModel.refresh() }) {
+            TvOutlinedButton(onClick = { if (!status.loading) viewModel.refresh() }) {
                 Text(stringResource(R.string.action_refresh))
             }
             TvClock(modifier = Modifier.padding(start = 12.dp))

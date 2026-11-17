@@ -23,9 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.pairing.QrCode
@@ -83,7 +81,7 @@ fun TvOpenSubtitlesScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                OutlinedButton(
+                TvOutlinedButton(
                     onClick = {
                         password = ""
                         viewModel.signOut()
@@ -102,7 +100,7 @@ fun TvOpenSubtitlesScreen(
                     onDone = { viewModel.signIn(username, password) },
                     modifier = Modifier.fillMaxWidth(if (pairingUrl == null) 0.5f else 0.8f),
                 )
-                Button(
+                TvButton(
                     onClick = { viewModel.signIn(username, password) },
                     modifier = Modifier.focusRequester(primary),
                 ) {

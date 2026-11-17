@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.CategoryArrange
@@ -119,7 +118,7 @@ fun TvCategoriesScreen(
             if (state.hasVod) {
                 CategorySection.entries.forEach { section ->
                     // Izabrana kartica nosi kvačicu; dugme ostaje isto, da fokus ne nestane sa njega.
-                    OutlinedButton(onClick = {
+                    TvOutlinedButton(onClick = {
                         filter = ""
                         viewModel.setSection(section)
                     }) {
@@ -130,13 +129,13 @@ fun TvCategoriesScreen(
             // Dugme koje uvek postoji: fokus ide na njega dok spisak još nije učitan.
             // Uz pretragu dugmad važe samo za pronađene kategorije.
             val filtered = needle.isNotEmpty()
-            OutlinedButton(
+            TvOutlinedButton(
                 onClick = { if (filtered) viewModel.setHidden(shown, false) else viewModel.setAllHidden(false) },
                 modifier = Modifier.focusRequester(headerFocus),
             ) {
                 Text(stringResource(if (filtered) R.string.categories_show_found else R.string.categories_show_all))
             }
-            OutlinedButton(onClick = { if (filtered) viewModel.setHidden(shown, true) else viewModel.setAllHidden(true) }) {
+            TvOutlinedButton(onClick = { if (filtered) viewModel.setHidden(shown, true) else viewModel.setAllHidden(true) }) {
                 Text(stringResource(if (filtered) R.string.categories_hide_found else R.string.categories_hide_all))
             }
             TvFilterField(
@@ -151,7 +150,7 @@ fun TvCategoriesScreen(
 
             state.failed -> {
                 TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
-                OutlinedButton(onClick = viewModel::retry) { Text(stringResource(R.string.player_retry)) }
+                TvOutlinedButton(onClick = viewModel::retry) { Text(stringResource(R.string.player_retry)) }
             }
 
             shown.isEmpty() -> TvEmptyState(icon = AppIcons.Categories, text = stringResource(R.string.search_empty_categories))
@@ -190,7 +189,7 @@ fun TvCategoriesScreen(
                                 maxLines = 1,
                             )
                         }
-                        OutlinedButton(
+                        TvOutlinedButton(
                             onClick = { viewModel.setHidden(category, !category.hidden) },
                             modifier = if (index == 0) Modifier.focusRequester(firstRowFocus) else Modifier,
                         ) {
@@ -200,13 +199,13 @@ fun TvCategoriesScreen(
                                 ),
                             )
                         }
-                        OutlinedButton(onClick = {
+                        TvOutlinedButton(onClick = {
                             viewModel.moveToTop(category)
                             movedToTop++
                         }) { Text(moveTop) }
                         // Dok je spisak filtriran, mesta u njemu nisu prava mesta, pa premeštanja nema.
                         if (needle.isEmpty()) {
-                            OutlinedButton(
+                            TvOutlinedButton(
                                 onClick = { if (isMoving) drop() else movingKey = category.key },
                                 modifier = Modifier.onPreviewKeyEvent { event ->
                                     if (category.key != movingKey) return@onPreviewKeyEvent false

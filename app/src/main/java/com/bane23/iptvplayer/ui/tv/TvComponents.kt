@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -25,7 +26,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -37,7 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.tv.material3.Border
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.OutlinedButton
+import androidx.tv.material3.OutlinedButtonDefaults
 import androidx.tv.material3.Text
 
 /**
@@ -136,36 +141,92 @@ fun TvTextRow(
                 modifier = Modifier.padding(start = 12.dp),
             )
         }
-        if (checked != null) TvSwitch(checked = checked, color = color)
+        if (checked != null) {
+            val scheme = MaterialTheme.colorScheme
+            TvSwitch(checked = checked, color = color, accent = scheme.primary, onAccentRow = color == scheme.onPrimary)
+        }
     }
 }
 
 /**
- * Prekidač u redu podešavanja. Samo prikazuje stanje (fokus i OK pripadaju celom redu), u boji
- * teksta reda da se vidi i na fokusiranom redu: uključen je pun sa kružićem desno, isključen
- * je samo okvir sa kružićem levo.
+ * Prekidač u redu podešavanja. Samo prikazuje stanje (fokus i OK pripadaju celom redu). Uključen
+ * je pun, u akcentnoj boji, sa kružićem desno; isključen je samo okvir u boji teksta sa kružićem
+ * levo. Na fokusiranom redu, čija je podloga već akcentna ([onAccentRow]), boje su obrnute:
+ * tamna podloga i akcentni kružić.
  */
 @Composable
-private fun TvSwitch(checked: Boolean, color: Color) {
+private fun TvSwitch(checked: Boolean, color: Color, accent: Color, onAccentRow: Boolean) {
     val shape = RoundedCornerShape(11.dp)
+    val track = if (onAccentRow) color else accent
+    val thumb = when {
+        !checked -> color.copy(alpha = 0.6f)
+        onAccentRow -> accent
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
     Box(
         modifier = Modifier
             .padding(start = 12.dp)
             .size(width = 40.dp, height = 22.dp)
             .then(
-                if (checked) Modifier.background(color, shape) else Modifier.border(2.dp, color.copy(alpha = 0.6f), shape),
+                if (checked) Modifier.background(track, shape) else Modifier.border(2.dp, color.copy(alpha = 0.6f), shape),
             )
             .padding(4.dp),
         contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
-        // Kružić na punoj podlozi mora da bude suprotne svetline od nje.
-        val thumb = when {
-            !checked -> color.copy(alpha = 0.6f)
-            color.luminance() > 0.5f -> Color(0xFF0E1216)
-            else -> Color.White
-        }
-        Box(modifier = Modifier.size(14.dp).background(thumb, androidx.compose.foundation.shape.CircleShape))
+        Box(modifier = Modifier.size(14.dp).background(thumb, CircleShape))
     }
+}
+
+/**
+ * Glavno dugme na TV-u. Bez fokusa je tamno sa tekstom u akcentnoj boji, a u fokusu je puno u
+ * akcentnoj boji, isto kao fokusiran red u listi.
+ */
+@Composable
+fun TvButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = ButtonDefaults.colors(
+            containerColor = scheme.surfaceVariant,
+            contentColor = scheme.primary,
+            focusedContainerColor = scheme.primary,
+            focusedContentColor = scheme.onPrimary,
+            pressedContainerColor = scheme.primary,
+            pressedContentColor = scheme.onPrimary,
+        ),
+        content = content,
+    )
+}
+
+/** Sporedno dugme na TV-u: bez fokusa samo okvir, u fokusu puno u akcentnoj boji. */
+@Composable
+fun TvOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        colors = OutlinedButtonDefaults.colors(
+            focusedContainerColor = scheme.primary,
+            focusedContentColor = scheme.onPrimary,
+            pressedContainerColor = scheme.primary,
+            pressedContentColor = scheme.onPrimary,
+        ),
+        border = OutlinedButtonDefaults.border(focusedBorder = Border.None, pressedBorder = Border.None),
+        content = content,
+    )
 }
 
 /**

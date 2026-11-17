@@ -45,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -239,7 +238,7 @@ fun TvVodScreen(
             state.categoriesFailed -> {
                 TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-                Button(onClick = viewModel::loadCategories, modifier = Modifier.focusRequester(firstFocus)) {
+                TvButton(onClick = viewModel::loadCategories, modifier = Modifier.focusRequester(firstFocus)) {
                     Text(stringResource(R.string.player_retry))
                 }
                 LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }

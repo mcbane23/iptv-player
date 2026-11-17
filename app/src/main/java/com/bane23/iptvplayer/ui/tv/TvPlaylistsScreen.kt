@@ -26,9 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
@@ -72,10 +70,10 @@ fun TvPlaylistsScreen(
                 modifier = Modifier.weight(1f),
             )
             // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-            Button(onClick = onAdd, modifier = Modifier.focusRequester(addFocus)) {
+            TvButton(onClick = onAdd, modifier = Modifier.focusRequester(addFocus)) {
                 Text(stringResource(R.string.action_add_playlist))
             }
-            OutlinedButton(onClick = onAddFromPhone, modifier = Modifier.padding(start = 12.dp)) {
+            TvOutlinedButton(onClick = onAddFromPhone, modifier = Modifier.padding(start = 12.dp)) {
                 Text(stringResource(R.string.action_add_from_phone))
             }
             TvClock(modifier = Modifier.padding(start = 24.dp))
@@ -95,7 +93,7 @@ fun TvPlaylistsScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedButton(onClick = viewModel::dismissError) {
+                TvOutlinedButton(onClick = viewModel::dismissError) {
                     Text(stringResource(R.string.action_ok))
                 }
             }
@@ -209,7 +207,7 @@ private fun TvPlaylistRow(
                 }
             }
             // Dugme ostaje isto i kad su opcije otvorene, da fokus ne nestane sa njega.
-            OutlinedButton(onClick = {
+            TvOutlinedButton(onClick = {
                 expanded = !expanded
                 if (!expanded) confirmDelete = false
             }) {
@@ -231,19 +229,19 @@ private fun TvPlaylistRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    Button(onClick = onDelete) { Text(stringResource(R.string.action_confirm_delete)) }
-                    OutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.focusRequester(cancelFocus)) {
+                    TvButton(onClick = onDelete) { Text(stringResource(R.string.action_confirm_delete)) }
+                    TvOutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.focusRequester(cancelFocus)) {
                         Text(stringResource(R.string.action_cancel))
                     }
                 } else {
                     // Tokom osvežavanja dugmad samo ne rade ništa: isključeno dugme bi izgubilo fokus.
-                    OutlinedButton(onClick = { if (!refreshing) onRefresh() }) {
+                    TvOutlinedButton(onClick = { if (!refreshing) onRefresh() }) {
                         Text(stringResource(R.string.action_refresh))
                     }
-                    OutlinedButton(onClick = { if (!refreshing) onEdit() }) {
+                    TvOutlinedButton(onClick = { if (!refreshing) onEdit() }) {
                         Text(stringResource(R.string.action_edit))
                     }
-                    OutlinedButton(
+                    TvOutlinedButton(
                         onClick = { if (!refreshing) confirmDelete = true },
                         modifier = Modifier.focusRequester(deleteFocus),
                     ) {
