@@ -252,7 +252,7 @@
     <string name="transfer_trakt_ok">Trakt nalog je povezan na TV-u.</string>
     <string name="transfer_all_title">Prenos na TV</string>
     <string name="settings_transfer_summary">Slanje lista, naloga, omiljenih, kategorija i podešavanja na aplikaciju na TV-u</string>
-    <string name="transfer_favorites">Omiljeni kanali: %1$d · omiljeni filmovi i serije: %2$d. Šalju se i sakrivene kategorije, njihov redosled i podešavanja plejera.</string>
+    <string name="transfer_favorites">Omiljeni kanali: %1$d · omiljeni filmovi i serije: %2$d. Šalju se i sakrivene i zaključane kategorije, njihov redosled i podešavanja plejera. PIN ostaje na ovom telefonu.</string>
     <string name="transfer_pick_tv">Izaberi TV</string>
     <string name="transfer_pick_tv_hint">Otvori ovu aplikaciju na TV-u. Telefon i TV moraju biti na istoj Wi-Fi mreži.</string>
     <string name="transfer_all_warning">Šalju se i lozinke naloga, pravo na TV kroz kućnu mrežu. Pošalji samo na svoj TV.</string>

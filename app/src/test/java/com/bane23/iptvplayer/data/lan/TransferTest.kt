@@ -54,6 +54,7 @@ class TransferTest {
                         TransferVodFavorite(kind = "series", itemId = 9, name = "Izmišljena serija", poster = "http://example.invalid/p.jpg"),
                     ),
                     vodCategories = TransferVodCategories(hiddenMovies = listOf("12"), orderSeries = listOf("3", "1")),
+                    locked = TransferLocks(live = listOf("Za odrasle"), movies = listOf("44")),
                 ),
             ),
             settings = TransferSettings(seekStepSeconds = 30, subtitleBackground = false, subtitleSize = "LARGE", accentColor = "BLUE"),
@@ -67,6 +68,7 @@ class TransferTest {
             """{"playlists":[{"type":"m3u","name":"A","source":"http://example.invalid/a.m3u"}],"settings":{"buffer":"LARGE"}}""",
         )!!
         assertNull(decoded.playlists[0].vodCategories)
+        assertNull(decoded.playlists[0].locked)
         assertTrue(decoded.playlists[0].vodFavorites.isEmpty())
         assertFalse(decoded.playlists[0].active)
         assertNull(decoded.settings!!.seekStepSeconds)

@@ -8,6 +8,7 @@ import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCategory
+import com.bane23.iptvplayer.data.lan.TransferLocks
 import com.bane23.iptvplayer.data.lan.TransferLogin
 import com.bane23.iptvplayer.data.lan.TransferPlaylist
 import com.bane23.iptvplayer.data.lan.TransferResult
@@ -115,6 +116,9 @@ class TransferRepository @Inject constructor(
             vodFavorites = db.vodFavoriteDao().getByPlaylist(id).map {
                 TransferVodFavorite(kind = it.kind, itemId = it.itemId, name = it.name, poster = it.poster, extension = it.extension)
             },
+            locked = settings.lockedCategoriesOf(id).let {
+                TransferLocks(live = it["live"].orEmpty(), movies = it["movies"].orEmpty(), series = it["series"].orEmpty())
+            },
             vodCategories = settings.vodCategoryPrefs(id).let {
                 TransferVodCategories(it.hiddenMovies, it.hiddenSeries, it.orderMovies, it.orderSeries)
             },
@@ -177,6 +181,15 @@ class TransferRepository @Inject constructor(
                 if (match != null) db.categoryDao().resetUserChanges(playlistId)
                 applyCategories(playlistId, item.categories)
                 item.vodCategories?.let { settings.replaceVodCategoryPrefs(playlistId, it.toPrefs()) }
+                // Zaključavanja se samo dodaju, da prenos ne može da otključa nešto na TV-u.
+                item.locked?.let { locks ->
+                    fun clean(names: List<String>) =
+                        names.asSequence().filter { it.isNotEmpty() && it.length <= MAX_TEXT }.take(MAX_FAVORITES).toList()
+                    settings.addLockedCategories(
+                        playlistId,
+                        mapOf("live" to clean(locks.live), "movies" to clean(locks.movies), "series" to clean(locks.series)),
+                    )
+                }
                 if (match == null && item.active) settings.setActivePlaylistId(playlistId)
             }
             bundle.settings?.let { applySettings(it) }

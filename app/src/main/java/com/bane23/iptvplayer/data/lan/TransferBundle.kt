@@ -47,6 +47,8 @@ data class TransferPlaylist(
      * (starija verzija), pa na TV-u ostaje kako jeste.
      */
     val vodCategories: TransferVodCategories? = null,
+    /** Kategorije zaključane roditeljskom zaštitom; sam PIN se ne prenosi. Null kad šalje starija verzija. */
+    val locked: TransferLocks? = null,
     /** Da li je ovo lista koja je na telefonu izabrana kao aktivna. */
     val active: Boolean = false,
 ) {
@@ -74,6 +76,14 @@ data class TransferVodFavorite(
     val name: String,
     val poster: String? = null,
     val extension: String? = null,
+)
+
+/** Zaključane kategorije: kanala po nazivu, filmova i serija po ID-ju sa servera. */
+@Serializable
+data class TransferLocks(
+    val live: List<String> = emptyList(),
+    val movies: List<String> = emptyList(),
+    val series: List<String> = emptyList(),
 )
 
 /** Uređenje kategorija filmova i serija, po ID-jevima kategorija sa servera. */

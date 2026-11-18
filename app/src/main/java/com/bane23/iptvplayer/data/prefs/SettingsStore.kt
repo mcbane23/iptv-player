@@ -191,6 +191,23 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /** Zaključane kategorije liste po sekciji (`live`, `movies`, `series`), bez dela ključa sa listom. */
+    suspend fun lockedCategoriesOf(playlistId: Long): Map<String, List<String>> {
+        val keys = dataStore.data.first()[LOCKED_CATEGORIES].orEmpty()
+        return LOCK_SECTIONS.associateWith { section ->
+            val prefix = "$section|$playlistId|"
+            keys.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }.sorted()
+        }
+    }
+
+    /** Dodaje zaključavanja listi; postojeća ostaju. Važe tek kad na uređaju postoji PIN. */
+    suspend fun addLockedCategories(playlistId: Long, bySection: Map<String, List<String>>) {
+        val added = bySection.filterKeys { it in LOCK_SECTIONS }
+            .flatMap { (section, names) -> names.map { "$section|$playlistId|$it" } }
+        if (added.isEmpty()) return
+        dataStore.edit { it[LOCKED_CATEGORIES] = it[LOCKED_CATEGORIES].orEmpty() + added }
+    }
+
     /**
      * Ključevi sakrivenih kategorija filmova i serija (isti oblik kao kod zaključavanja:
      * `movies|<lista>|<kategorija>`). Kategorije kanala se sakrivaju u bazi.
@@ -400,6 +417,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
+        val LOCK_SECTIONS = listOf("live", "movies", "series")
         val HIDDEN_VOD_CATEGORIES = stringSetPreferencesKey("hidden_vod_categories")
         const val LIST_SEPARATOR = "\n"
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
