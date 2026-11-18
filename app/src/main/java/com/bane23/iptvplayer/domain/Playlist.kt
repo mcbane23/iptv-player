@@ -23,6 +23,8 @@ data class Playlist(
     val accountExpiresAt: Long? = null,
     /** Xtream nalog: broj istovremenih veza; null = nepoznato. */
     val maxConnections: Int? = null,
+    /** Kanali ove liste se prikazuju zajedno sa ostalim spojenim listama kad je jedna od njih aktivna. */
+    val merged: Boolean = false,
 )
 
 /** Podaci koje korisnik unosi pri dodavanju ili izmeni liste. */

@@ -177,7 +177,7 @@ fun MobileHomeScreen(
             containerColor = Color.Transparent,
             // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
             contentColor = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
         ) { padding ->
             Row(
                 modifier = Modifier
@@ -202,7 +202,7 @@ fun MobileHomeScreen(
         containerColor = Color.Transparent,
         // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
         contentColor = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary),
+        modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
         bottomBar = {
             Column {
                 recordingBar()

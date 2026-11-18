@@ -123,6 +123,15 @@ class GuideViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Raspored jednog kanala za panel „Program” u plejeru: emisija koja je u toku i one koje slede
+     * u narednih [SCHEDULE_AHEAD_MS].
+     */
+    suspend fun schedule(channelId: Long): List<Program> {
+        val now = System.currentTimeMillis()
+        return epg.programs(channelId, now, now + SCHEDULE_AHEAD_MS).filter { it.stopMs > now }
+    }
+
     private val _recordingNotice = MutableSharedFlow<Int>(extraBufferCapacity = 1)
 
     /** Kratka poruka o snimanju (tekst iz `strings.xml`). */
@@ -198,6 +207,7 @@ class GuideViewModel @Inject constructor(
     private fun currentSlot(): Long = System.currentTimeMillis() / SLOT_MS * SLOT_MS
 
     private companion object {
+        const val SCHEDULE_AHEAD_MS = 24 * 60 * 60_000L
         const val SLOT_MS = 30 * 60_000L
         const val MAX_PAST_MS = 6 * 3_600_000L
         const val MAX_FUTURE_MS = 46 * 3_600_000L

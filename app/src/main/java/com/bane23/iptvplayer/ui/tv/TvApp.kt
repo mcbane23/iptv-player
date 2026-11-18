@@ -24,7 +24,9 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.bane23.iptvplayer.data.watchnext.WatchNextLink
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.WatchLinkViewModel
 import com.bane23.iptvplayer.ui.common.cast.CastHostViewModel
 import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkAccess
 import com.bane23.iptvplayer.ui.common.navigation.CastPlayback
@@ -54,10 +56,27 @@ import com.bane23.iptvplayer.ui.common.navigation.VodSearch
 
 /** Koren UI-ja za TV. */
 @Composable
-fun TvApp() {
+fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {}) {
     val backStack = rememberNavBackStack(LiveTv)
-    // Poslednji kanal se pušta samo jednom, pri startu aplikacije.
-    var resumeChecked by rememberSaveable { mutableStateOf(false) }
+    // Poslednji kanal se pušta samo jednom, pri startu aplikacije; ne i kad je aplikacija otvorena
+    // izborom filma ili serije sa početnog ekrana TV-a.
+    var resumeChecked by rememberSaveable { mutableStateOf(watchLink != null) }
+    val watchLinks: WatchLinkViewModel = hiltViewModel()
+    // Izbor iz reda „Nastavite sa gledanjem” otvara detalje, odakle se nastavlja jednim klikom.
+    LaunchedEffect(watchLink) {
+        val link = watchLink ?: return@LaunchedEffect
+        onWatchLinkHandled()
+        if (!watchLinks.isActive(link.playlistId)) return@LaunchedEffect
+        // Ono što je bilo otvoreno (npr. plejer) se zatvara, da ne ostane da radi ispod detalja.
+        while (backStack.size > 1) backStack.removeLastOrNull()
+        backStack.add(
+            if (link.series) {
+                SeriesDetails(link.itemId, link.name, link.poster)
+            } else {
+                MovieDetails(link.itemId, link.name, link.poster, link.extension)
+            },
+        )
+    }
 
     // Prijem sa telefona (cast na ovu aplikaciju) radi dok je aplikacija vidljiva.
     val castHost: CastHostViewModel = hiltViewModel()
@@ -182,6 +201,11 @@ fun TvApp() {
                         channelId = key.channelId,
                         categoryId = key.categoryId,
                         onClose = { backStack.removeLastOrNull() },
+                        // Arhiva zamenjuje plejer, da kanal ne nastavi da troši vezu u pozadini.
+                        onArchive = { channelId ->
+                            backStack.removeLastOrNull()
+                            backStack.add(ChannelArchive(channelId))
+                        },
                     )
                 }
             }

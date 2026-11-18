@@ -83,6 +83,7 @@ fun MobileSettingsScreen(
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
+    val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
     val choices = playerSettingChoices(playerSettings, viewModel)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
@@ -209,6 +210,12 @@ fun MobileSettingsScreen(
                     )
                 }
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_black_theme),
+                    summary = stringResource(R.string.settings_black_theme_summary),
+                    checked = blackTheme,
+                    onChange = viewModel::setBlackTheme,
+                )
                 // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
                 Row(
                     modifier = Modifier

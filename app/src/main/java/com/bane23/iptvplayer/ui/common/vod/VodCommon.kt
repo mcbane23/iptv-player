@@ -1,6 +1,15 @@
 package com.bane23.iptvplayer.ui.common.vod
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.platform.LocalContext
+import com.bane23.iptvplayer.ui.common.theme.OnBackground
+import com.bane23.iptvplayer.ui.common.theme.SurfaceVariant
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -134,19 +143,60 @@ private const val POSTER_RATIO = 2f / 3f
 /** Zelena podloga kvačice „odgledano” na posteru, ista u svetloj i tamnoj temi. */
 private val WATCHED_BADGE = Color(0xE02E7D32)
 
-/** Kratki podaci o filmu u jednom redu: godina, trajanje, ocena, žanr. */
+/** Kratki podaci o filmu u jednom redu: ocena, godina, trajanje. Žanrovi idu posebno, vidi [GenreChips]. */
 fun MovieDetails.metaLine(): String = listOfNotNull(
+    rating?.toDoubleOrNull()?.takeIf { it > 0 }?.let { "★ $it" },
     releaseDate?.take(4)?.takeIf { year -> year.all { it.isDigit() } },
     durationSeconds?.let { formatDuration(it * 1000) },
-    rating?.toDoubleOrNull()?.takeIf { it > 0 }?.let { "★ $it" },
-    genre,
 ).joinToString(" · ")
 
 fun SeriesDetails.metaLine(): String = listOfNotNull(
-    releaseDate?.take(4)?.takeIf { year -> year.all { it.isDigit() } },
     rating?.toDoubleOrNull()?.takeIf { it > 0 }?.let { "★ $it" },
-    genre,
+    releaseDate?.take(4)?.takeIf { year -> year.all { it.isDigit() } },
 ).joinToString(" · ")
+
+/** Žanrovi iz teksta koji šalje panel („Drama, Misterija” ili „Drama / Misterija”), najviše [limit]. */
+fun genresOf(genre: String?, limit: Int = 4): List<String> =
+    genre.orEmpty().split(',', '/', '|').map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(limit)
+
+/** Žanrovi kao male pločice u jednom redu; bez žanrova ne crta ništa. */
+@Composable
+fun GenreChips(genre: String?, modifier: Modifier = Modifier) {
+    val genres = genresOf(genre)
+    if (genres.isEmpty()) return
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        genres.forEach { name ->
+            BasicText(
+                text = name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = OnBackground, fontSize = 12.sp),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .background(SurfaceVariant.copy(alpha = 0.9f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Otvara trejler u aplikaciji koja ume da ga pusti (YouTube ili pregledač). Kad takve nema, što je
+ * na nekim TV uređajima slučaj, prikaže kratku poruku.
+ */
+@Composable
+fun rememberOpenTrailer(): (String) -> Unit {
+    val context = LocalContext.current
+    return remember(context) {
+        { url ->
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: ActivityNotFoundException) {
+                Toast.makeText(context, R.string.vod_trailer_no_app, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
 
 /** Oznaka epizode, npr. „S2 E5”. */
 @Composable

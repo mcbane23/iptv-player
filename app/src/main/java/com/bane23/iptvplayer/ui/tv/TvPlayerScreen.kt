@@ -89,6 +89,7 @@ fun TvPlayerScreen(
     channelId: Long,
     categoryId: Long?,
     onClose: () -> Unit,
+    onArchive: (channelId: Long) -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -106,6 +107,8 @@ fun TvPlayerScreen(
     var recordPanel by remember { mutableStateOf(false) }
     // Panel „Brza podešavanja” je otvoren.
     var settingsOpen by remember { mutableStateOf(false) }
+    // Panel „Program” (raspored kanala) je otvoren.
+    var scheduleOpen by remember { mutableStateOf(false) }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
         if (isRecording) viewModel.toggleRecording() else recordPanel = true
@@ -113,7 +116,7 @@ fun TvPlayerScreen(
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
-    val panelOpen = channelList || tracks != null || recordPanel || settingsOpen
+    val panelOpen = channelList || tracks != null || recordPanel || settingsOpen || scheduleOpen
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -130,6 +133,7 @@ fun TvPlayerScreen(
             tracks != null -> tracks = null
             recordPanel -> recordPanel = false
             settingsOpen -> settingsOpen = false
+            scheduleOpen -> scheduleOpen = false
             channelList -> channelList = false
             else -> overlay = Overlay.HIDDEN
         }
@@ -286,6 +290,7 @@ fun TvPlayerScreen(
                     isFavorite = isFavorite,
                     firstChipFocus = firstChipFocus,
                     onChannels = { channelList = true },
+                    onSchedule = { scheduleOpen = true },
                     onAudio = { tracks = TvTrackKind.AUDIO },
                     onSettings = { settingsOpen = true },
                     infoVisible = infoVisible,
@@ -332,6 +337,16 @@ fun TvPlayerScreen(
                 )
             }
 
+            val scheduleChannel = ui.channel
+            if (scheduleOpen && scheduleChannel != null) {
+                TvChannelSchedulePanel(
+                    channel = scheduleChannel,
+                    onArchive = { onArchive(scheduleChannel.id) },
+                    onClose = { scheduleOpen = false },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
+
             if (recordPanel) {
                 val choices = recordingChoices(nowNext.now?.stopMs)
                 TvChoicePanel(
@@ -356,6 +371,7 @@ private fun LiveControls(
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
     onChannels: () -> Unit,
+    onSchedule: () -> Unit,
     onAudio: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
@@ -467,6 +483,7 @@ private fun LiveControls(
                         label = stringResource(R.string.player_channels),
                         onClick = onChannels,
                     )
+                    PlayerChip(icon = AppIcons.Guide, label = stringResource(R.string.player_schedule), onClick = onSchedule)
                     PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
                     PlayerChip(
                         icon = AppIcons.Settings,

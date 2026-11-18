@@ -36,6 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -61,7 +64,10 @@ import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.SeriesViewModel
 import com.bane23.iptvplayer.ui.common.vod.isSeasonWatched
 import com.bane23.iptvplayer.ui.common.vod.label
+import com.bane23.iptvplayer.ui.common.vod.GenreChips
+import com.bane23.iptvplayer.ui.common.vod.genresOf
 import com.bane23.iptvplayer.ui.common.vod.metaLine
+import com.bane23.iptvplayer.ui.common.vod.rememberOpenTrailer
 import com.bane23.iptvplayer.ui.common.vod.statusText
 
 /** Detalji filma na telefonu: zaglavlje sa posterom, dugmad za puštanje, opis i ekipa. */
@@ -79,6 +85,7 @@ fun MobileMovieScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val details = state.details
     val playExtension = state.extension ?: XtreamVodParser.DEFAULT_EXTENSION
+    val openTrailer = rememberOpenTrailer()
     val progress = state.progress
 
     Scaffold { padding ->
@@ -92,6 +99,8 @@ fun MobileMovieScreen(
                 DetailsHeader(
                     title = state.name.ifEmpty { name },
                     poster = state.poster,
+                    backdrop = details?.backdrop,
+                    genre = details?.genre,
                     meta = details?.metaLine(),
                     status = progress?.statusText(),
                     favorite = state.favorite,
@@ -115,6 +124,9 @@ fun MobileMovieScreen(
                     label = stringResource(if (progress?.watched == true) R.string.vod_mark_unwatched else R.string.vod_mark_watched),
                     onClick = viewModel::toggleWatched,
                 )
+            }
+            details?.trailer?.let { trailer ->
+                item { TrailerButton { openTrailer(trailer) } }
             }
             if (state.loading) {
                 item { Message(stringResource(R.string.vod_loading)) }
@@ -150,6 +162,9 @@ fun MobileSeriesScreen(
     val details = state.details
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val openTrailer = rememberOpenTrailer()
+    // Red sa dugmetom „Trejler” postoji samo kad trejlera ima, pa pomera redove epizoda za jedan.
+    val rowsBeforeEpisodes = ROWS_BEFORE_EPISODES + if (details?.trailer != null) 1 else 0
 
     Scaffold { padding ->
         LazyColumn(
@@ -163,6 +178,8 @@ fun MobileSeriesScreen(
                 DetailsHeader(
                     title = state.name.ifEmpty { name },
                     poster = state.poster,
+                    backdrop = details?.backdrop,
+                    genre = details?.genre,
                     meta = details?.metaLine(),
                     status = null,
                     favorite = state.favorite,
@@ -195,6 +212,9 @@ fun MobileSeriesScreen(
                             )
                         }
                     }
+                    details.trailer?.let { trailer ->
+                        item { TrailerButton { openTrailer(trailer) } }
+                    }
                     item { Overview(plot = details.plot, credits = emptyList(), maxLines = 4) }
                     item {
                         LazyRow(
@@ -209,7 +229,7 @@ fun MobileSeriesScreen(
                                         // Sezona sa odgledanim epizodama se otvara na prvoj neodgledanoj.
                                         val index = firstUnwatchedIndex(season.episodes, state.progress)
                                         if (index > 0) {
-                                            scope.launch { listState.animateScrollToItem(ROWS_BEFORE_EPISODES + index) }
+                                            scope.launch { listState.animateScrollToItem(rowsBeforeEpisodes + index) }
                                         }
                                     },
                                     label = { Text(stringResource(R.string.vod_season, season.number)) },
@@ -256,6 +276,8 @@ fun MobileSeriesScreen(
 private fun DetailsHeader(
     title: String,
     poster: String?,
+    backdrop: String?,
+    genre: String?,
     meta: String?,
     status: String?,
     favorite: Boolean,
@@ -264,14 +286,19 @@ private fun DetailsHeader(
 ) {
     val background = MaterialTheme.colorScheme.background
     Box(modifier = Modifier.fillMaxWidth()) {
-        if (!poster.isNullOrBlank()) {
+        // Široka slika iz filma, kad je provajder šalje, vidi se jače od postera; inače poster kao do sada.
+        var backdropFailed by remember(backdrop) { mutableStateOf(false) }
+        val wide = backdrop?.takeIf { it.isNotBlank() && !backdropFailed }
+        val image = wide ?: poster
+        if (!image.isNullOrBlank()) {
             AsyncImage(
-                model = poster,
+                model = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                onError = { if (wide != null) backdropFailed = true },
                 modifier = Modifier
                     .matchParentSize()
-                    .alpha(0.35f),
+                    .alpha(if (wide != null) 0.55f else 0.35f),
             )
         }
         Box(
@@ -311,6 +338,7 @@ private fun DetailsHeader(
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
+                    GenreChips(genresOf(genre, limit = 3).joinToString(","), modifier = Modifier.padding(top = 6.dp))
                     status?.let {
                         Text(
                             text = it,
@@ -358,6 +386,20 @@ private fun WatchedButton(label: String, onClick: () -> Unit) {
     ) {
         ButtonIcon(AppIcons.Check)
         Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Dugme „Trejler” preko cele širine; otvara trejler u drugoj aplikaciji. */
+@Composable
+private fun TrailerButton(onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        ButtonIcon(AppIcons.Movies)
+        Text(text = stringResource(R.string.vod_trailer), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

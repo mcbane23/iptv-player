@@ -74,6 +74,7 @@
     <string name="player_play">Play</string>
     <string name="player_pause">Pause</string>
     <string name="player_retry">Try again</string>
+    <string name="player_schedule">Schedule</string>
     <string name="player_channels">Channels</string>
     <string name="player_audio">Audio</string>
     <string name="player_stream_info">Stream info</string>
@@ -179,6 +180,12 @@
     <string name="vod_progress">%1$s of %2$s</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
+    <string name="next_card_countdown">Next episode in %1$d s</string>
+    <string name="next_card_still_watching">Still watching?</string>
+    <string name="next_card_play_now">Play now</string>
+    <string name="next_card_continue">Yes, continue</string>
+    <string name="next_card_key_ok">OK: %1$s</string>
+    <string name="next_card_key_back">Back: %1$s</string>
     <string name="vod_next_episode">Next episode</string>
 
     <!-- Dodavanje liste sa telefona -->
@@ -281,6 +288,12 @@
     <string name="accent_purple">Purple</string>
     <string name="accent_pink">Pink</string>
     <string name="settings_content_header">Content</string>
+    <string name="nav_home">Home</string>
+    <string name="home_favorite_channels">Favorite channels</string>
+    <string name="home_recent_channels">Recently watched channels</string>
+    <string name="home_added_movies">Recently added movies</string>
+    <string name="home_added_series">Recently added series</string>
+    <string name="home_empty">Your favorite channels and what you started watching will show up here.</string>
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>
     <string name="settings_tv_preview">Channel preview</string>
@@ -297,6 +310,8 @@
     <string name="vod_total">Total: %1$d</string>
     <string name="settings_tv_vod_preview">Movie and series details above posters</string>
     <string name="vod_continue_remove">Remove from Continue watching</string>
+    <string name="vod_trailer">Trailer</string>
+    <string name="vod_trailer_no_app">No app on this device can play the trailer.</string>
     <string name="vod_continue_watching">Continue watching</string>
     <string name="search_movies">Search movies</string>
     <string name="search_series">Search series</string>
@@ -526,6 +541,10 @@
     <string name="category_move_done">Done</string>
     <string name="categories_move_hint">Up and down move the category “%1$s”; hold the arrow to move faster. Press OK or Back when it is in place.</string>
     <string name="playlist_switch">Playlist: %1$s</string>
+    <string name="playlist_merged">Merged</string>
+    <string name="playlist_merge">Merge with other playlists</string>
+    <string name="playlist_unmerge">Do not merge</string>
+    <string name="playlists_merge_hint">When the active playlist is merged, channels of all merged playlists are shown together. Movies and series always come from the active playlist.</string>
     <string name="playlists_select_hint">Tap a playlist to make it the active one.</string>
     <string name="playlist_advanced_show">Advanced settings</string>
     <string name="playlist_advanced_hide">Hide advanced settings</string>
@@ -568,6 +587,8 @@
     <string name="reminder_channel">Programme reminders</string>
     <string name="reminder_starts">Starting: %1$s</string>
     <string name="reminder_watch">Watch</string>
+    <string name="settings_watch_next">Continue watching on the TV home screen</string>
+    <string name="settings_watch_next_summary">Movies and series you started show up in the \"Continue watching\" row on the device home screen, so you can resume without opening the app. Works on Android TV and Google TV devices.</string>
     <string name="settings_match_frame_rate">Match TV refresh rate to video</string>
     <string name="settings_match_frame_rate_summary">While playing, the TV switches to a refresh rate that fits the video (50 Hz for TV channels, 24 Hz for films), so motion is smooth. The screen may go black for a moment when it switches. Not every TV supports it.</string>
     <string name="search_all_hint">Channel, programme, film or series</string>
@@ -595,4 +616,6 @@
     <string name="settings_language_summary">Language of menus and messages in the app</string>
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
+    <string name="settings_black_theme">Black theme</string>
+    <string name="settings_black_theme_summary">The background is pure black instead of dark gray, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
 </resources>

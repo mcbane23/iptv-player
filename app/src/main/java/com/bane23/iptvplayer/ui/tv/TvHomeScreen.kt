@@ -59,12 +59,13 @@ import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.TvStartViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
 /** Sekcije koje se otvaraju u početnom ekranu, pored bočnog menija. */
-private enum class TvTab { LIVE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
+private enum class TvTab { HOME, LIVE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
 
 /** Širina skupljenog menija (samo ikonice) i raširenog (ikonice i nazivi). */
 private val RailCollapsed = 88.dp
@@ -98,17 +99,22 @@ fun TvHomeScreen(
 ) {
     val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableStateOf(TvTab.LIVE) }
+    var tab by rememberSaveable { mutableStateOf(TvTab.HOME) }
+    val playlistId = liveState.playlistId
+    // Aplikacija se otvara na „Početnoj”; bez liste nje nema, pa se otvara Uživo sa dugmetom za dodavanje.
+    val startTab = if (playlistId != null || liveState.loading) TvTab.HOME else TvTab.LIVE
+    LaunchedEffect(startTab) {
+        if (startTab == TvTab.LIVE && tab == TvTab.HOME) tab = TvTab.LIVE
+    }
     LaunchedEffect(liveState.loading, liveState.hasVod) {
         if (!liveState.loading && !liveState.hasVod && (tab == TvTab.MOVIES || tab == TvTab.SERIES)) {
             tab = TvTab.LIVE
         }
     }
-    // Nazad iz druge sekcije prvo vraća na Uživo, tek odatle izlazi iz aplikacije.
-    BackHandler(enabled = tab != TvTab.LIVE) { tab = TvTab.LIVE }
-    ExitOnDoubleBack(enabled = tab == TvTab.LIVE)
+    // Nazad iz druge sekcije prvo vraća na početnu sekciju, tek odatle izlazi iz aplikacije.
+    BackHandler(enabled = tab != startTab) { tab = startTab }
+    ExitOnDoubleBack(enabled = tab == startTab)
     val holder = rememberSaveableStateHolder()
-    val playlistId = liveState.playlistId
     val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
 
     var railFocused by remember { mutableStateOf(false) }
@@ -125,7 +131,7 @@ fun TvHomeScreen(
     }
     // Nazad dok je fokus u meniju prvo sklanja meni.
     BackHandler(enabled = railFocused) {
-        if (!leaveRail() && tab != TvTab.LIVE) tab = TvTab.LIVE
+        if (!leaveRail() && tab != startTab) tab = startTab
     }
     // Stavka „Snima se” ostaje u meniju dok je fokus na njoj i kad se snimanje završi, da fokus ne nestane.
     var recordingFocused by remember { mutableStateOf(false) }
@@ -133,7 +139,7 @@ fun TvHomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary),
+            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
     ) {
         // Sekcije imaju svoje margine za overscan (48 dp), pa im ovde treba samo ostatak širine menija.
         Box(
@@ -145,6 +151,15 @@ fun TvHomeScreen(
         ) {
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
+                    // Dok se ne zna da li lista postoji, ne crta se ništa (kao ni bočni meni).
+                    TvTab.HOME -> if (playlistId != null) {
+                        TvStartScreen(
+                            onPlay = onPlay,
+                            onOpenVod = onOpenVod,
+                            viewModel = hiltViewModel<TvStartViewModel>(key = "start-$playlistId"),
+                        )
+                    }
+
                     TvTab.LIVE -> TvLiveTvScreen(
                         onPlay = onPlay,
                         onManagePlaylists = { tab = TvTab.PLAYLISTS },
@@ -227,6 +242,16 @@ fun TvHomeScreen(
             }
             if (playlistId != null) {
                 RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railFocused, onClick = onSearchAll)
+            }
+            if (playlistId != null) {
+                RailItem(
+                    icon = AppIcons.Home,
+                    label = stringResource(R.string.nav_home),
+                    expanded = railFocused,
+                    selected = tab == TvTab.HOME,
+                    onClick = { tab = TvTab.HOME },
+                    modifier = if (tab == TvTab.HOME) Modifier.focusRequester(selectedFocus) else Modifier,
+                )
             }
             RailItem(
                 icon = AppIcons.LiveTv,

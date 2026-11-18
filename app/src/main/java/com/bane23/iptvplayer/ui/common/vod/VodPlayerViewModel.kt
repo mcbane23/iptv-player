@@ -21,6 +21,7 @@ import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.ExternalSubtitle
 import com.bane23.iptvplayer.player.SrtShift
 import com.bane23.iptvplayer.player.PlaybackState
+import com.bane23.iptvplayer.player.NextEpisode
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.TrackOption
 import com.bane23.iptvplayer.ui.common.player.AspectMode
@@ -65,10 +66,24 @@ data class VodPlayerUiState(
      */
     val subtitleOffsetMs: Long? = null,
     val hasNext: Boolean = false,
+    /** Kartica „Sledeća epizoda” pred kraj epizode; null dok je nema. */
+    val nextCard: NextCard? = null,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
     /** Može li se titl potražiti na internetu (film ili epizoda, a APK ima ključ za OpenSubtitles). */
     val onlineSubtitles: Boolean = false,
+)
+
+/**
+ * Kartica „Sledeća epizoda”: koja epizoda sledi i za koliko sekundi kreće sama. Sa [stillWatching]
+ * epizoda ne kreće sama, nego kartica pita „Još gledate?” (nekoliko epizoda je prošlo bez dodira).
+ */
+data class NextCard(
+    val season: Int,
+    val episode: Int,
+    val title: String,
+    val secondsLeft: Int,
+    val stillWatching: Boolean,
 )
 
 /** Pretraga titlova na internetu za ono što se gleda. */
@@ -145,7 +160,8 @@ class VodPlayerViewModel @Inject constructor(
                 delay(POSITION_TICK_MS)
                 val duration = engine.durationMs
                 if (duration > 0) {
-                    _ui.update { it.copy(positionMs = engine.positionMs, durationMs = duration) }
+                    val position = engine.positionMs
+                    _ui.update { it.copy(positionMs = position, durationMs = duration, nextCard = nextCard(position, duration)) }
                     val now = System.currentTimeMillis()
                     // Dok je pauzirano pozicija stoji, pa nema šta novo da se upiše u bazu.
                     if (now - lastSavedAt >= SAVE_EVERY_MS && engine.positionMs != lastSavedPositionMs) saveProgress()
@@ -157,7 +173,11 @@ class VodPlayerViewModel @Inject constructor(
             playback.map { it.ended }.distinctUntilChanged().collect { ended ->
                 if (ended) {
                     saveProgress(finished = true)
-                    if (_ui.value.hasNext) next()
+                    // Sledeća kreće sama, osim kad je gledalac odustao na kartici ili treba da potvrdi da još gleda.
+                    if (_ui.value.hasNext && !nextCancelled && !NextEpisode.needsConfirmation(autoAdvances)) {
+                        autoAdvances++
+                        advance()
+                    }
                 }
             }
         }
@@ -225,8 +245,50 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
-    /** Prelazi na sledeću epizodu, od početka. */
+    /** Gledalac je na kartici „Sledeća epizoda” odustao: ova epizoda se završava bez prelaska na sledeću. */
+    private var nextCancelled = false
+
+    /** Koliko je epizoda zaredom krenulo samo, bez ijednog dodira daljinskog ili ekrana. */
+    private var autoAdvances = 0
+
+    private fun nextCard(positionMs: Long, durationMs: Long): NextCard? {
+        if (nextCancelled) return null
+        val current = item ?: return null
+        val following = series?.episodeAfter(current.id) ?: return null
+        val seconds = NextEpisode.secondsLeft(positionMs, durationMs) ?: return null
+        return NextCard(
+            season = following.season,
+            episode = following.number,
+            title = following.title,
+            secondsLeft = seconds,
+            stillWatching = NextEpisode.needsConfirmation(autoAdvances),
+        )
+    }
+
+    /** Svaki dodir daljinskog ili ekrana znači da neko gleda, pa se brojanje epizoda vraća na nulu. */
+    fun onUserActivity() {
+        autoAdvances = 0
+    }
+
+    /** „Pusti odmah”, odnosno „Da, gledam”: sledeća epizoda kreće odmah. */
+    fun acceptNext() {
+        autoAdvances = 0
+        advance()
+    }
+
+    /** „Otkaži” na kartici: epizoda se gleda do kraja, a sledeća ne kreće sama. */
+    fun cancelNext() {
+        nextCancelled = true
+        _ui.update { it.copy(nextCard = null) }
+    }
+
+    /** Prelazi na sledeću epizodu, od početka (dugme i taster „Sledeća”). */
     fun next() {
+        autoAdvances = 0
+        advance()
+    }
+
+    private fun advance() {
         val current = item ?: return
         val seriesId = current.seriesId ?: return
         val details = series ?: return
@@ -445,6 +507,7 @@ class VodPlayerViewModel @Inject constructor(
     }
 
     private suspend fun playEpisode(seriesId: Long, details: SeriesDetails, episode: Episode, startOver: Boolean) {
+        nextCancelled = false
         item = Item(episode.id, seriesId, title = details.name, poster = details.poster, extension = null)
         _ui.update {
             it.copy(
@@ -454,6 +517,7 @@ class VodPlayerViewModel @Inject constructor(
                 positionMs = 0,
                 durationMs = 0,
                 scrubMs = null,
+                nextCard = null,
                 hasNext = details.episodeAfter(episode.id) != null,
                 onlineSubtitles = subtitles.isAvailable,
             )

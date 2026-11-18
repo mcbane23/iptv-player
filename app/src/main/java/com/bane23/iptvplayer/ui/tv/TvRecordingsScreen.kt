@@ -59,7 +59,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary)
+            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {

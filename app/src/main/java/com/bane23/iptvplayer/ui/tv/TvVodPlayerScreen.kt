@@ -40,6 +40,7 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.NextEpisodeCard
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
@@ -171,7 +172,10 @@ fun TvVodPlayerScreen(
             .background(Color.Black)
             .pauseDimInput(pauseDim)
             .onPreviewKeyEvent {
-                if (it.type == KeyEventType.KeyDown) activity++
+                if (it.type == KeyEventType.KeyDown) {
+                    activity++
+                    viewModel.onUserActivity()
+                }
                 false
             }
             .onKeyEvent { event ->
@@ -212,6 +216,23 @@ fun TvVodPlayerScreen(
                 }
                 // Ostali tasteri ovde stižu samo dok su kontrole sklonjene (fokus je na samom plejeru).
                 if (controls) return@onKeyEvent false
+                // Kartica „Sledeća epizoda”: OK pušta sledeću odmah, Nazad odustaje od nje.
+                if (ui.nextCard != null) {
+                    when (event.nativeKeyEvent.keyCode) {
+                        AndroidKeyEvent.KEYCODE_DPAD_CENTER,
+                        AndroidKeyEvent.KEYCODE_ENTER,
+                        AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+                        -> {
+                            if (isUp) viewModel.acceptNext()
+                            return@onKeyEvent true
+                        }
+
+                        AndroidKeyEvent.KEYCODE_BACK -> {
+                            if (isUp) viewModel.cancelNext()
+                            return@onKeyEvent true
+                        }
+                    }
+                }
                 when (event.nativeKeyEvent.keyCode) {
                     AndroidKeyEvent.KEYCODE_DPAD_LEFT, AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
                         if (isDown) {
@@ -264,6 +285,20 @@ fun TvVodPlayerScreen(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(horizontal = 96.dp),
+                )
+            }
+
+            // Kartica se vidi dok su kontrole sklonjene; sa kontrolama na ekranu sledeću pušta dugme na traci.
+            val nextCard = ui.nextCard
+            if (nextCard != null && !controls && tracks == null && !onlineOpen && !settingsOpen) {
+                NextEpisodeCard(
+                    card = nextCard,
+                    tv = true,
+                    onAccept = viewModel::acceptNext,
+                    onCancel = viewModel::cancelNext,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(horizontal = 48.dp, vertical = 27.dp),
                 )
             }
 

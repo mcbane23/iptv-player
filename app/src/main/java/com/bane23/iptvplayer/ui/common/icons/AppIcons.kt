@@ -40,6 +40,7 @@ object AppIcons {
             "l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6" +
             "s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
     )
+    val Home by icon("M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z")
     val Guide by icon("M3 5h18v2H3zM3 11h7v2H3zm9 0h9v2h-9zM3 17h5v2H3zm7 0h11v2H10z")
     val Playlists by icon("M19 9H2v2h17V9zm0-4H2v2h17V5zM2 15h13v-2H2v2zm15-2v6l5-3-5-3z")
     val Cast by icon(
