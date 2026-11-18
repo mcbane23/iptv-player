@@ -202,8 +202,11 @@ jobs:
             echo "Secret APK_REPO_TOKEN ne postoji, javni repo se ne menja."
             exit 0
           fi
-          BASE="https://github.com/$APK_REPO/releases/download/$CHANNEL"
-          if ! curl -fsSL "$BASE/iptv-player.json" -o manifest.json; then
+          export GH_TOKEN="$APK_REPO_TOKEN"
+          # Fajlovi se čitaju preko API-ja (gh), a ne preko javnog linka za preuzimanje: javni link
+          # ume da još nekoliko minuta vraća stari opis, pa bi glowbox.apk ostao na prethodnoj verziji.
+          fetch() { gh release download "$CHANNEL" -R "$APK_REPO" --pattern "$1" --output "$2" --clobber; }
+          if ! fetch iptv-player.json manifest.json; then
             echo "U javnom repou još nema izdanja."
             exit 0
           fi
@@ -213,16 +216,15 @@ jobs:
             echo "Opis izdanja nije ispravan."
             exit 1
           fi
-          if curl -fsSL "$BASE/$FIXED" -o current.apk 2>/dev/null \
+          if fetch "$FIXED" current.apk 2>/dev/null \
             && [ "$(sha256sum current.apk | cut -d' ' -f1)" = "$SHA" ]; then
             echo "$FIXED je već verzija $(jq -r '.versionName' manifest.json)."
             exit 0
           fi
-          curl -fsSL "$BASE/$APK" -o "$FIXED"
+          fetch "$APK" "$FIXED"
           if [ "$(sha256sum "$FIXED" | cut -d' ' -f1)" != "$SHA" ]; then
             echo "Preuzeti APK se ne poklapa sa kontrolnim zbirom iz opisa."
             exit 1
           fi
-          export GH_TOKEN="$APK_REPO_TOKEN"
           gh release upload "$CHANNEL" -R "$APK_REPO" "$FIXED" --clobber
           echo "$FIXED je sada verzija $(jq -r '.versionName' manifest.json)."
