@@ -99,6 +99,8 @@ class AppUpdater @Inject constructor(
         checkedOnStart = true
         // Ostatak prethodnog ažuriranja više ne treba.
         scope.launch { apkFile.parentFile?.deleteRecursively() }
+        // Aplikacija je već otvorena, pa zaostala beleška o ponovnom otvaranju više ne treba.
+        UpdateRelaunch.clear(context)
         check(userInitiated = false)
     }
 
@@ -159,17 +161,22 @@ class AppUpdater @Inject constructor(
         }
     }
 
+    /** Da li će se aplikacija posle ažuriranja sama ponovo otvoriti (vidi [UpdateRelaunch]). */
+    fun canReopenAfterUpdate(): Boolean = UpdateRelaunch.canReopen(context)
+
     /** Da li je korisnik dozvolio instaliranje aplikacija iz ove aplikacije (Android 8+). */
     fun canInstall(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
 
     /** Sistemski instaler je odbio ili je korisnik otkazao. */
     fun onInstallFailed() {
+        UpdateRelaunch.clear(context)
         _state.value = UpdateState.Failed(UpdateError.INSTALL)
     }
 
     /** Korisnik je odustao na ekranu potvrde: nudi se ponovo, APK je već preuzet. */
     fun onInstallCancelled() {
+        UpdateRelaunch.clear(context)
         val s = _state.value
         if (s is UpdateState.Installing) _state.value = UpdateState.Available(s.manifest)
     }
@@ -254,6 +261,8 @@ class AppUpdater @Inject constructor(
             val flags = PendingIntent.FLAG_UPDATE_CURRENT or
                 (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
             val pending = PendingIntent.getBroadcast(context, sessionId, intent, flags)
+            // Nova verzija po ovoj belešci zna da treba da se sama ponovo otvori.
+            UpdateRelaunch.mark(context)
             session.commit(pending.intentSender)
         }
     }

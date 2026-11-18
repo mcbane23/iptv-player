@@ -66,6 +66,7 @@ class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : Vie
     fun update() = updater.downloadAndInstall()
     fun dismiss() = updater.dismiss()
     fun canInstall() = updater.canInstall()
+    fun canReopen() = updater.canReopenAfterUpdate()
 }
 
 /**
@@ -83,6 +84,11 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
         if (state is UpdateState.NeedsPermission && viewModel.canInstall()) viewModel.update()
         onPauseOrDispose { }
     }
+
+    // Šta biva posle instalacije: aplikacija se otvara sama ili je korisnik otvara ručno.
+    val afterUpdate = stringResource(
+        if (viewModel.canReopen()) R.string.update_reopen_auto else R.string.update_reopen_manual,
+    )
 
     // Jedan dijalog za sva stanja: menja se samo sadržaj, pa prozor ne nestaje i ne treperi
     // (npr. „Proveravam…” odmah prelazi u „Imate najnoviju verziju”).
@@ -107,6 +113,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
                 R.string.update_available_text,
                 s.manifest.versionName,
                 viewModel.installedVersion,
+                afterUpdate,
             ),
             confirm = stringResource(R.string.update_install) to viewModel::update,
             dismiss = stringResource(R.string.update_later) to viewModel::dismiss,
@@ -131,7 +138,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
         is UpdateState.Installing -> AlertContent(
             title = stringResource(R.string.update_available_title),
             // Bez uputstva o potvrdi: sistem je nekad traži, a nekad instalira bez pitanja.
-            text = stringResource(R.string.update_installing),
+            text = stringResource(R.string.update_installing) + "\n" + afterUpdate,
             progress = -1f,
             confirm = stringResource(R.string.update_close) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
