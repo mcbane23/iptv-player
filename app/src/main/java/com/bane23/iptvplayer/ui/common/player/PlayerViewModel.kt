@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -108,8 +109,8 @@ class PlayerViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** Da li se kanal koji se gleda upravo snima. */
-    val isRecording: StateFlow<Boolean> = combine(_ui.map { it.channel?.id }, recordings.active) { id, active ->
-        id != null && active.any { it.channelId == id }
+    val isRecording: StateFlow<Boolean> = combine(_ui.map { it.channel }, recordings.active) { channel, active ->
+        channel != null && active.any { it.isOf(channel) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val _recordingNotice = MutableSharedFlow<Int>(extraBufferCapacity = 1)
@@ -147,6 +148,42 @@ class PlayerViewModel @Inject constructor(
     init {
         // Tajmer gašenja je istekao: kanal se pauzira, pa uređaj posle sam ugasi ekran.
         viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
+        watchPlaylistRefresh()
+    }
+
+    /** Lista je osvežena dok se kanal gleda: kanal je dobio nov ID, pa se traži ponovo. Slika ne staje. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun watchPlaylistRefresh() {
+        viewModelScope.launch {
+            _ui.map { it.channel }
+                .distinctUntilChangedBy { it?.id }
+                .flatMapLatest { channel ->
+                    if (channel == null) emptyFlow<Channel>() else repository.observeGone(channel.id).map { channel }
+                }
+                .collect { stale -> relink(stale) }
+        }
+    }
+
+    /**
+     * Zamenjuje kanal koji se gleda istim kanalom iz osvežene liste. Bez toga omiljeni, vodič, snimanje,
+     * spisak kanala i prelazak na sledeći kanal ne bi radili do izlaska iz plejera.
+     */
+    private suspend fun relink(stale: Channel) {
+        val fresh = repository.refreshed(stale) ?: return
+        if (fresh.id == stale.id) return
+        val oldCategory = _ui.value.categoryId
+        // I kategorije su dobile nov ID; posebne grupe (omiljeni, nedavno) i „svi kanali” ostaju iste.
+        val categoryId = if (oldCategory == null || oldCategory == ChannelGroups.ALL || ChannelGroups.isVirtual(oldCategory)) {
+            oldCategory
+        } else {
+            fresh.categoryId
+        }
+        if (groupIds != null && categoryId != null) groupIds = repository.groupChannelIds(fresh.playlistId, categoryId)
+        if (_ui.value.channel?.id != stale.id) return
+        _ui.update { it.copy(categoryId = categoryId) }
+        val position = positionOf(fresh)
+        _ui.update { if (it.channel?.id == stale.id) it.copy(channel = fresh, position = position) else it }
+        listScope.value = ListScope(fresh.playlistId, categoryId, position)
     }
 
     /** Poziva se jednom, pri otvaranju plejera. */
@@ -165,8 +202,18 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Kanal izabran u spisku preko slike. U spiskovima kao što su „Svi kanali” i omiljeni ima i kanala
+     * iz zaključanih kategorija; oni se odavde ne puštaju (roditeljska zaštita), samo se javi poruka.
+     */
     fun playChannel(channel: Channel) {
-        viewModelScope.launch { show(channel) }
+        viewModelScope.launch {
+            if (channel.id != _ui.value.channel?.id && locks.isChannelLocked(channel.id)) {
+                _recordingNotice.tryEmit(R.string.pin_locked_title)
+            } else {
+                show(channel)
+            }
+        }
     }
 
     fun next() = step { neighbor(it, 1) }
@@ -175,8 +222,12 @@ class PlayerViewModel @Inject constructor(
 
     /** Vraća na kanal koji se gledao pre ovog; dva kanala se tako smenjuju jednim dugmetom. */
     fun playLastChannel() {
-        val last = _ui.value.lastChannel ?: return
-        viewModelScope.launch { if (!locks.isChannelLocked(last.id)) show(last) }
+        val remembered = _ui.value.lastChannel ?: return
+        viewModelScope.launch {
+            // Ako je lista u međuvremenu osvežena, kanal ima nov ID.
+            val last = repository.refreshed(remembered) ?: return@launch
+            if (!locks.isChannelLocked(last.id)) show(last)
+        }
     }
 
     /**
@@ -186,7 +237,7 @@ class PlayerViewModel @Inject constructor(
     fun toggleRecording(stopAtMs: Long? = null) {
         val channel = _ui.value.channel ?: return
         if (isRecording.value) {
-            recordings.stopChannel(channel.id)
+            recordings.stopChannel(channel)
             _recordingNotice.tryEmit(R.string.recording_stopped)
             return
         }

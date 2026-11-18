@@ -12,6 +12,7 @@ import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -140,7 +141,15 @@ class AppUpdater @Inject constructor(
             val file = apkFile
             if (!file.exists() || !hashMatches(file, manifest)) {
                 _state.value = UpdateState.Downloading(manifest, null)
-                val ok = runCatching { download(manifest, file) }.getOrElse { false }
+                val ok = try {
+                    download(manifest, file)
+                } catch (e: CancellationException) {
+                    // Korisnik je otkazao preuzimanje: nedovršen fajl se briše, a greška se ne prikazuje.
+                    file.delete()
+                    throw e
+                } catch (_: Exception) {
+                    false
+                }
                 if (!ok) {
                     file.delete()
                     _state.value = UpdateState.Failed(UpdateError.NETWORK)
