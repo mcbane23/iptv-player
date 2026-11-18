@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.media3.common.Player
@@ -65,6 +68,9 @@ import androidx.media3.common.VideoSize
 private val PanelBackground = Color.Black.copy(alpha = 0.6f)
 private val PanelBorder = Color.White.copy(alpha = 0.16f)
 private val ChipShape = RoundedCornerShape(10.dp)
+
+/** Veličina dugmadi sa ikonicom. Donja traka na širokom ekranu je smanjuje da bi traka bila niža. */
+private val LocalPlayerButtonSize = compositionLocalOf { 48.dp }
 
 /** Tamna poluprovidna pločica sa tankim okvirom, podloga za sve kontrole plejera. */
 internal fun Modifier.playerPanel(shape: Shape): Modifier =
@@ -127,13 +133,14 @@ fun PlayerIconButton(
     modifier: Modifier = Modifier,
     primary: Boolean = false,
     backdrop: Boolean = false,
-    size: Dp = 48.dp,
+    size: Dp = Dp.Unspecified,
 ) {
+    val buttonSize = if (size.isSpecified) size else LocalPlayerButtonSize.current
     var focused by remember { mutableStateOf(false) }
     val scale = if (focused) 1.2f else 1f
     Box(
         modifier = modifier
-            .size(size)
+            .size(buttonSize)
             .zIndex(if (focused) 1f else 0f)
             .graphicsLayer {
                 scaleX = scale
@@ -403,19 +410,23 @@ fun PlayerTransportBar(
         if (maxWidth >= 600.dp) {
             Row(
                 modifier = Modifier
-                    .playerPanel(RoundedCornerShape(percent = 50))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    // Uglovi su malo blaži od polukruga, pa krajevi imaju kratak ravan deo.
+                    .playerPanel(RoundedCornerShape(18.dp))
+                    .padding(horizontal = 10.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                leading()
-                TimeLabel(startLabel, Modifier.padding(start = 8.dp))
-                bar(
-                    Modifier
-                        .weight(1f)
-                        .padding(horizontal = 12.dp),
-                )
-                TimeLabel(endLabel, Modifier.padding(end = 12.dp))
-                trailing()
+                // Niska, vitka pločica: dugmad od 40dp, pa je cela traka visoka 44dp.
+                CompositionLocalProvider(LocalPlayerButtonSize provides 40.dp) {
+                    leading()
+                    TimeLabel(startLabel, Modifier.padding(start = 8.dp))
+                    bar(
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                    )
+                    TimeLabel(endLabel, Modifier.padding(end = 12.dp))
+                    trailing()
+                }
             }
         } else {
             // Uzak ekran: premotavanje na krajevima, traka u sredini, vremena ispod trake da traka ostane duga.
