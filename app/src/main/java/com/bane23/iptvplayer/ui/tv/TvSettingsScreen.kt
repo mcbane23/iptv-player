@@ -88,7 +88,7 @@ fun TvSettingsScreen(
     val optionFocus = remember { FocusRequester() }
     // Podešavanje čije se vrednosti trenutno biraju, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
-    // Podešavanje na kome je fokus, zbog objašnjenja desno od spiska; null kad red nema objašnjenje.
+    // Podešavanje na kome je fokus, zbog objašnjenja desno od spiska; null dok fokus nije ni na jednom.
     var focusedChoice by remember { mutableStateOf<Int?>(null) }
     // Probni titl se vidi dok je fokus na podešavanju izgleda titlova ili se bira njegova vrednost.
     // Izvedeno stanje: ekran se ponovo iscrtava samo kad se ovo promeni, a ne na svaki pomeraj fokusa.
@@ -121,7 +121,7 @@ fun TvSettingsScreen(
                             trailing = "›",
                             onClick = onCategories,
                             onFocused = {
-                                focusedChoice = null
+                                focusedChoice = CATEGORIES_ROW
                                 openChoice = null
                             },
                         )
@@ -132,7 +132,7 @@ fun TvSettingsScreen(
                             trailing = "›",
                             onClick = onParental,
                             onFocused = {
-                                focusedChoice = null
+                                focusedChoice = PARENTAL_ROW
                                 openChoice = null
                             },
                         )
@@ -143,7 +143,7 @@ fun TvSettingsScreen(
                             trailing = "›",
                             onClick = onTrakt,
                             onFocused = {
-                                focusedChoice = null
+                                focusedChoice = TRAKT_ROW
                                 openChoice = null
                             },
                         )
@@ -154,7 +154,7 @@ fun TvSettingsScreen(
                             trailing = "›",
                             onClick = onOpenSubtitles,
                             onFocused = {
-                                focusedChoice = null
+                                focusedChoice = OPENSUBTITLES_ROW
                                 openChoice = null
                             },
                         )
@@ -165,7 +165,7 @@ fun TvSettingsScreen(
                             trailing = "›",
                             onClick = onRecordings,
                             onFocused = {
-                                focusedChoice = null
+                                focusedChoice = RECORDINGS_ROW
                                 openChoice = null
                             },
                         )
@@ -209,7 +209,7 @@ fun TvSettingsScreen(
                         checked = channelPreview,
                         onClick = { viewModel.setTvChannelPreview(!channelPreview) },
                         onFocused = {
-                            focusedChoice = null
+                            focusedChoice = TV_PREVIEW_ROW
                             openChoice = null
                         },
                     )
@@ -218,7 +218,7 @@ fun TvSettingsScreen(
                         checked = vodPreview,
                         onClick = { viewModel.setTvVodPreview(!vodPreview) },
                         onFocused = {
-                            focusedChoice = null
+                            focusedChoice = VOD_PREVIEW_ROW
                             openChoice = null
                         },
                     )
@@ -278,7 +278,7 @@ fun TvSettingsScreen(
                         trailing = updateViewModel.installedVersion,
                         onClick = updateViewModel::check,
                         onFocused = {
-                            focusedChoice = null
+                            focusedChoice = UPDATE_CHECK_ROW
                             openChoice = null
                         },
                     )
@@ -398,7 +398,7 @@ fun TvSettingsScreen(
 }
 
 /**
- * Objašnjenje podešavanja na kome je fokus; redovi bez objašnjenja ne prikazuju ništa. Fokus čita
+ * Objašnjenje podešavanja na kome je fokus. Fokus čita
  * samo ovaj deo, pa pomeranje D-padom ne iscrtava ponovo ceo ekran dok se spisak pomera.
  */
 @Composable
@@ -410,6 +410,14 @@ private fun FocusedSummary(
 ) {
     val focused = focusedChoice() ?: return
     val summary = when (focused) {
+        CATEGORIES_ROW -> stringResource(R.string.settings_categories_summary)
+        PARENTAL_ROW -> stringResource(R.string.settings_parental_summary)
+        TRAKT_ROW -> stringResource(R.string.settings_trakt_summary)
+        OPENSUBTITLES_ROW -> stringResource(R.string.settings_opensubtitles_summary)
+        RECORDINGS_ROW -> stringResource(R.string.settings_recordings_summary)
+        TV_PREVIEW_ROW -> stringResource(R.string.settings_tv_preview_summary)
+        VOD_PREVIEW_ROW -> stringResource(R.string.settings_tv_vod_preview_summary)
+        UPDATE_CHECK_ROW -> stringResource(R.string.update_check_summary)
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
@@ -449,6 +457,14 @@ private const val MATCH_FRAME_RATE_ROW = -6
 private const val UI_SCALE_ROW = -7
 private const val RESUME_ROW = -8
 private const val REOPEN_ROW = -9
+private const val CATEGORIES_ROW = -10
+private const val PARENTAL_ROW = -11
+private const val TRAKT_ROW = -12
+private const val OPENSUBTITLES_ROW = -13
+private const val RECORDINGS_ROW = -14
+private const val TV_PREVIEW_ROW = -15
+private const val VOD_PREVIEW_ROW = -16
+private const val UPDATE_CHECK_ROW = -17
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable
