@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
+import com.bane23.iptvplayer.ui.tv.TvEdgeScroll
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -54,7 +55,8 @@ class MainActivity : ComponentActivity() {
             IptvTheme(accent = AccentColor.fromName(accent)) {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
                     if (isTv) {
-                        TvApp()
+                        // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
+                        TvEdgeScroll { TvApp() }
                     } else {
                         MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
                     }
