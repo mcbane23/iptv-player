@@ -172,12 +172,17 @@ fun TvApp() {
                 TvPinGate(LockTarget.Channel(key.channelId)) {
                     TvVodPlayerScreen(
                         start = { it.startArchive(key.channelId, key.startMs, key.stopMs, key.title, key.startToken) },
+                        onClose = { backStack.removeLastOrNull() },
                     )
                 }
             }
             entry<Player> { key ->
                 TvPinGate(LockTarget.Channel(key.channelId)) {
-                    TvPlayerScreen(channelId = key.channelId, categoryId = key.categoryId)
+                    TvPlayerScreen(
+                        channelId = key.channelId,
+                        categoryId = key.categoryId,
+                        onClose = { backStack.removeLastOrNull() },
+                    )
                 }
             }
             entry<MovieDetails> { key ->
@@ -209,6 +214,7 @@ fun TvApp() {
                 TvPinGate(LockTarget.Vod(series = false, itemId = key.movieId)) {
                     TvVodPlayerScreen(
                         start = { it.startMovie(key.movieId, key.name, key.extension, key.startOver, key.poster) },
+                        onClose = { backStack.removeLastOrNull() },
                     )
                 }
             }
@@ -216,6 +222,7 @@ fun TvApp() {
                 TvPinGate(LockTarget.Vod(series = true, itemId = key.seriesId)) {
                     TvVodPlayerScreen(
                         start = { it.startEpisode(key.seriesId, key.episodeId, key.startOver) },
+                        onClose = { backStack.removeLastOrNull() },
                     )
                 }
             }
@@ -234,7 +241,10 @@ fun TvApp() {
                 TvRecordingsScreen(onPlay = { id -> backStack.add(PlayRecording(id)) })
             }
             entry<PlayRecording> { key ->
-                TvVodPlayerScreen(start = { it.startRecording(key.recordingId) })
+                TvVodPlayerScreen(
+                    start = { it.startRecording(key.recordingId) },
+                    onClose = { backStack.removeLastOrNull() },
+                )
             }
             entry<PairPlaylist> {
                 TvPairingScreen(onClose = { backStack.removeLastOrNull() })

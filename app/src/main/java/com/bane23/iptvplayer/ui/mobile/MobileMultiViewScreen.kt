@@ -73,7 +73,12 @@ fun MobileMultiViewScreen(
     var touches by remember { mutableIntStateOf(0) }
     val anyChannel = state.tiles.any { it.channel != null }
 
-    KeepScreenOn()
+    // Ekran ostaje upaljen samo dok bar jedno polje pušta ili učitava sliku.
+    KeepScreenOn(
+        active = state.tiles.any {
+            it.status == PlaybackStatus.PLAYING || it.status == PlaybackStatus.LOADING || it.status == PlaybackStatus.RETRYING
+        },
+    )
     ImmersiveMode()
     DisposableEffect(Unit) {
         viewModel.onForeground()

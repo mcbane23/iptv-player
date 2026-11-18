@@ -29,6 +29,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.pauseDimInput
+import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
@@ -72,6 +75,13 @@ fun MobileVodPlayerScreen(
 
     LaunchedEffect(Unit) { start(viewModel) }
     KeepScreenOn(playback.status)
+    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    // Izbor zvuka i titlova su zasebni prozori, pa se dodiri u njima ovde ne vide.
+    val pauseDim = rememberPauseDim(
+        status = playback.status,
+        enabled = panel == VodPanel.NONE || panel == VodPanel.SETTINGS,
+        onExit = onClose,
+    )
     ImmersiveMode()
     val inPip = rememberIsInPictureInPicture()
     PlayerLifecycle(
@@ -105,6 +115,7 @@ fun MobileVodPlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pauseDimInput(pauseDim)
             .pointerInput(locked) {
                 detectTapGestures(
                     onTap = {
@@ -130,159 +141,161 @@ fun MobileVodPlayerScreen(
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
-        // U slici u slici ostaje samo video, kao kod kanala.
-        if (inPip) return@Box
+        PauseDimLayer(pauseDim) {
+            // U slici u slici ostaje samo video, kao kod kanala.
+            if (inPip) return@PauseDimLayer
 
-        statusMessage(ui.sourceMissing, playback)?.let { message ->
-            Text(
-                text = message,
-                color = Color.White,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 32.dp),
-            )
-        }
-
-        // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
-        if (infoVisible) {
-            PlayerStreamInfo(
-                player = viewModel.player,
-                technical = playback.video,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .safeDrawingPadding()
-                    .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
-            )
-        }
-
-        if (locked) {
-            LockedOverlay(visible = unlockVisible) {
-                locked = false
-                unlockVisible = false
-                controlsVisible = true
+            statusMessage(ui.sourceMissing, playback)?.let { message ->
+                Text(
+                    text = message,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp),
+                )
             }
-            return@Box
-        }
 
-        if (panel == VodPanel.SETTINGS) {
-            // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-            PlayerSideSliders(levels) { }
-            MobileQuickSettingsPanel(
-                quickSettingChoices(
-                    tv = false,
-                    aspectMode = ui.aspectMode,
-                    onAspectMode = viewModel::setAspectMode,
-                    decoder = ui.decoder,
-                    onDecoder = viewModel::setDecoder,
-                    speed = ui.speed,
-                    onSpeed = viewModel::setSpeed,
-                    subtitleOffsetMs = ui.subtitleOffsetMs,
-                    onShiftSubtitle = viewModel::shiftSubtitle,
-                ),
-            )
-        } else if (controlsVisible) {
-            PlayerSideSliders(levels) { activity++ }
-            val season = ui.season
-            val episode = ui.episode
-            MobilePlayerControls(
-                title = if (season != null && episode != null) {
-                    "${episodeLabel(season, episode)}  ·  ${ui.title}"
-                } else {
-                    ui.title
-                },
-                subtitle = null,
-                onClose = onClose,
-                onLock = {
-                    locked = true
-                    controlsVisible = false
-                },
-                onPip = rememberEnterPictureInPicture(),
-                onCast = cast,
-                bottom = {
-                    // Premotavanje na krajevima, pauza posle premotavanja unazad, traka u sredini.
-                    PlayerTransportBar(
-                        startLabel = formatDuration(preview ?: ui.positionMs),
-                        endLabel = formatDuration(ui.durationMs),
-                        leading = {
-                            PlayerIconButton(
-                                icon = AppIcons.FastRewind,
-                                description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
-                                onClick = {
-                                    viewModel.seekBy(-viewModel.seekStepMs)
-                                    activity++
-                                },
+            // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
+            if (infoVisible) {
+                PlayerStreamInfo(
+                    player = viewModel.player,
+                    technical = playback.video,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .safeDrawingPadding()
+                        .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
+                )
+            }
+
+            if (locked) {
+                LockedOverlay(visible = unlockVisible) {
+                    locked = false
+                    unlockVisible = false
+                    controlsVisible = true
+                }
+                return@PauseDimLayer
+            }
+
+            if (panel == VodPanel.SETTINGS) {
+                // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
+                PlayerSideSliders(levels) { }
+                MobileQuickSettingsPanel(
+                    quickSettingChoices(
+                        tv = false,
+                        aspectMode = ui.aspectMode,
+                        onAspectMode = viewModel::setAspectMode,
+                        decoder = ui.decoder,
+                        onDecoder = viewModel::setDecoder,
+                        speed = ui.speed,
+                        onSpeed = viewModel::setSpeed,
+                        subtitleOffsetMs = ui.subtitleOffsetMs,
+                        onShiftSubtitle = viewModel::shiftSubtitle,
+                    ),
+                )
+            } else if (controlsVisible) {
+                PlayerSideSliders(levels) { activity++ }
+                val season = ui.season
+                val episode = ui.episode
+                MobilePlayerControls(
+                    title = if (season != null && episode != null) {
+                        "${episodeLabel(season, episode)}  ·  ${ui.title}"
+                    } else {
+                        ui.title
+                    },
+                    subtitle = null,
+                    onClose = onClose,
+                    onLock = {
+                        locked = true
+                        controlsVisible = false
+                    },
+                    onPip = rememberEnterPictureInPicture(),
+                    onCast = cast,
+                    bottom = {
+                        // Premotavanje na krajevima, pauza posle premotavanja unazad, traka u sredini.
+                        PlayerTransportBar(
+                            startLabel = formatDuration(preview ?: ui.positionMs),
+                            endLabel = formatDuration(ui.durationMs),
+                            leading = {
+                                PlayerIconButton(
+                                    icon = AppIcons.FastRewind,
+                                    description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
+                                    onClick = {
+                                        viewModel.seekBy(-viewModel.seekStepMs)
+                                        activity++
+                                    },
+                                )
+                                PlayPauseButton(
+                                    paused = playback.status == PlaybackStatus.PAUSED,
+                                    failed = failed,
+                                    onPlayPause = {
+                                        viewModel.togglePlayPause()
+                                        activity++
+                                    },
+                                    onRetry = viewModel::retry,
+                                )
+                            },
+                            trailing = {
+                                PlayerIconButton(
+                                    icon = AppIcons.FastForward,
+                                    description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
+                                    onClick = {
+                                        viewModel.seekBy(viewModel.seekStepMs)
+                                        activity++
+                                    },
+                                )
+                            },
+                        ) { barModifier ->
+                            PlayerSeekBar(
+                                positionMs = ui.positionMs,
+                                durationMs = ui.durationMs,
+                                onSeekTo = viewModel::seekTo,
+                                onSeekBy = viewModel::seekBy,
+                                onPreview = { preview = it },
+                                modifier = barModifier,
                             )
-                            PlayPauseButton(
-                                paused = playback.status == PlaybackStatus.PAUSED,
-                                failed = failed,
-                                onPlayPause = {
-                                    viewModel.togglePlayPause()
-                                    activity++
-                                },
-                                onRetry = viewModel::retry,
-                            )
-                        },
-                        trailing = {
-                            PlayerIconButton(
-                                icon = AppIcons.FastForward,
-                                description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
-                                onClick = {
-                                    viewModel.seekBy(viewModel.seekStepMs)
-                                    activity++
-                                },
-                            )
-                        },
-                    ) { barModifier ->
-                        PlayerSeekBar(
-                            positionMs = ui.positionMs,
-                            durationMs = ui.durationMs,
-                            onSeekTo = viewModel::seekTo,
-                            onSeekBy = viewModel::seekBy,
-                            onPreview = { preview = it },
-                            modifier = barModifier,
-                        )
-                    }
-                },
-                chips = {
-                    PlayerChip(
-                        icon = AppIcons.Subtitles,
-                        label = stringResource(R.string.player_subtitles),
-                        active = playback.textEnabled,
-                        onClick = { panel = VodPanel.SUBTITLES },
-                    )
-                    PlayerChip(
-                        icon = AppIcons.Audio,
-                        label = stringResource(R.string.player_audio),
-                        onClick = { panel = VodPanel.AUDIO },
-                    )
-                    PlayerChip(
-                        icon = AppIcons.Settings,
-                        label = stringResource(R.string.settings_title),
-                        // Brzina koja nije obična se vidi i na samom dugmetu.
-                        active = ui.speed != 1f,
-                        onClick = { panel = VodPanel.SETTINGS },
-                    )
-                    PlayerChip(
-                        icon = AppIcons.Info,
-                        label = stringResource(R.string.player_stream_info),
-                        active = infoVisible,
-                        onClick = {
-                            infoVisible = !infoVisible
-                            activity++
-                        },
-                    )
-                    // Na TV-u je sledeća epizoda ikonica na traci; ovde bi suzila traku za premotavanje.
-                    if (ui.hasNext) {
+                        }
+                    },
+                    chips = {
                         PlayerChip(
-                            icon = AppIcons.Next,
-                            label = stringResource(R.string.vod_next_episode),
-                            onClick = viewModel::next,
+                            icon = AppIcons.Subtitles,
+                            label = stringResource(R.string.player_subtitles),
+                            active = playback.textEnabled,
+                            onClick = { panel = VodPanel.SUBTITLES },
                         )
-                    }
-                },
-            )
+                        PlayerChip(
+                            icon = AppIcons.Audio,
+                            label = stringResource(R.string.player_audio),
+                            onClick = { panel = VodPanel.AUDIO },
+                        )
+                        PlayerChip(
+                            icon = AppIcons.Settings,
+                            label = stringResource(R.string.settings_title),
+                            // Brzina koja nije obična se vidi i na samom dugmetu.
+                            active = ui.speed != 1f,
+                            onClick = { panel = VodPanel.SETTINGS },
+                        )
+                        PlayerChip(
+                            icon = AppIcons.Info,
+                            label = stringResource(R.string.player_stream_info),
+                            active = infoVisible,
+                            onClick = {
+                                infoVisible = !infoVisible
+                                activity++
+                            },
+                        )
+                        // Na TV-u je sledeća epizoda ikonica na traci; ovde bi suzila traku za premotavanje.
+                        if (ui.hasNext) {
+                            PlayerChip(
+                                icon = AppIcons.Next,
+                                label = stringResource(R.string.vod_next_episode),
+                                onClick = viewModel::next,
+                            )
+                        }
+                    },
+                )
+            }
         }
     }
 

@@ -55,6 +55,9 @@ import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.nextLine
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.pauseDimInput
+import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
@@ -85,6 +88,7 @@ private enum class Overlay { HIDDEN, INFO, ACTIVE }
 fun TvPlayerScreen(
     channelId: Long,
     categoryId: Long?,
+    onClose: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -115,6 +119,8 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
+    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    val pauseDim = rememberPauseDim(playback.status, onExit = onClose)
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = panelOpen || overlay != Overlay.HIDDEN
 
@@ -156,6 +162,7 @@ fun TvPlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pauseDimInput(pauseDim)
             .onPreviewKeyEvent {
                 if (it.type == KeyEventType.KeyDown) activity++
                 false
@@ -233,105 +240,108 @@ fun TvPlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
         )
-        if (infoVisible && !channelList) {
-            PlayerStreamInfo(
-                player = viewModel.player,
-                technical = playback.video,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 96.dp, end = 48.dp),
-            )
-        }
 
-        statusMessage(ui, playback)?.let { message ->
-            Text(
-                text = message,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 96.dp),
-            )
-        }
+        PauseDimLayer(pauseDim) {
+            if (infoVisible && !channelList) {
+                PlayerStreamInfo(
+                    player = viewModel.player,
+                    technical = playback.video,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 96.dp, end = 48.dp),
+                )
+            }
 
-        if (ui.typedNumber.isNotEmpty()) {
-            Text(
-                text = ui.typedNumber,
-                color = Color.White,
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(horizontal = 48.dp, vertical = 27.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        }
+            statusMessage(ui, playback)?.let { message ->
+                Text(
+                    text = message,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 96.dp),
+                )
+            }
 
-        if (overlay != Overlay.HIDDEN && !channelList) {
-            LiveControls(
-                ui = ui,
-                nowNext = nowNext,
-                playback = playback,
-                viewModel = viewModel,
-                isFavorite = isFavorite,
-                firstChipFocus = firstChipFocus,
-                onChannels = { channelList = true },
-                onAudio = { tracks = TvTrackKind.AUDIO },
-                onSettings = { settingsOpen = true },
-                infoVisible = infoVisible,
-                onInfo = { infoVisible = !infoVisible },
-                onFavorite = viewModel::toggleFavorite,
-                isRecording = isRecording,
-                onRecord = record,
-            )
-        }
+            if (ui.typedNumber.isNotEmpty()) {
+                Text(
+                    text = ui.typedNumber,
+                    color = Color.White,
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(horizontal = 48.dp, vertical = 27.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                )
+            }
 
-        if (channelList) {
-            ChannelListPanel(
-                viewModel = viewModel,
-                ui = ui,
-                onPick = {
-                    channelList = false
-                    overlay = Overlay.INFO
-                },
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
-        }
+            if (overlay != Overlay.HIDDEN && !channelList) {
+                LiveControls(
+                    ui = ui,
+                    nowNext = nowNext,
+                    playback = playback,
+                    viewModel = viewModel,
+                    isFavorite = isFavorite,
+                    firstChipFocus = firstChipFocus,
+                    onChannels = { channelList = true },
+                    onAudio = { tracks = TvTrackKind.AUDIO },
+                    onSettings = { settingsOpen = true },
+                    infoVisible = infoVisible,
+                    onInfo = { infoVisible = !infoVisible },
+                    onFavorite = viewModel::toggleFavorite,
+                    isRecording = isRecording,
+                    onRecord = record,
+                )
+            }
 
-        tracks?.let { kind ->
-            TvTrackPanel(
-                kind = kind,
-                playback = playback,
-                onSelectAudio = viewModel::selectAudio,
-                onSelectText = viewModel::selectText,
-                onClose = { tracks = null },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
-        }
+            if (channelList) {
+                ChannelListPanel(
+                    viewModel = viewModel,
+                    ui = ui,
+                    onPick = {
+                        channelList = false
+                        overlay = Overlay.INFO
+                    },
+                    modifier = Modifier.align(Alignment.CenterStart),
+                )
+            }
 
-        if (settingsOpen) {
-            TvQuickSettingsPanel(
-                choices = quickSettingChoices(
-                    tv = true,
-                    aspectMode = ui.aspectMode,
-                    onAspectMode = viewModel::setAspectMode,
-                    decoder = ui.decoder,
-                    onDecoder = viewModel::setDecoder,
-                ),
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
-        }
+            tracks?.let { kind ->
+                TvTrackPanel(
+                    kind = kind,
+                    playback = playback,
+                    onSelectAudio = viewModel::selectAudio,
+                    onSelectText = viewModel::selectText,
+                    onClose = { tracks = null },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
 
-        if (recordPanel) {
-            val choices = recordingChoices(nowNext.now?.stopMs)
-            TvChoicePanel(
-                title = stringResource(R.string.recording_duration_title),
-                options = choices.map { it.label },
-                onSelect = { index -> viewModel.toggleRecording(choices[index].stopAtMs()) },
-                onClose = { recordPanel = false },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+            if (settingsOpen) {
+                TvQuickSettingsPanel(
+                    choices = quickSettingChoices(
+                        tv = true,
+                        aspectMode = ui.aspectMode,
+                        onAspectMode = viewModel::setAspectMode,
+                        decoder = ui.decoder,
+                        onDecoder = viewModel::setDecoder,
+                    ),
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
+
+            if (recordPanel) {
+                val choices = recordingChoices(nowNext.now?.stopMs)
+                TvChoicePanel(
+                    title = stringResource(R.string.recording_duration_title),
+                    options = choices.map { it.label },
+                    onSelect = { index -> viewModel.toggleRecording(choices[index].stopAtMs()) },
+                    onClose = { recordPanel = false },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
         }
     }
 }

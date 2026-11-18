@@ -67,7 +67,12 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
     // Polje za koje su opcije otvorene, ili null.
     var menu by remember { mutableStateOf<Int?>(null) }
 
-    KeepScreenOn()
+    // Ekran ostaje upaljen samo dok bar jedno polje pušta ili učitava sliku.
+    KeepScreenOn(
+        active = state.tiles.any {
+            it.status == PlaybackStatus.PLAYING || it.status == PlaybackStatus.LOADING || it.status == PlaybackStatus.RETRYING
+        },
+    )
     DisposableEffect(Unit) {
         viewModel.onForeground()
         onDispose { viewModel.onBackground() }

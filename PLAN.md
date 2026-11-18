@@ -552,6 +552,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Podešavanja: slova za jedan stepen sitnija, na telefonu i na TV-u, da ne odskaču od ostatka aplikacije.
 - [x] Uživo na telefonu: izabrana kategorija ostaje ista kad se telefon okrene (izbor pamti view model,
   a ne samo ekran koji se pri okretanju iscrtava iznova).
+- [x] Zaštita ekrana od urezivanja slike (Bane, 18. 11. 2026): posle 1 minuta pauze slika se zatamni na
+  oko 30%, a kontrole se sklone; prvi taster ili dodir samo vraća sliku. Posle 30 minuta pauze plejer se
+  zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,
+  na TV-u i telefonu. Multi view drži ekran upaljen samo dok bar jedno polje pušta ili učitava sliku.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 
