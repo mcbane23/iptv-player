@@ -61,6 +61,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.bane23.iptvplayer.ui.common.LiveTvUiState
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.Role
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
@@ -218,7 +222,28 @@ fun MobileLiveTvScreen(
                                 state = state,
                                 selected = selected,
                                 onSelect = choose,
-                                onSearch = onSearch,
+                                header = {
+                                    // Izbor liste i dugmad stoje na vrhu spiska, da kanali počnu u istoj visini.
+                                    val active = playlists.playlists.firstOrNull { it.id == playlistId }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        if (active != null) {
+                                            PlaylistSwitcher(
+                                                activeName = active.name,
+                                                names = playlists.playlists.map { it.id to it.name },
+                                                onSelect = { id ->
+                                                    chosen = null
+                                                    playlistsViewModel.setActive(id)
+                                                },
+                                                maxWidth = 56.dp,
+                                            )
+                                        }
+                                    }
+                                    PanelIcon(AppIcons.Guide, stringResource(R.string.guide_title)) {
+                                        playlistId?.let { onGuide(it, categoryId) }
+                                    }
+                                    PanelIcon(AppIcons.MultiView, stringResource(R.string.multiview_title), onMultiView)
+                                    PanelIcon(AppIcons.Search, stringResource(R.string.search_channels), onSearch)
+                                },
                                 onHide = viewModel::hideCategory,
                                 onMoveToTop = viewModel::moveCategoryToTop,
                                 onManage = onCategories,
@@ -227,10 +252,8 @@ fun MobileLiveTvScreen(
                                     .width(210.dp)
                                     .fillMaxHeight(),
                             )
-                            Column(modifier = Modifier.weight(1f)) {
-                                ChannelsHeading(title = headingTitle, count = headingCount) { toolbar(false) }
-                                channelGrid(Modifier.weight(1f))
-                            }
+                            // Bez naslova: izabrana grupa i broj kanala već pišu u spisku levo.
+                            channelGrid(Modifier.weight(1f))
                         }
                     } else {
                         // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
@@ -273,7 +296,12 @@ fun MobileLiveTvScreen(
 
 /** Naziv aktivne liste u zaglavlju; ako lista ima više, dodir otvara izbor druge liste. */
 @Composable
-private fun PlaylistSwitcher(activeName: String, names: List<Pair<Long, String>>, onSelect: (Long) -> Unit) {
+private fun PlaylistSwitcher(
+    activeName: String,
+    names: List<Pair<Long, String>>,
+    onSelect: (Long) -> Unit,
+    maxWidth: Dp = 120.dp,
+) {
     var open by remember { mutableStateOf(false) }
     Box {
         TextButton(
@@ -285,7 +313,7 @@ private fun PlaylistSwitcher(activeName: String, names: List<Pair<Long, String>>
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 120.dp),
+                modifier = Modifier.widthIn(max = maxWidth),
             )
             if (names.size > 1) {
                 Icon(AppIcons.ArrowDown, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -414,8 +442,8 @@ private fun ChannelsHeading(
 }
 
 /**
- * Spisak grupa uz levu ivicu položenog telefona, kao na TV-u: pretraga, omiljeni, nedavno, svi
- * kanali, pa kategorije. Dugi pritisak na kategoriju otvara meni (sakrij, na vrh, uredi).
+ * Spisak grupa uz levu ivicu položenog telefona, kao na TV-u: na vrhu [header] (izbor liste, vodič,
+ * više kanala, pretraga), pa omiljeni, nedavno, svi kanali i kategorije. Dugi pritisak na kategoriju otvara meni (sakrij, na vrh, uredi).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -423,7 +451,7 @@ private fun GroupPanel(
     state: LiveTvUiState,
     selected: Long,
     onSelect: (Long) -> Unit,
-    onSearch: () -> Unit,
+    header: @Composable RowScope.() -> Unit,
     onHide: (Long) -> Unit,
     onMoveToTop: (Long) -> Unit,
     onManage: () -> Unit,
@@ -436,8 +464,14 @@ private fun GroupPanel(
             .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
             .padding(6.dp),
     ) {
-        item(key = "search") {
-            PanelRow(text = stringResource(R.string.search_channels), icon = AppIcons.Search, onClick = onSearch)
+        item(key = "header") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = header,
+            )
             PanelDivider()
         }
         item(key = ChannelGroups.FAVORITES) {
@@ -579,4 +613,18 @@ private fun PanelDivider() {
             .height(1.dp)
             .background(Color.White.copy(alpha = 0.08f)),
     )
+}
+
+/** Malo dugme sa ikonicom u redu na vrhu spiska grupa. [description] čitaju čitači ekrana. */
+@Composable
+private fun PanelIcon(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .clickable(onClickLabel = description, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(imageVector = icon, contentDescription = description, modifier = Modifier.size(20.dp))
+    }
 }
