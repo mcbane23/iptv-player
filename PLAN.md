@@ -550,6 +550,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   telefonu je svaki red zaobljena pločica, izabrani je ceo u akcentnoj boji, a Omiljeni, Nedavno i Svi kanali
   nose broj ispod naziva; na TV-u spisak više nema podlogu, linije ni natpis „Kategorije”. Raspored i kanali isti.
 - [x] Podešavanja: slova za jedan stepen sitnija, na telefonu i na TV-u, da ne odskaču od ostatka aplikacije.
+- [x] Uživo na telefonu: izabrana kategorija ostaje ista kad se telefon okrene (izbor pamti view model,
+  a ne samo ekran koji se pri okretanju iscrtava iznova).
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 

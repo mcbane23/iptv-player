@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LiveTvUiState(
@@ -49,13 +50,23 @@ data class LiveTvUiState(
      * ili null ako se ne zna ili te kategorije više nema.
      */
     val lastCategoryId: Long? = null,
-)
+) {
+    /** Da li grupa [groupId] (kategorija ili vrednost iz [ChannelGroups]) trenutno postoji. */
+    fun hasGroup(groupId: Long): Boolean = when (groupId) {
+        ChannelGroups.FAVORITES, ChannelGroups.ALL -> true
+        ChannelGroups.RECENT -> recentCount > 0
+        else -> categories.any { it.id == groupId }
+    }
+}
 
 /** Kategorije aktivne liste. */
 @HiltViewModel
 class LiveTvViewModel @Inject constructor(
     private val repository: ChannelRepository,
 ) : ViewModel() {
+
+    /** Grupa koju je korisnik poslednju otvorio u ovom pokretanju aplikacije, po listi. */
+    private val picked = MutableStateFlow<Map<Long, Long>>(emptyMap())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<LiveTvUiState> = repository.activePlaylistId
@@ -66,24 +77,30 @@ class LiveTvViewModel @Inject constructor(
                 flow<LiveTvUiState> {
                     // Čita se jednom po listi: dok je ekran otvoren, izbor vodi sam ekran.
                     val last = repository.lastCategory(playlistId)
+                    val loaded = combine(
+                        repository.observeCategories(playlistId),
+                        repository.observeChannelCount(playlistId),
+                        repository.observeFavoriteCount(playlistId),
+                        repository.observeRecentCount(playlistId),
+                        repository.observeIsXtream(playlistId),
+                    ) { categories, total, favorites, recent, xtream ->
+                        LiveTvUiState(
+                            loading = false,
+                            playlistId = playlistId,
+                            categories = categories,
+                            totalChannels = total,
+                            favoriteCount = favorites,
+                            recentCount = recent,
+                            hasVod = xtream,
+                            lastCategoryId = LastLiveCategory.resolve(last, categories, recent > 0),
+                        )
+                    }
+                    // Izbor napravljen dok je aplikacija otvorena ima prednost nad sačuvanim, da grupa
+                    // ostane ista i kad se ekran iscrta iznova (npr. posle okretanja telefona).
                     emitAll(
-                        combine(
-                            repository.observeCategories(playlistId),
-                            repository.observeChannelCount(playlistId),
-                            repository.observeFavoriteCount(playlistId),
-                            repository.observeRecentCount(playlistId),
-                            repository.observeIsXtream(playlistId),
-                        ) { categories, total, favorites, recent, xtream ->
-                            LiveTvUiState(
-                                loading = false,
-                                playlistId = playlistId,
-                                categories = categories,
-                                totalChannels = total,
-                                favoriteCount = favorites,
-                                recentCount = recent,
-                                hasVod = xtream,
-                                lastCategoryId = LastLiveCategory.resolve(last, categories, recent > 0),
-                            )
+                        combine(loaded, picked) { ui, pickedGroups ->
+                            val group = pickedGroups[playlistId]?.takeIf { ui.hasGroup(it) }
+                            if (group == null) ui else ui.copy(lastCategoryId = group)
                         },
                     )
                 }
@@ -98,6 +115,7 @@ class LiveTvViewModel @Inject constructor(
     fun rememberCategory(groupId: Long) {
         val current = state.value
         val playlistId = current.playlistId ?: return
+        picked.update { it + (playlistId to groupId) }
         val token = LastLiveCategory.token(groupId, current.categories) ?: return
         viewModelScope.launch { repository.setLastCategory(playlistId, token) }
     }
