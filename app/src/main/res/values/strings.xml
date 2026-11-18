@@ -74,6 +74,7 @@
     <string name="player_play">Play</string>
     <string name="player_pause">Pause</string>
     <string name="player_retry">Try again</string>
+    <string name="player_schedule">Schedule</string>
     <string name="player_channels">Channels</string>
     <string name="player_audio">Audio</string>
     <string name="player_stream_info">Stream info</string>

@@ -182,6 +182,11 @@ fun TvApp() {
                         channelId = key.channelId,
                         categoryId = key.categoryId,
                         onClose = { backStack.removeLastOrNull() },
+                        // Arhiva zamenjuje plejer, da kanal ne nastavi da troši vezu u pozadini.
+                        onArchive = { channelId ->
+                            backStack.removeLastOrNull()
+                            backStack.add(ChannelArchive(channelId))
+                        },
                     )
                 }
             }

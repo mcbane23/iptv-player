@@ -73,6 +73,7 @@
     <string name="player_play">Pusti</string>
     <string name="player_pause">Pauza</string>
     <string name="player_retry">Pokušaj ponovo</string>
+    <string name="player_schedule">Program</string>
     <string name="player_channels">Kanali</string>
     <string name="player_audio">Zvuk</string>
     <string name="player_stream_info">Informacije o strimu</string>

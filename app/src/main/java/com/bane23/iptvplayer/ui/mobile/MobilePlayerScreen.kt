@@ -87,7 +87,7 @@ import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
 
-private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS }
+private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -96,6 +96,7 @@ fun MobilePlayerScreen(
     categoryId: Long?,
     onClose: () -> Unit,
     onCastStarted: () -> Unit = {},
+    onArchive: (channelId: Long) -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -229,6 +230,7 @@ fun MobilePlayerScreen(
                         onPlayPause = viewModel::togglePlayPause,
                         onRetry = viewModel::retry,
                         onChannels = { panel = Panel.CHANNELS },
+                        onSchedule = { panel = Panel.SCHEDULE },
                         onAudio = { panel = Panel.AUDIO },
                         onSettings = { panel = Panel.SETTINGS },
                         infoVisible = infoVisible,
@@ -255,6 +257,14 @@ fun MobilePlayerScreen(
                             decoder = ui.decoder,
                             onDecoder = viewModel::setDecoder,
                         ),
+                    )
+                }
+
+                val scheduleChannel = ui.channel
+                if (panel == Panel.SCHEDULE && scheduleChannel != null) {
+                    MobileChannelSchedulePanel(
+                        channel = scheduleChannel,
+                        onArchive = { onArchive(scheduleChannel.id) },
                     )
                 }
 
@@ -304,6 +314,7 @@ private fun LiveControls(
     onPlayPause: () -> Unit,
     onRetry: () -> Unit,
     onChannels: () -> Unit,
+    onSchedule: () -> Unit,
     onAudio: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
@@ -369,6 +380,9 @@ private fun LiveControls(
         },
         chips = {
             PlayerChip(icon = AppIcons.ChannelList, label = stringResource(R.string.player_channels), onClick = onChannels)
+            if (channel != null) {
+                PlayerChip(icon = AppIcons.Guide, label = stringResource(R.string.player_schedule), onClick = onSchedule)
+            }
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
             PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)
             PlayerChip(
