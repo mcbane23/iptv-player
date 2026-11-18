@@ -23,6 +23,7 @@ import javax.inject.Singleton
 import javax.net.ssl.SSLException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -113,7 +114,8 @@ class EpgRepository @Inject constructor(
                 setProgress(playlistId, Progress())
                 true
             } catch (e: CancellationException) {
-                epgDao.deleteGeneration(playlistId, generation)
+                // Otkazana korutina ne može više ništa da upiše, pa se delimično učitan vodič briše ovako.
+                withContext(NonCancellable) { epgDao.deleteGeneration(playlistId, generation) }
                 setProgress(playlistId, Progress())
                 throw e
             } catch (e: Exception) {
