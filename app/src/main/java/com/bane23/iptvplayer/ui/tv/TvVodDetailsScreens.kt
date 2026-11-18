@@ -60,7 +60,10 @@ import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.SeriesViewModel
 import com.bane23.iptvplayer.ui.common.vod.isSeasonWatched
 import com.bane23.iptvplayer.ui.common.vod.label
+import com.bane23.iptvplayer.ui.common.vod.GenreChips
+import com.bane23.iptvplayer.ui.common.vod.genresOf
 import com.bane23.iptvplayer.ui.common.vod.metaLine
+import com.bane23.iptvplayer.ui.common.vod.rememberOpenTrailer
 import com.bane23.iptvplayer.ui.common.vod.statusText
 
 /** Detalji filma na TV-u. */
@@ -79,8 +82,9 @@ fun TvMovieScreen(
     val details = state.details
     val playExtension = state.extension ?: XtreamVodParser.DEFAULT_EXTENSION
     val firstFocus = remember { FocusRequester() }
+    val openTrailer = rememberOpenTrailer()
 
-    Backdrop(state.poster) {
+    Backdrop(state.poster, details?.backdrop) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -100,6 +104,7 @@ fun TvMovieScreen(
                 details?.metaLine()?.takeIf { it.isNotEmpty() }?.let { meta ->
                     Text(text = meta, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                GenreChips(details?.genre)
                 state.progress?.statusText()?.let { status ->
                     Text(text = status, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
                 }
@@ -134,6 +139,12 @@ fun TvMovieScreen(
                     TvOutlinedButton(onClick = viewModel::toggleWatched) {
                         ButtonIcon(AppIcons.Check)
                         Text(stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched))
+                    }
+                    details?.trailer?.let { trailer ->
+                        TvOutlinedButton(onClick = { openTrailer(trailer) }) {
+                            ButtonIcon(AppIcons.Movies)
+                            Text(stringResource(R.string.vod_trailer))
+                        }
                     }
                 }
                 if (state.loading) {
@@ -185,6 +196,7 @@ fun TvSeriesScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val details = state.details
     val firstFocus = remember { FocusRequester() }
+    val openTrailer = rememberOpenTrailer()
     val resume = state.resumeEpisode
     // Prelazak sa sezona na epizode vodi na prvu neodgledanu epizodu sezone.
     val episodeFocus = remember { FocusRequester() }
@@ -197,7 +209,7 @@ fun TvSeriesScreen(
         if (details != null) runCatching { episodeListState.scrollToItem(if (index == 0) 0 else index + 1) }
     }
 
-    Backdrop(state.poster) {
+    Backdrop(state.poster, details?.backdrop) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -217,6 +229,7 @@ fun TvSeriesScreen(
                 details?.metaLine()?.takeIf { it.isNotEmpty() }?.let { meta ->
                     Text(text = meta, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                GenreChips(genresOf(details?.genre, limit = 2).joinToString(","))
                 details?.plot?.let { plot ->
                     Text(
                         text = plot,
@@ -225,6 +238,12 @@ fun TvSeriesScreen(
                         maxLines = 6,
                         overflow = TextOverflow.Ellipsis,
                     )
+                }
+                details?.trailer?.let { trailer ->
+                    TvOutlinedButton(onClick = { openTrailer(trailer) }) {
+                        ButtonIcon(AppIcons.Movies)
+                        Text(stringResource(R.string.vod_trailer))
+                    }
                 }
             }
 
@@ -365,16 +384,48 @@ fun TvSeriesScreen(
     }
 }
 
-/** Poster kao zatamnjena pozadina desne strane ekrana, koja se ka levo stapa sa pozadinom. */
+/**
+ * Pozadina detalja. Kad provajder šalje široku sliku iz filma ([backdrop]), ona ide preko celog
+ * ekrana, zatamnjena ka levoj strani i dnu, gde je tekst. Inače je to zatamnjen poster na desnoj
+ * strani, koji se ka levo stapa sa pozadinom.
+ */
 @Composable
-private fun Backdrop(poster: String?, content: @Composable () -> Unit) {
+private fun Backdrop(poster: String?, backdrop: String?, content: @Composable () -> Unit) {
     val background = MaterialTheme.colorScheme.background
+    // Ako slika ne može da se učita, ostaje poster kao i do sada.
+    var backdropFailed by remember(backdrop) { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(background),
     ) {
-        if (!poster.isNullOrBlank()) {
+        if (!backdrop.isNullOrBlank() && !backdropFailed) {
+            AsyncImage(
+                model = backdrop,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                onError = { backdropFailed = true },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(0.55f),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            0f to background.copy(alpha = 0.92f),
+                            0.55f to background.copy(alpha = 0.7f),
+                            1f to background.copy(alpha = 0.25f),
+                        ),
+                    ),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to background)),
+            )
+        } else if (!poster.isNullOrBlank()) {
             AsyncImage(
                 model = poster,
                 contentDescription = null,

@@ -302,6 +302,8 @@
     <string name="vod_total">Ukupno: %1$d</string>
     <string name="settings_tv_vod_preview">Opis filma i serije iznad postera</string>
     <string name="vod_continue_remove">Skloni iz „Nastavi gledanje”</string>
+    <string name="vod_trailer">Trejler</string>
+    <string name="vod_trailer_no_app">Na uređaju nema aplikacije koja može da pusti trejler.</string>
     <string name="vod_continue_watching">Nastavi gledanje</string>
     <string name="search_movies">Pretraga filmova</string>
     <string name="search_series">Pretraga serija</string>

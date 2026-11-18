@@ -571,6 +571,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       lista nije spojena, pa se vidi samo aktivna. Filmovi i serije su uvek iz aktivne liste. Baza v14
       (`playlists.merged`). Oznaka se ne prenosi pri prenosu na TV; roditeljska zaštita nudi samo
       kategorije aktivne liste
+- [x] Detalji filma i serije (Bane, 18. 11. 2026, treći krug predloga): kad provajder šalje široku sliku
+      (`backdrop_path`), ona je pozadina preko celog ekrana (TV), odnosno zaglavlja (telefon); inače
+      ostaje poster kao do sada. Žanrovi su pločice, ocena je prva u redu podataka, a dugme „Trejler”
+      (kad panel šalje `youtube_trailer`) otvara trejler u YouTube-u ili pregledaču
 
 ## 7. Testiranje
 

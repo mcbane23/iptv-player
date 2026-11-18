@@ -57,6 +57,10 @@ data class MovieDetails(
     val extension: String?,
     /** ID na TMDB-u, ako ga panel šalje. */
     val tmdbId: Long? = null,
+    /** Široka slika iz filma za pozadinu detalja, ako je panel šalje. */
+    val backdrop: String? = null,
+    /** Link trejlera, vidi [XtreamVodParser.trailerUrl]. */
+    val trailer: String? = null,
 )
 
 data class Episode(
@@ -83,6 +87,10 @@ data class SeriesDetails(
     val seasons: List<Season>,
     /** ID serije na TMDB-u, ako ga panel šalje. */
     val tmdbId: Long? = null,
+    /** Široka slika iz serije za pozadinu detalja, ako je panel šalje. */
+    val backdrop: String? = null,
+    /** Link trejlera, vidi [XtreamVodParser.trailerUrl]. */
+    val trailer: String? = null,
 ) {
     /** Sve epizode redom: po sezoni, pa po broju epizode. */
     val episodes: List<Episode> get() = seasons.flatMap { it.episodes }
@@ -119,6 +127,8 @@ object XtreamVodParser {
             extension = data.text("container_extension"),
             tmdbId = listOf(info.text("tmdb_id"), info.text("tmdb"), data.text("tmdb_id"), data.text("tmdb"))
                 .firstNotNullOfOrNull(::tmdbId),
+            backdrop = info.image("backdrop_path"),
+            trailer = trailerUrl(info.text("youtube_trailer") ?: info.text("trailer")),
         )
     }
 
@@ -146,6 +156,8 @@ object XtreamVodParser {
             rating = info.text("rating"),
             seasons = seasons,
             tmdbId = tmdbId(info.text("tmdb")) ?: tmdbId(info.text("tmdb_id")),
+            backdrop = info.image("backdrop_path"),
+            trailer = trailerUrl(info.text("youtube_trailer") ?: info.text("trailer")),
         )
     }
 
@@ -177,6 +189,29 @@ object XtreamVodParser {
         if (value == null || value is JsonNull || value !is JsonPrimitive) return null
         return value.content.trim().takeIf { it.isNotEmpty() }
     }
+
+    /** Link slike iz polja koje stiže čas kao tekst, čas kao niz linkova (uzima se prvi). */
+    private fun JsonObject?.image(key: String): String? {
+        val value = this?.get(key)
+        val first = if (value is JsonArray) value.firstOrNull { it is JsonPrimitive && it !is JsonNull } else value
+        if (first == null || first is JsonNull || first !is JsonPrimitive) return null
+        return first.content.trim().takeIf { it.startsWith("http://") || it.startsWith("https://") }
+    }
+
+    /**
+     * Link trejlera iz polja `youtube_trailer`: paneli šalju ili ceo link ili samo YouTube oznaku
+     * snimka. Sve drugo (prazno, tekst sa razmacima) znači da trejlera nema.
+     */
+    fun trailerUrl(raw: String?): String? {
+        val text = raw?.trim().orEmpty()
+        return when {
+            text.startsWith("https://") || text.startsWith("http://") -> text
+            YOUTUBE_ID.matches(text) -> "https://www.youtube.com/watch?v=$text"
+            else -> null
+        }
+    }
+
+    private val YOUTUBE_ID = Regex("[A-Za-z0-9_-]{6,20}")
 
     /** TMDB ID kao broj; paneli umesto praznog šalju i "0". */
     fun tmdbId(text: String?): Long? = text?.trim()?.toLongOrNull()?.takeIf { it > 0 }

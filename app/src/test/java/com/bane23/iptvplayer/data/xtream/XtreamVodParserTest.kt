@@ -171,4 +171,29 @@ class XtreamVodParserTest {
         assertEquals(4321L, series.tmdbId)
         assertNull(XtreamVodParser.series(json("""{"info":{"name":"Bez"},"episodes":{}}""")).tmdbId)
     }
+
+    @Test
+    fun `backdrop is read from text or list and trailer becomes a link`() {
+        val movie = XtreamVodParser.movie(
+            json("""{"info":{"backdrop_path":["http://slike.invalid/siroka.jpg","http://slike.invalid/druga.jpg"],"youtube_trailer":"AbCdEf12345"},"movie_data":{}}"""),
+        )
+        assertEquals("http://slike.invalid/siroka.jpg", movie.backdrop)
+        assertEquals("https://www.youtube.com/watch?v=AbCdEf12345", movie.trailer)
+
+        val series = XtreamVodParser.series(
+            json("""{"info":{"backdrop_path":"https://slike.invalid/serija.jpg","youtube_trailer":"https://video.invalid/trejler"},"episodes":{}}"""),
+        )
+        assertEquals("https://slike.invalid/serija.jpg", series.backdrop)
+        assertEquals("https://video.invalid/trejler", series.trailer)
+    }
+
+    @Test
+    fun `missing or odd backdrop and trailer mean none`() {
+        val movie = XtreamVodParser.movie(json("""{"info":{"backdrop_path":[],"youtube_trailer":""},"movie_data":{}}"""))
+        assertNull(movie.backdrop)
+        assertNull(movie.trailer)
+        assertNull(XtreamVodParser.trailerUrl("nema trejlera"))
+        assertNull(XtreamVodParser.trailerUrl(null))
+        assertNull(XtreamVodParser.movie(json("""{"info":{"backdrop_path":"nije link"}}""")).backdrop)
+    }
 }
