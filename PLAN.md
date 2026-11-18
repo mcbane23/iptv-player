@@ -565,6 +565,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       kanala koji se gleda (emisija u toku i narednih 24 sata) preko slike, na TV-u i telefonu. Buduća
       emisija nudi „Podseti me” i zakazivanje snimanja, tekuća snimanje do kraja; kanal sa arhivom ima
       prvi red „Arhiva” (arhiva zamenjuje plejer, da kanal ne drži vezu u pozadini)
+- [x] Spajanje lista (Bane, 18. 11. 2026; izabrao „samo kanali uživo”): u opcijama liste stavka „Spoji sa
+      drugim listama”. Kad je aktivna lista spojena, kanali, kategorije, omiljeni, nedavno gledani, vodič
+      i pretraga svih spojenih lista prikazuju se zajedno (liste jedna za drugom). Podrazumevano nijedna
+      lista nije spojena, pa se vidi samo aktivna. Filmovi i serije su uvek iz aktivne liste. Baza v14
+      (`playlists.merged`). Oznaka se ne prenosi pri prenosu na TV; roditeljska zaštita nudi samo
+      kategorije aktivne liste
 
 ## 7. Testiranje
 

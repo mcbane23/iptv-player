@@ -59,15 +59,20 @@ class ChannelRepository @Inject constructor(
         combine(categoryDao.observeLiveWithCount(playlistId), locks.activeKeys) { rows, lockedKeys ->
             rows.map {
                 val name = it.category.name
-                val locked = LockRepository.liveKey(playlistId, name) in lockedKeys
-                Category(it.category.id, if (locked) LockRepository.LOCK_MARK + name else name, it.channelCount)
+                val locked = LockRepository.liveKey(it.category.playlistId, name) in lockedKeys
+                Category(
+                    id = it.category.id,
+                    name = if (locked) LockRepository.LOCK_MARK + name else name,
+                    channelCount = it.channelCount,
+                    playlistId = it.category.playlistId,
+                )
             }
         }
 
     /** Sve kategorije, i sakrivene, za ekran uređivanja. */
     fun observeAllCategories(playlistId: Long): Flow<List<Category>> =
         categoryDao.observeAllLiveWithCount(playlistId).map { rows ->
-            rows.map { Category(it.category.id, it.category.name, it.channelCount, it.category.hidden) }
+            rows.map { Category(it.category.id, it.category.name, it.channelCount, it.category.hidden, it.category.playlistId) }
         }
 
     suspend fun setCategoryHidden(categoryId: Long, hidden: Boolean) = categoryDao.setHidden(categoryId, hidden)
@@ -233,16 +238,16 @@ class ChannelRepository @Inject constructor(
 
     /** Redni broj kanala (od nule) u svojoj kategoriji, odnosno u celoj listi. */
     suspend fun positionOf(channel: Channel, categoryId: Long?): Int =
-        channelDao.positionOf(channel.playlistId, categoryId, channel.sortOrder)
+        channelDao.positionOf(channel.playlistId, categoryId, channel.playlistId, channel.sortOrder)
 
     /** Sledeći kanal u istoj kategoriji; posle poslednjeg ide prvi. */
     suspend fun next(channel: Channel, categoryId: Long?): Channel? =
-        (channelDao.next(channel.playlistId, categoryId, channel.sortOrder)
+        (channelDao.next(channel.playlistId, categoryId, channel.playlistId, channel.sortOrder)
             ?: channelDao.first(channel.playlistId, categoryId))?.toDomain()
 
     /** Prethodni kanal u istoj kategoriji; pre prvog ide poslednji. */
     suspend fun previous(channel: Channel, categoryId: Long?): Channel? =
-        (channelDao.previous(channel.playlistId, categoryId, channel.sortOrder)
+        (channelDao.previous(channel.playlistId, categoryId, channel.playlistId, channel.sortOrder)
             ?: channelDao.last(channel.playlistId, categoryId))?.toDomain()
 
     suspend fun byNumber(playlistId: Long, number: Int): Channel? =

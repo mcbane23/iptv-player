@@ -108,6 +108,15 @@ fun TvPlaylistsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 27.dp),
             ) {
+                if (state.playlists.any { it.merged }) {
+                    item(key = "merge-hint") {
+                        Text(
+                            text = stringResource(R.string.playlists_merge_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 items(state.playlists, key = { it.id }) { playlist ->
                     TvPlaylistRow(
                         playlist = playlist,
@@ -116,6 +125,8 @@ fun TvPlaylistsScreen(
                         onRefresh = { viewModel.refresh(playlist.id) },
                         onEdit = { onEdit(playlist.id) },
                         onDelete = { viewModel.delete(playlist.id) },
+                        // Spajanje ima smisla tek kad postoje bar dve liste.
+                        onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
                     )
                 }
             }
@@ -143,6 +154,7 @@ private fun TvPlaylistRow(
     onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onMerge: (() -> Unit)?,
 ) {
     var expanded by remember { mutableStateOf(false) }
     // Brisanje se potvrđuje u samom redu: dijalozi na TV-u lako izgube fokus.
@@ -240,6 +252,11 @@ private fun TvPlaylistRow(
                     }
                     TvOutlinedButton(onClick = { if (!refreshing) onEdit() }) {
                         Text(stringResource(R.string.action_edit))
+                    }
+                    if (onMerge != null) {
+                        TvOutlinedButton(onClick = onMerge) {
+                            Text(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge))
+                        }
                     }
                     TvOutlinedButton(
                         onClick = { if (!refreshing) confirmDelete = true },

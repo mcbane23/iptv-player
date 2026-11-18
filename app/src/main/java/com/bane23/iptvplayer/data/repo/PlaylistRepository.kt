@@ -96,6 +96,7 @@ class PlaylistRepository @Inject constructor(
                     isActive = p.id == activeId,
                     accountExpiresAt = p.accountExpiresAt,
                     maxConnections = p.maxConnections,
+                    merged = p.merged,
                 )
             }
         }
@@ -155,7 +156,12 @@ class PlaylistRepository @Inject constructor(
     suspend fun updatePlaylist(id: Long, draft: PlaylistDraft) = guarded {
         val existing = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
         val fresh = draft.toNewEntity(existingPassword = existing.passwordEncrypted)
-        val updated = fresh.copy(id = id, epgUrl = existing.epgUrl, lastRefreshedAt = existing.lastRefreshedAt)
+        val updated = fresh.copy(
+            id = id,
+            epgUrl = existing.epgUrl,
+            lastRefreshedAt = existing.lastRefreshedAt,
+            merged = existing.merged,
+        )
         db.withTransaction {
             playlistDao.update(updated)
             importContent(updated)
@@ -218,6 +224,12 @@ class PlaylistRepository @Inject constructor(
     }
 
     suspend fun setActivePlaylist(id: Long) = settings.setActivePlaylistId(id)
+
+    /**
+     * Uključuje listu u spojeni prikaz, odnosno isključuje je. Kad je aktivna lista spojena, kanali
+     * svih spojenih lista se u Uživo, vodiču i pretrazi prikazuju zajedno.
+     */
+    suspend fun setMerged(id: Long, merged: Boolean) = withContext(Dispatchers.IO) { playlistDao.setMerged(id, merged) }
 
     // ---------------------------------------------------------------------------------------
 

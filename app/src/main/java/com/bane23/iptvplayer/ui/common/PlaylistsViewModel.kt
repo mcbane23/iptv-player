@@ -59,6 +59,11 @@ class PlaylistsViewModel @Inject constructor(
         viewModelScope.launch { repository.setActivePlaylist(id) }
     }
 
+    /** Uključuje listu u spojeni prikaz kanala, odnosno isključuje je. */
+    fun setMerged(id: Long, merged: Boolean) {
+        viewModelScope.launch { repository.setMerged(id, merged) }
+    }
+
     fun dismissError() {
         error.value = null
     }
