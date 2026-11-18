@@ -151,6 +151,17 @@ class ChannelRepository @Inject constructor(
     suspend fun searchPrograms(playlistId: Long, query: String, limit: Int): List<ProgramHit> =
         channelDao.searchPrograms(playlistId, likePattern(query), System.currentTimeMillis(), limit)
 
+    /**
+     * Kanali za red na „Početnoj” na TV-u: omiljeni, a kad ih nema, nedavno gledani. Prva vrednost
+     * je grupa iz [ChannelGroups] kojoj kanali pripadaju, da plejer lista kroz istu grupu.
+     */
+    suspend fun homeChannels(playlistId: Long, limit: Int): Pair<Long, List<Channel>> {
+        val now = System.currentTimeMillis()
+        val favorites = channelDao.favoritesTop(playlistId, now, limit)
+        if (favorites.isNotEmpty()) return ChannelGroups.FAVORITES to favorites.map { it.toDomain() }
+        return ChannelGroups.RECENT to channelDao.recentTop(playlistId, now, limit).map { it.toDomain() }
+    }
+
     /** ID-jevi kanala posebne grupe (favoriti, nedavno gledano), redom kojim se prikazuju. */
     suspend fun groupChannelIds(playlistId: Long, groupId: Long): List<Long> = when (groupId) {
         ChannelGroups.FAVORITES -> channelDao.favoriteIds(playlistId)

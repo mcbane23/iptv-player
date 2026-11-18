@@ -281,6 +281,12 @@
     <string name="accent_purple">Purple</string>
     <string name="accent_pink">Pink</string>
     <string name="settings_content_header">Content</string>
+    <string name="nav_home">Home</string>
+    <string name="home_favorite_channels">Favorite channels</string>
+    <string name="home_recent_channels">Recently watched channels</string>
+    <string name="home_added_movies">Recently added movies</string>
+    <string name="home_added_series">Recently added series</string>
+    <string name="home_empty">Your favorite channels and what you started watching will show up here.</string>
     <string name="nav_live">Live</string>
     <string name="search_channels">Search channels</string>
     <string name="settings_tv_preview">Channel preview</string>

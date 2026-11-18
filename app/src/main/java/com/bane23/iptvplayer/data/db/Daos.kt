@@ -190,6 +190,14 @@ interface ChannelDao {
     @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS")
     fun recentPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
 
+    /** Prvih [limit] omiljenih kanala sa emisijom koja je sada na programu, za „Početnu” na TV-u. */
+    @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $FAVORITE_CHANNELS LIMIT :limit")
+    suspend fun favoritesTop(playlistId: Long, now: Long, limit: Int): List<ChannelWithFavorite>
+
+    /** Prvih [limit] nedavno gledanih kanala, za „Početnu” kad omiljenih nema. */
+    @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS LIMIT :limit")
+    suspend fun recentTop(playlistId: Long, now: Long, limit: Int): List<ChannelWithFavorite>
+
     /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +

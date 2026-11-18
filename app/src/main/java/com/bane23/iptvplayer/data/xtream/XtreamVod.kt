@@ -16,6 +16,7 @@ data class XtreamVodStream(
     @SerialName("tmdb_id") val tmdbId: FlexString = null,
     @SerialName("stream_id") val streamId: FlexString = null,
     @SerialName("stream_icon") val icon: FlexString = null,
+    @SerialName("category_id") val categoryId: FlexString = null,
     val rating: FlexString = null,
     @SerialName("container_extension") val extension: FlexString = null,
     /** Kada je film dodat (sekunde od 1970), ako panel šalje. */
@@ -32,6 +33,7 @@ data class XtreamSeries(
     @SerialName("tmdb_id") val tmdbId: FlexString = null,
     @SerialName("series_id") val seriesId: FlexString = null,
     val cover: FlexString = null,
+    @SerialName("category_id") val categoryId: FlexString = null,
     val rating: FlexString = null,
     /** Kada je serija poslednji put dopunjena (sekunde od 1970), ako panel šalje. */
     @SerialName("last_modified") val lastModified: FlexString = null,

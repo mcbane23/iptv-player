@@ -470,8 +470,11 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] Vlasnik je preskočio red nedavno gledanih kanala (čip „Nedavno” radi isti posao)
 - [x] TV, Filmovi i Serije: iznad postera naziv, kratki podaci i opis filma ili serije u fokusu
       (detalji se traže kad fokus kratko stane); može da se isključi u Podešavanjima
-- [ ] Za kasnije: TV „Početna” sekcija sa redovima (Nastavi gledanje, Omiljeni kanali, Nedavno dodati
-      filmovi). Veći posao, praktično nova sekcija; detalje dogovoriti pre početka
+- [x] TV „Početna” (Bane, 18. 11. 2026, uz sliku): prva stavka bočnog menija i ekran na kom se aplikacija
+      otvara. Redovi: „Nastavi gledanje” (filmovi i serije zajedno, poslednje gledano prvo; dugi OK
+      sklanja iz reda), omiljeni kanali sa emisijom koja je sada na programu (kad omiljenih nema,
+      nedavno gledani), nedavno dodati filmovi i nedavno dodate serije (bez sakrivenih i zaključanih
+      kategorija). Red bez sadržaja se ne prikazuje. Bez liste se i dalje otvara Uživo
 - [x] Pozadina sa blagim sjajem akcentne boje gore levo (vlasnik izabrao varijantu B): svi ekrani
       na TV-u (osim više kanala odjednom) i početni ekrani na telefonu
 

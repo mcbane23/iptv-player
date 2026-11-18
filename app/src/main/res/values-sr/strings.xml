@@ -279,6 +279,12 @@
     <string name="accent_purple">Ljubičasta</string>
     <string name="accent_pink">Roze</string>
     <string name="settings_content_header">Sadržaj</string>
+    <string name="nav_home">Početna</string>
+    <string name="home_favorite_channels">Omiljeni kanali</string>
+    <string name="home_recent_channels">Nedavno gledani kanali</string>
+    <string name="home_added_movies">Nedavno dodati filmovi</string>
+    <string name="home_added_series">Nedavno dodate serije</string>
+    <string name="home_empty">Ovde će stajati omiljeni kanali i ono što ste počeli da gledate.</string>
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Pretraga kanala</string>
     <string name="settings_tv_preview">Pregled kanala</string>
