@@ -9,10 +9,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -393,9 +391,9 @@ fun PlayerProgress(fraction: Float, modifier: Modifier = Modifier) {
 }
 
 /**
- * Donja traka plejera, ista na TV-u i telefonu: jedna zaobljena pločica u kojoj su levo dugmad
- * ([leading]), pa vreme, traka i vreme, pa desno ostalo ([trailing]). Na uskom ekranu (telefon
- * uspravno) vremena idu ispod trake, da traka ostane dovoljno duga.
+ * Donja traka plejera, ista na TV-u i telefonu, položeno i uspravno: jedna niska zaobljena pločica
+ * (44dp) u kojoj su levo dugmad ([leading]), pa vreme, traka i vreme, pa desno ostalo ([trailing]).
+ * Na uskom ekranu (telefon uspravno) razmaci i slova vremena su manji, da traka ostane što duža.
  */
 @Composable
 fun PlayerTransportBar(
@@ -407,50 +405,24 @@ fun PlayerTransportBar(
     bar: @Composable (Modifier) -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        if (maxWidth >= 600.dp) {
-            Row(
-                modifier = Modifier
-                    // Uglovi su malo blaži od polukruga, pa krajevi imaju kratak ravan deo.
-                    .playerPanel(RoundedCornerShape(18.dp))
-                    .padding(horizontal = 10.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Niska, vitka pločica: dugmad od 40dp, pa je cela traka visoka 44dp.
-                CompositionLocalProvider(LocalPlayerButtonSize provides 40.dp) {
-                    leading()
-                    TimeLabel(startLabel, Modifier.padding(start = 8.dp))
-                    bar(
-                        Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp),
-                    )
-                    TimeLabel(endLabel, Modifier.padding(end = 12.dp))
-                    trailing()
-                }
-            }
-        } else {
-            // Uzak ekran: premotavanje na krajevima, traka u sredini, vremena ispod trake da traka ostane duga.
-            Row(
-                modifier = Modifier
-                    .playerPanel(RoundedCornerShape(28.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        val narrow = maxWidth < 600.dp
+        Row(
+            modifier = Modifier
+                // Uglovi su malo blaži od polukruga, pa krajevi imaju kratak ravan deo.
+                .playerPanel(RoundedCornerShape(18.dp))
+                .padding(horizontal = if (narrow) 4.dp else 10.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Niska, vitka pločica: dugmad od 40dp, pa je cela traka visoka 44dp.
+            CompositionLocalProvider(LocalPlayerButtonSize provides 40.dp) {
                 leading()
-                Column(
-                    modifier = Modifier
+                TimeLabel(startLabel, narrow, Modifier.padding(start = if (narrow) 2.dp else 8.dp))
+                bar(
+                    Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp),
-                ) {
-                    bar(Modifier.fillMaxWidth())
-                    if (startLabel != null || endLabel != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TimeLabel(startLabel)
-                            Spacer(modifier = Modifier.weight(1f))
-                            TimeLabel(endLabel)
-                        }
-                    }
-                }
+                        .padding(horizontal = if (narrow) 8.dp else 12.dp),
+                )
+                TimeLabel(endLabel, narrow, Modifier.padding(end = if (narrow) 2.dp else 12.dp))
                 trailing()
             }
         }
@@ -458,12 +430,12 @@ fun PlayerTransportBar(
 }
 
 @Composable
-private fun TimeLabel(text: String?, modifier: Modifier = Modifier) {
+private fun TimeLabel(text: String?, small: Boolean, modifier: Modifier = Modifier) {
     if (text == null) return
     Text(
         text = text,
         color = Color.White,
-        style = MaterialTheme.typography.bodyMedium,
+        style = if (small) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
         maxLines = 1,
         modifier = modifier,
