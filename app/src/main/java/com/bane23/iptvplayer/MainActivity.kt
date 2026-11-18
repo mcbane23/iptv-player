@@ -14,6 +14,7 @@ import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.DeviceType
 import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.watchnext.WatchNextLink
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.IptvTheme
 import com.bane23.iptvplayer.ui.common.theme.ScaledUi
@@ -32,6 +33,9 @@ class MainActivity : ComponentActivity() {
     /** Adresa TV-a iz linka `iptvplayer://send`, dok je ekran za slanje ne preuzme. */
     private var sendTarget by mutableStateOf<String?>(null)
 
+    /** Film ili serija izabrana u redu „Nastavite sa gledanjem” na početnom ekranu TV-a. */
+    private var watchLink by mutableStateOf<WatchNextLink?>(null)
+
     @Inject lateinit var settingsStore: SettingsStore
 
     /** Jezik izabran u podešavanjima važi za sve tekstove aktivnosti. */
@@ -44,7 +48,10 @@ class MainActivity : ComponentActivity() {
         val isTv = DeviceType.isTv(this)
         if (!isTv) enableEdgeToEdge()
         // Posle obnavljanja aktivnosti link je već obrađen i ekran je na steku.
-        if (savedInstanceState == null) sendTarget = sendTargetOf(intent)
+        if (savedInstanceState == null) {
+            sendTarget = sendTargetOf(intent)
+            watchLink = WatchNextLink.of(intent)
+        }
         // Boja se čita pre prvog crtanja, da se pri pokretanju ne vidi podrazumevana pa tek onda izabrana.
         val savedAccent = runBlocking { settingsStore.accentColor.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
@@ -56,7 +63,7 @@ class MainActivity : ComponentActivity() {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
                     if (isTv) {
                         // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
-                        TvEdgeScroll { TvApp() }
+                        TvEdgeScroll { TvApp(watchLink = watchLink, onWatchLinkHandled = { watchLink = null }) }
                     } else {
                         MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
                     }
@@ -70,6 +77,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         sendTargetOf(intent)?.let { sendTarget = it }
+        WatchNextLink.of(intent)?.let { watchLink = it }
     }
 
     /** Adresa iz linka sa stranice TV-a. Proverava je ekran za slanje, pre nego što išta pošalje. */

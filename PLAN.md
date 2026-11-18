@@ -575,6 +575,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       (`backdrop_path`), ona je pozadina preko celog ekrana (TV), odnosno zaglavlja (telefon); inače
       ostaje poster kao do sada. Žanrovi su pločice, ocena je prva u redu podataka, a dugme „Trejler”
       (kad panel šalje `youtube_trailer`) otvara trejler u YouTube-u ili pregledaču
+- [x] „Nastavite sa gledanjem” na početnom ekranu TV-a (Bane, 18. 11. 2026, treći krug predloga): do 10
+      započetih filmova i serija aktivne liste upisuje se u red Android TV / Google TV početnog ekrana
+      (sistemski `TvContract.WatchNextPrograms`, bez nove biblioteke); izbor otvara detalje u aplikaciji.
+      Prekidač u Podešavanjima na TV-u, podrazumevano uključen. Na Fire TV-u i telefonima ne radi ništa
 
 ## 7. Testiranje
 

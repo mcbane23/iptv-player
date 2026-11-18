@@ -114,6 +114,9 @@ data class ContinueItem(
     val isSeries: Boolean,
     /** Kada je poslednji put gledano (ms), za zajednički red filmova i serija na „Početnoj”. */
     val updatedAt: Long = 0,
+    /** Zapamćena pozicija i trajanje (ms), za red na početnom ekranu TV-a. */
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
 )
 
 /**
@@ -467,6 +470,8 @@ class VodRepository @Inject constructor(
                     progress = if (row.durationMs > 0) (row.positionMs.toFloat() / row.durationMs).coerceIn(0f, 1f) else 0f,
                     isSeries = isSeries,
                     updatedAt = row.updatedAt,
+                    positionMs = row.positionMs,
+                    durationMs = row.durationMs,
                 )
             }
         }

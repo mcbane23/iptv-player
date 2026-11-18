@@ -582,6 +582,8 @@
     <string name="reminder_channel">Podsetnici za emisije</string>
     <string name="reminder_starts">Počinje: %1$s</string>
     <string name="reminder_watch">Gledaj</string>
+    <string name="settings_watch_next">Nastavak gledanja na početnom ekranu TV-a</string>
+    <string name="settings_watch_next_summary">Započeti filmovi i serije se vide u redu „Nastavite sa gledanjem” na početnom ekranu uređaja, pa se nastavljaju i bez otvaranja aplikacije. Radi na Android TV i Google TV uređajima.</string>
     <string name="settings_match_frame_rate">Uskladi osvežavanje TV-a sa snimkom</string>
     <string name="settings_match_frame_rate_summary">Dok se gleda, TV prelazi na osvežavanje koje odgovara snimku (50 Hz za kanale, 24 Hz za filmove), pa je kretanje slike glatko. Pri prebacivanju se ekran na trenutak zacrni. Ne podržava svaki TV.</string>
     <string name="search_all_hint">Kanal, emisija, film ili serija</string>

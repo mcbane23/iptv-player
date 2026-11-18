@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.reminder.ReminderRepository
+import com.bane23.iptvplayer.data.watchnext.WatchNextSync
+import com.bane23.iptvplayer.ui.common.DeviceType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,6 +35,9 @@ class IptvApplication : Application() {
     @Inject
     lateinit var reminders: ReminderRepository
 
+    @Inject
+    lateinit var watchNext: WatchNextSync
+
     /** Jezik izabran u podešavanjima važi i za tekstove van aktivnosti (obaveštenja, kratke poruke). */
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(AppLocale.wrap(base))
@@ -47,5 +52,7 @@ class IptvApplication : Application() {
         // Pri svakom pokretanju preuzima se ono što je na Trakt nalogu gledano drugde.
         // Bez prijave posao se odmah završava.
         if (traktTokens.isAvailable) traktScheduler.syncSoon()
+        // Red „Nastavite sa gledanjem” na početnom ekranu postoji samo na TV uređajima.
+        if (DeviceType.isTv(this)) watchNext.start()
     }
 }

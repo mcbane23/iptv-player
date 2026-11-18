@@ -68,6 +68,7 @@ fun TvSettingsScreen(
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
+    val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
@@ -201,6 +202,15 @@ fun TvSettingsScreen(
                         onClick = { viewModel.setMatchFrameRate(!matchFrameRate) },
                         onFocused = {
                             focusedChoice = MATCH_FRAME_RATE_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_watch_next),
+                        checked = watchNext,
+                        onClick = { viewModel.setWatchNext(!watchNext) },
+                        onFocused = {
+                            focusedChoice = WATCH_NEXT_ROW
                             openChoice = null
                         },
                     )
@@ -424,6 +434,7 @@ private fun FocusedSummary(
         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
+        WATCH_NEXT_ROW -> stringResource(R.string.settings_watch_next_summary)
         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
         AUTOSTART_ROW -> stringResource(autostartSummary)
         REOPEN_ROW -> stringResource(reopenSummary)
@@ -465,6 +476,7 @@ private const val RECORDINGS_ROW = -14
 private const val TV_PREVIEW_ROW = -15
 private const val VOD_PREVIEW_ROW = -16
 private const val UPDATE_CHECK_ROW = -17
+private const val WATCH_NEXT_ROW = -18
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable

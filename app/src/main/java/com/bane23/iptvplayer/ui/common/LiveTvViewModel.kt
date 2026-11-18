@@ -348,6 +348,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setMatchFrameRate(enabled) }
     }
 
+    val watchNext: StateFlow<Boolean> = settings.watchNext
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setWatchNext(enabled: Boolean) {
+        viewModelScope.launch { settings.setWatchNext(enabled) }
+    }
+
     val autoRefreshPlaylists: StateFlow<Boolean> = settings.autoRefreshPlaylists
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

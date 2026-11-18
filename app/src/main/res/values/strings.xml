@@ -581,6 +581,8 @@
     <string name="reminder_channel">Programme reminders</string>
     <string name="reminder_starts">Starting: %1$s</string>
     <string name="reminder_watch">Watch</string>
+    <string name="settings_watch_next">Continue watching on the TV home screen</string>
+    <string name="settings_watch_next_summary">Movies and series you started show up in the \"Continue watching\" row on the device home screen, so you can resume without opening the app. Works on Android TV and Google TV devices.</string>
     <string name="settings_match_frame_rate">Match TV refresh rate to video</string>
     <string name="settings_match_frame_rate_summary">While playing, the TV switches to a refresh rate that fits the video (50 Hz for TV channels, 24 Hz for films), so motion is smooth. The screen may go black for a moment when it switches. Not every TV supports it.</string>
     <string name="search_all_hint">Channel, programme, film or series</string>

@@ -120,6 +120,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[MATCH_FRAME_RATE] = enabled }
     }
 
+    /** TV: započeti filmovi i serije se vide u redu „Nastavite sa gledanjem” na početnom ekranu uređaja. */
+    val watchNext: Flow<Boolean> = dataStore.data.map { it[WATCH_NEXT] ?: true }.distinctUntilChanged()
+
+    suspend fun setWatchNext(enabled: Boolean) {
+        dataStore.edit { it[WATCH_NEXT] = enabled }
+    }
+
     /** Da li se aplikacija sama otvara kad se uređaj upali (za TV box). */
     val autostart: Flow<Boolean> = dataStore.data.map { it[AUTOSTART] ?: false }.distinctUntilChanged()
 
@@ -410,6 +417,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val REOPEN_AFTER_UPDATE = booleanPreferencesKey("reopen_after_update")
         val AUTO_REFRESH_PLAYLISTS = booleanPreferencesKey("auto_refresh_playlists")
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
+        val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")
