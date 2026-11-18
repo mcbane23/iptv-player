@@ -70,41 +70,48 @@ private val ChipShape = RoundedCornerShape(10.dp)
 internal fun Modifier.playerPanel(shape: Shape): Modifier =
     background(PanelBackground, shape).border(1.dp, PanelBorder, shape)
 
+/** Veličina teksta u dugmadima ispod trake. Naslov i sat koriste istu, da gornji red ne odskače. */
+private val ChipTextSize = 12.sp
+private val ChipHeight = 32.dp
+
 /**
- * Naslov u tamnom okviru, u jednom redu. [subtitle] (emisija koja je sada) ide iza naslova.
- * Okvir je širok koliko i tekst, a [modifier] određuje najveći prostor koji sme da zauzme.
+ * Naslov u tamnom okviru, u jednom redu, iste visine i veličine teksta kao dugmad ispod trake.
+ * [subtitle] (emisija koja je sada) ide iza naslova. Okvir je širok koliko i tekst, a [modifier]
+ * određuje najveći prostor koji sme da zauzme.
  */
 @Composable
-fun PlayerTitle(title: String, subtitle: String?, modifier: Modifier = Modifier, large: Boolean = false) {
+fun PlayerTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.CenterStart) {
-        Text(
-            text = if (subtitle.isNullOrBlank()) title else "$title  ·  $subtitle",
-            color = Color.White,
-            style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .playerPanel(ChipShape)
-                .padding(horizontal = if (large) 18.dp else 14.dp, vertical = if (large) 11.dp else 9.dp),
-        )
+        PlayerLabel(text = if (subtitle.isNullOrBlank()) title else "$title  ·  $subtitle")
     }
 }
 
 /** Sat u istom tamnom okviru kao naslov, u gornjem desnom uglu plejera. */
 @Composable
-fun PlayerClock(modifier: Modifier = Modifier, large: Boolean = false) {
+fun PlayerClock(modifier: Modifier = Modifier) {
     val clock by com.bane23.iptvplayer.ui.common.rememberClockText()
-    Text(
-        text = clock,
-        color = Color.White,
-        style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
+    PlayerLabel(text = clock, modifier = modifier)
+}
+
+/** Tekst u tamnom okviru koji izgleda kao dugme ispod trake, ali se ne može izabrati. */
+@Composable
+private fun PlayerLabel(text: String, modifier: Modifier = Modifier) {
+    Box(
         modifier = modifier
+            .height(ChipHeight)
             .playerPanel(ChipShape)
-            .padding(horizontal = if (large) 18.dp else 14.dp, vertical = if (large) 11.dp else 9.dp),
-    )
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = ChipTextSize,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /**
@@ -173,7 +180,7 @@ fun PlayerChip(
     val iconOnly = icon != null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     Row(
         modifier = modifier
-            .height(if (iconOnly) 36.dp else 32.dp)
+            .height(if (iconOnly) 36.dp else ChipHeight)
             // U fokusu (TV): isti okvir u boji teme kao kod okruglih dugmadi.
             .then(
                 if (focused) {
@@ -203,7 +210,7 @@ fun PlayerChip(
                 text = label,
                 color = content,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 12.sp,
+                fontSize = ChipTextSize,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
