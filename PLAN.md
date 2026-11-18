@@ -562,6 +562,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   jednoj koloni, kao redovi sa brojem, logom, nazivom i emisijom „do HH:mm”. Na položenom telefonu desno je
   pregled kao na TV-u: prvi dodir bira kanal i pušta ga u malom pregledu bez zvuka, drugi dodir ili dugme ga
   otvara preko celog ekrana. Uspravno dodir odmah pušta kanal. Spisak grupa sa izborom liste i ikonicama je isti.
+- [x] Uživo, dorada (Bane, 19. 11. 2026): na telefonu su logoi kanala manji (32dp) i redovi gušći, čip
+  omiljenih je samo zvezdica (i u Filmovima i Serijama), a dok kanal nije izabran u crnom okviru pregleda
+  stoji uputstvo, na telefonu i na TV-u. Na TV-u su redovi kanala niži (logo 32dp), pa staje kanal više.
 - [x] Zaštita ekrana od urezivanja slike (Bane, 18. 11. 2026): posle 1 minuta pauze slika se zatamni na
   oko 30%, a kontrole se sklone; prvi taster ili dodir samo vraća sliku. Posle 30 minuta pauze plejer se
   zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,

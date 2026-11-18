@@ -35,7 +35,6 @@ import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.timeRangeLeft
-import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -44,7 +43,7 @@ import com.bane23.iptvplayer.ui.common.rememberNow
 /**
  * Desna kolona Uživo na položenom telefonu, po uzoru na TV: slika izabranog kanala (bez zvuka), šta
  * je na njemu sada i šta sledi, i dugme koje ga otvara preko celog ekrana. Dok nijedan kanal nije
- * izabran ([selected] je false), stoji kratko uputstvo. [channel] može da izostane i kad je kanal
+ * izabran ([selected] je false), u crnom okviru stoji kratko uputstvo. [channel] može da izostane i kad je kanal
  * izabran (njegov red još nije učitan); tada nema samo loga i naziva.
  */
 @Composable
@@ -56,7 +55,27 @@ fun MobileChannelPreviewPane(
     modifier: Modifier = Modifier,
 ) {
     if (!selected) {
-        EmptyState(icon = AppIcons.LiveTv, text = stringResource(R.string.live_preview_hint), modifier = modifier)
+        // Isti crni okvir kao kad slika ide, sa uputstvom u njemu (kao na TV-u).
+        Column(modifier = modifier) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.live_preview_hint),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
+        }
         return
     }
     val player by viewModel.player.collectAsStateWithLifecycle()
