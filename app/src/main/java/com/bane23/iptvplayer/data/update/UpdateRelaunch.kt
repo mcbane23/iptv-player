@@ -7,7 +7,12 @@ import android.widget.Toast
 import com.bane23.iptvplayer.MainActivity
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.AppLocale
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.work.Autostart
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 /**
  * Ponovno otvaranje aplikacije posle ažuriranja iz same aplikacije. Sistem pri instalaciji gasi
@@ -50,13 +55,18 @@ object UpdateRelaunch {
 }
 
 /** Sistem javlja novoj verziji da je instalirana: potvrda korisniku i, gde sistem dozvoli, ponovno otvaranje. */
+@AndroidEntryPoint
 class UpdateFinishedReceiver : BroadcastReceiver() {
+
+    @Inject
+    lateinit var settings: SettingsStore
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
         // Ažuriranje spolja (ručna instalacija APK-a) ne otvara aplikaciju.
         if (!UpdateRelaunch.consume(context)) return
-        val canReopen = UpdateRelaunch.canReopen(context)
+        // Čitanje jedne vrednosti iz DataStore-a je kratko, pa ne treba pozadinski posao.
+        val canReopen = UpdateRelaunch.canReopen(context) && runBlocking { settings.reopenAfterUpdate.first() }
         val version = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull().orEmpty()

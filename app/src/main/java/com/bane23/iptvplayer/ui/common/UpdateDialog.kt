@@ -66,7 +66,9 @@ class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : Vie
     fun update() = updater.downloadAndInstall()
     fun dismiss() = updater.dismiss()
     fun canInstall() = updater.canInstall()
-    fun canReopen() = updater.canReopenAfterUpdate()
+    /** Dozvola se čita kad dijalog počne da prati stanje, dakle posle povratka iz sistemskih podešavanja. */
+    val reopens: StateFlow<Boolean> =
+        updater.reopensAfterUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 }
 
 /**
@@ -86,8 +88,9 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
     }
 
     // Šta biva posle instalacije: aplikacija se otvara sama ili je korisnik otvara ručno.
+    val reopens by viewModel.reopens.collectAsStateWithLifecycle()
     val afterUpdate = stringResource(
-        if (viewModel.canReopen()) R.string.update_reopen_auto else R.string.update_reopen_manual,
+        if (reopens) R.string.update_reopen_auto else R.string.update_reopen_manual,
     )
 
     // Jedan dijalog za sva stanja: menja se samo sadržaj, pa prozor ne nestaje i ne treperi

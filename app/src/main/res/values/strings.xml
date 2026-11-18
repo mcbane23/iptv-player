@@ -344,6 +344,9 @@
     <string name="update_available_text">Version %1$s is available (installed: %2$s). %3$s Your playlists and favorites stay.</string>
     <string name="update_reopen_auto">After the update the app opens again by itself.</string>
     <string name="update_reopen_manual">The app closes after the update. If it does not open by itself, open it again.</string>
+    <string name="settings_reopen_after_update">Open after an update</string>
+    <string name="settings_reopen_after_update_summary">After an in-app update the app opens again by itself.</string>
+    <string name="settings_reopen_after_update_permission">This needs the “Display over other apps” permission. Press OK to open the system screen for it. Without it Android does not let the app open by itself.</string>
     <string name="update_done">The app was updated to version %1$s.</string>
     <string name="update_install">Update</string>
     <string name="update_later">Later</string>

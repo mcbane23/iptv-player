@@ -288,6 +288,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAutostart(enabled) }
     }
 
+    val reopenAfterUpdate: StateFlow<Boolean> = settings.reopenAfterUpdate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setReopenAfterUpdate(enabled: Boolean) {
+        viewModelScope.launch { settings.setReopenAfterUpdate(enabled) }
+    }
+
     val drawUnderCutout: StateFlow<Boolean> = settings.drawUnderCutout
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 

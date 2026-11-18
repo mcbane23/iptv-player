@@ -162,7 +162,8 @@ class AppUpdater @Inject constructor(
     }
 
     /** Da li će se aplikacija posle ažuriranja sama ponovo otvoriti (vidi [UpdateRelaunch]). */
-    fun canReopenAfterUpdate(): Boolean = UpdateRelaunch.canReopen(context)
+    val reopensAfterUpdate: Flow<Boolean> =
+        settings.reopenAfterUpdate.map { it && UpdateRelaunch.canReopen(context) }
 
     /** Da li je korisnik dozvolio instaliranje aplikacija iz ove aplikacije (Android 8+). */
     fun canInstall(): Boolean =
