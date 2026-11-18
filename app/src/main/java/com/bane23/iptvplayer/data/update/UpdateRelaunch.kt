@@ -61,10 +61,7 @@ class UpdateFinishedReceiver : BroadcastReceiver() {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull().orEmpty()
         val localized = AppLocale.wrap(context)
-        val text = localized.getString(
-            if (canReopen) R.string.update_done else R.string.update_done_reopen,
-            version,
-        )
+        val text = localized.getString(R.string.update_done, version)
         runCatching { Toast.makeText(context.applicationContext, text, Toast.LENGTH_LONG).show() }
         if (!canReopen) return
         val pm = context.packageManager

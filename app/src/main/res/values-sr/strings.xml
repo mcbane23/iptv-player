@@ -342,9 +342,8 @@
     <string name="update_available_title">Nova verzija</string>
     <string name="update_available_text">Dostupna je verzija %1$s (instalirana: %2$s). %3$s Liste i omiljeni ostaju.</string>
     <string name="update_reopen_auto">Posle ažuriranja aplikacija se sama ponovo otvara.</string>
-    <string name="update_reopen_manual">Posle ažuriranja aplikacija se zatvara, samo je ponovo otvorite.</string>
+    <string name="update_reopen_manual">Posle ažuriranja aplikacija se zatvara. Ako se ne otvori sama, otvorite je ponovo.</string>
     <string name="update_done">Aplikacija je ažurirana na verziju %1$s.</string>
-    <string name="update_done_reopen">Aplikacija je ažurirana na verziju %1$s. Otvorite je ponovo.</string>
     <string name="update_install">Ažuriraj</string>
     <string name="update_later">Kasnije</string>
     <string name="update_downloading">Preuzimam…</string>

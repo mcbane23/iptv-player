@@ -343,9 +343,8 @@
     <string name="update_available_title">New version</string>
     <string name="update_available_text">Version %1$s is available (installed: %2$s). %3$s Your playlists and favorites stay.</string>
     <string name="update_reopen_auto">After the update the app opens again by itself.</string>
-    <string name="update_reopen_manual">The app closes after the update; just open it again.</string>
+    <string name="update_reopen_manual">The app closes after the update. If it does not open by itself, open it again.</string>
     <string name="update_done">The app was updated to version %1$s.</string>
-    <string name="update_done_reopen">The app was updated to version %1$s. Open it again.</string>
     <string name="update_install">Update</string>
     <string name="update_later">Later</string>
     <string name="update_downloading">Downloading…</string>
