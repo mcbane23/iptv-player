@@ -173,7 +173,7 @@ fun MobileVodScreen(
                                 onClick = {
                                     if (!showingFavorites) viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
                                 },
-                                leading = AppIcons.Star,
+                                iconOnly = AppIcons.Star,
                             )
                             GroupChip(
                                 label = state.selected?.takeIf { !showingFavorites }?.name

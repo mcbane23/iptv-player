@@ -571,6 +571,17 @@ private fun ChannelPreviewPane(
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
+            } else {
+                // Fokus još nije na kanalu: uputstvo u crnom okviru.
+                Text(
+                    text = stringResource(R.string.live_preview_hint_tv),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp),
+                )
             }
             if (current != null) {
                 Text(

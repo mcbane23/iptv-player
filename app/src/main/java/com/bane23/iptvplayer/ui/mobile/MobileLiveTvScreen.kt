@@ -223,7 +223,7 @@ fun MobileLiveTvScreen(
                                 columns = GridCells.Fixed(1),
                                 state = listState,
                                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(3.dp),
                             ) {
                                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                                     val channel = channels[index]
@@ -397,7 +397,7 @@ private fun QuickGroupChips(
             label = stringResource(R.string.category_favorites),
             selected = selected == ChannelGroups.FAVORITES,
             onClick = { onSelect(ChannelGroups.FAVORITES) },
-            leading = AppIcons.Star,
+            iconOnly = AppIcons.Star,
         )
         if (showRecent) {
             GroupChip(
@@ -420,6 +420,10 @@ private fun QuickGroupChips(
     }
 }
 
+/**
+ * Čip grupe. Sa [iconOnly] čip nosi samo tu ikonicu (npr. zvezdicu za omiljene), a [label] čitaju
+ * čitači ekrana.
+ */
 @Composable
 internal fun GroupChip(
     label: String,
@@ -427,17 +431,22 @@ internal fun GroupChip(
     onClick: () -> Unit,
     leading: ImageVector? = null,
     trailing: ImageVector? = null,
+    iconOnly: ImageVector? = null,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = {
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 180.dp),
-            )
+            if (iconOnly != null) {
+                Icon(iconOnly, contentDescription = label, modifier = Modifier.size(18.dp))
+            } else {
+                Text(
+                    text = label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 180.dp),
+                )
+            }
         },
         leadingIcon = leading?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
         trailingIcon = trailing?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
