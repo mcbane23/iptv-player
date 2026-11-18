@@ -71,6 +71,7 @@ fun TvSettingsScreen(
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
+    val reopenAfterUpdate by viewModel.reopenAfterUpdate.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = true)
     val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
@@ -294,6 +295,22 @@ fun TvSettingsScreen(
                             openChoice = null
                         },
                     )
+                    // Uključeno je tek kad postoji i dozvola; bez nje sistem ne da aplikaciji da se sama otvori.
+                    val reopens = reopenAfterUpdate && autostartAllowed
+                    TvTextRow(
+                        text = stringResource(R.string.settings_reopen_after_update),
+                        checked = reopens,
+                        onClick = {
+                            viewModel.setReopenAfterUpdate(!reopens)
+                            if (!reopens && !autostartAllowed) {
+                                permissionScreenMissing = !Autostart.openPermissionScreen(context)
+                            }
+                        },
+                        onFocused = {
+                            focusedChoice = REOPEN_ROW
+                            openChoice = null
+                        },
+                    )
                     Text(
                         text = stringResource(R.string.settings_player_header),
                         style = MaterialTheme.typography.titleMedium,
@@ -328,6 +345,11 @@ fun TvSettingsScreen(
                     FocusedSummary(
                         focusedChoice = { focusedChoice },
                         choices = choices,
+                        reopenSummary = when {
+                            autostartAllowed -> R.string.settings_reopen_after_update_summary
+                            permissionScreenMissing -> R.string.settings_autostart_manual
+                            else -> R.string.settings_reopen_after_update_permission
+                        },
                         autostartSummary = when {
                             !autostart || autostartAllowed -> R.string.settings_autostart_summary
                             permissionScreenMissing -> R.string.settings_autostart_manual
@@ -380,7 +402,12 @@ fun TvSettingsScreen(
  * samo ovaj deo, pa pomeranje D-padom ne iscrtava ponovo ceo ekran dok se spisak pomera.
  */
 @Composable
-private fun FocusedSummary(focusedChoice: () -> Int?, choices: List<SettingChoice>, autostartSummary: Int) {
+private fun FocusedSummary(
+    focusedChoice: () -> Int?,
+    choices: List<SettingChoice>,
+    autostartSummary: Int,
+    reopenSummary: Int,
+) {
     val focused = focusedChoice() ?: return
     val summary = when (focused) {
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
@@ -391,6 +418,7 @@ private fun FocusedSummary(focusedChoice: () -> Int?, choices: List<SettingChoic
         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
         AUTOSTART_ROW -> stringResource(autostartSummary)
+        REOPEN_ROW -> stringResource(reopenSummary)
         else -> choices.getOrNull(focused)?.summary.orEmpty()
     }
     // U visini teksta prvog reda spiska.
@@ -420,6 +448,7 @@ private const val AUTO_REFRESH_ROW = -5
 private const val MATCH_FRAME_RATE_ROW = -6
 private const val UI_SCALE_ROW = -7
 private const val RESUME_ROW = -8
+private const val REOPEN_ROW = -9
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable

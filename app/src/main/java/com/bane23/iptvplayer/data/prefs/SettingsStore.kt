@@ -118,6 +118,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[AUTOSTART] = enabled }
     }
 
+    /** Posle ažuriranja iz aplikacije nova verzija se sama ponovo otvara (gde sistem dozvoli). */
+    val reopenAfterUpdate: Flow<Boolean> =
+        dataStore.data.map { it[REOPEN_AFTER_UPDATE] ?: true }.distinctUntilChanged()
+
+    suspend fun setReopenAfterUpdate(enabled: Boolean) {
+        dataStore.edit { it[REOPEN_AFTER_UPDATE] = enabled }
+    }
+
     /** Ključ ovog TV-a za slanje sa telefona (cast na ovu aplikaciju); null dok se ne napravi. */
     val castKey: Flow<String?> = dataStore.data.map { it[CAST_KEY] }.distinctUntilChanged()
 
@@ -343,6 +351,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val PLAYER_VOLUME_SLIDER = booleanPreferencesKey("player_volume_slider")
         val BACKGROUND_PLAY = booleanPreferencesKey("background_play")
         val AUTOSTART = booleanPreferencesKey("autostart")
+        val REOPEN_AFTER_UPDATE = booleanPreferencesKey("reopen_after_update")
         val AUTO_REFRESH_PLAYLISTS = booleanPreferencesKey("auto_refresh_playlists")
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val CAST_KEY = stringPreferencesKey("cast_key")

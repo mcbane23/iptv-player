@@ -207,6 +207,9 @@ fun TvHomeScreen(
                 .padding(horizontal = 16.dp, vertical = 48.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            // Dok se ne zna da li postoji lista, stavke se ne crtaju: inače se pri pokretanju na
+            // trenutak vidi kratak meni (kao bez liste), pa tek onda ceo.
+            if (liveState.loading) return@Column
             if (recording.isNotEmpty() || recordingFocused) {
                 val single = recording.singleOrNull()
                 RailItem(
