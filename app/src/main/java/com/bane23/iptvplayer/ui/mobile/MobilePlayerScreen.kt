@@ -71,6 +71,9 @@ import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.pauseDimInput
+import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
@@ -127,6 +130,13 @@ fun MobilePlayerScreen(
         onBackground = viewModel::onBackground,
     )
     KeepScreenOn(playback.status)
+    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    // Izbor zvuka i snimanja su zasebni prozori, pa se dodiri u njima ovde ne vide.
+    val pauseDim = rememberPauseDim(
+        status = playback.status,
+        enabled = panel != Panel.AUDIO && panel != Panel.RECORD,
+        onExit = onClose,
+    )
     ImmersiveMode()
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
 
@@ -151,6 +161,7 @@ fun MobilePlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pauseDimInput(pauseDim)
             .pointerInput(locked) {
                 detectTapGestures(
                     onTap = {
@@ -171,88 +182,90 @@ fun MobilePlayerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        if (!inPip) {
-            statusMessage(ui, playback)?.let { message ->
-                Text(
-                    text = message,
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 32.dp),
-                )
-            }
-
-            // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
-            if (infoVisible && panel != Panel.CHANNELS) {
-                PlayerStreamInfo(
-                    player = viewModel.player,
-                    technical = playback.video,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .safeDrawingPadding()
-                        .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
-                )
-            }
-
-            if (locked) {
-                LockedOverlay(visible = unlockVisible) {
-                    locked = false
-                    unlockVisible = false
-                    controlsVisible = true
+        PauseDimLayer(pauseDim) {
+            if (!inPip) {
+                statusMessage(ui, playback)?.let { message ->
+                    Text(
+                        text = message,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 32.dp),
+                    )
                 }
-            } else if (controlsVisible && panel == Panel.NONE) {
-                LiveControls(
-                    ui = ui,
-                    playback = playback,
-                    onClose = onClose,
-                    onLock = {
-                        locked = true
-                        controlsVisible = false
-                    },
-                    onPrevious = viewModel::previous,
-                    onNext = viewModel::next,
-                    onLastChannel = viewModel::playLastChannel,
-                    onPlayPause = viewModel::togglePlayPause,
-                    onRetry = viewModel::retry,
-                    onChannels = { panel = Panel.CHANNELS },
-                    onAudio = { panel = Panel.AUDIO },
-                    onSettings = { panel = Panel.SETTINGS },
-                    infoVisible = infoVisible,
-                    onInfo = { infoVisible = !infoVisible },
-                    isFavorite = isFavorite,
-                    nowNext = nowNext,
-                    onFavorite = viewModel::toggleFavorite,
-                    isRecording = isRecording,
-                    onRecord = record,
-                    onPip = rememberEnterPictureInPicture(),
-                    onCast = cast,
-                )
-                PlayerSideSliders(levels) { sliderTouches++ }
-            }
 
-            if (panel == Panel.SETTINGS) {
-                // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-                PlayerSideSliders(levels) { }
-                MobileQuickSettingsPanel(
-                    quickSettingChoices(
-                        tv = false,
-                        aspectMode = ui.aspectMode,
-                        onAspectMode = viewModel::setAspectMode,
-                        decoder = ui.decoder,
-                        onDecoder = viewModel::setDecoder,
-                    ),
-                )
-            }
+                // Ostaje preko slike i kad se kontrole sklone, dok se ne ugasi istim dugmetom.
+                if (infoVisible && panel != Panel.CHANNELS) {
+                    PlayerStreamInfo(
+                        player = viewModel.player,
+                        technical = playback.video,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .safeDrawingPadding()
+                            .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
+                    )
+                }
 
-            if (panel == Panel.CHANNELS) {
-                ChannelListPanel(
-                    viewModel = viewModel,
-                    ui = ui,
-                    onPick = { panel = Panel.NONE },
-                    modifier = Modifier.align(Alignment.CenterStart),
-                )
+                if (locked) {
+                    LockedOverlay(visible = unlockVisible) {
+                        locked = false
+                        unlockVisible = false
+                        controlsVisible = true
+                    }
+                } else if (controlsVisible && panel == Panel.NONE) {
+                    LiveControls(
+                        ui = ui,
+                        playback = playback,
+                        onClose = onClose,
+                        onLock = {
+                            locked = true
+                            controlsVisible = false
+                        },
+                        onPrevious = viewModel::previous,
+                        onNext = viewModel::next,
+                        onLastChannel = viewModel::playLastChannel,
+                        onPlayPause = viewModel::togglePlayPause,
+                        onRetry = viewModel::retry,
+                        onChannels = { panel = Panel.CHANNELS },
+                        onAudio = { panel = Panel.AUDIO },
+                        onSettings = { panel = Panel.SETTINGS },
+                        infoVisible = infoVisible,
+                        onInfo = { infoVisible = !infoVisible },
+                        isFavorite = isFavorite,
+                        nowNext = nowNext,
+                        onFavorite = viewModel::toggleFavorite,
+                        isRecording = isRecording,
+                        onRecord = record,
+                        onPip = rememberEnterPictureInPicture(),
+                        onCast = cast,
+                    )
+                    PlayerSideSliders(levels) { sliderTouches++ }
+                }
+
+                if (panel == Panel.SETTINGS) {
+                    // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
+                    PlayerSideSliders(levels) { }
+                    MobileQuickSettingsPanel(
+                        quickSettingChoices(
+                            tv = false,
+                            aspectMode = ui.aspectMode,
+                            onAspectMode = viewModel::setAspectMode,
+                            decoder = ui.decoder,
+                            onDecoder = viewModel::setDecoder,
+                        ),
+                    )
+                }
+
+                if (panel == Panel.CHANNELS) {
+                    ChannelListPanel(
+                        viewModel = viewModel,
+                        ui = ui,
+                        onPick = { panel = Panel.NONE },
+                        modifier = Modifier.align(Alignment.CenterStart),
+                    )
+                }
             }
         }
     }

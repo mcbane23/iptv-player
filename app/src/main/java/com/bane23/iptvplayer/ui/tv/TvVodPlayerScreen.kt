@@ -41,6 +41,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
+import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.pauseDimInput
+import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
@@ -74,6 +77,7 @@ private enum class VodFocus { PLAY, SEEK }
 @Composable
 fun TvVodPlayerScreen(
     start: (VodPlayerViewModel) -> Unit,
+    onClose: () -> Unit,
     viewModel: VodPlayerViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -102,6 +106,8 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
+    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    val pauseDim = rememberPauseDim(playback.status, onExit = onClose)
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = tracks != null || onlineOpen || settingsOpen || controls
 
@@ -163,6 +169,7 @@ fun TvVodPlayerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pauseDimInput(pauseDim)
             .onPreviewKeyEvent {
                 if (it.type == KeyEventType.KeyDown) activity++
                 false
@@ -236,211 +243,214 @@ fun TvVodPlayerScreen(
             .focusable(),
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
-        if (infoVisible) {
-            PlayerStreamInfo(
-                player = viewModel.player,
-                technical = playback.video,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 96.dp, end = 48.dp),
-            )
-        }
 
-        statusMessage(ui.sourceMissing, playback)?.let { message ->
-            Text(
-                text = message,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 96.dp),
-            )
-        }
-
-        if (controls) {
-            Box(modifier = Modifier.align(Alignment.TopStart)) {
-                val season = ui.season
-                val episode = ui.episode
-                Row(
+        PauseDimLayer(pauseDim) {
+            if (infoVisible) {
+                PlayerStreamInfo(
+                    player = viewModel.player,
+                    technical = playback.video,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 48.dp, vertical = 27.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TitleBackIcon()
-                    PlayerTitle(
-                        title = if (season != null && episode != null) {
-                            "${episodeLabel(season, episode)}  ·  ${ui.title}"
-                        } else {
-                            ui.title
-                        },
-                        subtitle = null,
-                        modifier = Modifier.weight(1f),
-                    )
-                    PlayerClock(modifier = Modifier.padding(start = 16.dp))
-                }
+                        .align(Alignment.TopEnd)
+                        .padding(top = 96.dp, end = 48.dp),
+                )
             }
 
-            Box(modifier = Modifier.align(Alignment.BottomStart)) {
-                Column(
+            statusMessage(ui.sourceMissing, playback)?.let { message ->
+                Text(
+                    text = message,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 48.dp, vertical = 27.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    val paused = playback.status == PlaybackStatus.PAUSED
-                    val scrub = ui.scrubMs
-                    if (scrub != null) {
-                        // Pregled dok se premotava: vreme na koje se stiže i pomak od početnog mesta.
-                        val delta = scrub - ui.scrubFromMs
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.Bottom,
-                        ) {
-                            Text(
-                                text = formatDuration(scrub),
-                                color = Color.White,
-                                style = MaterialTheme.typography.displaySmall,
+                        .align(Alignment.Center)
+                        .padding(horizontal = 96.dp),
+                )
+            }
+
+            if (controls) {
+                Box(modifier = Modifier.align(Alignment.TopStart)) {
+                    val season = ui.season
+                    val episode = ui.episode
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp, vertical = 27.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TitleBackIcon()
+                        PlayerTitle(
+                            title = if (season != null && episode != null) {
+                                "${episodeLabel(season, episode)}  ·  ${ui.title}"
+                            } else {
+                                ui.title
+                            },
+                            subtitle = null,
+                            modifier = Modifier.weight(1f),
+                        )
+                        PlayerClock(modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+
+                Box(modifier = Modifier.align(Alignment.BottomStart)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 48.dp, vertical = 27.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        val paused = playback.status == PlaybackStatus.PAUSED
+                        val scrub = ui.scrubMs
+                        if (scrub != null) {
+                            // Pregled dok se premotava: vreme na koje se stiže i pomak od početnog mesta.
+                            val delta = scrub - ui.scrubFromMs
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.Bottom,
+                            ) {
+                                Text(
+                                    text = formatDuration(scrub),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.displaySmall,
+                                )
+                                Text(
+                                    text = (if (delta < 0) "−" else "+") + formatDuration(kotlin.math.abs(delta)),
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
+                                )
+                            }
+                        }
+                        PlayerTransportBar(
+                            startLabel = formatDuration(scrub ?: ui.positionMs),
+                            endLabel = formatDuration(ui.durationMs),
+                            leading = {
+                                PlayerIconButton(
+                                    icon = AppIcons.FastRewind,
+                                    description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
+                                    onClick = { viewModel.seekBy(-viewModel.seekStepMs) },
+                                )
+                                PlayerIconButton(
+                                    icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                                    description = stringResource(
+                                        when {
+                                            failed -> R.string.player_retry
+                                            paused -> R.string.player_play
+                                            else -> R.string.player_pause
+                                        },
+                                    ),
+                                    onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                                    primary = true,
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .focusRequester(playFocus),
+                                )
+                            },
+                            trailing = {
+                                PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
+                                PlayerIconButton(
+                                    icon = AppIcons.FastForward,
+                                    description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
+                                    onClick = { viewModel.seekBy(viewModel.seekStepMs) },
+                                )
+                                if (ui.hasNext) {
+                                    PlayerIconButton(
+                                        icon = AppIcons.Next,
+                                        description = stringResource(R.string.vod_next_episode),
+                                        onClick = viewModel::next,
+                                    )
+                                }
+                                PlayerIconButton(
+                                    icon = AppIcons.AspectRatio,
+                                    description = ui.aspectMode.label(),
+                                    onClick = viewModel::cycleAspectMode,
+                                )
+                            },
+                        ) { barModifier ->
+                            PlayerSeekBar(
+                                positionMs = scrub ?: ui.positionMs,
+                                durationMs = ui.durationMs,
+                                onSeekTo = viewModel::seekTo,
+                                onSeekBy = viewModel::scrubBy,
+                                modifier = barModifier.focusRequester(seekFocus),
+                                stepMs = viewModel.seekStepMs,
+                                onSeekEnd = viewModel::commitScrub,
+                                armed = seekArmed,
+                                onArmedChange = { seekArmed = it },
                             )
-                            Text(
-                                text = (if (delta < 0) "−" else "+") + formatDuration(kotlin.math.abs(delta)),
-                                color = Color.White.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            PlayerChip(
+                                icon = AppIcons.Subtitles,
+                                label = stringResource(R.string.player_subtitles),
+                                active = playback.textEnabled,
+                                onClick = { tracks = TvTrackKind.SUBTITLES },
+                            )
+                            PlayerChip(
+                                icon = AppIcons.Audio,
+                                label = stringResource(R.string.player_audio),
+                                onClick = { tracks = TvTrackKind.AUDIO },
+                            )
+                            PlayerChip(
+                                icon = AppIcons.Settings,
+                                label = stringResource(R.string.settings_title),
+                                // Brzina koja nije obična se vidi i na samom dugmetu.
+                                active = ui.speed != 1f,
+                                onClick = { settingsOpen = true },
+                            )
+                            PlayerChip(
+                                icon = AppIcons.Info,
+                                label = stringResource(R.string.player_stream_info),
+                                active = infoVisible,
+                                onClick = { infoVisible = !infoVisible },
                             )
                         }
                     }
-                    PlayerTransportBar(
-                        startLabel = formatDuration(scrub ?: ui.positionMs),
-                        endLabel = formatDuration(ui.durationMs),
-                        leading = {
-                            PlayerIconButton(
-                                icon = AppIcons.FastRewind,
-                                description = stringResource(R.string.vod_seek_back, (viewModel.seekStepMs / 1_000).toInt()),
-                                onClick = { viewModel.seekBy(-viewModel.seekStepMs) },
-                            )
-                            PlayerIconButton(
-                                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                                description = stringResource(
-                                    when {
-                                        failed -> R.string.player_retry
-                                        paused -> R.string.player_play
-                                        else -> R.string.player_pause
-                                    },
-                                ),
-                                onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
-                                primary = true,
-                                modifier = Modifier
-                                    .padding(start = 8.dp)
-                                    .focusRequester(playFocus),
-                            )
-                        },
-                        trailing = {
-                            PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
-                            PlayerIconButton(
-                                icon = AppIcons.FastForward,
-                                description = stringResource(R.string.vod_seek_forward, (viewModel.seekStepMs / 1_000).toInt()),
-                                onClick = { viewModel.seekBy(viewModel.seekStepMs) },
-                            )
-                            if (ui.hasNext) {
-                                PlayerIconButton(
-                                    icon = AppIcons.Next,
-                                    description = stringResource(R.string.vod_next_episode),
-                                    onClick = viewModel::next,
-                                )
-                            }
-                            PlayerIconButton(
-                                icon = AppIcons.AspectRatio,
-                                description = ui.aspectMode.label(),
-                                onClick = viewModel::cycleAspectMode,
-                            )
-                        },
-                    ) { barModifier ->
-                        PlayerSeekBar(
-                            positionMs = scrub ?: ui.positionMs,
-                            durationMs = ui.durationMs,
-                            onSeekTo = viewModel::seekTo,
-                            onSeekBy = viewModel::scrubBy,
-                            modifier = barModifier.focusRequester(seekFocus),
-                            stepMs = viewModel.seekStepMs,
-                            onSeekEnd = viewModel::commitScrub,
-                            armed = seekArmed,
-                            onArmedChange = { seekArmed = it },
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PlayerChip(
-                            icon = AppIcons.Subtitles,
-                            label = stringResource(R.string.player_subtitles),
-                            active = playback.textEnabled,
-                            onClick = { tracks = TvTrackKind.SUBTITLES },
-                        )
-                        PlayerChip(
-                            icon = AppIcons.Audio,
-                            label = stringResource(R.string.player_audio),
-                            onClick = { tracks = TvTrackKind.AUDIO },
-                        )
-                        PlayerChip(
-                            icon = AppIcons.Settings,
-                            label = stringResource(R.string.settings_title),
-                            // Brzina koja nije obična se vidi i na samom dugmetu.
-                            active = ui.speed != 1f,
-                            onClick = { settingsOpen = true },
-                        )
-                        PlayerChip(
-                            icon = AppIcons.Info,
-                            label = stringResource(R.string.player_stream_info),
-                            active = infoVisible,
-                            onClick = { infoVisible = !infoVisible },
-                        )
-                    }
                 }
             }
-        }
 
-        tracks?.let { kind ->
-            TvTrackPanel(
-                kind = kind,
-                playback = playback,
-                onSelectAudio = viewModel::selectAudio,
-                onSelectText = viewModel::selectText,
-                onClose = { tracks = null },
-                modifier = Modifier.align(Alignment.CenterEnd),
-                onSearchOnline = if (ui.onlineSubtitles) {
-                    {
-                        tracks = null
-                        onlineOpen = true
-                        viewModel.searchOnlineSubtitles()
-                    }
-                } else {
-                    null
-                },
-            )
-        }
-        if (settingsOpen) {
-            TvQuickSettingsPanel(
-                choices = quickSettingChoices(
-                    tv = true,
-                    aspectMode = ui.aspectMode,
-                    onAspectMode = viewModel::setAspectMode,
-                    decoder = ui.decoder,
-                    onDecoder = viewModel::setDecoder,
-                    speed = ui.speed,
-                    onSpeed = viewModel::setSpeed,
-                    subtitleOffsetMs = ui.subtitleOffsetMs,
-                    onShiftSubtitle = viewModel::shiftSubtitle,
-                ),
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
-        }
-        if (onlineOpen) {
-            TvOnlineSubtitlesPanel(
-                state = online,
-                onPick = viewModel::downloadSubtitle,
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+            tracks?.let { kind ->
+                TvTrackPanel(
+                    kind = kind,
+                    playback = playback,
+                    onSelectAudio = viewModel::selectAudio,
+                    onSelectText = viewModel::selectText,
+                    onClose = { tracks = null },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    onSearchOnline = if (ui.onlineSubtitles) {
+                        {
+                            tracks = null
+                            onlineOpen = true
+                            viewModel.searchOnlineSubtitles()
+                        }
+                    } else {
+                        null
+                    },
+                )
+            }
+            if (settingsOpen) {
+                TvQuickSettingsPanel(
+                    choices = quickSettingChoices(
+                        tv = true,
+                        aspectMode = ui.aspectMode,
+                        onAspectMode = viewModel::setAspectMode,
+                        decoder = ui.decoder,
+                        onDecoder = viewModel::setDecoder,
+                        speed = ui.speed,
+                        onSpeed = viewModel::setSpeed,
+                        subtitleOffsetMs = ui.subtitleOffsetMs,
+                        onShiftSubtitle = viewModel::shiftSubtitle,
+                    ),
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
+            if (onlineOpen) {
+                TvOnlineSubtitlesPanel(
+                    state = online,
+                    onPick = viewModel::downloadSubtitle,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
         }
     }
 }
