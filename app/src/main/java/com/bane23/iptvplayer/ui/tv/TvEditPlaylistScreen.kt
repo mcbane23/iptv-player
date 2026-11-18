@@ -44,7 +44,7 @@ fun TvEditPlaylistScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary)
+            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),

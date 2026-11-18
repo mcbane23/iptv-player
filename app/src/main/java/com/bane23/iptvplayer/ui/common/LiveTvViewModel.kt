@@ -348,6 +348,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setMatchFrameRate(enabled) }
     }
 
+    val blackTheme: StateFlow<Boolean> = settings.blackTheme
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setBlackTheme(enabled: Boolean) {
+        viewModelScope.launch { settings.setBlackTheme(enabled) }
+    }
+
     val watchNext: StateFlow<Boolean> = settings.watchNext
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

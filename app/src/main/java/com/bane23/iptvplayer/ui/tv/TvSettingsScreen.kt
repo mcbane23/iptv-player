@@ -69,6 +69,7 @@ fun TvSettingsScreen(
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
+    val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
@@ -101,7 +102,7 @@ fun TvSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary)
+            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -274,6 +275,15 @@ fun TvSettingsScreen(
                         },
                     )
                     TvTextRow(
+                        text = stringResource(R.string.settings_black_theme),
+                        checked = blackTheme,
+                        onClick = { viewModel.setBlackTheme(!blackTheme) },
+                        onFocused = {
+                            focusedChoice = BLACK_THEME_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
                         text = stringResource(R.string.settings_ui_scale),
                         trailing = uiScale.label,
                         // Svaki pritisak prelazi na sledeću veličinu; promena se vidi odmah.
@@ -430,6 +440,7 @@ private fun FocusedSummary(
         UPDATE_CHECK_ROW -> stringResource(R.string.update_check_summary)
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
+        BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
@@ -477,6 +488,7 @@ private const val TV_PREVIEW_ROW = -15
 private const val VOD_PREVIEW_ROW = -16
 private const val UPDATE_CHECK_ROW = -17
 private const val WATCH_NEXT_ROW = -18
+private const val BLACK_THEME_ROW = -19
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable

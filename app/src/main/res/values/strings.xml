@@ -180,6 +180,12 @@
     <string name="vod_progress">%1$s of %2$s</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
+    <string name="next_card_countdown">Next episode in %1$d s</string>
+    <string name="next_card_still_watching">Still watching?</string>
+    <string name="next_card_play_now">Play now</string>
+    <string name="next_card_continue">Yes, continue</string>
+    <string name="next_card_key_ok">OK: %1$s</string>
+    <string name="next_card_key_back">Back: %1$s</string>
     <string name="vod_next_episode">Next episode</string>
 
     <!-- Dodavanje liste sa telefona -->
@@ -608,4 +614,6 @@
     <string name="settings_language_summary">Language of menus and messages in the app</string>
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
+    <string name="settings_black_theme">Black theme</string>
+    <string name="settings_black_theme_summary">The background is pure black instead of dark gray, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
 </resources>

@@ -317,6 +317,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     private fun lastCategoryKey(playlistId: Long, section: String) =
         stringPreferencesKey("last_category_${section}_$playlistId")
 
+    /** Crna tema: potpuno crna pozadina umesto tamnosive, bez sjaja u uglu. */
+    val blackTheme: Flow<Boolean> = dataStore.data.map { it[BLACK_THEME] ?: false }.distinctUntilChanged()
+
+    suspend fun setBlackTheme(enabled: Boolean) {
+        dataStore.edit { it[BLACK_THEME] = enabled }
+    }
+
     /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
     val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
 
@@ -418,6 +425,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val AUTO_REFRESH_PLAYLISTS = booleanPreferencesKey("auto_refresh_playlists")
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
+        val BLACK_THEME = booleanPreferencesKey("black_theme")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")

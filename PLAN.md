@@ -579,6 +579,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       započetih filmova i serija aktivne liste upisuje se u red Android TV / Google TV početnog ekrana
       (sistemski `TvContract.WatchNextPrograms`, bez nove biblioteke); izbor otvara detalje u aplikaciji.
       Prekidač u Podešavanjima na TV-u, podrazumevano uključen. Na Fire TV-u i telefonima ne radi ništa
+- [x] Kartica „Sledeća epizoda” (Bane, 18. 11. 2026, treći krug predloga): 20 sekundi pre kraja epizode
+      u uglu se pojavi kartica sa nazivom sledeće i odbrojavanjem; OK ili dodir je pušta odmah, Nazad ili
+      „Otkaži” je sklanja. Posle tri epizode zaredom bez ijednog pritiska kartica pita „Još gledate?” i
+      sledeća ne kreće sama
+- [x] Crna tema (Bane, 18. 11. 2026, treći krug predloga): prekidač u Podešavanjima (telefon i TV),
+      podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
 
 ## 7. Testiranje
 

@@ -139,7 +139,7 @@ fun TvHomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary),
+            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
     ) {
         // Sekcije imaju svoje margine za overscan (48 dp), pa im ovde treba samo ostatak širine menija.
         Box(

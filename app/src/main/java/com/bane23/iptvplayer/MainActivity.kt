@@ -54,12 +54,14 @@ class MainActivity : ComponentActivity() {
         }
         // Boja se čita pre prvog crtanja, da se pri pokretanju ne vidi podrazumevana pa tek onda izabrana.
         val savedAccent = runBlocking { settingsStore.accentColor.first() }
+        val savedBlack = runBlocking { settingsStore.blackTheme.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
         val savedScale = runBlocking { settingsStore.uiScale.first() }
         setContent {
             val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
             val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
-            IptvTheme(accent = AccentColor.fromName(accent)) {
+            val black by settingsStore.blackTheme.collectAsStateWithLifecycle(initialValue = savedBlack)
+            IptvTheme(accent = AccentColor.fromName(accent), black = black) {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
                     if (isTv) {
                         // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.

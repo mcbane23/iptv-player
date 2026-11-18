@@ -55,12 +55,27 @@ private val TvType = TvTypography().run {
 
 /**
  * Tamna tema aplikacije sa akcentnom bojom [accent] koju bira korisnik. Postavlja i Material3
- * (telefon) i TV Material temu.
+ * (telefon) i TV Material temu. Sa [black] je pozadina potpuno crna (za OLED ekrane i mračnu sobu),
+ * a površine su za nijansu tamnije.
  */
 @Composable
-fun IptvTheme(accent: AccentColor = AccentColor.DEFAULT, content: @Composable () -> Unit) {
-    val mobileColors = remember(accent) { MobileColors.copy(primary = accent.color) }
-    val tvColors = remember(accent) { TvColors.copy(primary = accent.color) }
+fun IptvTheme(accent: AccentColor = AccentColor.DEFAULT, black: Boolean = false, content: @Composable () -> Unit) {
+    val mobileColors = remember(accent, black) {
+        val colors = MobileColors.copy(primary = accent.color)
+        if (black) {
+            colors.copy(background = BlackBackground, surface = BlackSurface, surfaceVariant = BlackSurfaceVariant)
+        } else {
+            colors
+        }
+    }
+    val tvColors = remember(accent, black) {
+        val colors = TvColors.copy(primary = accent.color)
+        if (black) {
+            colors.copy(background = BlackBackground, surface = BlackSurface, surfaceVariant = BlackSurfaceVariant)
+        } else {
+            colors
+        }
+    }
     MaterialTheme(colorScheme = mobileColors, typography = MobileType) {
         TvMaterialTheme(colorScheme = tvColors, typography = TvType, content = content)
     }
