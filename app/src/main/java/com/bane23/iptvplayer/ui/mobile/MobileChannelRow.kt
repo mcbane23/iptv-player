@@ -28,8 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
 import com.bane23.iptvplayer.R
@@ -157,97 +155,108 @@ fun MobileChannelRow(
 }
 
 /**
- * Kanal kao pločica u mreži sa dve kolone (Uživo na telefonu): logo levo, desno naziv, emisija
- * koja je na programu i traka koliko je odmakla. Zvezdica samo pokazuje omiljeni kanal; dugi
- * pritisak otvara meni (omiljeni, vodič). [channel] je null dok se ta strana liste učitava.
+ * Kanal kao red u spisku Uživo na telefonu, po uzoru na TV: zaobljena podloga, broj, logo, naziv,
+ * emisija koja je na programu sa vremenom do kada traje i traka koliko je odmakla. Zvezdica samo
+ * pokazuje omiljeni kanal; dugi pritisak otvara meni (omiljeni, vodič). [selected] red je ceo u
+ * akcentnoj boji (kanal koji je u pregledu). [channel] je null dok se ta strana liste učitava.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MobileChannelTile(
+fun MobileChannelCard(
     channel: Channel?,
-    onClick: (Long) -> Unit,
+    onClick: (Channel) -> Unit,
     onToggleFavorite: (Long) -> Unit,
     onGuide: (Channel) -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    val content = if (selected) colors.onPrimary else colors.onSurface
+    val muted = if (selected) colors.onPrimary.copy(alpha = 0.7f) else colors.onSurfaceVariant
     Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(TileShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.07f), TileShape)
+                .clip(CardShape)
+                .background(if (selected) colors.primary else colors.surface.copy(alpha = 0.6f))
                 .combinedClickable(
                     enabled = channel != null,
-                    onClick = { channel?.let { onClick(it.id) } },
+                    onClick = { channel?.let(onClick) },
                     onLongClick = { menuOpen = true },
                 )
-                .heightIn(min = 58.dp)
-                .padding(8.dp),
+                .padding(start = 2.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Text(
+                text = channel?.number?.toString().orEmpty(),
+                style = MaterialTheme.typography.labelSmall,
+                color = muted,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .width(30.dp)
+                    .padding(end = 8.dp),
+            )
             if (channel == null) {
                 SkeletonLogo()
                 SkeletonTextLines(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 10.dp),
+                        .padding(start = 12.dp),
                 )
             } else {
                 ChannelLogo(url = channel.logo, name = channel.name)
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 10.dp),
+                        .padding(start = 12.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = channel.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (channel.favorite) {
-                            Icon(
-                                imageVector = AppIcons.Star,
-                                contentDescription = stringResource(R.string.category_favorites),
-                                tint = FavoriteColor,
-                                modifier = Modifier
-                                    .padding(start = 4.dp)
-                                    .size(14.dp),
-                            )
-                        }
-                    }
+                    Text(
+                        text = channel.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = content,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     channel.nowTitle?.let { nowTitle ->
                         Text(
-                            text = nowTitle,
+                            text = nowUntil(nowTitle, channel.nowStopMs),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = muted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                     channel.nowProgress(now)?.let { progress ->
-                        // Traka u akcentnoj boji, ali tanka: jedina boja na pločici.
+                        // Traka u akcentnoj boji, ali tanka: jedina boja u redu.
                         Box(
                             modifier = Modifier
                                 .padding(top = 5.dp)
                                 .fillMaxWidth()
                                 .height(2.dp)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+                                .background(muted.copy(alpha = 0.15f)),
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(progress)
                                     .fillMaxHeight()
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)),
+                                    .background(if (selected) colors.onPrimary.copy(alpha = 0.5f) else colors.primary.copy(alpha = 0.85f)),
                             )
                         }
                     }
+                }
+                if (channel.favorite) {
+                    Icon(
+                        imageVector = AppIcons.Star,
+                        contentDescription = stringResource(R.string.category_favorites),
+                        tint = if (selected) content else FavoriteColor,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .size(16.dp),
+                    )
                 }
             }
         }
@@ -276,7 +285,7 @@ fun MobileChannelTile(
     }
 }
 
-private val TileShape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+private val CardShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
 
 /** Zvezdica za dodavanje u omiljene i uklanjanje iz njih. */
 @Composable

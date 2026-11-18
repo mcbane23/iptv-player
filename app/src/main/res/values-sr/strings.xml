@@ -601,6 +601,8 @@
     <string name="subtitle_shift_earlier">Titl ranije</string>
     <string name="subtitle_shift_later">Titl kasnije</string>
     <string name="subtitle_shift_value">%1$s s</string>
+    <string name="live_preview_hint">Dodirni kanal da ga vidiš u pregledu.</string>
+    <string name="live_preview_open">Preko celog ekrana</string>
     <string name="live_badge">UŽIVO</string>
     <string name="epg_until">%1$s · do %2$s</string>
     <string name="epg_time_left">%1$s · još %2$d min</string>

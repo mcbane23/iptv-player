@@ -253,7 +253,7 @@ fun TvVodScreen(
                     modifier = Modifier
                         .weight(0.28f)
                         .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     TvListRow(onClick = onSearch) { color ->
                         Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
@@ -308,7 +308,6 @@ fun TvVodScreen(
                         value = categoryFilter,
                         onChange = { categoryFilter = it },
                         placeholder = stringResource(R.string.search_categories),
-                        modifier = Modifier.padding(vertical = 6.dp),
                     )
                     val shownCategories = remember(state.categories, categoryFilter) {
                         val text = categoryFilter.trim()
@@ -318,7 +317,7 @@ fun TvVodScreen(
                     LazyColumn(
                         state = categoryListState,
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         items(shownCategories, key = { it.id }) { category ->
                             val selected = !showContinue && category == state.selected
@@ -331,6 +330,7 @@ fun TvVodScreen(
                                     viewModel.selectCategory(category)
                                 },
                                 onLongClick = { menuCategory = category },
+                                card = true,
                                 modifier = (if (selected) Modifier.focusRequester(firstFocus) else Modifier)
                                     .then(if (focusTargetId == category.id) Modifier.focusRequester(moveFocus) else Modifier),
                             )
@@ -443,7 +443,10 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
     )
 }
 
-/** Zakačen red levo (Favoriti, „Nastavi gledanje”, grupe kanala u Uživo): ikonica, naziv i broj stavki ispod. */
+/**
+ * Zakačen red levo (Favoriti, „Nastavi gledanje”, grupe kanala u Uživo): pločica sa ikonicom, nazivom
+ * i brojem stavki ispod, istog izgleda kao na položenom telefonu.
+ */
 @Composable
 internal fun PinnedRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -454,8 +457,10 @@ internal fun PinnedRow(
     modifier: Modifier = Modifier,
     onFocused: () -> Unit = {},
 ) {
-    TvListRow(onClick = onClick, selected = selected, onFocused = onFocused, modifier = modifier) { color ->
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+    val colors = MaterialTheme.colorScheme
+    TvListRow(onClick = onClick, selected = selected, onFocused = onFocused, modifier = modifier, card = true) { color ->
+        // Ikonica je u akcentnoj boji, kao na telefonu; na fokusiranom redu prati boju teksta.
+        Icon(icon, contentDescription = null, tint = if (color == colors.onPrimary) color else colors.primary, modifier = Modifier.size(22.dp))
         Column(modifier = Modifier.padding(start = 12.dp)) {
             Text(
                 text = title,

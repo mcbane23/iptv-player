@@ -49,6 +49,10 @@ import androidx.tv.material3.Text
  * Red u listi na TV-u: dobija fokus D-padom, OK ga bira. Fokusiran red je obojen akcentnom bojom,
  * a [selected] red (npr. trenutna kategorija ili kanal) ostaje blago istaknut i kad nema fokus.
  * [content] dobija boju teksta koja odgovara pozadini.
+ *
+ * Sa [card] red je zaobljena pločica sa podlogom, kao kategorije na telefonu: fokus je i dalje pun
+ * u akcentnoj boji, a izabrani red bez fokusa ima akcentni okvir i tekst, da se na ekranu ne vide
+ * dva puna akcentna reda.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -59,21 +63,30 @@ fun TvListRow(
     onFocused: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
     container: Color = Color.Transparent,
+    card: Boolean = false,
     content: @Composable RowScope.(contentColor: Color) -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val background = when {
         focused -> colors.primary
+        selected && card -> colors.primary.copy(alpha = 0.16f)
         selected -> colors.surfaceVariant
+        card -> colors.surfaceVariant.copy(alpha = 0.6f)
         else -> container
     }
-    val contentColor = if (focused) colors.onPrimary else colors.onSurface
+    val contentColor = when {
+        focused -> colors.onPrimary
+        selected && card -> colors.primary
+        else -> colors.onSurface
+    }
+    val shape = RoundedCornerShape(if (card) 10.dp else 8.dp)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
             .background(background)
+            .then(if (card && selected && !focused) Modifier.border(1.5.dp, colors.primary, shape) else Modifier)
             .onFocusChanged {
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
@@ -100,6 +113,7 @@ fun TvTextRow(
     checked: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
+    card: Boolean = false,
 ) {
     TvListRow(
         onClick = onClick,
@@ -114,6 +128,7 @@ fun TvTextRow(
         selected = selected,
         onFocused = onFocused,
         onLongClick = onLongClick,
+        card = card,
     ) { color ->
         if (icon != null) {
             androidx.tv.material3.Icon(
