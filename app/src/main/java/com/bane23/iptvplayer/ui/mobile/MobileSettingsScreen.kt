@@ -106,22 +106,52 @@ fun MobileSettingsScreen(
             ) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
-                        SettingsLinkRow(AppIcons.Playlists, stringResource(R.string.playlists_title), onPlaylists)
+                        SettingsLinkRow(
+                            AppIcons.Playlists,
+                            stringResource(R.string.playlists_title),
+                            stringResource(R.string.settings_playlists_summary),
+                            onPlaylists,
+                        )
                     }
                     if (onCategories != null) {
-                        SettingsLinkRow(AppIcons.Categories, stringResource(R.string.categories_manage_title), onCategories)
+                        SettingsLinkRow(
+                            AppIcons.Categories,
+                            stringResource(R.string.categories_manage_title),
+                            stringResource(R.string.settings_categories_summary),
+                            onCategories,
+                        )
                     }
                     if (onParental != null) {
-                        SettingsLinkRow(AppIcons.Lock, stringResource(R.string.parental_title), onParental)
+                        SettingsLinkRow(
+                            AppIcons.Lock,
+                            stringResource(R.string.parental_title),
+                            stringResource(R.string.settings_parental_summary),
+                            onParental,
+                        )
                     }
                     if (onTrakt != null) {
-                        SettingsLinkRow(AppIcons.Check, stringResource(R.string.trakt_title), onTrakt)
+                        SettingsLinkRow(
+                            AppIcons.Check,
+                            stringResource(R.string.trakt_title),
+                            stringResource(R.string.settings_trakt_summary),
+                            onTrakt,
+                        )
                     }
                     if (onOpenSubtitles != null) {
-                        SettingsLinkRow(AppIcons.Subtitles, stringResource(R.string.opensubtitles_title), onOpenSubtitles)
+                        SettingsLinkRow(
+                            AppIcons.Subtitles,
+                            stringResource(R.string.opensubtitles_title),
+                            stringResource(R.string.settings_opensubtitles_summary),
+                            onOpenSubtitles,
+                        )
                     }
                     if (onRecordings != null) {
-                        SettingsLinkRow(AppIcons.Record, stringResource(R.string.recordings_title), onRecordings)
+                        SettingsLinkRow(
+                            AppIcons.Record,
+                            stringResource(R.string.recordings_title),
+                            stringResource(R.string.settings_recordings_summary),
+                            onRecordings,
+                        )
                     }
                 }
             }
@@ -151,11 +181,17 @@ fun MobileSettingsScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = stringResource(R.string.settings_language),
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_language),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_language_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Text(
                         text = language.label(),
                         style = MaterialTheme.typography.bodySmall,
@@ -276,6 +312,11 @@ fun MobileSettingsScreen(
                     Text(
                         text = stringResource(R.string.update_current_version, updateViewModel.installedVersion),
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.update_check_summary),
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -367,6 +408,12 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
                 )
             }
         }
+        Text(
+            text = stringResource(R.string.settings_accent_color_summary),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
         Row(
             modifier = Modifier
                 .padding(top = 10.dp)
@@ -416,7 +463,7 @@ private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> 
     }
 }
 
-/** Red koji vodi na drugi ekran (npr. Liste): ikonica, naziv i strelica desno. */
+/** Prekidač: naziv, opis ispod njega i prekidač desno. */
 @Composable
 private fun SettingsSwitchRow(title: String, summary: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
@@ -438,26 +485,34 @@ private fun SettingsSwitchRow(title: String, summary: String, checked: Boolean, 
     }
 }
 
-/** Red koji vodi na drugi ekran. */
+/** Red koji vodi na drugi ekran (npr. Liste): ikonica, naziv sa opisom i strelica desno. */
 @Composable
-private fun SettingsLinkRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+private fun SettingsLinkRow(icon: ImageVector, title: String, summary: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 16.dp),
-        )
+                .padding(horizontal = 16.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Icon(
             imageVector = AppIcons.ChevronRight,
             contentDescription = null,
