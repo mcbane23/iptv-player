@@ -627,4 +627,8 @@
     <string name="epg_link_guide_empty">Vodič ove liste još nije učitan. Osveži vodič, pa probaj ponovo.</string>
     <string name="epg_link_remove">Ukloni vezu</string>
     <string name="epg_link_hint_tv">Dugi OK: poveži program</string>
+    <string name="player_sources">Izvori</string>
+    <string name="player_source_current">%1$s · gleda se sada</string>
+    <string name="player_source_failed">%1$s · ne javlja se</string>
+    <string name="player_source_switched">Kanal se nije javio. Prebačeno na listu %1$s.</string>
 </resources>

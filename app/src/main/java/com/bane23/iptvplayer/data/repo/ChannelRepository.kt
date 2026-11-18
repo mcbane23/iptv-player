@@ -34,6 +34,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
+/** Jedan izvor kanala: kanal [channelId] iz liste [playlistName], vidi [ChannelRepository.sources]. */
+data class ChannelSource(val channelId: Long, val playlistId: Long, val playlistName: String)
+
 /** Ulaz UI sloja za kategorije, kanale i adrese strimova. */
 @Singleton
 class ChannelRepository @Inject constructor(
@@ -249,6 +252,16 @@ class ChannelRepository @Inject constructor(
     suspend fun previous(channel: Channel, categoryId: Long?): Channel? =
         (channelDao.previous(channel.playlistId, categoryId, channel.playlistId, channel.sortOrder)
             ?: channelDao.last(channel.playlistId, categoryId))?.toDomain()
+
+    /**
+     * Izvori kanala: on sam i kanali sa potpuno istim nazivom u listama spojenim sa njegovom, po jedan
+     * iz svake liste. Prvi je uvek sam [channel]. Bez spojenih lista spisak ima samo njega.
+     */
+    suspend fun sources(channel: Channel): List<ChannelSource> =
+        channelDao.sources(channel.playlistId, channel.name).map { row ->
+            val own = row.playlistId == channel.playlistId
+            ChannelSource(if (own) channel.id else row.id, row.playlistId, row.playlistName)
+        }.ifEmpty { listOf(ChannelSource(channel.id, channel.playlistId, "")) }
 
     suspend fun byNumber(playlistId: Long, number: Int): Channel? =
         channelDao.byNumber(playlistId, number)?.toDomain()

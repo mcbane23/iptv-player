@@ -190,6 +190,9 @@ data class ChannelEpgRow(
     val stableKey: String = "",
 )
 
+/** Jedan izvor kanala: isti kanal u jednoj od spojenih lista. [firstOrder] samo bira prvi takav kanal u listi. */
+data class ChannelSourceRow(val id: Long, val playlistId: Long, val playlistName: String, val firstOrder: Int)
+
 /** Kanal koji postoji u vodiču liste (XMLTV `<channel>`), da korisnik može ručno da ga poveže sa kanalom liste. */
 @Entity(
     tableName = "epg_channels",

@@ -58,12 +58,22 @@ private const val RECENT_CHANNELS =
 private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrder, cat.playlistId, cat.sortOrder"
 
 /**
+ * Isti kanal postoji i u nekoj spojenoj listi koja je u spisku ispred ove: kanal sa potpuno istim
+ * nazivom, u kategoriji koja nije sakrivena. U zajedničkim spiskovima se takav kanal prikazuje jednom
+ * (iz prve liste), a ostali su mu rezervni izvori, vidi [ChannelDao.sources]. Poređenje je tačno po
+ * nazivu, da može da koristi indeks.
+ */
+private const val DUPLICATE =
+    "EXISTS(SELECT 1 FROM channels d WHERE d.playlistId IN $SCOPE_IDS AND d.playlistId < ch.playlistId " +
+        "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND dc.hidden = 1))"
+
+/**
  * Uslov koji iz spiska „svi kanali” (`:categoryId` je null) izbacuje kanale sakrivenih kategorija.
  * Kad je kategorija zadata, ne menja ništa.
  */
 private const val VISIBLE_IN_ALL =
-    "AND (:categoryId IS NOT NULL OR NOT EXISTS(SELECT 1 FROM categories hc " +
-        "WHERE hc.id = ch.categoryId AND hc.hidden = 1))"
+    "AND (:categoryId IS NOT NULL OR (NOT EXISTS(SELECT 1 FROM categories hc " +
+        "WHERE hc.id = ch.categoryId AND hc.hidden = 1) AND NOT $DUPLICATE))"
 
 /** Kanal nije u sakrivenoj kategoriji. */
 private const val NOT_HIDDEN =
@@ -183,7 +193,7 @@ interface ChannelDao {
     suspend fun countByPlaylist(playlistId: Long): Int
 
     /** Broj kanala u spisku „svi kanali”: bez kanala sakrivenih kategorija. */
-    @Query("SELECT COUNT(*) FROM channels ch WHERE $IN_SCOPE $NOT_HIDDEN")
+    @Query("SELECT COUNT(*) FROM channels ch WHERE $IN_SCOPE $NOT_HIDDEN AND NOT $DUPLICATE")
     fun observeVisibleCount(playlistId: Long): Flow<Int>
 
     @Query("SELECT * FROM channels WHERE id = :id")
@@ -226,7 +236,8 @@ interface ChannelDao {
     /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE $IN_SCOPE " +
-            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
+            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN AND NOT $DUPLICATE " +
+            "ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
     )
     fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
 
@@ -308,6 +319,17 @@ interface ChannelDao {
 
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id IN (:ids)")
     suspend fun setEpgKey(ids: List<Long>, epgKey: String)
+
+    /**
+     * Isti kanal (potpuno isti naziv) u listi `:playlistId` i u listama spojenim sa njom, po jedan iz
+     * svake liste: prvo iz same liste, pa iz ostalih. Kad liste nisu spojene, vraća samo jedan red.
+     */
+    @Query(
+        "SELECT ch.id AS id, ch.playlistId AS playlistId, p.name AS playlistName, MIN(ch.sortOrder) AS firstOrder " +
+            "FROM channels ch JOIN playlists p ON p.id = ch.playlistId WHERE $IN_SCOPE AND ch.name = :name " +
+            "GROUP BY ch.playlistId ORDER BY ch.playlistId != :playlistId, ch.playlistId",
+    )
+    suspend fun sources(playlistId: Long, name: String): List<ChannelSourceRow>
 
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id = :id")
     suspend fun setEpgKeyOf(id: Long, epgKey: String?)

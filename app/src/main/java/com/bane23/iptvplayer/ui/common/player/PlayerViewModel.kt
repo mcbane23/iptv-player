@@ -11,6 +11,7 @@ import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.recording.RecordingStartError
 import com.bane23.iptvplayer.data.repo.ChannelRepository
+import com.bane23.iptvplayer.data.repo.ChannelSource
 import com.bane23.iptvplayer.data.repo.EpgRepository
 import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.data.repo.PlaylistRepository
@@ -19,6 +20,7 @@ import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
+import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -68,6 +70,12 @@ data class PlayerUiState(
     val sourceMissing: Boolean = false,
     /** Kanal koji se gledao pre ovog, za brz povratak; null dok se kanal nijednom nije promenio. */
     val lastChannel: Channel? = null,
+    /** Izvori kanala: on sam i isti kanal u spojenim listama. Više od jednog samo kad su liste spojene. */
+    val sources: List<ChannelSource> = emptyList(),
+    /** Izvor (ID kanala) čija se slika trenutno pušta; null dok kanal nije izabran. */
+    val sourceId: Long? = null,
+    /** Izvori koji se od izbora kanala nisu javili. */
+    val failedSources: Set<Long> = emptySet(),
 )
 
 private data class ListScope(val playlistId: Long, val categoryId: Long?, val startIndex: Int)
@@ -145,10 +153,72 @@ class PlayerViewModel @Inject constructor(
     private var started = false
     private var numberJob: Job? = null
 
+    /** Koliko puta zaredom je plejer morao da pobegne sa izvora iz neke liste, po listi. */
+    private val sourceFailures = HashMap<Long, Int>()
+
+    private val _sourceNotice = MutableSharedFlow<String>(extraBufferCapacity = 1)
+
+    /** Naziv liste na čiji je izvor plejer sam prešao jer se prethodni nije javio. */
+    val sourceNotice: SharedFlow<String> = _sourceNotice.asSharedFlow()
+
     init {
         // Tajmer gašenja je istekao: kanal se pauzira, pa uređaj posle sam ugasi ekran.
         viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
         watchPlaylistRefresh()
+        watchSourceFailure()
+    }
+
+    /**
+     * Kad se izvor kanala ne javi ni posle ponovnih pokušaja, a isti kanal postoji u spojenoj listi,
+     * plejer sam prelazi na sledeći izvor. Kad izvor proradi, njegova lista više nije sumnjiva.
+     */
+    private fun watchSourceFailure() {
+        viewModelScope.launch {
+            engine.state.map { it.status }.distinctUntilChanged().collect { status ->
+                when (status) {
+                    PlaybackStatus.FAILED -> failover()
+                    PlaybackStatus.PLAYING -> currentSource()?.let { sourceFailures.remove(it.playlistId) }
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    private fun currentSource(): ChannelSource? = _ui.value.let { state -> state.sources.firstOrNull { it.channelId == state.sourceId } }
+
+    private suspend fun failover() {
+        val state = _ui.value
+        val current = state.sourceId ?: return
+        var failed = state.failedSources + current
+        if (state.sources.size > 1) {
+            currentSource()?.let { sourceFailures[it.playlistId] = (sourceFailures[it.playlistId] ?: 0) + 1 }
+        }
+        for (candidate in state.sources) {
+            if (candidate.channelId in failed) continue
+            val source = repository.streamSource(candidate.channelId)
+            if (source == null) {
+                failed = failed + candidate.channelId
+                continue
+            }
+            // Kanal je u međuvremenu promenjen: novi kanal ima svoje izvore.
+            if (_ui.value.channel?.id != state.channel?.id) return
+            _ui.update { it.copy(sourceId = candidate.channelId, failedSources = failed) }
+            engine.play(source)
+            _sourceNotice.tryEmit(candidate.playlistName)
+            return
+        }
+        _ui.update { if (it.channel?.id == state.channel?.id) it.copy(failedSources = failed) else it }
+    }
+
+    /** Izvor koji je korisnik sam izabrao u panelu „Izvori”. */
+    fun selectSource(channelId: Long) {
+        val picked = _ui.value.sources.firstOrNull { it.channelId == channelId } ?: return
+        viewModelScope.launch {
+            val source = repository.streamSource(channelId) ?: return@launch
+            sourceFailures.remove(picked.playlistId)
+            _ui.update { it.copy(sourceId = channelId, failedSources = it.failedSources - channelId) }
+            engine.play(source)
+        }
     }
 
     /** Lista je osvežena dok se kanal gleda: kanal je dobio nov ID, pa se traži ponovo. Slika ne staje. */
@@ -183,6 +253,17 @@ class PlayerViewModel @Inject constructor(
         _ui.update { it.copy(categoryId = categoryId) }
         val position = positionOf(fresh)
         _ui.update { if (it.channel?.id == stale.id) it.copy(channel = fresh, position = position) else it }
+        // I izvori kanala su dobili nove ID-jeve; ostaje izvor iz iste liste koji se i do sada gledao.
+        val sources = repository.sources(fresh).filter { it.channelId == fresh.id || !locks.isChannelLocked(it.channelId) }
+        _ui.update { state ->
+            if (state.channel?.id != fresh.id) return@update state
+            val playing = state.sources.firstOrNull { it.channelId == state.sourceId }?.playlistId
+            state.copy(
+                sources = sources,
+                sourceId = sources.firstOrNull { it.playlistId == playing }?.channelId ?: fresh.id,
+                failedSources = emptySet(),
+            )
+        }
         listScope.value = ListScope(fresh.playlistId, categoryId, position)
     }
 
@@ -270,7 +351,7 @@ class PlayerViewModel @Inject constructor(
     /** Kanal koji se gleda, u obliku za slanje na TV (cast). Null ako strim ne može da se sastavi. */
     suspend fun castMedia(): CastMedia? {
         val channel = _ui.value.channel ?: return null
-        val source = repository.streamSource(channel.id) ?: return null
+        val source = repository.streamSource(_ui.value.sourceId ?: channel.id) ?: return null
         return CastMedia(
             title = channel.name,
             urls = source.urls,
@@ -378,6 +459,11 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun show(channel: Channel) {
         val position = positionOf(channel)
+        // Izvori iz zaključanih kategorija se ne nude (roditeljska zaštita).
+        val sources = repository.sources(channel).filter { it.channelId == channel.id || !locks.isChannelLocked(it.channelId) }
+        // Lista sa koje je plejer već više puta morao da pobegne preskače se, da se ne čeka na nju kod svakog kanala.
+        val start = sources.firstOrNull { (sourceFailures[it.playlistId] ?: 0) < SKIP_SOURCE_AFTER } ?: sources.firstOrNull()
+        val sourceId = start?.channelId ?: channel.id
         _ui.update {
             val before = it.channel
             it.copy(
@@ -385,9 +471,12 @@ class PlayerViewModel @Inject constructor(
                 position = position,
                 sourceMissing = false,
                 lastChannel = if (before != null && before.id != channel.id) before else it.lastChannel,
+                sources = sources,
+                sourceId = sourceId,
+                failedSources = emptySet(),
             )
         }
-        val source = repository.streamSource(channel.id)
+        val source = repository.streamSource(sourceId)
         if (source == null) {
             engine.stop()
             _ui.update { it.copy(sourceMissing = true) }
@@ -403,6 +492,9 @@ class PlayerViewModel @Inject constructor(
 
     private companion object {
         const val MAX_LOCKED_SKIP = 300
+
+        /** Posle ovoliko bežanja zaredom sa izvora iste liste, kanali kreću odmah sa sledećeg izvora. */
+        const val SKIP_SOURCE_AFTER = 2
         const val MAX_NUMBER_DIGITS = 5
         const val NUMBER_ENTRY_DELAY_MS = 1_500L
         const val NOW_NEXT_REFRESH_MS = 30_000L

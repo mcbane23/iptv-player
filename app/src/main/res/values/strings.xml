@@ -626,4 +626,8 @@
     <string name="epg_link_guide_empty">The guide for this playlist is not loaded yet. Refresh the guide and try again.</string>
     <string name="epg_link_remove">Remove link</string>
     <string name="epg_link_hint_tv">Long OK: link guide</string>
+    <string name="player_sources">Sources</string>
+    <string name="player_source_current">%1$s · playing now</string>
+    <string name="player_source_failed">%1$s · not responding</string>
+    <string name="player_source_switched">The channel did not respond. Switched to playlist %1$s.</string>
 </resources>
