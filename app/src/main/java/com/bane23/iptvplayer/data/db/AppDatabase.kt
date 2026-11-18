@@ -17,8 +17,10 @@ import androidx.room.RoomDatabase
         TraktPendingEntity::class,
         TraktPlaybackPendingEntity::class,
         RecordingEntity::class,
+        EpgChannelEntity::class,
+        EpgLinkEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

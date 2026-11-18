@@ -2,7 +2,8 @@ package com.bane23.iptvplayer.ui.tv
 
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -99,6 +100,9 @@ fun TvGuideScreen(
             )
         }
     }
+    // Kanal na čijem je nazivu dugo držan OK: ručno povezivanje sa programom iz vodiča.
+    var linkChannel by remember { mutableStateOf<Channel?>(null) }
+    linkChannel?.let { channel -> TvEpgLinkDialog(channel = channel, onClose = { linkChannel = null }) }
     RecordingNotices(viewModel.recordingNotice)
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val firstFocus = remember { FocusRequester() }
@@ -168,6 +172,7 @@ fun TvGuideScreen(
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
                         onArchive = { onArchive(channel.id) },
+                        onLink = { linkChannel = channel },
                         onFocused = { lastChannelId = channel.id },
                         restoreFocus = channel.id == restoreChannelId,
                         onFocusRestored = { restoreChannelId = null },
@@ -200,6 +205,7 @@ private fun GuideRow(
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
     onArchive: () -> Unit,
+    onLink: () -> Unit,
     onFocused: () -> Unit,
     restoreFocus: Boolean,
     onFocusRestored: () -> Unit,
@@ -229,6 +235,7 @@ private fun GuideRow(
                 viewModel.select(channel, null)
             },
             onClick = if (hasArchive) onArchive else onPlay,
+            onLongClick = onLink,
             modifier = Modifier
                 .width(CHANNEL_WIDTH)
                 .focusRequester(channelFocus)
@@ -277,6 +284,7 @@ private fun GuideRow(
 }
 
 /** Jedno polje u mreži: fokusirano je obojeno akcentnom bojom, emisija koja je u toku blago istaknuta. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GuideBox(
     text: String,
@@ -284,6 +292,7 @@ private fun GuideBox(
     onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -301,7 +310,7 @@ private fun GuideBox(
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -333,8 +342,10 @@ private fun SelectionPanel(selection: GuideSelection?) {
         }
         // Kod buduće emisije piše šta OK radi: nudi podsetnik i snimanje.
         val recordHint = if (program != null && program.startMs > now) stringResource(R.string.guide_hint_future_tv) else null
+        // Na nazivu kanala piše da dugi OK povezuje kanal sa programom iz vodiča.
+        val linkHint = if (program == null) stringResource(R.string.epg_link_hint_tv) else null
         Text(
-            text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint, recordHint).joinToString(" · "),
+            text = listOfNotNull(selection.channel.name, program?.timeRange(), archiveHint, recordHint, linkHint).joinToString(" · "),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

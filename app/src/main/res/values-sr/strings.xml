@@ -619,4 +619,12 @@
     <string name="update_check_summary">Traži noviju verziju i nudi da je instalira. Liste i podešavanja ostaju.</string>
     <string name="settings_black_theme">Crna tema</string>
     <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto tamnosive, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
+    <string name="epg_link_action">Poveži program</string>
+    <string name="epg_link_title">Program za „%1$s”</string>
+    <string name="epg_link_subtitle">Izaberi kanal iz vodiča čiji program odgovara</string>
+    <string name="epg_link_search">Naziv kanala u vodiču</string>
+    <string name="epg_link_none">Nema sličnih kanala u vodiču. Probaj drugi naziv.</string>
+    <string name="epg_link_guide_empty">Vodič ove liste još nije učitan. Osveži vodič, pa probaj ponovo.</string>
+    <string name="epg_link_remove">Ukloni vezu</string>
+    <string name="epg_link_hint_tv">Dugi OK: poveži program</string>
 </resources>

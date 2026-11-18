@@ -618,4 +618,12 @@
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
     <string name="settings_black_theme">Black theme</string>
     <string name="settings_black_theme_summary">The background is pure black instead of dark gray, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
+    <string name="epg_link_action">Link guide</string>
+    <string name="epg_link_title">Guide for \"%1$s\"</string>
+    <string name="epg_link_subtitle">Pick the guide channel whose schedule matches</string>
+    <string name="epg_link_search">Channel name in the guide</string>
+    <string name="epg_link_none">No similar channels in the guide. Try another name.</string>
+    <string name="epg_link_guide_empty">The guide for this playlist is not loaded yet. Refresh the guide and try again.</string>
+    <string name="epg_link_remove">Remove link</string>
+    <string name="epg_link_hint_tv">Long OK: link guide</string>
 </resources>

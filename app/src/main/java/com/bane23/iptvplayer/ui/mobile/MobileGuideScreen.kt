@@ -25,7 +25,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +72,8 @@ fun MobileGuideScreen(
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
+    var linkChannel by remember { mutableStateOf<Channel?>(null) }
+    linkChannel?.let { channel -> MobileEpgLinkDialog(channel = channel, onClose = { linkChannel = null }) }
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val now = System.currentTimeMillis()
 
@@ -143,6 +148,8 @@ fun MobileGuideScreen(
                 }
                 SelectionPanel(
                     selection = selection,
+                    // Kanal bez programa u vodiču može ručno da se poveže sa kanalom iz vodiča.
+                    onLink = if (program == null) ({ linkChannel = selection.channel }) else null,
                     remindLabel = when {
                         program == null || program.startMs <= now -> null
                         hasReminder -> stringResource(R.string.reminder_remove)
@@ -257,6 +264,7 @@ private fun EmptyCell(modifier: Modifier, onClick: () -> Unit) {
 @Composable
 private fun SelectionPanel(
     selection: GuideSelection,
+    onLink: (() -> Unit)?,
     remindLabel: String?,
     onRemind: () -> Unit,
     recordLabel: String?,
@@ -305,6 +313,9 @@ private fun SelectionPanel(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+                if (onLink != null) {
+                    TextButton(onClick = onLink) { Text(stringResource(R.string.epg_link_action), maxLines = 1) }
+                }
                 if (remindLabel != null) {
                     TextButton(onClick = onRemind) { Text(remindLabel, maxLines = 1) }
                 }

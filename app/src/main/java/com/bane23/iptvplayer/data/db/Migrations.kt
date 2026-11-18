@@ -120,8 +120,24 @@ object Migrations {
         }
     }
 
+    /** 14 → 15: spisak kanala iz vodiča i ručne veze kanala liste sa njima. */
+    private val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `epg_channels` (`playlistId` INTEGER NOT NULL, `epgKey` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, PRIMARY KEY(`playlistId`, `epgKey`), " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `epg_links` (`playlistId` INTEGER NOT NULL, `stableKey` TEXT NOT NULL, " +
+                    "`epgKey` TEXT NOT NULL, PRIMARY KEY(`playlistId`, `stableKey`), " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14,
+        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15,
     )
 }

@@ -182,7 +182,46 @@ data class WatchProgressEntity(
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
-data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?, val catchupType: String? = null)
+data class ChannelEpgRow(
+    val id: Long,
+    val name: String,
+    val tvgId: String?,
+    val catchupType: String? = null,
+    val stableKey: String = "",
+)
+
+/** Kanal koji postoji u vodiču liste (XMLTV `<channel>`), da korisnik može ručno da ga poveže sa kanalom liste. */
+@Entity(
+    tableName = "epg_channels",
+    primaryKeys = ["playlistId", "epgKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class EpgChannelEntity(val playlistId: Long, val epgKey: String, val name: String)
+
+/**
+ * Ručna veza kanala liste sa kanalom iz vodiča. Vezuje se za `stableKey` kanala, da preživi
+ * osvežavanje liste, i ima prednost nad `tvg-id` i nad poklapanjem po nazivu.
+ */
+@Entity(
+    tableName = "epg_links",
+    primaryKeys = ["playlistId", "stableKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class EpgLinkEntity(val playlistId: Long, val stableKey: String, val epgKey: String)
 
 /** Kanal koji je korisnik označio kao omiljen. */
 @Entity(

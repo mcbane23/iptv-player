@@ -3,9 +3,12 @@ package com.bane23.iptvplayer.data.repo
 import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
+import com.bane23.iptvplayer.data.db.EpgChannelEntity
+import com.bane23.iptvplayer.data.db.EpgLinkEntity
 import com.bane23.iptvplayer.data.db.EpgProgramEntity
 import com.bane23.iptvplayer.data.db.PlaylistEntity
 import com.bane23.iptvplayer.work.EpgScheduler
+import com.bane23.iptvplayer.data.epg.GuideChannel
 import com.bane23.iptvplayer.data.epg.XmltvItem
 import com.bane23.iptvplayer.data.epg.XmltvParser
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
@@ -157,6 +160,40 @@ class EpgRepository @Inject constructor(
         return epgDao.range(channel.playlistId, key, from, to).map { it.toDomain() }
     }
 
+    /** Svi kanali koje vodič liste sadrži, za ručno povezivanje. Prazno dok se vodič bar jednom ne učita. */
+    suspend fun guideChannels(playlistId: Long): List<GuideChannel> =
+        epgDao.guideChannels(playlistId).map { GuideChannel(it.epgKey, it.name) }
+
+    /** Emisija koja je sada na kanalu vodiča [key], ako je vodič ima. */
+    suspend fun nowOn(playlistId: Long, key: String): Program? {
+        val now = System.currentTimeMillis()
+        return epgDao.upcoming(playlistId, key, now, limit = 1).firstOrNull()?.takeIf { it.startMs <= now }?.toDomain()
+    }
+
+    /** Kanal vodiča koji je korisnik ručno izabrao za kanal liste, ili null ako nije birao. */
+    suspend fun linkedKey(channelId: Long): String? {
+        val channel = channelDao.getById(channelId) ?: return null
+        return epgDao.linkedKey(channel.playlistId, channel.stableKey)
+    }
+
+    /**
+     * Ručno vezuje kanal liste za kanal vodiča [key]; null briše vezu i vraća kanal na oznaku iz liste.
+     * Program se vidi odmah koliko ga ima sačuvanog, a ceo se učitava u pozadini.
+     */
+    suspend fun linkGuide(channelId: Long, key: String?) {
+        val channel = channelDao.getById(channelId) ?: return
+        db.withTransaction {
+            if (key == null) {
+                epgDao.deleteLink(channel.playlistId, channel.stableKey)
+                channelDao.setEpgKeyOf(channel.id, channel.tvgId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() })
+            } else {
+                epgDao.upsertLink(EpgLinkEntity(channel.playlistId, channel.stableKey, key))
+                channelDao.setEpgKeyOf(channel.id, key)
+            }
+        }
+        requestRefresh(channel.playlistId)
+    }
+
     /** Izvor vodiča: link koji je uneo korisnik, pa link iz M3U zaglavlja, pa Xtream nalog. */
     private fun sourceUrl(playlist: PlaylistEntity): String? {
         playlist.epgUrlOverride?.takeIf { it.isNotBlank() }?.let { return it }
@@ -174,10 +211,19 @@ class EpgRepository @Inject constructor(
 
     private suspend fun import(playlist: PlaylistEntity, url: String, generation: Long) {
         val channels = channelDao.epgRows(playlist.id)
-        // Kanali sa tvg-id se vezuju preko njega; ostali preko naziva kanala iz vodiča.
+        // Ručno povezani kanali imaju prednost; ostali sa tvg-id se vezuju preko njega, a preostali
+        // preko naziva kanala iz vodiča.
+        val links = epgDao.links(playlist.id).associate { it.stableKey to it.epgKey }
+        val linkedIds = HashMap<String, MutableList<Long>>()
         val wanted = HashSet<String>()
         val idsByName = HashMap<String, MutableList<Long>>()
         for (channel in channels) {
+            val linked = links[channel.stableKey]
+            if (linked != null) {
+                wanted.add(linked)
+                linkedIds.getOrPut(linked) { ArrayList(1) }.add(channel.id)
+                continue
+            }
             val tvgId = channel.tvgId?.trim()?.lowercase()
             if (!tvgId.isNullOrEmpty()) {
                 wanted.add(tvgId)
@@ -193,14 +239,17 @@ class EpgRepository @Inject constructor(
             val type = channel.catchupType
             if (type == null || type == ArchiveRepository.TYPE_XTREAM) continue
             archiveIds.add(channel.id)
-            channel.tvgId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let(archiveKeys::add)
+            val key = links[channel.stableKey] ?: channel.tvgId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+            key?.let(archiveKeys::add)
         }
+        val guideChannels = ArrayList<EpgChannelEntity>()
 
         val shiftMs = playlist.epgShiftHours * HOUR_MS
         val now = System.currentTimeMillis()
         val from = now - KEEP_PAST_MS
         val archiveFrom = now - KEEP_ARCHIVE_MS
         val to = now + KEEP_FUTURE_MS
+        val previewTo = now + KEEP_PREVIEW_MS
         val batch = ArrayList<EpgProgramEntity>(BATCH_SIZE)
 
         openGuide(url, playlist.userAgent).use { stream ->
@@ -209,6 +258,7 @@ class EpgRepository @Inject constructor(
                 when (item) {
                     is XmltvItem.Channel -> {
                         val key = item.id.lowercase()
+                        guideChannels.add(EpgChannelEntity(playlist.id, key, item.displayNames.firstOrNull() ?: item.id))
                         if (key in wanted) continue
                         for (name in item.displayNames) {
                             val ids = idsByName[name.lowercase()] ?: continue
@@ -219,10 +269,17 @@ class EpgRepository @Inject constructor(
 
                     is XmltvItem.Program -> {
                         val key = item.channelId.lowercase()
-                        if (key !in wanted && key !in matchedByName) continue
                         val start = item.startMs + shiftMs
                         val stop = item.stopMs + shiftMs
-                        if (stop <= (if (key in archiveKeys) archiveFrom else from) || start >= to) continue
+                        // Za kanale vodiča koje nijedan kanal liste ne koristi čuva se samo ono što ide
+                        // narednih sati i bez opisa: dovoljno da se pri ručnom povezivanju vidi šta je na
+                        // kom kanalu, a da baza ne naraste.
+                        val preview = key !in wanted && key !in matchedByName
+                        if (preview) {
+                            if (stop <= now || start >= previewTo) continue
+                        } else if (stop <= (if (key in archiveKeys) archiveFrom else from) || start >= to) {
+                            continue
+                        }
                         batch.add(
                             EpgProgramEntity(
                                 playlistId = playlist.id,
@@ -230,7 +287,7 @@ class EpgRepository @Inject constructor(
                                 startMs = start,
                                 stopMs = stop,
                                 title = item.title,
-                                description = item.description?.take(MAX_DESCRIPTION),
+                                description = if (preview) null else item.description?.take(MAX_DESCRIPTION),
                                 generation = generation,
                             ),
                         )
@@ -248,6 +305,11 @@ class EpgRepository @Inject constructor(
             for ((key, ids) in matchedByName) {
                 ids.distinct().chunked(ID_CHUNK).forEach { channelDao.setEpgKey(it, key) }
             }
+            for ((key, ids) in linkedIds) {
+                ids.chunked(ID_CHUNK).forEach { channelDao.setEpgKey(it, key) }
+            }
+            epgDao.deleteChannels(playlist.id)
+            guideChannels.chunked(ID_CHUNK).forEach { epgDao.insertChannels(it) }
             for (key in archiveKeys) {
                 val before = epgDao.firstStart(playlist.id, key, generation) ?: Long.MAX_VALUE
                 epgDao.adoptEarlier(playlist.id, key, generation, before)
@@ -309,6 +371,7 @@ class EpgRepository @Inject constructor(
         const val KEEP_PAST_MS = 6 * HOUR_MS
         const val KEEP_ARCHIVE_MS = ArchiveRepository.MAX_DAYS * ArchiveRepository.DAY_MS
         const val KEEP_FUTURE_MS = 48 * HOUR_MS
+        const val KEEP_PREVIEW_MS = 8 * HOUR_MS
         const val STALE_AFTER_MS = 6 * HOUR_MS
         const val BATCH_SIZE = 1_000
         const val ID_CHUNK = 500

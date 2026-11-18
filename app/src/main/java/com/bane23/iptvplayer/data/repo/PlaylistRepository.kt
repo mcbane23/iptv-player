@@ -306,6 +306,8 @@ class PlaylistRepository @Inject constructor(
                 null
             }
         }
+        // Ručno povezani kanali odmah dobijaju svoj kanal iz vodiča, ne tek posle učitavanja vodiča.
+        channelDao.applyEpgLinks(playlist.id)
         playlistDao.markRefreshed(playlist.id, System.currentTimeMillis(), epgUrl ?: playlist.epgUrl)
     }
 

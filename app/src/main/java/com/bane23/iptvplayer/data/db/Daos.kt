@@ -303,11 +303,22 @@ interface ChannelDao {
     @Query("SELECT ch.* FROM channels ch WHERE $IN_SCOPE AND ch.number = :number ORDER BY ch.playlistId, ch.sortOrder LIMIT 1")
     suspend fun byNumber(playlistId: Long, number: Int): ChannelEntity?
 
-    @Query("SELECT id, name, tvgId, catchupType FROM channels WHERE playlistId = :playlistId")
+    @Query("SELECT id, name, tvgId, catchupType, stableKey FROM channels WHERE playlistId = :playlistId")
     suspend fun epgRows(playlistId: Long): List<ChannelEpgRow>
 
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id IN (:ids)")
     suspend fun setEpgKey(ids: List<Long>, epgKey: String)
+
+    @Query("UPDATE channels SET epgKey = :epgKey WHERE id = :id")
+    suspend fun setEpgKeyOf(id: Long, epgKey: String?)
+
+    /** Posle osvežavanja liste vraća kanalima ručno izabran kanal iz vodiča (vidi [EpgLinkEntity]). */
+    @Query(
+        "UPDATE channels SET epgKey = (SELECT l.epgKey FROM epg_links l WHERE l.playlistId = channels.playlistId " +
+            "AND l.stableKey = channels.stableKey) WHERE playlistId = :playlistId AND EXISTS (" +
+            "SELECT 1 FROM epg_links l WHERE l.playlistId = channels.playlistId AND l.stableKey = channels.stableKey)",
+    )
+    suspend fun applyEpgLinks(playlistId: Long)
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
@@ -331,6 +342,27 @@ interface EpgDao {
             "AND stopMs > :from AND startMs < :to GROUP BY startMs ORDER BY startMs",
     )
     suspend fun range(playlistId: Long, channelKey: String, from: Long, to: Long): List<EpgProgramEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChannels(channels: List<EpgChannelEntity>)
+
+    @Query("DELETE FROM epg_channels WHERE playlistId = :playlistId")
+    suspend fun deleteChannels(playlistId: Long)
+
+    @Query("SELECT * FROM epg_channels WHERE playlistId = :playlistId")
+    suspend fun guideChannels(playlistId: Long): List<EpgChannelEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertLink(link: EpgLinkEntity)
+
+    @Query("DELETE FROM epg_links WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun deleteLink(playlistId: Long, stableKey: String)
+
+    @Query("SELECT * FROM epg_links WHERE playlistId = :playlistId")
+    suspend fun links(playlistId: Long): List<EpgLinkEntity>
+
+    @Query("SELECT epgKey FROM epg_links WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun linkedKey(playlistId: Long, stableKey: String): String?
 
     @Query("SELECT EXISTS(SELECT 1 FROM epg_programs WHERE playlistId = :playlistId)")
     fun observeHasPrograms(playlistId: Long): Flow<Boolean>

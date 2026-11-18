@@ -592,6 +592,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       sledeća ne kreće sama
 - [x] Crna tema (Bane, 18. 11. 2026, treći krug predloga): prekidač u Podešavanjima (telefon i TV),
       podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
+- [x] Ručno povezivanje kanala sa programom (Bane, 19. 11. 2026, četvrti krug predloga): za kanale kojima
+      se oznaka u listi i u vodiču ne poklapaju. U Vodiču dugi OK na nazivu kanala (TV), odnosno „Poveži
+      program” u detaljima kanala bez programa (telefon), nudi kanale vodiča sa najsličnijim nazivom i šta
+      je sada na njima. Izbor se pamti po `stableKey` (`epg_links`), ima prednost nad `tvg-id` i preživljava
+      osvežavanje liste. Baza v15: `epg_channels` (spisak kanala vodiča) i `epg_links`. Za nepovezane kanale
+      vodiča čuva se samo program narednih 8 sati, bez opisa
 
 ## 7. Testiranje
 
