@@ -51,7 +51,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -248,7 +247,7 @@ fun MobileLiveTvScreen(
                                 onMoveToTop = viewModel::moveCategoryToTop,
                                 onManage = onCategories,
                                 modifier = Modifier
-                                    .padding(start = 12.dp, top = 8.dp, bottom = 8.dp)
+                                    .padding(start = 8.dp, top = 8.dp)
                                     .width(210.dp)
                                     .fillMaxHeight(),
                             )
@@ -457,28 +456,29 @@ private fun GroupPanel(
     onManage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    // Isti izgled kao spisak kategorija kod filmova i serija: svaki red je svoja zaobljena pločica.
     LazyColumn(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), shape)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), shape)
-            .padding(6.dp),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        contentPadding = PaddingValues(bottom = 8.dp),
     ) {
         item(key = "header") {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = 2.dp),
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(start = 2.dp, end = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = header,
             )
-            PanelDivider()
         }
         item(key = ChannelGroups.FAVORITES) {
             PanelRow(
                 text = stringResource(R.string.category_favorites),
                 icon = AppIcons.Star,
-                count = state.favoriteCount,
+                subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                 selected = selected == ChannelGroups.FAVORITES,
                 onClick = { onSelect(ChannelGroups.FAVORITES) },
             )
@@ -488,7 +488,7 @@ private fun GroupPanel(
                 PanelRow(
                     text = stringResource(R.string.category_recent),
                     icon = AppIcons.History,
-                    count = state.recentCount,
+                    subtitle = stringResource(R.string.vod_total, state.recentCount),
                     selected = selected == ChannelGroups.RECENT,
                     onClick = { onSelect(ChannelGroups.RECENT) },
                 )
@@ -498,22 +498,10 @@ private fun GroupPanel(
             PanelRow(
                 text = stringResource(R.string.category_all),
                 icon = AppIcons.LiveTv,
-                count = state.totalChannels,
+                subtitle = stringResource(R.string.vod_total, state.totalChannels),
                 selected = selected == ALL_CHANNELS,
                 onClick = { onSelect(ALL_CHANNELS) },
             )
-        }
-        if (state.categories.isNotEmpty()) {
-            item(key = "categories-label") {
-                PanelDivider()
-                Text(
-                    text = stringResource(R.string.categories_label).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    modifier = Modifier.padding(start = 10.dp, top = 4.dp, bottom = 2.dp),
-                )
-            }
         }
         items(state.categories, key = { it.id }) { category ->
             var menuOpen by remember { mutableStateOf(false) }
@@ -553,66 +541,70 @@ private fun GroupPanel(
     }
 }
 
-/** Red u spisku grupa: ikonica (po želji), naziv i broj kanala. Izabrani red je u akcentnoj boji. */
+/**
+ * Red u spisku grupa, isti kao u spisku kategorija kod filmova i serija: zaobljena pločica sa
+ * ikonicom (po želji), nazivom i brojem kanala, ispod naziva ([subtitle]) ili desno ([count]).
+ * Izabrani red je ceo u akcentnoj boji.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PanelRow(
     text: String,
     onClick: () -> Unit,
     icon: ImageVector? = null,
+    subtitle: String? = null,
     count: Int? = null,
     selected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    val colors = MaterialTheme.colorScheme
+    val content = if (selected) colors.onPrimary else colors.onSurface
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Transparent)
+            .background(if (selected) colors.primary else colors.surfaceVariant.copy(alpha = 0.6f))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 10.dp, vertical = 9.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = color,
+                tint = if (selected) content else colors.primary,
                 modifier = Modifier
                     .padding(end = 10.dp)
-                    .size(18.dp),
+                    .size(20.dp),
             )
         }
-        Text(
-            text = text,
-            color = color,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = text,
+                color = content,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    color = content.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+            }
+        }
         if (count != null) {
             Text(
                 text = count.toString(),
-                color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = content.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
     }
-}
-
-@Composable
-private fun PanelDivider() {
-    Box(
-        modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 5.dp)
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.08f)),
-    )
 }
 
 /** Malo dugme sa ikonicom u redu na vrhu spiska grupa. [description] čitaju čitači ekrana. */

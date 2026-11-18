@@ -105,288 +105,291 @@ fun TvSettingsScreen(
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
         TvHeader(title = stringResource(R.string.settings_title), modifier = Modifier.padding(bottom = 16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-            Column(
-                // Podešavanja ima više nego što staje na ekran; spisak se pomera za fokusom.
-                modifier = Modifier
-                    .weight(0.55f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                if (onCategories != null) {
-                    TvTextRow(
-                        text = stringResource(R.string.categories_manage_title),
-                        trailing = "›",
-                        onClick = onCategories,
-                        onFocused = {
-                            focusedChoice = null
-                            openChoice = null
-                        },
-                    )
-                }
-                if (onParental != null) {
-                    TvTextRow(
-                        text = stringResource(R.string.parental_title),
-                        trailing = "›",
-                        onClick = onParental,
-                        onFocused = {
-                            focusedChoice = null
-                            openChoice = null
-                        },
-                    )
-                }
-                if (onTrakt != null) {
-                    TvTextRow(
-                        text = stringResource(R.string.trakt_title),
-                        trailing = "›",
-                        onClick = onTrakt,
-                        onFocused = {
-                            focusedChoice = null
-                            openChoice = null
-                        },
-                    )
-                }
-                if (onOpenSubtitles != null) {
-                    TvTextRow(
-                        text = stringResource(R.string.opensubtitles_title),
-                        trailing = "›",
-                        onClick = onOpenSubtitles,
-                        onFocused = {
-                            focusedChoice = null
-                            openChoice = null
-                        },
-                    )
-                }
-                if (onRecordings != null) {
-                    TvTextRow(
-                        text = stringResource(R.string.recordings_title),
-                        trailing = "›",
-                        onClick = onRecordings,
-                        onFocused = {
-                            focusedChoice = null
-                            openChoice = null
-                        },
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.settings_general_header),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp),
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_resume_last),
-                    checked = resumeLastChannel,
-                    onClick = { viewModel.setResumeLastChannel(!resumeLastChannel) },
-                    onFocused = {
-                        focusedChoice = RESUME_ROW
-                        openChoice = null
-                    },
-                    modifier = Modifier.focusRequester(firstFocus),
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_auto_refresh),
-                    checked = autoRefreshPlaylists,
-                    onClick = { viewModel.setAutoRefreshPlaylists(!autoRefreshPlaylists) },
-                    onFocused = {
-                        focusedChoice = AUTO_REFRESH_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_match_frame_rate),
-                    checked = matchFrameRate,
-                    onClick = { viewModel.setMatchFrameRate(!matchFrameRate) },
-                    onFocused = {
-                        focusedChoice = MATCH_FRAME_RATE_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_tv_preview),
-                    checked = channelPreview,
-                    onClick = { viewModel.setTvChannelPreview(!channelPreview) },
-                    onFocused = {
-                        focusedChoice = null
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_tv_vod_preview),
-                    checked = vodPreview,
-                    onClick = { viewModel.setTvVodPreview(!vodPreview) },
-                    onFocused = {
-                        focusedChoice = null
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_autostart),
-                    checked = autostart,
-                    onClick = {
-                        val enable = !autostart
-                        viewModel.setAutostart(enable)
-                        if (enable && !autostartAllowed) {
-                            permissionScreenMissing = !Autostart.openPermissionScreen(context)
-                        }
-                    },
-                    onFocused = {
-                        focusedChoice = AUTOSTART_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_language),
-                    trailing = AppLocale.get(context).label(),
-                    onClick = {
-                        // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
-                        val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
-                        AppLocale.change(context, AppLanguage.entries[next])
-                    },
-                    onFocused = {
-                        focusedChoice = LANGUAGE_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_accent_color),
-                    trailing = accentColor?.label(),
-                    onClick = {
-                        // Svaki pritisak prelazi na sledeću boju; promena se vidi odmah.
-                        val current = accentColor ?: AccentColor.DEFAULT
-                        viewModel.setAccentColor(AccentColor.entries[(current.ordinal + 1) % AccentColor.entries.size])
-                    },
-                    onFocused = {
-                        focusedChoice = ACCENT_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.settings_ui_scale),
-                    trailing = uiScale.label,
-                    // Svaki pritisak prelazi na sledeću veličinu; promena se vidi odmah.
-                    onClick = { viewModel.setUiScale(UiScale.next(uiScale, isTv = true)) },
-                    onFocused = {
-                        focusedChoice = UI_SCALE_ROW
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.update_check),
-                    trailing = updateViewModel.installedVersion,
-                    onClick = updateViewModel::check,
-                    onFocused = {
-                        focusedChoice = null
-                        openChoice = null
-                    },
-                )
-                TvTextRow(
-                    text = stringResource(R.string.update_channel),
-                    trailing = updateChannel.label(),
-                    onClick = {
-                        // Svaki pritisak prelazi na drugi kanal i odmah proverava šta on nudi.
-                        val channels = UpdateChannel.entries
-                        updateViewModel.setChannel(channels[(updateChannel.ordinal + 1) % channels.size])
-                    },
-                    onFocused = {
-                        focusedChoice = UPDATE_CHANNEL_ROW
-                        openChoice = null
-                    },
-                )
-                // Uključeno je tek kad postoji i dozvola; bez nje sistem ne da aplikaciji da se sama otvori.
-                val reopens = reopenAfterUpdate && autostartAllowed
-                TvTextRow(
-                    text = stringResource(R.string.settings_reopen_after_update),
-                    checked = reopens,
-                    onClick = {
-                        viewModel.setReopenAfterUpdate(!reopens)
-                        if (!reopens && !autostartAllowed) {
-                            permissionScreenMissing = !Autostart.openPermissionScreen(context)
-                        }
-                    },
-                    onFocused = {
-                        focusedChoice = REOPEN_ROW
-                        openChoice = null
-                    },
-                )
-                Text(
-                    text = stringResource(R.string.settings_player_header),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp),
-                )
-                choices.forEachIndexed { index, choice ->
-                    TvTextRow(
-                        text = choice.title,
-                        trailing = choice.value.takeIf { !choice.toggle },
-                        checked = choice.checked.takeIf { choice.toggle },
-                        selected = openChoice == index,
-                        // Prekidač se menja odmah; ostala podešavanja otvaraju spisak vrednosti.
-                        onClick = { if (choice.toggle) choice.flip() else openChoice = index },
-                        onFocused = {
-                            focusedChoice = index
-                            if (openChoice != index) openChoice = null
-                        },
-                        modifier = Modifier.focusRequester(rowFocus[index]),
-                    )
-                }
-            }
-
-            val open = openChoice
-            Column(
-                modifier = Modifier
-                    .weight(0.45f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // Objašnjenje stoji van spiska koji se pomera, pa se vidi na kom god redu da je fokus.
-                FocusedSummary(
-                    focusedChoice = { focusedChoice },
-                    choices = choices,
-                    reopenSummary = when {
-                        autostartAllowed -> R.string.settings_reopen_after_update_summary
-                        permissionScreenMissing -> R.string.settings_autostart_manual
-                        else -> R.string.settings_reopen_after_update_permission
-                    },
-                    autostartSummary = when {
-                        !autostart || autostartAllowed -> R.string.settings_autostart_summary
-                        permissionScreenMissing -> R.string.settings_autostart_manual
-                        else -> R.string.settings_autostart_permission
-                    },
-                )
-                if (open != null) {
-                    val choice = choices[open]
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                        contentPadding = PaddingValues(bottom = 27.dp),
-                    ) {
-                        itemsIndexed(choice.options) { index, option ->
-                            TvTextRow(
-                                text = option,
-                                trailing = if (index == choice.selected) "✓" else null,
-                                selected = index == choice.selected,
-                                onClick = {
-                                    choice.onSelect(index)
-                                    // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
-                                    rowFocus[open].tryRequestFocus()
-                                    openChoice = null
-                                },
-                                modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
-                            )
-                        }
+        // Jedan stepen sitnija slova nego u spiskovima kanala i kategorija, da stane više teksta.
+        SettingsType {
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                Column(
+                    // Podešavanja ima više nego što staje na ekran; spisak se pomera za fokusom.
+                    modifier = Modifier
+                        .weight(0.55f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    if (onCategories != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.categories_manage_title),
+                            trailing = "›",
+                            onClick = onCategories,
+                            onFocused = {
+                                focusedChoice = null
+                                openChoice = null
+                            },
+                        )
                     }
-                    // Fokus prelazi na vrednosti čim se otvore; Nazad ili levo ga vraća na podešavanja.
-                    LaunchedEffect(open) { optionFocus.tryRequestFocus() }
-                }
-                if (open == null) Spacer(modifier = Modifier.weight(1f))
-                if (showPreview) {
-                    SubtitlePreview(
-                        settings = playerSettings,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 27.dp),
+                    if (onParental != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.parental_title),
+                            trailing = "›",
+                            onClick = onParental,
+                            onFocused = {
+                                focusedChoice = null
+                                openChoice = null
+                            },
+                        )
+                    }
+                    if (onTrakt != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.trakt_title),
+                            trailing = "›",
+                            onClick = onTrakt,
+                            onFocused = {
+                                focusedChoice = null
+                                openChoice = null
+                            },
+                        )
+                    }
+                    if (onOpenSubtitles != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.opensubtitles_title),
+                            trailing = "›",
+                            onClick = onOpenSubtitles,
+                            onFocused = {
+                                focusedChoice = null
+                                openChoice = null
+                            },
+                        )
+                    }
+                    if (onRecordings != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.recordings_title),
+                            trailing = "›",
+                            onClick = onRecordings,
+                            onFocused = {
+                                focusedChoice = null
+                                openChoice = null
+                            },
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.settings_general_header),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 6.dp),
                     )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_resume_last),
+                        checked = resumeLastChannel,
+                        onClick = { viewModel.setResumeLastChannel(!resumeLastChannel) },
+                        onFocused = {
+                            focusedChoice = RESUME_ROW
+                            openChoice = null
+                        },
+                        modifier = Modifier.focusRequester(firstFocus),
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_auto_refresh),
+                        checked = autoRefreshPlaylists,
+                        onClick = { viewModel.setAutoRefreshPlaylists(!autoRefreshPlaylists) },
+                        onFocused = {
+                            focusedChoice = AUTO_REFRESH_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_match_frame_rate),
+                        checked = matchFrameRate,
+                        onClick = { viewModel.setMatchFrameRate(!matchFrameRate) },
+                        onFocused = {
+                            focusedChoice = MATCH_FRAME_RATE_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_tv_preview),
+                        checked = channelPreview,
+                        onClick = { viewModel.setTvChannelPreview(!channelPreview) },
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_tv_vod_preview),
+                        checked = vodPreview,
+                        onClick = { viewModel.setTvVodPreview(!vodPreview) },
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_autostart),
+                        checked = autostart,
+                        onClick = {
+                            val enable = !autostart
+                            viewModel.setAutostart(enable)
+                            if (enable && !autostartAllowed) {
+                                permissionScreenMissing = !Autostart.openPermissionScreen(context)
+                            }
+                        },
+                        onFocused = {
+                            focusedChoice = AUTOSTART_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_language),
+                        trailing = AppLocale.get(context).label(),
+                        onClick = {
+                            // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
+                            val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
+                            AppLocale.change(context, AppLanguage.entries[next])
+                        },
+                        onFocused = {
+                            focusedChoice = LANGUAGE_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_accent_color),
+                        trailing = accentColor?.label(),
+                        onClick = {
+                            // Svaki pritisak prelazi na sledeću boju; promena se vidi odmah.
+                            val current = accentColor ?: AccentColor.DEFAULT
+                            viewModel.setAccentColor(AccentColor.entries[(current.ordinal + 1) % AccentColor.entries.size])
+                        },
+                        onFocused = {
+                            focusedChoice = ACCENT_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_ui_scale),
+                        trailing = uiScale.label,
+                        // Svaki pritisak prelazi na sledeću veličinu; promena se vidi odmah.
+                        onClick = { viewModel.setUiScale(UiScale.next(uiScale, isTv = true)) },
+                        onFocused = {
+                            focusedChoice = UI_SCALE_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.update_check),
+                        trailing = updateViewModel.installedVersion,
+                        onClick = updateViewModel::check,
+                        onFocused = {
+                            focusedChoice = null
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.update_channel),
+                        trailing = updateChannel.label(),
+                        onClick = {
+                            // Svaki pritisak prelazi na drugi kanal i odmah proverava šta on nudi.
+                            val channels = UpdateChannel.entries
+                            updateViewModel.setChannel(channels[(updateChannel.ordinal + 1) % channels.size])
+                        },
+                        onFocused = {
+                            focusedChoice = UPDATE_CHANNEL_ROW
+                            openChoice = null
+                        },
+                    )
+                    // Uključeno je tek kad postoji i dozvola; bez nje sistem ne da aplikaciji da se sama otvori.
+                    val reopens = reopenAfterUpdate && autostartAllowed
+                    TvTextRow(
+                        text = stringResource(R.string.settings_reopen_after_update),
+                        checked = reopens,
+                        onClick = {
+                            viewModel.setReopenAfterUpdate(!reopens)
+                            if (!reopens && !autostartAllowed) {
+                                permissionScreenMissing = !Autostart.openPermissionScreen(context)
+                            }
+                        },
+                        onFocused = {
+                            focusedChoice = REOPEN_ROW
+                            openChoice = null
+                        },
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_player_header),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp),
+                    )
+                    choices.forEachIndexed { index, choice ->
+                        TvTextRow(
+                            text = choice.title,
+                            trailing = choice.value.takeIf { !choice.toggle },
+                            checked = choice.checked.takeIf { choice.toggle },
+                            selected = openChoice == index,
+                            // Prekidač se menja odmah; ostala podešavanja otvaraju spisak vrednosti.
+                            onClick = { if (choice.toggle) choice.flip() else openChoice = index },
+                            onFocused = {
+                                focusedChoice = index
+                                if (openChoice != index) openChoice = null
+                            },
+                            modifier = Modifier.focusRequester(rowFocus[index]),
+                        )
+                    }
+                }
+
+                val open = openChoice
+                Column(
+                    modifier = Modifier
+                        .weight(0.45f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Objašnjenje stoji van spiska koji se pomera, pa se vidi na kom god redu da je fokus.
+                    FocusedSummary(
+                        focusedChoice = { focusedChoice },
+                        choices = choices,
+                        reopenSummary = when {
+                            autostartAllowed -> R.string.settings_reopen_after_update_summary
+                            permissionScreenMissing -> R.string.settings_autostart_manual
+                            else -> R.string.settings_reopen_after_update_permission
+                        },
+                        autostartSummary = when {
+                            !autostart || autostartAllowed -> R.string.settings_autostart_summary
+                            permissionScreenMissing -> R.string.settings_autostart_manual
+                            else -> R.string.settings_autostart_permission
+                        },
+                    )
+                    if (open != null) {
+                        val choice = choices[open]
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            contentPadding = PaddingValues(bottom = 27.dp),
+                        ) {
+                            itemsIndexed(choice.options) { index, option ->
+                                TvTextRow(
+                                    text = option,
+                                    trailing = if (index == choice.selected) "✓" else null,
+                                    selected = index == choice.selected,
+                                    onClick = {
+                                        choice.onSelect(index)
+                                        // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
+                                        rowFocus[open].tryRequestFocus()
+                                        openChoice = null
+                                    },
+                                    modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
+                                )
+                            }
+                        }
+                        // Fokus prelazi na vrednosti čim se otvore; Nazad ili levo ga vraća na podešavanja.
+                        LaunchedEffect(open) { optionFocus.tryRequestFocus() }
+                    }
+                    if (open == null) Spacer(modifier = Modifier.weight(1f))
+                    if (showPreview) {
+                        SubtitlePreview(
+                            settings = playerSettings,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 27.dp),
+                        )
+                    }
                 }
             }
         }
@@ -446,3 +449,15 @@ private const val MATCH_FRAME_RATE_ROW = -6
 private const val UI_SCALE_ROW = -7
 private const val RESUME_ROW = -8
 private const val REOPEN_ROW = -9
+
+/** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
+@Composable
+private fun SettingsType(content: @Composable () -> Unit) {
+    val type = MaterialTheme.typography
+    MaterialTheme(
+        colorScheme = MaterialTheme.colorScheme,
+        shapes = MaterialTheme.shapes,
+        typography = type.copy(bodyLarge = type.bodyMedium, bodyMedium = type.bodySmall, titleMedium = type.titleSmall),
+        content = content,
+    )
+}
