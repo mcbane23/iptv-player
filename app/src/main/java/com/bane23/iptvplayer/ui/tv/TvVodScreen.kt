@@ -443,17 +443,18 @@ private fun PosterGrid(content: LazyGridScope.() -> Unit) {
     )
 }
 
-/** Zakačen red levo (Favoriti, „Nastavi gledanje”): ikonica, naziv i broj stavki ispod. */
+/** Zakačen red levo (Favoriti, „Nastavi gledanje”, grupe kanala u Uživo): ikonica, naziv i broj stavki ispod. */
 @Composable
-private fun PinnedRow(
+internal fun PinnedRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onFocused: () -> Unit = {},
 ) {
-    TvListRow(onClick = onClick, selected = selected, modifier = modifier) { color ->
+    TvListRow(onClick = onClick, selected = selected, onFocused = onFocused, modifier = modifier) { color ->
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
         Column(modifier = Modifier.padding(start = 12.dp)) {
             Text(

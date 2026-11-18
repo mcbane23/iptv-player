@@ -153,12 +153,12 @@ fun MobileSettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.settings_language),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
                     )
                     Text(
                         text = language.label(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 12.dp),
                     )
@@ -175,7 +175,7 @@ fun MobileSettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.settings_ui_scale),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
                             text = stringResource(R.string.settings_ui_scale_summary),
@@ -185,7 +185,7 @@ fun MobileSettingsScreen(
                     }
                     Text(
                         text = uiScale.label,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 12.dp),
                     )
@@ -224,14 +224,14 @@ fun MobileSettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = choice.title,
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
                             )
                             Text(
                                 text = choice.value,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -242,7 +242,7 @@ fun MobileSettingsScreen(
                         }
                         Text(
                             text = choice.summary,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp),
                         )
@@ -271,11 +271,11 @@ fun MobileSettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.update_check),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
                         text = stringResource(R.string.update_current_version, updateViewModel.installedVersion),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -287,11 +287,11 @@ fun MobileSettingsScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.update_channel),
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
                         text = updateChannel.label(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
@@ -352,7 +352,7 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.settings_accent_color),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -360,7 +360,7 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
             if (selected != null) {
                 Text(
                     text = selected.label(),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     modifier = Modifier.padding(start = 12.dp),
@@ -427,10 +427,10 @@ private fun SettingsSwitchRow(title: String, summary: String, checked: Boolean, 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(text = title, style = MaterialTheme.typography.titleSmall)
             Text(
                 text = summary,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -451,7 +451,7 @@ private fun SettingsLinkRow(icon: ImageVector, title: String, onClick: () -> Uni
         Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier

@@ -567,5 +567,4 @@
     <string name="live_badge">UŽIVO</string>
     <string name="epg_until">%1$s · do %2$s</string>
     <string name="epg_time_left">%1$s · još %2$d min</string>
-    <string name="categories_label">Kategorije</string>
 </resources>

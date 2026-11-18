@@ -543,6 +543,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Položen telefon, Uživo (Bane izabrao predlog 1 od tri sa slikama): naslov nad kanalima je uklonjen,
   a izbor liste, vodič, više kanala i pretraga su red na vrhu spiska levo, pa kanali počinju u istoj
   visini kao spisak i staje red kanala više.
+- [x] Uživo, spisak kategorija kao kod filmova i serija (Bane, 18. 11. 2026, uz slike ekrana): na položenom
+  telefonu je svaki red zaobljena pločica, izabrani je ceo u akcentnoj boji, a Omiljeni, Nedavno i Svi kanali
+  nose broj ispod naziva; na TV-u spisak više nema podlogu, linije ni natpis „Kategorije”. Raspored i kanali isti.
+- [x] Podešavanja: slova za jedan stepen sitnija, na telefonu i na TV-u, da ne odskaču od ostatka aplikacije.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
 

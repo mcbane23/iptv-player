@@ -275,11 +275,9 @@ fun TvLiveTvScreen(
                     state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), PanelShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.06f), PanelShape)
-                        .padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                        .fillMaxHeight(),
+                    // Isti izgled kao spisak levo kod filmova i serija: redovi bez podloge.
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     item(key = "search") {
                         TvListRow(onClick = onSearch) { color ->
@@ -294,12 +292,11 @@ fun TvLiveTvScreen(
                             )
                         }
                     }
-                    item(key = "divider-top") { PanelDivider() }
                     item(key = ChannelGroups.FAVORITES) {
-                        TvTextRow(
+                        PinnedRow(
                             icon = AppIcons.Star,
-                            text = stringResource(R.string.category_favorites),
-                            trailing = state.favoriteCount.toString(),
+                            title = stringResource(R.string.category_favorites),
+                            subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                             selected = selectedCategory == ChannelGroups.FAVORITES,
                             onFocused = { focusedCategory = ChannelGroups.FAVORITES; lastChannelId = null },
                             onClick = { focusedCategory = ChannelGroups.FAVORITES },
@@ -308,10 +305,10 @@ fun TvLiveTvScreen(
                     }
                     if (state.recentCount > 0) {
                         item(key = ChannelGroups.RECENT) {
-                            TvTextRow(
+                            PinnedRow(
                                 icon = AppIcons.History,
-                                text = stringResource(R.string.category_recent),
-                                trailing = state.recentCount.toString(),
+                                title = stringResource(R.string.category_recent),
+                                subtitle = stringResource(R.string.vod_total, state.recentCount),
                                 selected = selectedCategory == ChannelGroups.RECENT,
                                 onFocused = { focusedCategory = ChannelGroups.RECENT; lastChannelId = null },
                                 onClick = { focusedCategory = ChannelGroups.RECENT },
@@ -320,28 +317,16 @@ fun TvLiveTvScreen(
                         }
                     }
                     item(key = ALL_CHANNELS) {
-                        TvTextRow(
+                        PinnedRow(
                             icon = AppIcons.LiveTv,
-                            text = stringResource(R.string.category_all),
-                            trailing = state.totalChannels.toString(),
+                            title = stringResource(R.string.category_all),
+                            subtitle = stringResource(R.string.vod_total, state.totalChannels),
                             selected = selectedCategory == ALL_CHANNELS,
                             onFocused = { focusedCategory = ALL_CHANNELS; lastChannelId = null },
                             onClick = { focusedCategory = ALL_CHANNELS },
                             modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
                                 .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
                         )
-                    }
-                    if (state.categories.isNotEmpty()) {
-                        item(key = "categories-label") {
-                            PanelDivider()
-                            Text(
-                                text = stringResource(R.string.categories_label).uppercase(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 4.dp),
-                            )
-                        }
                     }
                     items(state.categories, key = { it.id }) { category ->
                         TvTextRow(
@@ -486,13 +471,13 @@ fun TvLiveTvScreen(
                         }
                     }
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
-                    // Redovi pre kategorija: pretraga, linija, omiljeni, (nedavno), svi kanali, natpis „Kategorije”.
-                    val allRow = if (state.recentCount > 0) 4 else 3
+                    // Redovi pre kategorija: pretraga, omiljeni, (nedavno), svi kanali.
+                    val allRow = if (state.recentCount > 0) 3 else 2
                     val selectedRow = when (selectedCategory) {
-                        ChannelGroups.FAVORITES -> 2
-                        ChannelGroups.RECENT -> 3
+                        ChannelGroups.FAVORITES -> 1
+                        ChannelGroups.RECENT -> 2
                         ALL_CHANNELS -> allRow
-                        else -> allRow + 2 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
+                        else -> allRow + 1 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
                     }
                     runCatching { categoryListState.scrollToItem((selectedRow - 3).coerceAtLeast(0)) }
                     repeat(FOCUS_RESTORE_ATTEMPTS) {
@@ -721,20 +706,6 @@ private fun ChannelsHeading(title: String, count: Int) {
         )
     }
 }
-
-/** Tanka linija koja u spisku kategorija odvaja pretragu, stalne grupe i kategorije. */
-@Composable
-private fun PanelDivider() {
-    Box(
-        modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.08f)),
-    )
-}
-
-private val PanelShape = RoundedCornerShape(16.dp)
 
 /** Oznaka „uživo” na slici pregleda. */
 private val LiveRed = Color(0xFFE5484D)
