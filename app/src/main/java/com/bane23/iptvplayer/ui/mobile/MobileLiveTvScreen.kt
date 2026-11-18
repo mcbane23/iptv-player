@@ -67,6 +67,10 @@ import androidx.compose.ui.semantics.Role
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
+import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -75,8 +79,9 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 private const val ALL_CHANNELS = ChannelGroups.ALL
 
 /**
- * Sekcija Uživo na telefonu: kategorije kao čipovi na vrhu, ispod kanali izabrane kategorije.
- * U zaglavlju je izbor aktivne liste, vodič i pretraga kanala.
+ * Sekcija Uživo na telefonu. Uspravno: kategorije kao čipovi na vrhu, ispod kanali izabrane
+ * kategorije u jednoj koloni; u zaglavlju je izbor aktivne liste, vodič i pretraga kanala.
+ * Položeno: raspored kao na TV-u, grupe levo, kanali u sredini i pregled izabranog kanala desno.
  */
 @Composable
 fun MobileLiveTvScreen(
@@ -89,6 +94,7 @@ fun MobileLiveTvScreen(
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
     playlistsViewModel: PlaylistsViewModel = hiltViewModel(),
+    previewViewModel: ChannelPreviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
@@ -182,7 +188,25 @@ fun MobileLiveTvScreen(
                         ALL_CHANNELS -> state.totalChannels
                         else -> state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
                     }
-                    // Kanali kao pločice u dve kolone (logo levo), i uspravno i položeno.
+                    // Kanal u pregledu (samo položen telefon): prvi dodir ga bira i pušta u malom pregledu
+                    // desno, drugi dodir ili dugme ga otvara preko celog ekrana, kao fokus i OK na TV-u.
+                    var previewId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
+                    val showPreview = landscape
+                    DisposableEffect(Unit) { onDispose { previewViewModel.stop() } }
+                    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { previewViewModel.stop() }
+                    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+                        if (showPreview) previewId?.let(previewViewModel::focus)
+                    }
+                    LaunchedEffect(showPreview, previewId) {
+                        val id = previewId
+                        if (showPreview && id != null) previewViewModel.focus(id) else previewViewModel.stop()
+                    }
+                    val open: (Long) -> Unit = { channelId ->
+                        // Pregled ne sme da drži vezu dok pravi plejer pušta kanal.
+                        previewViewModel.stop()
+                        onPlay(channelId, categoryId)
+                    }
+                    // Kanali kao redovi u jednoj koloni, po uzoru na TV, i uspravno i položeno.
                     val channelGrid: @Composable (Modifier) -> Unit = { gridModifier ->
                         Box(modifier = gridModifier) {
                             if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.Loading) {
@@ -196,18 +220,21 @@ fun MobileLiveTvScreen(
                                 )
                             }
                             LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
+                                columns = GridCells.Fixed(1),
                                 state = listState,
                                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                verticalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
-                                    MobileChannelTile(
-                                        channel = channels[index],
-                                        onClick = { channelId -> onPlay(channelId, categoryId) },
+                                    val channel = channels[index]
+                                    MobileChannelCard(
+                                        channel = channel,
+                                        selected = showPreview && channel != null && channel.id == previewId,
+                                        onClick = { tapped ->
+                                            if (!showPreview || tapped.id == previewId) open(tapped.id) else previewId = tapped.id
+                                        },
                                         onToggleFavorite = channelsViewModel::toggleFavorite,
-                                        onGuide = { channel -> onGuide(channel.playlistId, categoryId) },
+                                        onGuide = { picked -> onGuide(picked.playlistId, categoryId) },
                                     )
                                 }
                             }
@@ -252,7 +279,20 @@ fun MobileLiveTvScreen(
                                     .fillMaxHeight(),
                             )
                             // Bez naslova: izabrana grupa i broj kanala već pišu u spisku levo.
-                            channelGrid(Modifier.weight(1f))
+                            channelGrid(Modifier.weight(0.58f))
+                            val previewChannel = previewId?.let { id ->
+                                channels.itemSnapshotList.items.firstOrNull { it.id == id }
+                            }
+                            MobileChannelPreviewPane(
+                                viewModel = previewViewModel,
+                                selected = previewId != null,
+                                channel = previewChannel,
+                                onOpen = { previewId?.let(open) },
+                                modifier = Modifier
+                                    .weight(0.42f)
+                                    .fillMaxHeight()
+                                    .padding(top = 8.dp, end = 12.dp),
+                            )
                         }
                     } else {
                         // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
