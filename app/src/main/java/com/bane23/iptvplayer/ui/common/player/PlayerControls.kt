@@ -410,7 +410,8 @@ fun PlayerTransportBar(
         if (maxWidth >= 600.dp) {
             Row(
                 modifier = Modifier
-                    .playerPanel(RoundedCornerShape(percent = 50))
+                    // Uglovi su malo blaži od polukruga, pa krajevi imaju kratak ravan deo.
+                    .playerPanel(RoundedCornerShape(18.dp))
                     .padding(horizontal = 10.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
