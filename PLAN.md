@@ -470,8 +470,11 @@ Vlasnik je 16. 11. 2026. izabrao da se predlozi rade redom. Prvi krug:
 - [x] Vlasnik je preskočio red nedavno gledanih kanala (čip „Nedavno” radi isti posao)
 - [x] TV, Filmovi i Serije: iznad postera naziv, kratki podaci i opis filma ili serije u fokusu
       (detalji se traže kad fokus kratko stane); može da se isključi u Podešavanjima
-- [ ] Za kasnije: TV „Početna” sekcija sa redovima (Nastavi gledanje, Omiljeni kanali, Nedavno dodati
-      filmovi). Veći posao, praktično nova sekcija; detalje dogovoriti pre početka
+- [x] TV „Početna” (Bane, 18. 11. 2026, uz sliku): prva stavka bočnog menija i ekran na kom se aplikacija
+      otvara. Redovi: „Nastavi gledanje” (filmovi i serije zajedno, poslednje gledano prvo; dugi OK
+      sklanja iz reda), omiljeni kanali sa emisijom koja je sada na programu (kad omiljenih nema,
+      nedavno gledani), nedavno dodati filmovi i nedavno dodate serije (bez sakrivenih i zaključanih
+      kategorija). Red bez sadržaja se ne prikazuje. Bez liste se i dalje otvara Uživo
 - [x] Pozadina sa blagim sjajem akcentne boje gore levo (vlasnik izabrao varijantu B): svi ekrani
       na TV-u (osim više kanala odjednom) i početni ekrani na telefonu
 
@@ -568,6 +571,30 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   na TV-u i telefonu. Multi view drži ekran upaljen samo dok bar jedno polje pušta ili učitava sliku.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
 - Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
+- [x] Program kanala u plejeru (Bane, 18. 11. 2026, treći krug predloga): dugme „Program” otvara raspored
+      kanala koji se gleda (emisija u toku i narednih 24 sata) preko slike, na TV-u i telefonu. Buduća
+      emisija nudi „Podseti me” i zakazivanje snimanja, tekuća snimanje do kraja; kanal sa arhivom ima
+      prvi red „Arhiva” (arhiva zamenjuje plejer, da kanal ne drži vezu u pozadini)
+- [x] Spajanje lista (Bane, 18. 11. 2026; izabrao „samo kanali uživo”): u opcijama liste stavka „Spoji sa
+      drugim listama”. Kad je aktivna lista spojena, kanali, kategorije, omiljeni, nedavno gledani, vodič
+      i pretraga svih spojenih lista prikazuju se zajedno (liste jedna za drugom). Podrazumevano nijedna
+      lista nije spojena, pa se vidi samo aktivna. Filmovi i serije su uvek iz aktivne liste. Baza v14
+      (`playlists.merged`). Oznaka se ne prenosi pri prenosu na TV; roditeljska zaštita nudi samo
+      kategorije aktivne liste
+- [x] Detalji filma i serije (Bane, 18. 11. 2026, treći krug predloga): kad provajder šalje široku sliku
+      (`backdrop_path`), ona je pozadina preko celog ekrana (TV), odnosno zaglavlja (telefon); inače
+      ostaje poster kao do sada. Žanrovi su pločice, ocena je prva u redu podataka, a dugme „Trejler”
+      (kad panel šalje `youtube_trailer`) otvara trejler u YouTube-u ili pregledaču
+- [x] „Nastavite sa gledanjem” na početnom ekranu TV-a (Bane, 18. 11. 2026, treći krug predloga): do 10
+      započetih filmova i serija aktivne liste upisuje se u red Android TV / Google TV početnog ekrana
+      (sistemski `TvContract.WatchNextPrograms`, bez nove biblioteke); izbor otvara detalje u aplikaciji.
+      Prekidač u Podešavanjima na TV-u, podrazumevano uključen. Na Fire TV-u i telefonima ne radi ništa
+- [x] Kartica „Sledeća epizoda” (Bane, 18. 11. 2026, treći krug predloga): 20 sekundi pre kraja epizode
+      u uglu se pojavi kartica sa nazivom sledeće i odbrojavanjem; OK ili dodir je pušta odmah, Nazad ili
+      „Otkaži” je sklanja. Posle tri epizode zaredom bez ijednog pritiska kartica pita „Još gledate?” i
+      sledeća ne kreće sama
+- [x] Crna tema (Bane, 18. 11. 2026, treći krug predloga): prekidač u Podešavanjima (telefon i TV),
+      podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
 
 ## 7. Testiranje
 

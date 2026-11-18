@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.NextEpisodeCard
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
@@ -119,6 +120,7 @@ fun MobileVodPlayerScreen(
             .pointerInput(locked) {
                 detectTapGestures(
                     onTap = {
+                        viewModel.onUserActivity()
                         when {
                             locked -> unlockVisible = !unlockVisible
                             panel == VodPanel.SETTINGS -> panel = VodPanel.NONE
@@ -176,6 +178,21 @@ fun MobileVodPlayerScreen(
                     controlsVisible = true
                 }
                 return@PauseDimLayer
+            }
+
+            // Kartica se vidi dok su kontrole sklonjene; sa kontrolama na ekranu postoji dugme „Sledeća epizoda”.
+            val nextCard = ui.nextCard
+            if (nextCard != null && !controlsVisible && panel == VodPanel.NONE) {
+                NextEpisodeCard(
+                    card = nextCard,
+                    tv = false,
+                    onAccept = viewModel::acceptNext,
+                    onCancel = viewModel::cancelNext,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .safeDrawingPadding()
+                        .padding(16.dp),
+                )
             }
 
             if (panel == VodPanel.SETTINGS) {

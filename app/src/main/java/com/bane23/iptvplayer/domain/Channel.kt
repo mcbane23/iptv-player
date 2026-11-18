@@ -5,6 +5,8 @@ data class Category(
     val name: String,
     val channelCount: Int,
     val hidden: Boolean = false,
+    /** Lista kojoj kategorija pripada (kod spojenih lista to ne mora biti aktivna). */
+    val playlistId: Long = 0,
 )
 
 /**

@@ -122,7 +122,8 @@ class ParentalViewModel @Inject constructor(
             flowOf(Names(null, emptyList(), emptyList(), emptyList()))
         } else {
             combine(channels.observeAllCategories(playlistId), vodNames) { live, vodLists ->
-                Names(playlistId, live.map { it.name }, vodLists?.first.orEmpty(), vodLists?.second.orEmpty())
+                // Zaključavanje važi po listi, pa se nude samo kategorije aktivne liste (i kad su liste spojene).
+                Names(playlistId, live.filter { it.playlistId == playlistId }.map { it.name }, vodLists?.first.orEmpty(), vodLists?.second.orEmpty())
             }
         }
     }

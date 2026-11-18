@@ -32,6 +32,11 @@ data class PlaylistEntity(
     val accountExpiresAt: Long? = null,
     /** Xtream nalog: koliko strimova sme da gleda istovremeno; null = panel to ne navodi. */
     val maxConnections: Int? = null,
+    /**
+     * Spojena lista: kad je aktivna lista spojena, kanali svih spojenih lista se prikazuju zajedno.
+     * Podrazumevano nije, pa se vidi samo aktivna lista.
+     */
+    @ColumnInfo(defaultValue = "0") val merged: Boolean = false,
 )
 
 @Entity(

@@ -86,6 +86,15 @@ fun MobilePlaylistsScreen(
                             )
                         }
                     }
+                    if (state.playlists.any { it.merged }) {
+                        item(key = "merge-hint") {
+                            Text(
+                                text = stringResource(R.string.playlists_merge_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     items(state.playlists, key = { it.id }) { playlist ->
                         PlaylistCard(
                             playlist = playlist,
@@ -94,6 +103,8 @@ fun MobilePlaylistsScreen(
                             onRefresh = { viewModel.refresh(playlist.id) },
                             onEdit = { onEdit(playlist.id) },
                             onDelete = { pendingDelete = playlist },
+                            // Spajanje ima smisla tek kad postoje bar dve liste.
+                            onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
                         )
                     }
                 }
@@ -142,6 +153,7 @@ private fun PlaylistCard(
     onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onMerge: (() -> Unit)?,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Card(onClick = { if (!playlist.isActive) onSelect() }, modifier = Modifier.fillMaxWidth()) {
@@ -227,6 +239,18 @@ private fun PlaylistCard(
                                 onEdit()
                             },
                         )
+                        if (onMerge != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge))
+                                },
+                                leadingIcon = { Icon(AppIcons.Playlists, contentDescription = null) },
+                                onClick = {
+                                    menuOpen = false
+                                    onMerge()
+                                },
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_delete)) },
                             leadingIcon = { Icon(AppIcons.Delete, contentDescription = null) },

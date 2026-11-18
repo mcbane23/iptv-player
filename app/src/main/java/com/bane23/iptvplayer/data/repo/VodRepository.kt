@@ -64,6 +64,8 @@ data class VodItem(
     val added: Long = 0,
     /** Godina izlaska; 0 kad panel to ne šalje. */
     val year: Int = 0,
+    /** Kategorija kojoj pripada, ako je panel šalje u spisku. */
+    val categoryId: String? = null,
 )
 
 /**
@@ -110,7 +112,28 @@ data class ContinueItem(
     val extension: String?,
     val progress: Float,
     val isSeries: Boolean,
+    /** Kada je poslednji put gledano (ms), za zajednički red filmova i serija na „Početnoj”. */
+    val updatedAt: Long = 0,
+    /** Zapamćena pozicija i trajanje (ms), za red na početnom ekranu TV-a. */
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
 )
+
+/**
+ * Najskorije dodati filmovi, odnosno serije, najnoviji prvi, bez onih iz kategorija [hidden].
+ * Stavke bez vremena dodavanja se preskaču: kad ih panel ne šalje, spisak je prazan.
+ */
+internal fun recentlyAdded(items: List<VodItem>, hidden: Set<String>, limit: Int): List<VodItem> =
+    items.asSequence()
+        .filter { it.added > 0 && (it.categoryId == null || it.categoryId !in hidden) }
+        .sortedByDescending { it.added }
+        .distinctBy { it.tmdbId ?: -it.id }
+        .take(limit)
+        .toList()
+
+/** Filmovi i serije iz „Nastavi gledanje” u jednom redu, poslednje gledano prvo. */
+internal fun mergeContinue(movies: List<ContinueItem>, series: List<ContinueItem>, limit: Int): List<ContinueItem> =
+    (movies + series).sortedByDescending { it.updatedAt }.take(limit)
 
 /**
  * Od više verzija iste serije (isti TMDB ID) ostavlja samo one čije su epizode gledane u aplikaciji
@@ -128,6 +151,9 @@ internal fun watchedVersions(series: List<VodItem>, watchedSeriesIds: Set<Long>)
 @OptIn(ExperimentalSerializationApi::class)
 internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
     val items = ArrayList<VodItem>()
+    // Isti ID kategorije se ponavlja hiljadama puta; čuva se jedan primerak.
+    val categoryIds = HashMap<String, String>()
+    fun category(value: String?): String? = value?.takeIf { it.isNotBlank() }?.let { categoryIds.getOrPut(it) { it } }
     if (kind == VodKind.MOVIES) {
         for (stream in XtreamJson.decodeToSequence(input, XtreamVodStream.serializer(), DecodeSequenceMode.ARRAY_WRAPPED)) {
             val id = stream.streamId?.toLongOrNull() ?: continue
@@ -141,6 +167,7 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
                     tmdbId = XtreamVodParser.tmdbId(stream.tmdb) ?: XtreamVodParser.tmdbId(stream.tmdbId),
                     added = stream.added?.trim()?.toLongOrNull() ?: 0,
                     year = yearOf(stream.year, stream.releaseDate),
+                    categoryId = category(stream.categoryId),
                 ),
             )
         }
@@ -157,6 +184,7 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
                     tmdbId = XtreamVodParser.tmdbId(series.tmdb) ?: XtreamVodParser.tmdbId(series.tmdbId),
                     added = series.lastModified?.trim()?.toLongOrNull() ?: 0,
                     year = yearOf(series.year, series.releaseDate, series.releaseDateAlt),
+                    categoryId = category(series.categoryId),
                 ),
             )
         }
@@ -441,6 +469,9 @@ class VodRepository @Inject constructor(
                     extension = row.extension,
                     progress = if (row.durationMs > 0) (row.positionMs.toFloat() / row.durationMs).coerceIn(0f, 1f) else 0f,
                     isSeries = isSeries,
+                    updatedAt = row.updatedAt,
+                    positionMs = row.positionMs,
+                    durationMs = row.durationMs,
                 )
             }
         }
@@ -461,6 +492,17 @@ class VodRepository @Inject constructor(
             progressDao.dismissMovie(playlistId, item.id, now)
             trakt.dropPlayback(playlistId, KIND_MOVIE, item.id)
         }
+    }
+
+    /**
+     * Najskorije dodati filmovi, odnosno serije, aktivne liste, bez sakrivenih i zaključanih
+     * kategorija. Čita ceo spisak liste (isti koji koristi pretraga), pa prvi poziv može da potraje.
+     */
+    suspend fun recentlyAdded(kind: VodKind, limit: Int): List<VodItem> {
+        val playlistId = settings.activePlaylistId.first() ?: return emptyList()
+        val hidden = observeCategoryPrefs(playlistId, kind).first().hidden
+        val all = allItems(kind)
+        return withContext(Dispatchers.Default) { recentlyAdded(all, hidden, limit) }
     }
 
     /**

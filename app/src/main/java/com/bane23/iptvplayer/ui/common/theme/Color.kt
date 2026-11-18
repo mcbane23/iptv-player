@@ -8,6 +8,12 @@ val OnAccent = Color(0xFF14110C)
 val Background = Color(0xFF101418)
 val Surface = Color(0xFF1A1F25)
 val SurfaceVariant = Color(0xFF252B33)
+
+// Crna tema: potpuno crna pozadina, površine tek toliko svetlije da se kartice i dalje razaznaju.
+val BlackBackground = Color.Black
+val BlackSurface = Color(0xFF0D0F12)
+val BlackSurfaceVariant = Color(0xFF191C21)
+
 val OnBackground = Color(0xFFE6E9ED)
 val OnSurfaceVariant = Color(0xFFB4BCC6)
 val Error = Color(0xFFFF8A80)
