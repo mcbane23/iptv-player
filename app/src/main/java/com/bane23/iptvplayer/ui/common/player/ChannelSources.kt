@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ChannelSource
@@ -13,9 +14,10 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun SourceNotices(notices: Flow<String>) {
     val context = LocalContext.current
-    LaunchedEffect(notices) {
+    val resources = LocalResources.current
+    LaunchedEffect(notices, resources) {
         notices.collect { playlist ->
-            Toast.makeText(context, context.getString(R.string.player_source_switched, playlist), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, resources.getString(R.string.player_source_switched, playlist), Toast.LENGTH_LONG).show()
         }
     }
 }
