@@ -105,6 +105,9 @@ fun MobileHomeScreen(
     LaunchedEffect(liveState.loading, liveState.hasVod) {
         if (!liveState.loading && tab !in tabs) tab = MobileTab.LIVE
     }
+    // Dok se ne zna da li lista ima filmove i serije, traka je prazna: inače se pri pokretanju
+    // na trenutak vide tri kartice, pa tek onda svih pet.
+    val shownTabs = if (liveState.loading) emptyList() else tabs
     val holder = rememberSaveableStateHolder()
     // Nazad iz druge kartice prvo vraća na Uživo, tek odatle izlazi iz aplikacije.
     BackHandler(enabled = tab != MobileTab.LIVE) { tab = MobileTab.LIVE }
@@ -182,7 +185,7 @@ fun MobileHomeScreen(
                     // Ekrani u karticama ne smeju sami da se odmaknu od kamere kad je izabrana cela širina.
                     .then(if (underCutout) Modifier.consumeWindowInsets(WindowInsets.displayCutout) else Modifier),
             ) {
-                CompactNavRail(tabs = tabs, selected = tab, onSelect = { tab = it })
+                CompactNavRail(tabs = shownTabs, selected = tab, onSelect = { tab = it })
                 Column(modifier = Modifier.weight(1f)) {
                     recordingBar()
                     Box(modifier = Modifier.weight(1f)) { tabContent() }
@@ -201,7 +204,7 @@ fun MobileHomeScreen(
         bottomBar = {
             Column {
                 recordingBar()
-                CompactNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
+                CompactNavBar(tabs = shownTabs, selected = tab, onSelect = { tab = it })
             }
         },
     ) { padding ->
