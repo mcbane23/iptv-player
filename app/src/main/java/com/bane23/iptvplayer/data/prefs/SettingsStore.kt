@@ -20,9 +20,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+
+/** Uređenje kategorija filmova i serija jedne liste, po ID-jevima kategorija sa servera. */
+data class VodCategoryPrefs(
+    val hiddenMovies: List<String> = emptyList(),
+    val hiddenSeries: List<String> = emptyList(),
+    val orderMovies: List<String> = emptyList(),
+    val orderSeries: List<String> = emptyList(),
+)
 
 /** Podešavanja aplikacije (DataStore). */
 @Singleton
@@ -182,6 +191,23 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /** Zaključane kategorije liste po sekciji (`live`, `movies`, `series`), bez dela ključa sa listom. */
+    suspend fun lockedCategoriesOf(playlistId: Long): Map<String, List<String>> {
+        val keys = dataStore.data.first()[LOCKED_CATEGORIES].orEmpty()
+        return LOCK_SECTIONS.associateWith { section ->
+            val prefix = "$section|$playlistId|"
+            keys.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }.sorted()
+        }
+    }
+
+    /** Dodaje zaključavanja listi; postojeća ostaju. Važe tek kad na uređaju postoji PIN. */
+    suspend fun addLockedCategories(playlistId: Long, bySection: Map<String, List<String>>) {
+        val added = bySection.filterKeys { it in LOCK_SECTIONS }
+            .flatMap { (section, names) -> names.map { "$section|$playlistId|$it" } }
+        if (added.isEmpty()) return
+        dataStore.edit { it[LOCKED_CATEGORIES] = it[LOCKED_CATEGORIES].orEmpty() + added }
+    }
+
     /**
      * Ključevi sakrivenih kategorija filmova i serija (isti oblik kao kod zaključavanja:
      * `movies|<lista>|<kategorija>`). Kategorije kanala se sakrivaju u bazi.
@@ -204,6 +230,36 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     suspend fun setVodCategoryOrder(playlistId: Long, series: Boolean, ids: List<String>) {
         dataStore.edit { it[vodOrderKey(playlistId, series)] = ids.joinToString(LIST_SEPARATOR) }
+    }
+
+    /** Sakrivene kategorije i redosled kategorija filmova i serija jedne liste, za prenos na drugi uređaj. */
+    suspend fun vodCategoryPrefs(playlistId: Long): VodCategoryPrefs {
+        val prefs = dataStore.data.first()
+        val hidden = prefs[HIDDEN_VOD_CATEGORIES].orEmpty()
+        fun hiddenIds(prefix: String) = hidden.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }.sorted()
+        fun order(series: Boolean) =
+            prefs[vodOrderKey(playlistId, series)]?.split(LIST_SEPARATOR)?.filter { it.isNotEmpty() }.orEmpty()
+        return VodCategoryPrefs(
+            hiddenMovies = hiddenIds("movies|$playlistId|"),
+            hiddenSeries = hiddenIds("series|$playlistId|"),
+            orderMovies = order(false),
+            orderSeries = order(true),
+        )
+    }
+
+    /** Zamenjuje sakrivene kategorije i redosled kategorija filmova i serija liste onim iz [incoming]. */
+    suspend fun replaceVodCategoryPrefs(playlistId: Long, incoming: VodCategoryPrefs) {
+        dataStore.edit { prefs ->
+            val movies = "movies|$playlistId|"
+            val series = "series|$playlistId|"
+            val others = prefs[HIDDEN_VOD_CATEGORIES].orEmpty().filterNot { it.startsWith(movies) || it.startsWith(series) }
+            prefs[HIDDEN_VOD_CATEGORIES] =
+                (others + incoming.hiddenMovies.map { movies + it } + incoming.hiddenSeries.map { series + it }).toSet()
+            for ((isSeries, ids) in listOf(false to incoming.orderMovies, true to incoming.orderSeries)) {
+                val key = vodOrderKey(playlistId, isSeries)
+                if (ids.isEmpty()) prefs.remove(key) else prefs[key] = ids.joinToString(LIST_SEPARATOR)
+            }
+        }
     }
 
     /** Podsetnici za emisije, svaki kao jedan zapis (vidi `Reminder.encode`). */
@@ -361,6 +417,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         const val PEER_SEPARATOR = "\n"
         val PIN_RECORD = stringPreferencesKey("pin_record")
         val LOCKED_CATEGORIES = stringSetPreferencesKey("locked_categories")
+        val LOCK_SECTIONS = listOf("live", "movies", "series")
         val HIDDEN_VOD_CATEGORIES = stringSetPreferencesKey("hidden_vod_categories")
         const val LIST_SEPARATOR = "\n"
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")

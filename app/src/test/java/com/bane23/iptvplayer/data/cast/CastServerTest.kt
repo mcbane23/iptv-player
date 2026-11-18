@@ -2,6 +2,10 @@ package com.bane23.iptvplayer.data.cast
 
 import com.bane23.iptvplayer.data.lan.PairingHttp
 import com.bane23.iptvplayer.data.lan.PairingRequest
+import com.bane23.iptvplayer.data.lan.TransferBundle
+import com.bane23.iptvplayer.data.lan.TransferCodec
+import com.bane23.iptvplayer.data.lan.TransferPlaylist
+import com.bane23.iptvplayer.data.lan.TransferResult
 import java.io.ByteArrayInputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,6 +38,13 @@ class CastServerTest {
         }
 
         override fun status() = CastStatus(active = played != null, title = played?.title.orEmpty())
+
+        var received: TransferBundle? = null
+
+        override fun transfer(bundle: TransferBundle): TransferResult {
+            received = bundle
+            return TransferResult(added = bundle.playlists.size)
+        }
     }
 
     private val handler = FakeHandler()
@@ -96,6 +107,29 @@ class CastServerTest {
         assertEquals(200, call("GET", "/cast/k/$KEY/status").first)
         assertEquals(404, call("GET", "/cast/k/$KEY/unknown").first)
         assertEquals(404, call("GET", "/elsewhere").first)
+    }
+
+    @Test
+    fun `bundle needs the key and is handed to the tv`() {
+        val bundle = TransferBundle(
+            playlists = listOf(TransferPlaylist(type = TransferPlaylist.TYPE_M3U, name = "Proba", source = "http://example.invalid/l.m3u")),
+        )
+        val body = TransferCodec.encode(bundle)
+        assertEquals(403, call("POST", "/cast/k/other/bundle", body).first)
+        assertNull(handler.received)
+        assertEquals(400, call("POST", "/cast/k/$KEY/bundle", "nije paket").first)
+        assertEquals(404, call("GET", "/cast/k/$KEY/bundle").first)
+        val (status, answer) = call("POST", "/cast/k/$KEY/bundle", body)
+        assertEquals(200, status)
+        assertEquals(bundle, handler.received)
+        assertEquals(1, TransferCodec.decodeResult(answer)?.added)
+    }
+
+    @Test
+    fun `a large bundle sent with the key is read whole`() {
+        val body = "x".repeat(100_000)
+        val raw = "POST /cast/k/$KEY/bundle HTTP/1.1\r\nContent-Length: ${body.length}\r\n\r\n$body"
+        assertEquals(body, PairingHttp.readRequest(ByteArrayInputStream(raw.toByteArray()))?.body)
     }
 
     @Test

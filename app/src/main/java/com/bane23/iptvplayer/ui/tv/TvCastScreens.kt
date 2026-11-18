@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.cast.IncomingTransfer
 import com.bane23.iptvplayer.data.cast.CastPairing
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.cast.CastPlayerViewModel
@@ -147,3 +148,41 @@ fun TvCastPairingCode(code: String?, onExpired: () -> Unit, modifier: Modifier =
         )
     }
 }
+
+/** Obaveštenje preko bilo kog ekrana dok stižu podešavanja sa telefona; ishod se sklanja sam. */
+@Composable
+fun TvIncomingTransfer(transfer: IncomingTransfer?, onDone: () -> Unit, modifier: Modifier = Modifier) {
+    if (transfer == null) return
+    val result = transfer.result
+    LaunchedEffect(result) {
+        if (result != null) {
+            delay(TRANSFER_RESULT_MS)
+            onDone()
+        }
+    }
+    Column(
+        modifier = modifier
+            .padding(horizontal = 48.dp, vertical = 27.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .padding(horizontal = 28.dp, vertical = 20.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.transfer_tv_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = when {
+                result != null -> stringResource(R.string.transfer_summary, result.added, result.existing, result.failed)
+                transfer.total > 0 ->
+                    stringResource(R.string.transfer_tv_working, transfer.step.coerceAtLeast(1), transfer.total)
+                else -> stringResource(R.string.transfer_tv_applying)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+private const val TRANSFER_RESULT_MS = 8_000L

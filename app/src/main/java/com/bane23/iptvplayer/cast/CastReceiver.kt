@@ -12,7 +12,10 @@ import com.bane23.iptvplayer.data.cast.CastPairing
 import com.bane23.iptvplayer.data.cast.CastPlayRequest
 import com.bane23.iptvplayer.data.cast.CastServer
 import com.bane23.iptvplayer.data.cast.CastStatus
+import com.bane23.iptvplayer.data.lan.TransferBundle
+import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.repo.TransferRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.security.MessageDigest
@@ -32,6 +35,9 @@ import kotlinx.coroutines.runBlocking
 /** Jedan zahtev za puštanje sa telefona; [id] raste, da se i isti sadržaj pusti ponovo. */
 data class CastSession(val id: Int, val request: CastPlayRequest)
 
+/** Prenos sa telefona koji je u toku ([result] je null) ili upravo završen. */
+data class IncomingTransfer(val step: Int = 0, val total: Int = 0, val result: TransferResult? = null)
+
 /**
  * Prijem na TV-u: dok je aplikacija otvorena, telefon sa istom aplikacijom u kućnoj mreži može da
  * pusti kanal ili film na ovom TV-u i da njime upravlja. TV se oglašava u mreži, a pri prvom
@@ -41,6 +47,7 @@ data class CastSession(val id: Int, val request: CastPlayRequest)
 class CastReceiver @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settings: SettingsStore,
+    private val transfers: TransferRepository,
 ) : CastHandler {
     private val pairing = CastPairing()
     private val server = CastServer(this)
@@ -60,6 +67,15 @@ class CastReceiver @Inject constructor(
 
     private val _commands = MutableSharedFlow<CastCommand>(extraBufferCapacity = 16)
     val commands: SharedFlow<CastCommand> = _commands.asSharedFlow()
+
+    private val _transfer = MutableStateFlow<IncomingTransfer?>(null)
+
+    /** Prenos podešavanja sa telefona koji treba prikazati na ekranu, ili null. */
+    val transfer: StateFlow<IncomingTransfer?> = _transfer.asStateFlow()
+
+    fun dismissTransfer() {
+        if (_transfer.value?.result != null) _transfer.value = null
+    }
 
     /** Stanje puštanja; osvežava ga plejer, a čita telefon. */
     val status = MutableStateFlow(CastStatus())
@@ -139,6 +155,20 @@ class CastReceiver @Inject constructor(
     }
 
     override fun status(): CastStatus = status.value
+
+    /** Jedan po jedan: drugi paket čeka da se prvi primeni. */
+    @Synchronized
+    override fun transfer(bundle: TransferBundle): TransferResult {
+        _transfer.value = IncomingTransfer(total = bundle.playlists.size)
+        return try {
+            runBlocking {
+                transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) }
+            }.also { _transfer.value = IncomingTransfer(result = it) }
+        } catch (e: Exception) {
+            _transfer.value = null
+            throw e
+        }
+    }
 
     /** Ključ ovog TV-a; pravi se jednom i čuva u podešavanjima. */
     @Synchronized

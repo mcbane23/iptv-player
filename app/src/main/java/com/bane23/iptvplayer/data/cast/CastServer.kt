@@ -2,6 +2,9 @@ package com.bane23.iptvplayer.data.cast
 
 import com.bane23.iptvplayer.data.lan.PairingHttp
 import com.bane23.iptvplayer.data.lan.PairingRequest
+import com.bane23.iptvplayer.data.lan.TransferBundle
+import com.bane23.iptvplayer.data.lan.TransferCodec
+import com.bane23.iptvplayer.data.lan.TransferResult
 import java.io.IOException
 import java.net.ServerSocket
 import java.net.Socket
@@ -26,6 +29,9 @@ interface CastHandler {
     fun command(command: CastCommand)
 
     fun status(): CastStatus
+
+    /** Primenjuje liste, omiljene, podešavanja i naloge poslate sa telefona. Sme da traje. */
+    fun transfer(bundle: TransferBundle): TransferResult
 }
 
 /**
@@ -147,6 +153,11 @@ class CastServer(private val handler: CastHandler) {
 
             action == "status" && request.method == "GET" -> ok(CastCodec.encode(handler.status()))
 
+            action == BUNDLE_ACTION && post -> {
+                val bundle = TransferCodec.decode(request.body)
+                if (bundle == null) PairingHttp.jsonResponse(400, "{}") else ok(TransferCodec.encodeResult(handler.transfer(bundle)))
+            }
+
             else -> PairingHttp.jsonResponse(404, "{}")
         }
     }
@@ -160,6 +171,9 @@ class CastServer(private val handler: CastHandler) {
         const val PAIR_PATH = "/cast/pair"
         const val CONFIRM_PATH = "/cast/confirm"
         const val KEY_PREFIX = "/cast/k/"
+
+        /** Isti završetak puta kao kod prenosa preko QR koda, da telo sme da bude veliko. */
+        const val BUNDLE_ACTION = "bundle"
 
         /** Vrsta servisa pod kojom se TV oglašava u lokalnoj mreži. */
         const val SERVICE_TYPE = "_iptvcast._tcp"

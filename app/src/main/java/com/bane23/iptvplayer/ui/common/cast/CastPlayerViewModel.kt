@@ -5,6 +5,7 @@ import android.media.AudioManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.cast.CastReceiver
+import com.bane23.iptvplayer.cast.IncomingTransfer
 import com.bane23.iptvplayer.cast.CastSession
 import com.bane23.iptvplayer.data.cast.CastCommand
 import com.bane23.iptvplayer.data.prefs.SettingsStore
@@ -33,7 +34,11 @@ class CastHostViewModel @Inject constructor(private val receiver: CastReceiver) 
 
     fun stop() = receiver.stop()
 
+    val transfer: StateFlow<IncomingTransfer?> = receiver.transfer
+
     fun dismissPairing() = receiver.dismissPairing()
+
+    fun dismissTransfer() = receiver.dismissTransfer()
 }
 
 /** Plejer na TV-u za sadržaj poslat sa telefona. Komande stižu sa telefona, a stanje se vraća njemu. */

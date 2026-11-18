@@ -8,8 +8,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 /**
- * Sve što telefon šalje TV-u odjednom: liste sa omiljenim kanalima i uređenjem kategorija, i
- * podešavanja. Putuje samo kroz lokalnu mrežu, pravo sa uređaja na uređaj.
+ * Sve što telefon šalje TV-u odjednom: liste sa omiljenim kanalima, filmovima i serijama i uređenjem
+ * kategorija, podešavanja i nalozi. Putuje samo kroz lokalnu mrežu, pravo sa uređaja na uređaj.
  */
 @Serializable
 data class TransferBundle(
@@ -18,6 +18,8 @@ data class TransferBundle(
     val settings: TransferSettings? = null,
     /** Nalozi za Trakt i OpenSubtitles; starija verzija na TV-u ih samo preskače. */
     val accounts: TransferAccounts? = null,
+    /** Zapis PIN-a roditeljske zaštite (otisak, ne sam PIN); TV ga uzima samo ako nema svoj. */
+    val pinRecord: String? = null,
 ) {
     companion object {
         const val VERSION = 1
@@ -40,6 +42,17 @@ data class TransferPlaylist(
     val favorites: List<String> = emptyList(),
     /** Samo kategorije koje je korisnik sakrio ili pomerio. */
     val categories: List<TransferCategory> = emptyList(),
+    /** Omiljeni filmovi i serije. */
+    val vodFavorites: List<TransferVodFavorite> = emptyList(),
+    /**
+     * Sakrivene kategorije i redosled kategorija filmova i serija; null ako ih telefon nije poslao
+     * (starija verzija), pa na TV-u ostaje kako jeste.
+     */
+    val vodCategories: TransferVodCategories? = null,
+    /** Kategorije zaključane roditeljskom zaštitom; sam PIN se ne prenosi. Null kad šalje starija verzija. */
+    val locked: TransferLocks? = null,
+    /** Da li je ovo lista koja je na telefonu izabrana kao aktivna. */
+    val active: Boolean = false,
 ) {
     companion object {
         const val TYPE_XTREAM = "xtream"
@@ -56,6 +69,34 @@ data class TransferCategory(
     val order: Int? = null,
 )
 
+/** Omiljeni film ili serija; [itemId] daje server, pa je isti na oba uređaja. */
+@Serializable
+data class TransferVodFavorite(
+    /** "movie" ili "series". */
+    val kind: String,
+    val itemId: Long,
+    val name: String,
+    val poster: String? = null,
+    val extension: String? = null,
+)
+
+/** Zaključane kategorije: kanala po nazivu, filmova i serija po ID-ju sa servera. */
+@Serializable
+data class TransferLocks(
+    val live: List<String> = emptyList(),
+    val movies: List<String> = emptyList(),
+    val series: List<String> = emptyList(),
+)
+
+/** Uređenje kategorija filmova i serija, po ID-jevima kategorija sa servera. */
+@Serializable
+data class TransferVodCategories(
+    val hiddenMovies: List<String> = emptyList(),
+    val hiddenSeries: List<String> = emptyList(),
+    val orderMovies: List<String> = emptyList(),
+    val orderSeries: List<String> = emptyList(),
+)
+
 /** Podešavanja koja imaju smisla na oba uređaja. Dekoder se ne prenosi, jer zavisi od uređaja. */
 @Serializable
 data class TransferSettings(
@@ -63,6 +104,15 @@ data class TransferSettings(
     val buffer: String = "",
     val audioLanguage: String = "",
     val subtitleLanguage: String = "",
+    // Sve ispod je null kada šalje starija verzija; TV tada ne dira svoje podešavanje.
+    val seekStepSeconds: Int? = null,
+    val subtitleBackground: Boolean? = null,
+    val subtitleSize: String? = null,
+    val subtitlePosition: String? = null,
+    val autoRefreshPlaylists: Boolean? = null,
+    val accentColor: String? = null,
+    val vodSortMovies: String? = null,
+    val vodSortSeries: String? = null,
 )
 
 @Serializable

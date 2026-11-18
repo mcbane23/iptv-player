@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +26,12 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.LifecycleStartEffect
+import com.bane23.iptvplayer.cast.LanDevice
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,26 +46,37 @@ import com.bane23.iptvplayer.ui.common.pairing.TvTraktLogin
 import com.bane23.iptvplayer.data.trakt.TraktLoginResult
 
 /**
- * Potvrda i slanje svih lista i podešavanja na TV. Otvara se kada korisnik na stranici TV-a
- * (posle skeniranja QR koda) izabere slanje iz aplikacije.
+ * Potvrda i slanje svih lista, omiljenih, podešavanja i naloga na TV. Sa [target] se otvara kada
+ * korisnik na stranici TV-a (posle skeniranja QR koda) izabere slanje iz aplikacije; bez njega se
+ * otvara iz podešavanja, i TV se bira sa spiska uređaja u kućnoj mreži.
  */
 @Composable
 fun MobileSendToTvScreen(
-    target: String,
+    target: String?,
     onClose: () -> Unit,
     viewModel: SendToTvViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(target) { viewModel.prepare(target) }
+    val discovery = target == null
+    LaunchedEffect(target) { if (target == null) viewModel.prepareDiscovery() else viewModel.prepare(target) }
     val result = state.result
     val context = LocalContext.current
     // Od Androida 17 telefon ne sme da se obrati TV-u u kućnoj mreži dok korisnik to ne dozvoli.
     var permissionDenied by rememberSaveable { mutableStateOf(false) }
     val localNetwork = rememberLocalNetworkPermission { granted ->
         permissionDenied = !granted
-        if (granted) viewModel.send()
+        if (granted && !discovery) viewModel.send()
     }
     val needsPermission = permissionDenied && !localNetwork.granted
+    if (discovery) {
+        // Televizori se traže čim se ekran otvori, pa se i dozvola traži odmah.
+        LaunchedEffect(Unit) { localNetwork.request() }
+        val granted = localNetwork.granted
+        LifecycleStartEffect(granted) {
+            if (granted) viewModel.startDiscovery()
+            onStopOrDispose { viewModel.stopDiscovery() }
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -68,7 +87,10 @@ fun MobileSendToTvScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(text = stringResource(R.string.transfer_title), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = stringResource(if (discovery) R.string.transfer_all_title else R.string.transfer_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
             when {
                 state.loading -> CircularProgressIndicator()
 
@@ -91,11 +113,12 @@ fun MobileSendToTvScreen(
                 }
 
                 else -> {
-                    Body(stringResource(R.string.transfer_target, state.address))
+                    if (!discovery) Body(stringResource(R.string.transfer_target, state.address))
                     if (state.playlistCount > 0) {
                         Body(
                             pluralStringResource(R.plurals.transfer_count, state.playlistCount, state.playlistCount),
                         )
+                        Body(stringResource(R.string.transfer_favorites, state.favoriteChannels, state.favoriteVod))
                     }
                     if (state.skipped > 0) Body(stringResource(R.string.transfer_skipped_files, state.skipped))
                     state.openSubtitlesUser?.let { Body(stringResource(R.string.transfer_opensubtitles, it)) }
@@ -106,8 +129,20 @@ fun MobileSendToTvScreen(
                             onCancel = viewModel::cancelTrakt,
                         )
                     }
+                    if (discovery && !state.sending) {
+                        TvPicker(
+                            devices = state.devices,
+                            selected = state.selected,
+                            searching = localNetwork.granted,
+                            onSelect = viewModel::select,
+                        )
+                    }
+                    val selected = state.selected
+                    if (state.pairing && selected != null && !state.sending) {
+                        PairingCodeEntry(deviceName = selected.name, wrong = state.codeWrong, onConfirm = viewModel::confirmCode)
+                    }
                     Text(
-                        text = stringResource(R.string.transfer_warning),
+                        text = stringResource(if (discovery) R.string.transfer_all_warning else R.string.transfer_warning),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -116,8 +151,12 @@ fun MobileSendToTvScreen(
                         Body(stringResource(R.string.transfer_sending))
                     }
                     val error = when (state.error) {
-                        SendError.UNREACHABLE -> stringResource(R.string.transfer_unreachable)
-                        SendError.REFUSED -> stringResource(R.string.transfer_refused)
+                        SendError.UNREACHABLE ->
+                            stringResource(if (discovery) R.string.transfer_all_unreachable else R.string.transfer_unreachable)
+
+                        SendError.REFUSED ->
+                            stringResource(if (discovery) R.string.transfer_all_refused else R.string.transfer_refused)
+
                         else -> null
                     }
                     if (needsPermission) {
@@ -159,7 +198,10 @@ fun MobileSendToTvScreen(
                 val canSend = !state.loading && result == null && state.canSend &&
                     state.error != SendError.BAD_TARGET
                 if (canSend) {
-                    Button(onClick = localNetwork.request, enabled = !state.sending) {
+                    Button(
+                        onClick = if (discovery) viewModel::send else localNetwork.request,
+                        enabled = !state.sending && (!discovery || state.selected != null),
+                    ) {
                         Text(stringResource(R.string.transfer_send))
                     }
                 }
@@ -213,6 +255,40 @@ private fun TraktForTv(login: TvTraktLogin, onRequest: () -> Unit, onCancel: () 
                 color = MaterialTheme.colorScheme.error,
             )
             OutlinedButton(onClick = onRequest) { Text(stringResource(R.string.transfer_trakt_add)) }
+        }
+    }
+}
+
+/** Spisak televizora u kućnoj mreži na kojima je aplikacija otvorena; jedan je izabran za slanje. */
+@Composable
+private fun TvPicker(devices: List<LanDevice>, selected: LanDevice?, searching: Boolean, onSelect: (LanDevice) -> Unit) {
+    Column {
+        Text(text = stringResource(R.string.transfer_pick_tv), style = MaterialTheme.typography.titleMedium)
+        for (device in devices) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(selected = device.name == selected?.name, role = Role.RadioButton) { onSelect(device) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = device.name == selected?.name, onClick = null)
+                Text(
+                    text = device.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+        }
+        if (devices.isEmpty()) {
+            if (searching) Body(stringResource(R.string.cast_searching))
+            Text(
+                text = stringResource(R.string.transfer_pick_tv_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

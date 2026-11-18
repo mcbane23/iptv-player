@@ -141,6 +141,10 @@ interface CategoryDao {
     @Query("UPDATE categories SET userOrder = :order WHERE id = :id")
     suspend fun setUserOrder(id: Long, order: Int)
 
+    /** Vraća sve kategorije liste na vidljive i u redosled provajdera. */
+    @Query("UPDATE categories SET hidden = 0, userOrder = NULL WHERE playlistId = :playlistId")
+    suspend fun resetUserChanges(playlistId: Long)
+
     @Query("DELETE FROM categories WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
 }
@@ -458,6 +462,10 @@ interface VodFavoriteDao {
 
     @Query("DELETE FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun delete(playlistId: Long, kind: String, itemId: Long)
+
+    /** Svi omiljeni filmovi i serije liste, redom kojim su dodati. */
+    @Query("SELECT * FROM vod_favorites WHERE playlistId = :playlistId ORDER BY addedAt")
+    suspend fun getByPlaylist(playlistId: Long): List<VodFavoriteEntity>
 
     /** Omiljeni filmovi, odnosno serije, liste; poslednje dodat prvi. */
     @Query("SELECT * FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind ORDER BY addedAt DESC")

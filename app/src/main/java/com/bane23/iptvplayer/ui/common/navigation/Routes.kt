@@ -59,6 +59,10 @@ data object PairPlaylist : NavKey
 @Serializable
 data class SendToTv(val target: String) : NavKey
 
+/** Prenos svih lista, omiljenih, podešavanja i naloga na TV koji se bira sa spiska. Koristi se na telefonu. */
+@Serializable
+data object TransferToTv : NavKey
+
 /** Arhiva kanala: spisak emisija koje su prošle i mogu da se pogledaju. */
 @Serializable
 data class ChannelArchive(val channelId: Long) : NavKey

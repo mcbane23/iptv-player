@@ -68,6 +68,7 @@ fun TvApp() {
     }
     val castSession by castHost.session.collectAsStateWithLifecycle()
     val pairingCode by castHost.pairingCode.collectAsStateWithLifecycle()
+    val incomingTransfer by castHost.transfer.collectAsStateWithLifecycle()
     LaunchedEffect(castSession?.id) {
         if (castSession != null && backStack.lastOrNull() !is CastPlayback) backStack.add(CastPlayback)
     }
@@ -267,6 +268,11 @@ fun TvApp() {
     TvCastPairingCode(
         code = pairingCode,
         onExpired = castHost::dismissPairing,
+        modifier = Modifier.align(Alignment.TopEnd),
+    )
+    TvIncomingTransfer(
+        transfer = incomingTransfer,
+        onDone = castHost::dismissTransfer,
         modifier = Modifier.align(Alignment.TopEnd),
     )
     }
