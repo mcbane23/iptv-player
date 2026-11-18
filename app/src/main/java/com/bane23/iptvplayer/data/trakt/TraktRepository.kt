@@ -225,9 +225,11 @@ class TraktRepository @Inject constructor(
             // ID-jevi važe samo za svoju listu; promene druge liste čekaju da ona bude aktivna.
             if (change.playlistId != activePlaylistId) continue
             val key = try {
-                resolve(change)
+                panel { resolve(change) }
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: PanelUnreadable) {
+                null // Kao da TMDB ID-ja nema: promena se odbacuje.
             } catch (_: IOException) {
                 continue // Panel trenutno ne odgovara; pokušava se pri sledećoj sinhronizaciji.
             }
@@ -267,7 +269,7 @@ class TraktRepository @Inject constructor(
         val fresh = TraktPayloads.startedShows(shows).filter { "$playlistId/$it" !in done }
         if (fresh.isEmpty()) return
         val added = try {
-            vod.addSeriesFavorites(playlistId, fresh)
+            panel { vod.addSeriesFavorites(playlistId, fresh) }
         } catch (e: CancellationException) {
             throw e
         } catch (_: IOException) {
@@ -305,9 +307,11 @@ class TraktRepository @Inject constructor(
         for (row in dao.pendingPlayback()) {
             if (row.playlistId != activePlaylistId) continue
             val key = try {
-                resolve(row.kind, row.itemId, row.seriesId)
+                panel { resolve(row.kind, row.itemId, row.seriesId) }
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: PanelUnreadable) {
+                null
             } catch (_: IOException) {
                 continue
             }
@@ -332,9 +336,11 @@ class TraktRepository @Inject constructor(
         for ((pausedAt, item) in items) {
             val key = TraktPayloads.playbackKey(item) ?: continue
             try {
-                vod.applyRemoteProgress(key, item.progress, pausedAt)
+                panel { vod.applyRemoteProgress(key, item.progress, pausedAt) }
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: PanelUnreadable) {
+                // Ova pozicija se preskače; novije se i dalje primenjuju.
             } catch (_: IOException) {
                 // Panel trenutno ne odgovara: ova i novije pozicije čekaju sledeću sinhronizaciju.
                 break
@@ -343,6 +349,29 @@ class TraktRepository @Inject constructor(
         }
         if (applied > since) tokens.setLastPlaybackMs(applied)
     }
+
+    /**
+     * Poziv ka panelu provajdera (spiskovi i detalji filmova i serija). Njegove greške se ovde
+     * odvajaju od Trakt-ovih: bez toga bi odgovor panela 401 (npr. istekao nalog kod provajdera)
+     * izgledao kao da je Trakt odbio prijavu i odjavio bi korisnika sa Trakt-a.
+     *
+     * HTTP greška panela postaje [IOException], pa se stavka odlaže do sledeće sinhronizacije. Odgovor
+     * koji ne može da se pročita postaje [PanelUnreadable]: on se ni sledeći put neće pročitati, pa se
+     * stavka preskače umesto da zauvek prekida sinhronizaciju.
+     */
+    private suspend fun <T> panel(block: suspend () -> T): T = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        throw e
+    } catch (e: HttpException) {
+        throw IOException("Provider answered HTTP ${e.code()}")
+    } catch (e: Exception) {
+        throw PanelUnreadable(e.javaClass.simpleName)
+    }
+
+    private class PanelUnreadable(detail: String) : IOException("Provider answer can not be read: $detail")
 
     /** TMDB ključ promene, ili null kad ga panel ne šalje. */
     private suspend fun resolve(change: TraktPendingEntity): TraktKey? = resolve(change.kind, change.itemId, change.seriesId)

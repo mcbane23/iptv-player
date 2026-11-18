@@ -26,6 +26,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -201,6 +202,23 @@ class ChannelRepository @Inject constructor(
         channelDao.byStableKey(playlistId, stableKey)?.id
 
     suspend fun getChannel(id: Long): Channel? = channelDao.getById(id)?.toDomain()
+
+    /**
+     * Javlja se kad kanala sa ovim ID-jem više nema u bazi. Osvežavanje liste briše kanale i upisuje ih
+     * iznova, pa svi dobiju nov ID; ko drži kanal duže (plejer), tada ga traži ponovo, vidi [refreshed].
+     */
+    fun observeGone(channelId: Long): Flow<Unit> =
+        channelDao.observeExists(channelId).filter { exists -> !exists }.map { }
+
+    /**
+     * Isti kanal posle osvežavanja liste: nađen po stalnom ključu, na mestu najbližem starom. Vraća
+     * [channel] ako je i dalje u bazi, a null ako ga na listi više nema.
+     */
+    suspend fun refreshed(channel: Channel): Channel? {
+        channelDao.getById(channel.id)?.let { return it.toDomain() }
+        if (channel.stableKey.isEmpty()) return null
+        return channelDao.nearestByStableKey(channel.playlistId, channel.stableKey, channel.sortOrder)?.toDomain()
+    }
 
     /** Redni broj kanala (od nule) u svojoj kategoriji, odnosno u celoj listi. */
     suspend fun positionOf(channel: Channel, categoryId: Long?): Int =

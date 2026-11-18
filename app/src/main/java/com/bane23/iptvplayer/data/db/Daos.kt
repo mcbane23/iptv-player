@@ -167,6 +167,16 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND stableKey = :stableKey LIMIT 1")
     suspend fun byStableKey(playlistId: Long, stableKey: String): ChannelEntity?
 
+    /** Isti strim može biti u više kategorija; vraća onaj čije je mesto u listi najbliže [sortOrder]. */
+    @Query(
+        "SELECT * FROM channels WHERE playlistId = :playlistId AND stableKey = :stableKey " +
+            "ORDER BY ABS(sortOrder - :sortOrder) LIMIT 1",
+    )
+    suspend fun nearestByStableKey(playlistId: Long, stableKey: String, sortOrder: Int): ChannelEntity?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM channels WHERE id = :id)")
+    fun observeExists(id: Long): Flow<Boolean>
+
     /** Kanali jedne kategorije, ili svi kanali liste kad je [categoryId] null. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE ch.playlistId = :playlistId " +

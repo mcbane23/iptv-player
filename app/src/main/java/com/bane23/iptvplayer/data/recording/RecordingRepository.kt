@@ -29,12 +29,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.bane23.iptvplayer.domain.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Snimanje koje je u toku. */
-data class ActiveRecording(val id: Long, val channelId: Long, val channelName: String)
+data class ActiveRecording(val id: Long, val playlistId: Long, val channelKey: String, val channelName: String) {
+    /**
+     * Da li se snima ovaj kanal. Poredi se stalni ključ, a ne ID: ID kanala se menja kad se lista
+     * osveži, a snimanje za to vreme traje.
+     */
+    fun isOf(channel: Channel): Boolean = playlistId == channel.playlistId && channelKey == channel.stableKey
+
+    /** Isti oblik kao [channelKeyOf], za brzo traženje među više kanala. */
+    val key: String get() = "$playlistId|$channelKey"
+
+    companion object {
+        fun channelKeyOf(channel: Channel): String = "${channel.playlistId}|${channel.stableKey}"
+    }
+}
 
 /** Zašto snimanje nije moglo da krene. */
 enum class RecordingStartError { NO_SOURCE, NO_SPACE, NO_STORAGE }
@@ -141,7 +155,7 @@ class RecordingRepository @Inject constructor(
         val dir = directory()?.takeIf { it.usableSpace >= MIN_FREE_BYTES } ?: return fail(RecordingEntity.ERROR_SPACE)
         val file = File(dir, fileName(row.channelName, now))
         dao.markRecording(id, file.absolutePath, now)
-        launchJob(ActiveRecording(id, channel.id, row.channelName), file, source, stopAt)
+        launchJob(ActiveRecording(id, row.playlistId, row.channelKey, row.channelName), file, source, stopAt)
     }
 
     private fun launchJob(entry: ActiveRecording, file: File, source: com.bane23.iptvplayer.domain.StreamSource, stopAtMs: Long?) {
@@ -162,28 +176,33 @@ class RecordingRepository @Inject constructor(
      */
     suspend fun start(channelId: Long, title: String?, stopAtMs: Long? = null): RecordingStartError? =
         withContext(Dispatchers.IO) {
-            if (_active.value.any { it.channelId == channelId }) return@withContext null
-            val channel = channelDao.getById(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
-            val source = channels.streamSource(channelId) ?: return@withContext RecordingStartError.NO_SOURCE
-            val dir = directory() ?: return@withContext RecordingStartError.NO_STORAGE
-            if (dir.usableSpace < MIN_FREE_BYTES) return@withContext RecordingStartError.NO_SPACE
-            val now = System.currentTimeMillis()
-            val file = File(dir, fileName(channel.name, now))
-            val id = dao.insert(
-                RecordingEntity(
-                    playlistId = channel.playlistId,
-                    channelKey = channel.stableKey,
-                    channelName = channel.name,
-                    title = title?.takeIf { it.isNotBlank() } ?: channel.name,
-                    path = file.absolutePath,
-                    startedAt = now,
-                    stopAtMs = stopAtMs,
-                    status = RecordingEntity.STATUS_RECORDING,
-                ),
-            )
-            launchJob(ActiveRecording(id, channelId, channel.name), file, source, stopAtMs)
-            null
+            // Dva brza pritiska na „Snimaj” ne smeju da pokrenu dva snimanja istog kanala.
+            startLock.withLock { startLocked(channelId, title, stopAtMs) }
         }
+
+    private suspend fun startLocked(channelId: Long, title: String?, stopAtMs: Long?): RecordingStartError? {
+        val channel = channelDao.getById(channelId) ?: return RecordingStartError.NO_SOURCE
+        if (_active.value.any { it.playlistId == channel.playlistId && it.channelKey == channel.stableKey }) return null
+        val source = channels.streamSource(channelId) ?: return RecordingStartError.NO_SOURCE
+        val dir = directory() ?: return RecordingStartError.NO_STORAGE
+        if (dir.usableSpace < MIN_FREE_BYTES) return RecordingStartError.NO_SPACE
+        val now = System.currentTimeMillis()
+        val file = File(dir, fileName(channel.name, now))
+        val id = dao.insert(
+            RecordingEntity(
+                playlistId = channel.playlistId,
+                channelKey = channel.stableKey,
+                channelName = channel.name,
+                title = title?.takeIf { it.isNotBlank() } ?: channel.name,
+                path = file.absolutePath,
+                startedAt = now,
+                stopAtMs = stopAtMs,
+                status = RecordingEntity.STATUS_RECORDING,
+            ),
+        )
+        launchJob(ActiveRecording(id, channel.playlistId, channel.stableKey, channel.name), file, source, stopAtMs)
+        return null
+    }
 
     private suspend fun run(id: Long, file: File, source: com.bane23.iptvplayer.domain.StreamSource, stopAtMs: Long?) {
         var error: String? = null
@@ -229,8 +248,8 @@ class RecordingRepository @Inject constructor(
         synchronized(jobs) { jobs[id] }?.cancel()
     }
 
-    fun stopChannel(channelId: Long) {
-        _active.value.filter { it.channelId == channelId }.forEach { stop(it.id) }
+    fun stopChannel(channel: Channel) {
+        _active.value.filter { it.isOf(channel) }.forEach { stop(it.id) }
     }
 
     fun stopAll() {

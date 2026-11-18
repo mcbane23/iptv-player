@@ -7,6 +7,7 @@ import androidx.paging.cachedIn
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.epg.GuideLayout
+import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.recording.RecordingStartError
 import com.bane23.iptvplayer.data.reminder.Reminder
@@ -48,13 +49,16 @@ data class GuideSelection(val channel: Channel, val program: Program?) {
 data class GuideRecordings(
     /** Zakazana snimanja: ključ emisije ([key]) i ID snimka. */
     val scheduled: Map<String, Long> = emptyMap(),
-    /** Kanali koji se upravo snimaju. */
-    val activeChannels: Set<Long> = emptySet(),
+    /** Kanali koji se upravo snimaju, po ključu [ActiveRecording.channelKeyOf]. */
+    val activeChannels: Set<String> = emptySet(),
 ) {
     /** Emisija je zakazana za snimanje, ili je u toku na kanalu koji se snima. */
     fun marks(channel: Channel, program: Program, now: Long): Boolean =
         key(channel, program.startMs) in scheduled ||
-            (channel.id in activeChannels && program.startMs <= now && program.stopMs > now)
+            (isActive(channel) && program.startMs <= now && program.stopMs > now)
+
+    /** Da li se kanal upravo snima. */
+    fun isActive(channel: Channel): Boolean = ActiveRecording.channelKeyOf(channel) in activeChannels
 
     companion object {
         fun key(channel: Channel, startMs: Long): String = key(channel.playlistId, channel.stableKey, startMs)
@@ -99,7 +103,7 @@ class GuideViewModel @Inject constructor(
         GuideRecordings(
             scheduled = rows.filter { it.status == RecordingEntity.STATUS_SCHEDULED }
                 .associate { GuideRecordings.key(it.playlistId, it.channelKey, it.startedAt) to it.id },
-            activeChannels = active.map { it.channelId }.toSet(),
+            activeChannels = active.mapTo(HashSet()) { it.key },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GuideRecordings())
 
@@ -142,8 +146,8 @@ class GuideViewModel @Inject constructor(
                     recorder.delete(scheduledId)
                     _recordingNotice.tryEmit(R.string.recording_schedule_cancelled)
                 }
-                program.startMs <= now && channel.id in state.activeChannels -> {
-                    recorder.stopChannel(channel.id)
+                program.startMs <= now && state.isActive(channel) -> {
+                    recorder.stopChannel(channel)
                     _recordingNotice.tryEmit(R.string.recording_stopped)
                 }
                 else -> {

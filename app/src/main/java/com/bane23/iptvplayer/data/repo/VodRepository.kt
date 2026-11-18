@@ -206,7 +206,28 @@ class VodRepository @Inject constructor(
         val username: String,
         val password: String,
         val userAgent: String?,
+        /** Početak ključeva keša za ovu listu, vidi [cachePrefix]. */
+        val cache: String,
     )
+
+    private val cacheStamps = ConcurrentHashMap<Long, String>()
+
+    /**
+     * Početak ključeva keša: ID liste i vreme njenog poslednjeg osvežavanja. Kad se lista osveži
+     * (ručno ili dnevnim osvežavanjem), spiskovi filmova i serija se zato preuzimaju iznova; bez toga
+     * bi novi filmovi i epizode stigli tek kad se aplikacija ugasi i ponovo pokrene. Stari spiskovi
+     * te liste se tada izbacuju iz memorije.
+     */
+    private fun cachePrefix(playlistId: Long, refreshedAt: Long?): String {
+        val prefix = "$playlistId@${refreshedAt ?: 0}/"
+        val previous = cacheStamps.put(playlistId, prefix)
+        if (previous != null && previous != prefix) {
+            categoryCache.keys.removeAll { it.startsWith(previous) }
+            itemCache.keys.removeAll { it.startsWith(previous) }
+            seriesCache.keys.removeAll { it.startsWith(previous) }
+        }
+        return prefix
+    }
 
     private val categoryCache = ConcurrentHashMap<String, List<VodCategory>>()
     private val itemCache = ConcurrentHashMap<String, List<VodItem>>()
@@ -294,7 +315,7 @@ class VodRepository @Inject constructor(
     /** Kategorije onako kako ih šalje server, za ekran roditeljske zaštite. */
     suspend fun allCategories(kind: VodKind): List<VodCategory> = withContext(Dispatchers.IO) {
         val session = session()
-        categoryCache.getOrPutSuspending("${session.playlistId}/$kind") {
+        categoryCache.getOrPutSuspending("${session.cache}$kind") {
             val action = if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_CATEGORIES else XtreamUrls.ACTION_SERIES_CATEGORIES
             api.categories(session.api(action), session.userAgent).mapNotNull { category ->
                 val id = category.id?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
@@ -346,7 +367,7 @@ class VodRepository @Inject constructor(
 
     private suspend fun loadItems(kind: VodKind, categoryId: String): List<VodItem> = withContext(Dispatchers.IO) {
         val session = session()
-        itemCache.getOrPutSuspending("${session.playlistId}/$kind/$categoryId") {
+        itemCache.getOrPutSuspending("${session.cache}$kind/$categoryId") {
             val url = session.listUrl(if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_STREAMS else XtreamUrls.ACTION_SERIES, categoryId)
             val body = if (kind == VodKind.MOVIES) api.vodStreams(url, session.userAgent) else api.series(url, session.userAgent)
             body.use { readVodItems(kind, it.byteStream()) }
@@ -361,7 +382,7 @@ class VodRepository @Inject constructor(
 
     suspend fun series(seriesId: Long): SeriesDetails = withContext(Dispatchers.IO) {
         val session = session()
-        seriesCache.getOrPutSuspending("${session.playlistId}/$seriesId") {
+        seriesCache.getOrPutSuspending("${session.cache}$seriesId") {
             val url = session.api(XtreamUrls.ACTION_SERIES_INFO, "series_id", seriesId.toString())
             XtreamVodParser.series(api.details(url, session.userAgent))
         }
@@ -641,7 +662,7 @@ class VodRepository @Inject constructor(
         cachedListTmdbId(kind, itemId) ?: loadItems(kind, ALL_CATEGORIES).firstOrNull { it.id == itemId }?.tmdbId
 
     private suspend fun cachedListTmdbId(kind: VodKind, itemId: Long): Long? {
-        val prefix = "${session().playlistId}/$kind/"
+        val prefix = "${session().cache}$kind/"
         return itemCache.entries.asSequence()
             .filter { it.key.startsWith(prefix) }
             .firstNotNullOfOrNull { (_, list) -> list.firstOrNull { it.id == itemId }?.tmdbId }
@@ -723,7 +744,7 @@ class VodRepository @Inject constructor(
         } catch (e: Exception) {
             throw IOException("Stored password can not be read", e)
         }
-        return Session(playlistId, server, username, password, playlist.userAgent)
+        return Session(playlistId, server, username, password, playlist.userAgent, cachePrefix(playlistId, playlist.lastRefreshedAt))
     }
 
     /** Spisak jedne kategorije, ili cele liste kad je [categoryId] [ALL_CATEGORIES]. */
