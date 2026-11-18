@@ -276,10 +276,9 @@ fun TvVodPlayerScreen(
                             ui.title
                         },
                         subtitle = null,
-                        large = true,
                         modifier = Modifier.weight(1f),
                     )
-                    PlayerClock(large = true, modifier = Modifier.padding(start = 16.dp))
+                    PlayerClock(modifier = Modifier.padding(start = 16.dp))
                 }
             }
 

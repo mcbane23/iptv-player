@@ -368,12 +368,11 @@ private fun LiveControls(
                 PlayerTitle(
                     title = listOfNotNull(channel.number?.toString(), channel.name).joinToString("  "),
                     subtitle = nowNext.now?.title,
-                    large = true,
                     modifier = Modifier.weight(1f),
                 )
                 // Dok se kuca broj kanala, na tom mestu stoji broj.
                 if (ui.typedNumber.isEmpty()) {
-                    PlayerClock(large = true, modifier = Modifier.padding(start = 16.dp))
+                    PlayerClock(modifier = Modifier.padding(start = 16.dp))
                 }
             }
         }
