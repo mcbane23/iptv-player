@@ -552,6 +552,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Podešavanja: slova za jedan stepen sitnija, na telefonu i na TV-u, da ne odskaču od ostatka aplikacije.
 - [x] Uživo na telefonu: izabrana kategorija ostaje ista kad se telefon okrene (izbor pamti view model,
   a ne samo ekran koji se pri okretanju iscrtava iznova).
+- [x] TV, spisak kategorija kao na telefonu (Bane izabrao opciju 2 od tri sa slikama, 18. 11. 2026): u Uživo,
+  Filmovima i Serijama svaki red je zaobljena pločica. Fokus je pun u akcentnoj boji, a izabrana kategorija
+  bez fokusa ima akcentni okvir i tekst. Pretraga i redosled ostaju obični redovi.
 - [x] Zaštita ekrana od urezivanja slike (Bane, 18. 11. 2026): posle 1 minuta pauze slika se zatamni na
   oko 30%, a kontrole se sklone; prvi taster ili dodir samo vraća sliku. Posle 30 minuta pauze plejer se
   zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,
