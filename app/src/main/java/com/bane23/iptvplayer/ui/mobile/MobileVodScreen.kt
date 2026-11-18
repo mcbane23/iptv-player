@@ -81,6 +81,8 @@ fun MobileVodScreen(
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     val watched by viewModel.watched.collectAsStateWithLifecycle()
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    // Kategorija koja je bila izabrana pre favorita, da drugi dodir na zvezdicu vrati na nju.
+    var beforeFavorites by rememberSaveable { mutableStateOf<String?>(null) }
     val favoritesLabel = stringResource(R.string.category_favorites)
     val showingFavorites = state.selected?.id == FAVORITES_ID
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
@@ -171,7 +173,15 @@ fun MobileVodScreen(
                                 label = favoritesLabel,
                                 selected = showingFavorites,
                                 onClick = {
-                                    if (!showingFavorites) viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                                    // Zvezdica je prekidač: prvi dodir prikazuje favorite, drugi vraća prethodnu kategoriju.
+                                    if (!showingFavorites) {
+                                        beforeFavorites = state.selected?.id
+                                        viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                                    } else {
+                                        val back = state.categories.firstOrNull { it.id == beforeFavorites }
+                                            ?: state.categories.firstOrNull()
+                                        back?.let(viewModel::selectCategory)
+                                    }
                                 },
                                 iconOnly = AppIcons.Star,
                             )

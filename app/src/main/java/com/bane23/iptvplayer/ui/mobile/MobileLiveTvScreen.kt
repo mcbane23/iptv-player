@@ -112,7 +112,10 @@ fun MobileLiveTvScreen(
     val selected = chosen?.takeIf { it in groups }
         ?: state.lastCategoryId?.takeIf { it in groups }
         ?: if (state.favoriteCount > 0) ChannelGroups.FAVORITES else ALL_CHANNELS
+    // Grupa koja je bila izabrana pre omiljenih, da drugi dodir na zvezdicu vrati na nju.
+    var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
     val choose: (Long) -> Unit = { group ->
+        if (group == ChannelGroups.FAVORITES && selected != ChannelGroups.FAVORITES) beforeFavorites = selected
         chosen = group
         viewModel.rememberCategory(group)
     }
@@ -301,7 +304,14 @@ fun MobileLiveTvScreen(
                             selected = selected,
                             showRecent = state.recentCount > 0,
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
-                            onSelect = choose,
+                            // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
+                            onSelect = { group ->
+                                if (group == ChannelGroups.FAVORITES && selected == ChannelGroups.FAVORITES) {
+                                    choose(beforeFavorites?.takeIf { it in groups && it != ChannelGroups.FAVORITES } ?: ALL_CHANNELS)
+                                } else {
+                                    choose(group)
+                                }
+                            },
                             onMore = { pickerOpen = true },
                         )
                         if (pickerOpen) {

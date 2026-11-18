@@ -565,6 +565,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Uživo, dorada (Bane, 19. 11. 2026): na telefonu su logoi kanala manji (32dp) i redovi gušći, čip
   omiljenih je samo zvezdica (i u Filmovima i Serijama), a dok kanal nije izabran u crnom okviru pregleda
   stoji uputstvo, na telefonu i na TV-u. Na TV-u su redovi kanala niži (logo 32dp), pa staje kanal više.
+- [x] Uspravan telefon, zvezdica kao prekidač (Bane, 19. 11. 2026): prvi dodir na čip omiljenih prikazuje
+  omiljene, drugi vraća na grupu koja je bila izabrana pre toga (Uživo, Filmovi, Serije). Položen telefon i TV
+  ostaju isti, jer je tamo ceo spisak kategorija stalno na ekranu.
 - [x] Zaštita ekrana od urezivanja slike (Bane, 18. 11. 2026): posle 1 minuta pauze slika se zatamni na
   oko 30%, a kontrole se sklone; prvi taster ili dodir samo vraća sliku. Posle 30 minuta pauze plejer se
   zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,
