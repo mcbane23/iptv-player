@@ -18,6 +18,8 @@ data class TransferBundle(
     val settings: TransferSettings? = null,
     /** Nalozi za Trakt i OpenSubtitles; starija verzija na TV-u ih samo preskače. */
     val accounts: TransferAccounts? = null,
+    /** Zapis PIN-a roditeljske zaštite (otisak, ne sam PIN); TV ga uzima samo ako nema svoj. */
+    val pinRecord: String? = null,
 ) {
     companion object {
         const val VERSION = 1

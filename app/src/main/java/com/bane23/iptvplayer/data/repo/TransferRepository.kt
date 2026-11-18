@@ -76,6 +76,7 @@ class TransferRepository @Inject constructor(
                 vodSortMovies = settings.vodSort(series = false).first(),
                 vodSortSeries = settings.vodSort(series = true).first(),
             ),
+            pinRecord = settings.pinRecord.first(),
             accounts = openSubtitles.credentials()?.let { (username, password) ->
                 TransferAccounts(openSubtitles = TransferLogin(username, password))
             },
@@ -193,6 +194,9 @@ class TransferRepository @Inject constructor(
                 if (match == null && item.active) settings.setActivePlaylistId(playlistId)
             }
             bundle.settings?.let { applySettings(it) }
+            // PIN koji TV već ima se ne menja.
+            val pin = bundle.pinRecord
+            if (pin != null && PIN_RECORD.matches(pin) && settings.pinRecord.first() == null) settings.setPinRecord(pin)
             val accounts = bundle.accounts
             TransferResult(
                 added = added,
@@ -278,5 +282,8 @@ class TransferRepository @Inject constructor(
         const val MAX_TEXT = 2_000
         val VOD_KINDS = setOf("movie", "series")
         val ENUM_NAME = Regex("[A-Z_]{1,32}")
+
+        /** Oblik zapisa iz `Pin.hash`: dodatak i otisak, oba heksadecimalno. */
+        val PIN_RECORD = Regex("[0-9a-f]{1,64}:[0-9a-f]{64}")
     }
 }

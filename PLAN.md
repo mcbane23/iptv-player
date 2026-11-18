@@ -286,7 +286,7 @@ Redosled unutar faze po želji vlasnika.
   aplikacija na telefonu šalje sve liste, omiljene kanale, uređenje kategorija i podešavanja pravo na TV
 - [x] Prenos na TV iz podešavanja na telefonu: telefon sam nađe TV u mreži (kod sa ekrana samo prvi put) i šalje
       liste, naloge, omiljene kanale, filmove i serije, sakrivene kategorije i redosled (i za filmove i serije)
-      i podešavanja; na listi koju TV već ima važi uređenje sa telefona, omiljeni se dopunjuju (čeka probu)
+      podešavanja, zaključane kategorije i PIN (samo ako ga TV nema); na listi koju TV već ima važi uređenje sa telefona, omiljeni se dopunjuju (čeka probu)
 - [x] Prikaz više kanala odjednom (multi-view): 2 ili 4 polja na TV-u i telefonu, zvuk sa izabranog polja
 - [x] Automatsko pokretanje pri paljenju uređaja (TV box): prekidač u podešavanjima na TV-u; od Androida 10
       traži i sistemsku dozvolu „Prikaz preko drugih aplikacija”

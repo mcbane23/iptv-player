@@ -252,7 +252,7 @@
     <string name="transfer_trakt_ok">The Trakt account is connected on the TV.</string>
     <string name="transfer_all_title">Transfer to the TV</string>
     <string name="settings_transfer_summary">Send playlists, accounts, favorites, categories and settings to the app on your TV</string>
-    <string name="transfer_favorites">Favorite channels: %1$d · favorite movies and series: %2$d. Hidden and locked categories, their order and the player settings are sent too. The PIN stays on this phone.</string>
+    <string name="transfer_favorites">Favorite channels: %1$d · favorite movies and series: %2$d. Hidden and locked categories, their order and the player settings are sent too. The PIN is sent only if the TV has none.</string>
     <string name="transfer_pick_tv">Choose the TV</string>
     <string name="transfer_pick_tv_hint">Open this app on the TV. The phone and the TV must be on the same Wi-Fi network.</string>
     <string name="transfer_all_warning">Account passwords are sent too, straight to the TV over your home network. Send only to your own TV.</string>

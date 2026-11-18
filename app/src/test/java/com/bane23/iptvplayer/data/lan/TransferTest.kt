@@ -57,6 +57,7 @@ class TransferTest {
                     locked = TransferLocks(live = listOf("Za odrasle"), movies = listOf("44")),
                 ),
             ),
+            pinRecord = "00ff:" + "ab".repeat(32),
             settings = TransferSettings(seekStepSeconds = 30, subtitleBackground = false, subtitleSize = "LARGE", accentColor = "BLUE"),
         )
         assertEquals(full, TransferCodec.decode(TransferCodec.encode(full)))
