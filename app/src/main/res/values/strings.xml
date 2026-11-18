@@ -250,6 +250,16 @@
     <string name="transfer_opensubtitles_ok">The OpenSubtitles account is signed in on the TV.</string>
     <string name="transfer_opensubtitles_failed">The OpenSubtitles account was not signed in on the TV. Sign in there manually.</string>
     <string name="transfer_trakt_ok">The Trakt account is connected on the TV.</string>
+    <string name="transfer_all_title">Transfer to the TV</string>
+    <string name="settings_transfer_summary">Send playlists, accounts, favorites, categories and settings to the app on your TV</string>
+    <string name="transfer_favorites">Favorite channels: %1$d · favorite movies and series: %2$d. Hidden categories, their order and the player settings are sent too.</string>
+    <string name="transfer_pick_tv">Choose the TV</string>
+    <string name="transfer_pick_tv_hint">Open this app on the TV. The phone and the TV must be on the same Wi-Fi network.</string>
+    <string name="transfer_all_warning">Account passwords are sent too, straight to the TV over your home network. Send only to your own TV.</string>
+    <string name="transfer_all_unreachable">The TV is not responding. Check that the app is open on the TV and that the phone is on the same Wi-Fi.</string>
+    <string name="transfer_all_refused">The TV did not accept the transfer. Update the app on the TV and try again.</string>
+    <string name="transfer_tv_title">Transfer from the phone</string>
+    <string name="transfer_tv_applying">Applying what the phone sent…</string>
     <string name="transfer_trakt_failed">The Trakt account was not connected on the TV. Connect it there manually.</string>
 
     <!-- Novi izgled: navigacija -->

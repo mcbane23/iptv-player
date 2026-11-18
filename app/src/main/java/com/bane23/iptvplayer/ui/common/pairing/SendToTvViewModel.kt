@@ -2,12 +2,19 @@ package com.bane23.iptvplayer.ui.common.pairing
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bane23.iptvplayer.cast.LanCastSender
+import com.bane23.iptvplayer.cast.LanDevice
+import com.bane23.iptvplayer.data.cast.CastCodec
+import com.bane23.iptvplayer.data.cast.CastPairConfirm
+import com.bane23.iptvplayer.data.cast.CastPairResult
+import com.bane23.iptvplayer.data.cast.CastServer
 import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCodec
 import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.lan.TransferTarget
 import com.bane23.iptvplayer.data.lan.TransferTraktLogin
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.TransferRepository
 import com.bane23.iptvplayer.data.trakt.TokenResponse
 import com.bane23.iptvplayer.data.trakt.TraktLoginResult
@@ -24,6 +31,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,6 +69,17 @@ data class SendToTvUiState(
     /** Da li aplikacija ima Trakt (tada može da se zatraži posebna prijava za TV). */
     val traktAvailable: Boolean = false,
     val trakt: TvTraktLogin = TvTraktLogin.None,
+    /** Broj omiljenih kanala, odnosno filmova i serija, koji idu uz liste. */
+    val favoriteChannels: Int = 0,
+    val favoriteVod: Int = 0,
+    /** Otvoreno iz podešavanja: TV se bira sa spiska uređaja u mreži, a ne adresom iz QR koda. */
+    val discovery: Boolean = false,
+    /** Televizori u kućnoj mreži na kojima je aplikacija otvorena. */
+    val devices: List<LanDevice> = emptyList(),
+    val selected: LanDevice? = null,
+    /** TV je prikazao kod za prvo povezivanje i čeka da se prepiše. */
+    val pairing: Boolean = false,
+    val codeWrong: Boolean = false,
 ) {
     /** Ima li šta da se pošalje. */
     val canSend: Boolean get() = playlistCount > 0 || openSubtitlesUser != null || trakt == TvTraktLogin.Ready
@@ -82,13 +101,16 @@ sealed interface TvTraktLogin {
 }
 
 /**
- * Slanje svih lista i podešavanja na TV. Otvara se linkom sa stranice TV-a; ništa se ne šalje dok
- * korisnik ne potvrdi, jer paket sadrži lozinke naloga.
+ * Slanje svih lista, omiljenih, podešavanja i naloga na TV. Otvara se linkom sa stranice TV-a (QR kod)
+ * ili iz podešavanja, kada se TV bira sa spiska uređaja u mreži. Ništa se ne šalje dok korisnik ne
+ * potvrdi, jer paket sadrži lozinke naloga.
  */
 @HiltViewModel
 class SendToTvViewModel @Inject constructor(
     private val transfers: TransferRepository,
     private val trakt: TraktRepository,
+    private val lan: LanCastSender,
+    private val settings: SettingsStore,
     httpClient: OkHttpClient,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SendToTvUiState())
@@ -110,19 +132,51 @@ class SendToTvViewModel @Inject constructor(
             return
         }
         target = valid
+        viewModelScope.launch { export(address = TransferTarget.displayAddress(valid)) }
+    }
+
+    /** Priprema za slanje na TV koji korisnik izabere sa spiska (stavka u podešavanjima). */
+    fun prepareDiscovery() {
+        if (_state.value.discovery) return
+        _state.update { it.copy(discovery = true) }
+        viewModelScope.launch { export(address = "") }
         viewModelScope.launch {
-            val export = transfers.exportBundle()
-            bundle = export.bundle
-            _state.update {
-                it.copy(
-                    loading = false,
-                    address = TransferTarget.displayAddress(valid),
-                    playlistCount = export.bundle.playlists.size,
-                    skipped = export.skipped,
-                    openSubtitlesUser = export.bundle.accounts?.openSubtitles?.username,
-                    traktAvailable = trakt.isAvailable,
-                )
+            lan.picker.collect { picker ->
+                _state.update { state ->
+                    val devices = picker.devices.sortedBy { it.name }
+                    // Izabrani TV se prati po imenu, jer mu se adresa menja kad se aplikacija ponovo otvori.
+                    val selected = devices.firstOrNull { it.name == state.selected?.name }
+                        ?: state.selected.takeIf { state.sending || state.pairing }
+                        ?: devices.singleOrNull()
+                    state.copy(devices = devices, selected = selected)
+                }
             }
+        }
+    }
+
+    fun startDiscovery() = lan.startDiscovery()
+
+    fun stopDiscovery() = lan.stopDiscovery()
+
+    fun select(device: LanDevice) {
+        if (_state.value.sending) return
+        _state.update { it.copy(selected = device, pairing = false, codeWrong = false, error = null, errorDetail = null) }
+    }
+
+    private suspend fun export(address: String) {
+        val export = transfers.exportBundle()
+        bundle = export.bundle
+        _state.update { state ->
+            state.copy(
+                loading = false,
+                address = address,
+                playlistCount = export.bundle.playlists.size,
+                skipped = export.skipped,
+                openSubtitlesUser = export.bundle.accounts?.openSubtitles?.username,
+                traktAvailable = trakt.isAvailable,
+                favoriteChannels = export.bundle.playlists.sumOf { it.favorites.size },
+                favoriteVod = export.bundle.playlists.sumOf { it.vodFavorites.size },
+            )
         }
     }
 
@@ -156,51 +210,112 @@ class SendToTvViewModel @Inject constructor(
     }
 
     fun send() {
-        val url = target ?: return
-        val token = traktToken
-        val payload = (bundle ?: return).let { base ->
-            if (token == null) {
-                base
-            } else {
-                val login = TransferTraktLogin(token.accessToken, token.refreshToken, token.expiresIn, token.createdAt)
-                base.copy(accounts = (base.accounts ?: TransferAccounts()).copy(trakt = login))
+        val state = _state.value
+        if (state.sending || !state.canSend) return
+        val payload = payload() ?: return
+        if (state.discovery) {
+            val device = state.selected ?: return
+            _state.update { it.copy(sending = true, pairing = false, codeWrong = false, error = null, errorDetail = null, result = null) }
+            viewModelScope.launch {
+                val key = settings.castPeers.first()[device.name]
+                if (key == null) beginPairing(device) else sendToDevice(device, key, payload)
             }
+        } else {
+            val url = target ?: return
+            _state.update { it.copy(sending = true, error = null, errorDetail = null, result = null) }
+            viewModelScope.launch { finish(postBundle(url + TransferTarget.BUNDLE_PATH, payload)) }
         }
-        if (_state.value.sending || !_state.value.canSend) return
-        _state.update { it.copy(sending = true, error = null, errorDetail = null, result = null) }
+    }
+
+    /** Kod koji je korisnik prepisao sa ekrana TV-a; tačan kod odmah nastavlja slanje. */
+    fun confirmCode(code: String) {
+        val state = _state.value
+        val device = state.selected ?: return
+        if (!state.pairing || state.sending) return
+        val payload = payload() ?: return
+        _state.update { it.copy(sending = true, codeWrong = false) }
         viewModelScope.launch {
-            if (token != null) traktSent = true
-            val outcome = withContext(Dispatchers.IO) { post(url + TransferTarget.BUNDLE_PATH, payload) }
-            _state.update {
-                when (outcome) {
-                    is TransferResult -> it.copy(sending = false, result = outcome)
-                    is Unreachable -> it.copy(sending = false, error = SendError.UNREACHABLE, errorDetail = outcome.detail)
-                    else -> it.copy(sending = false, error = outcome as? SendError)
+            val response = call(device.baseUrl + CastServer.CONFIRM_PATH, CastCodec.encode(CastPairConfirm(code)))
+            val key = (response as? Response)?.takeIf { it.code == HTTP_OK }
+                ?.let { CastCodec.decode<CastPairResult>(it.body)?.key }
+            when {
+                response is Unreachable -> finish(response)
+                key.isNullOrEmpty() -> _state.update { it.copy(sending = false, codeWrong = true) }
+                else -> {
+                    settings.setCastPeer(device.name, key)
+                    _state.update { it.copy(pairing = false) }
+                    sendToDevice(device, key, payload)
                 }
             }
         }
     }
 
-    /** Vraća [TransferResult], [SendError] ili [Unreachable]. */
-    private fun post(url: String, payload: TransferBundle): Any {
-        val request = Request.Builder()
-            .url(url)
-            .post(TransferCodec.encode(payload).toRequestBody(JSON))
-            .build()
-        return try {
-            client.newCall(request).execute().use { response ->
-                val result = if (response.isSuccessful) TransferCodec.decodeResult(response.body.string()) else null
-                result ?: SendError.REFUSED
-            }
-        } catch (e: IOException) {
-            // Poruka sadrži samo adresu TV-a u kućnoj mreži, ne i sadržaj paketa.
-            Unreachable(listOfNotNull(e.javaClass.simpleName, e.message).joinToString(": ").take(MAX_DETAIL_LENGTH))
+    /** Paket sa prijavom za Trakt, ako je dobijena. */
+    private fun payload(): TransferBundle? {
+        val base = bundle ?: return null
+        val token = traktToken ?: return base
+        val login = TransferTraktLogin(token.accessToken, token.refreshToken, token.expiresIn, token.createdAt)
+        return base.copy(accounts = (base.accounts ?: TransferAccounts()).copy(trakt = login))
+    }
+
+    private suspend fun sendToDevice(device: LanDevice, key: String, payload: TransferBundle) {
+        val outcome = postBundle("${device.baseUrl}${CastServer.KEY_PREFIX}$key/${CastServer.BUNDLE_ACTION}", payload)
+        // TV više ne priznaje ključ (npr. aplikacija je ponovo instalirana): povezuje se iznova.
+        if (outcome is Response && outcome.code == HTTP_FORBIDDEN) beginPairing(device) else finish(outcome)
+    }
+
+    /** Traži od TV-a da prikaže kod za prvo povezivanje. */
+    private suspend fun beginPairing(device: LanDevice) {
+        when (val response = call(device.baseUrl + CastServer.PAIR_PATH, "{}")) {
+            is Response ->
+                if (response.code == HTTP_OK) {
+                    _state.update { it.copy(sending = false, pairing = true, codeWrong = false) }
+                } else {
+                    finish(response)
+                }
+
+            is Unreachable -> finish(response)
         }
     }
 
-    private class Unreachable(val detail: String)
+    private suspend fun postBundle(url: String, payload: TransferBundle): Outcome {
+        if (payload.accounts?.trakt != null) traktSent = true
+        return call(url, TransferCodec.encode(payload))
+    }
+
+    private fun finish(outcome: Outcome) {
+        _state.update {
+            when (outcome) {
+                is Unreachable -> it.copy(sending = false, error = SendError.UNREACHABLE, errorDetail = outcome.detail)
+
+                is Response -> {
+                    val result = if (outcome.code == HTTP_OK) TransferCodec.decodeResult(outcome.body) else null
+                    if (result != null) it.copy(sending = false, result = result) else it.copy(sending = false, error = SendError.REFUSED)
+                }
+            }
+        }
+    }
+
+    private suspend fun call(url: String, json: String): Outcome = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder().url(url).post(json.toRequestBody(JSON)).build()
+            client.newCall(request).execute().use { response -> Response(response.code, response.body.string()) }
+        } catch (e: IOException) {
+            // Poruka sadrži samo adresu TV-a u kućnoj mreži, ne i sadržaj paketa.
+            Unreachable(listOfNotNull(e.javaClass.simpleName, e.message).joinToString(": ").take(MAX_DETAIL_LENGTH))
+        } catch (e: IllegalArgumentException) {
+            Unreachable(e.javaClass.simpleName)
+        }
+    }
+
+    private sealed interface Outcome
+
+    private class Response(val code: Int, val body: String) : Outcome
+
+    private class Unreachable(val detail: String) : Outcome
 
     override fun onCleared() {
+        if (_state.value.discovery) lan.stopDiscovery()
         // Prijava koja nije stigla do TV-a se opoziva, da ne ostane neiskorišćena na nalogu.
         val unused = traktToken?.takeIf { !traktSent } ?: return
         cleanupScope.launch { trakt.discard(unused) }
@@ -209,6 +324,8 @@ class SendToTvViewModel @Inject constructor(
     private companion object {
         const val READ_TIMEOUT_MINUTES = 15L
         const val MAX_DETAIL_LENGTH = 200
+        const val HTTP_OK = 200
+        const val HTTP_FORBIDDEN = 403
 
         /** Nadživljava ekran: opoziv neupotrebljene prijave ide posle njegovog zatvaranja. */
         val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

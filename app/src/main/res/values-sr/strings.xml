@@ -250,6 +250,16 @@
     <string name="transfer_opensubtitles_ok">OpenSubtitles nalog je prijavljen na TV-u.</string>
     <string name="transfer_opensubtitles_failed">OpenSubtitles nalog nije prijavljen na TV-u. Prijavite se tamo ručno.</string>
     <string name="transfer_trakt_ok">Trakt nalog je povezan na TV-u.</string>
+    <string name="transfer_all_title">Prenos na TV</string>
+    <string name="settings_transfer_summary">Slanje lista, naloga, omiljenih, kategorija i podešavanja na aplikaciju na TV-u</string>
+    <string name="transfer_favorites">Omiljeni kanali: %1$d · omiljeni filmovi i serije: %2$d. Šalju se i sakrivene kategorije, njihov redosled i podešavanja plejera.</string>
+    <string name="transfer_pick_tv">Izaberi TV</string>
+    <string name="transfer_pick_tv_hint">Otvori ovu aplikaciju na TV-u. Telefon i TV moraju biti na istoj Wi-Fi mreži.</string>
+    <string name="transfer_all_warning">Šalju se i lozinke naloga, pravo na TV kroz kućnu mrežu. Pošalji samo na svoj TV.</string>
+    <string name="transfer_all_unreachable">TV se ne javlja. Proveri da li je aplikacija otvorena na TV-u i da li je telefon na istom Wi-Fi-ju.</string>
+    <string name="transfer_all_refused">TV nije prihvatio prenos. Ažuriraj aplikaciju na TV-u, pa pokušaj ponovo.</string>
+    <string name="transfer_tv_title">Prenos sa telefona</string>
+    <string name="transfer_tv_applying">Primenjuje se ono što je telefon poslao…</string>
     <string name="transfer_trakt_failed">Trakt nalog nije povezan na TV-u. Povežite ga tamo ručno.</string>
 
     <!-- Novi izgled: navigacija -->

@@ -71,6 +71,7 @@ fun MobileSettingsScreen(
     onTrakt: (() -> Unit)? = null,
     onOpenSubtitles: (() -> Unit)? = null,
     onRecordings: (() -> Unit)? = null,
+    onTransfer: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -102,7 +103,7 @@ fun MobileSettingsScreen(
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
             if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onOpenSubtitles != null ||
-                onRecordings != null
+                onRecordings != null || onTransfer != null
             ) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
@@ -151,6 +152,14 @@ fun MobileSettingsScreen(
                             stringResource(R.string.recordings_title),
                             stringResource(R.string.settings_recordings_summary),
                             onRecordings,
+                        )
+                    }
+                    if (onTransfer != null) {
+                        SettingsLinkRow(
+                            AppIcons.Cast,
+                            stringResource(R.string.transfer_all_title),
+                            stringResource(R.string.settings_transfer_summary),
+                            onTransfer,
                         )
                     }
                 }

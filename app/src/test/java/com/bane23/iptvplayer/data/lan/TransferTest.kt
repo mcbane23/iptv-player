@@ -44,6 +44,36 @@ class TransferTest {
     }
 
     @Test
+    fun `movie and series favorites, their categories and the extra settings travel with the bundle`() {
+        val full = bundle.copy(
+            playlists = listOf(
+                bundle.playlists[0].copy(
+                    active = true,
+                    vodFavorites = listOf(
+                        TransferVodFavorite(kind = "movie", itemId = 7, name = "Izmišljen film", extension = "mkv"),
+                        TransferVodFavorite(kind = "series", itemId = 9, name = "Izmišljena serija", poster = "http://example.invalid/p.jpg"),
+                    ),
+                    vodCategories = TransferVodCategories(hiddenMovies = listOf("12"), orderSeries = listOf("3", "1")),
+                ),
+            ),
+            settings = TransferSettings(seekStepSeconds = 30, subtitleBackground = false, subtitleSize = "LARGE", accentColor = "BLUE"),
+        )
+        assertEquals(full, TransferCodec.decode(TransferCodec.encode(full)))
+    }
+
+    @Test
+    fun `a bundle from an older phone leaves the new parts unset`() {
+        val decoded = TransferCodec.decode(
+            """{"playlists":[{"type":"m3u","name":"A","source":"http://example.invalid/a.m3u"}],"settings":{"buffer":"LARGE"}}""",
+        )!!
+        assertNull(decoded.playlists[0].vodCategories)
+        assertTrue(decoded.playlists[0].vodFavorites.isEmpty())
+        assertFalse(decoded.playlists[0].active)
+        assertNull(decoded.settings!!.seekStepSeconds)
+        assertNull(decoded.settings!!.accentColor)
+    }
+
+    @Test
     fun `decoding ignores unknown fields and fills defaults`() {
         val decoded = TransferCodec.decode(
             """{"version":1,"future":true,"playlists":[{"type":"m3u","name":"A","source":"http://example.invalid/a.m3u","x":1}]}""",

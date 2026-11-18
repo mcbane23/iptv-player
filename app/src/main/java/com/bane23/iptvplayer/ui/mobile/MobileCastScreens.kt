@@ -226,7 +226,7 @@ private fun DeviceRow(name: String, onClick: () -> Unit) {
 
 /** Prvo povezivanje sa našom aplikacijom na TV-u: prepisuje se kod sa ekrana TV-a. */
 @Composable
-private fun PairingCodeEntry(deviceName: String, wrong: Boolean, onConfirm: (String) -> Unit) {
+internal fun PairingCodeEntry(deviceName: String, wrong: Boolean, onConfirm: (String) -> Unit) {
     var code by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text = deviceName, style = MaterialTheme.typography.titleMedium)

@@ -42,6 +42,7 @@ import com.bane23.iptvplayer.ui.common.navigation.Player
 import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SendToTv
+import com.bane23.iptvplayer.ui.common.navigation.TransferToTv
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
 import com.bane23.iptvplayer.ui.common.navigation.VodSearch
 
@@ -102,6 +103,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onCategories = { section -> backStack.add(ManageCategories(section.name)) },
                     onParental = { backStack.add(ParentalControl) },
                     onTrakt = { backStack.add(TraktAccount) },
+                    onTransfer = { backStack.add(TransferToTv) },
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
                     onRecordings = { backStack.add(Recordings) },
                     onMultiView = { backStack.add(MultiView) },
@@ -222,6 +224,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 MobileCastRemoteScreen(
                     onClose = { if (backStack.lastOrNull() is CastRemote) backStack.removeLastOrNull() },
                 )
+            }
+            entry<TransferToTv> {
+                MobileSendToTvScreen(target = null, onClose = { backStack.removeLastOrNull() })
             }
             entry<SendToTv> { key ->
                 MobileSendToTvScreen(target = key.target, onClose = { backStack.removeLastOrNull() })

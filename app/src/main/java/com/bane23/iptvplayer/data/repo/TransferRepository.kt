@@ -4,6 +4,7 @@ import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.FavoriteEntity
 import com.bane23.iptvplayer.data.db.PlaylistEntity
+import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCategory
@@ -12,7 +13,10 @@ import com.bane23.iptvplayer.data.lan.TransferPlaylist
 import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.lan.TransferSettings
 import com.bane23.iptvplayer.data.lan.TransferTraktLogin
+import com.bane23.iptvplayer.data.lan.TransferVodCategories
+import com.bane23.iptvplayer.data.lan.TransferVodFavorite
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.prefs.VodCategoryPrefs
 import com.bane23.iptvplayer.data.subtitles.OpenSubtitlesRepository
 import com.bane23.iptvplayer.data.trakt.TokenResponse
 import com.bane23.iptvplayer.data.trakt.TraktRepository
@@ -20,6 +24,9 @@ import com.bane23.iptvplayer.domain.PlaylistDraft
 import com.bane23.iptvplayer.domain.PlaylistException
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.player.BufferSize
+import com.bane23.iptvplayer.player.PlayerSettings
+import com.bane23.iptvplayer.player.SubtitlePosition
+import com.bane23.iptvplayer.player.SubtitleSize
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -45,8 +52,9 @@ class TransferRepository @Inject constructor(
 ) {
     suspend fun exportBundle(): TransferExport = withContext(Dispatchers.IO) {
         var skipped = 0
+        val activeId = settings.activePlaylistId.first()
         val items = db.playlistDao().getAll().sortedBy { it.id }.mapNotNull { entity ->
-            val item = entity.toTransfer()
+            val item = entity.toTransfer()?.copy(active = entity.id == activeId)
             if (item == null) skipped++
             item
         }
@@ -58,6 +66,14 @@ class TransferRepository @Inject constructor(
                 buffer = player.buffer.name,
                 audioLanguage = player.audioLanguage,
                 subtitleLanguage = player.subtitleLanguage,
+                seekStepSeconds = player.seekStepSeconds,
+                subtitleBackground = player.subtitleBackground,
+                subtitleSize = player.subtitleSize.name,
+                subtitlePosition = player.subtitlePosition.name,
+                autoRefreshPlaylists = settings.autoRefreshPlaylists.first(),
+                accentColor = settings.accentColor.first(),
+                vodSortMovies = settings.vodSort(series = false).first(),
+                vodSortSeries = settings.vodSort(series = true).first(),
             ),
             accounts = openSubtitles.credentials()?.let { (username, password) ->
                 TransferAccounts(openSubtitles = TransferLogin(username, password))
@@ -96,6 +112,12 @@ class TransferRepository @Inject constructor(
             epgShiftHours = epgShiftHours,
             favorites = db.favoriteDao().keysByPlaylist(id),
             categories = categories,
+            vodFavorites = db.vodFavoriteDao().getByPlaylist(id).map {
+                TransferVodFavorite(kind = it.kind, itemId = it.itemId, name = it.name, poster = it.poster, extension = it.extension)
+            },
+            vodCategories = settings.vodCategoryPrefs(id).let {
+                TransferVodCategories(it.hiddenMovies, it.hiddenSeries, it.orderMovies, it.orderSeries)
+            },
         )
     }
 
@@ -134,8 +156,28 @@ class TransferRepository @Inject constructor(
                     // Redosled dodavanja se čuva kroz vreme upisa.
                     db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
                 }
-                // Uređenje kategorija se primenjuje samo na novu listu; na postojećoj važi ono sa TV-a.
-                if (match == null) applyCategories(playlistId, item.categories)
+                db.vodFavoriteDao().insertMissing(
+                    item.vodFavorites.asSequence()
+                        .filter { it.kind in VOD_KINDS && it.name.length <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
+                        .take(MAX_FAVORITES)
+                        .mapIndexed { position, favorite ->
+                            VodFavoriteEntity(
+                                playlistId = playlistId,
+                                kind = favorite.kind,
+                                itemId = favorite.itemId,
+                                name = favorite.name,
+                                poster = favorite.poster,
+                                extension = favorite.extension?.take(MAX_LANGUAGE_LENGTH),
+                                addedAt = now + position,
+                            )
+                        }
+                        .toList(),
+                )
+                // Telefon je glavni: i na listi koju TV već ima važi uređenje kategorija sa telefona.
+                if (match != null) db.categoryDao().resetUserChanges(playlistId)
+                applyCategories(playlistId, item.categories)
+                item.vodCategories?.let { settings.replaceVodCategoryPrefs(playlistId, it.toPrefs()) }
+                if (match == null && item.active) settings.setActivePlaylistId(playlistId)
             }
             bundle.settings?.let { applySettings(it) }
             val accounts = bundle.accounts
@@ -193,16 +235,35 @@ class TransferRepository @Inject constructor(
         }
     }
 
+    private fun TransferVodCategories.toPrefs(): VodCategoryPrefs {
+        // ID kategorije ne sme da sadrži znak kojim se spisak razdvaja u podešavanjima.
+        fun clean(ids: List<String>) =
+            ids.asSequence().filter { it.isNotEmpty() && it.length <= MAX_LANGUAGE_LENGTH && '\n' !in it }.take(MAX_FAVORITES).toList()
+        return VodCategoryPrefs(clean(hiddenMovies), clean(hiddenSeries), clean(orderMovies), clean(orderSeries))
+    }
+
     private suspend fun applySettings(incoming: TransferSettings) {
         settings.setResumeLastChannel(incoming.resumeLastChannel)
         BufferSize.entries.firstOrNull { it.name == incoming.buffer }?.let { settings.setPlayerBuffer(it) }
         settings.setAudioLanguage(incoming.audioLanguage.take(MAX_LANGUAGE_LENGTH))
         settings.setSubtitleLanguage(incoming.subtitleLanguage.take(MAX_LANGUAGE_LENGTH))
+        incoming.seekStepSeconds?.takeIf { it in PlayerSettings.SEEK_STEP_OPTIONS }?.let { settings.setSeekStep(it) }
+        incoming.subtitleBackground?.let { settings.setSubtitleBackground(it) }
+        SubtitleSize.entries.firstOrNull { it.name == incoming.subtitleSize }?.let { settings.setSubtitleSize(it) }
+        SubtitlePosition.entries.firstOrNull { it.name == incoming.subtitlePosition }?.let { settings.setSubtitlePosition(it) }
+        incoming.autoRefreshPlaylists?.let { settings.setAutoRefreshPlaylists(it) }
+        // Nepoznato ime boje aplikacija sama zamenjuje podrazumevanom.
+        incoming.accentColor?.takeIf { ENUM_NAME.matches(it) }?.let { settings.setAccentColor(it) }
+        VodSort.entries.firstOrNull { it.name == incoming.vodSortMovies }?.let { settings.setVodSort(series = false, it.name) }
+        VodSort.entries.firstOrNull { it.name == incoming.vodSortSeries }?.let { settings.setVodSort(series = true, it.name) }
     }
 
     private companion object {
         const val MAX_FAVORITES = 5_000
         const val MAX_LANGUAGE_LENGTH = 16
         const val MAX_ACCOUNT_FIELD = 2_000
+        const val MAX_TEXT = 2_000
+        val VOD_KINDS = setOf("movie", "series")
+        val ENUM_NAME = Regex("[A-Z_]{1,32}")
     }
 }
