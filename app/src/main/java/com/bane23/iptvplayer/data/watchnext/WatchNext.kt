@@ -176,7 +176,7 @@ class WatchNextSync @Inject constructor(
                 put(TvContract.WatchNextPrograms.COLUMN_POSTER_ART_URI, item.poster)
                 put(
                     TvContract.WatchNextPrograms.COLUMN_POSTER_ART_ASPECT_RATIO,
-                    TvContract.WatchNextPrograms.ASPECT_RATIO_MOVIE_POSTER,
+                    POSTER_ASPECT_2_3,
                 )
             }
             if (item.durationMs > 0) {
@@ -198,3 +198,9 @@ class WatchNextSync @Inject constructor(
         const val DEBOUNCE_MS = 5_000L
     }
 }
+
+/**
+ * Vrednost sistemske konstante za odnos stranica postera 2:3 (`ASPECT_RATIO_2_3`). Upisana je kao broj
+ * jer se konstanta iz Kotlina ne vidi kroz `TvContract.WatchNextPrograms`.
+ */
+private const val POSTER_ASPECT_2_3 = 4
