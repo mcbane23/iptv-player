@@ -276,8 +276,8 @@ fun TvLiveTvScreen(
                     modifier = Modifier
                         .weight(0.26f)
                         .fillMaxHeight(),
-                    // Isti izgled kao spisak levo kod filmova i serija: redovi bez podloge.
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    // Isti izgled kao spisak levo kod filmova i serija i kao na telefonu: redovi su pločice.
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     item(key = "search") {
                         TvListRow(onClick = onSearch) { color ->
@@ -336,6 +336,7 @@ fun TvLiveTvScreen(
                             onFocused = { focusedCategory = category.id; lastChannelId = null },
                             onClick = { focusedCategory = category.id },
                             onLongClick = { menuCategory = category },
+                            card = true,
                             modifier = focusTarget(selectedCategory == category.id, firstFocus)
                                 .then(focusTarget(focusTargetId == category.id, moveFocus)),
                         )
