@@ -369,6 +369,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[APP_THEME] = name }
     }
 
+    /**
+     * Bočni meni na TV-u samo sa ikonicama (strelica na vrhu menija). Inače se meni raširi kad fokus
+     * pređe na njega i pomeri sadržaj udesno.
+     */
+    val tvRailIconsOnly: Flow<Boolean> = dataStore.data.map { it[TV_RAIL_ICONS_ONLY] ?: false }.distinctUntilChanged()
+
+    suspend fun setTvRailIconsOnly(enabled: Boolean) {
+        dataStore.edit { it[TV_RAIL_ICONS_ONLY] = enabled }
+    }
+
     /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
     val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
 
@@ -486,6 +496,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
         val APP_THEME = stringPreferencesKey("app_theme")
+        val TV_RAIL_ICONS_ONLY = booleanPreferencesKey("tv_rail_icons_only")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")

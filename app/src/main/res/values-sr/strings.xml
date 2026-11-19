@@ -633,6 +633,8 @@
     <string name="settings_theme_summary">Boja pozadine i površina: siva ili teget.</string>
     <string name="theme_gray">Siva</string>
     <string name="theme_navy">Teget</string>
+    <string name="tv_rail_collapse">Samo ikonice</string>
+    <string name="tv_rail_expand">Prikaži nazive u meniju</string>
     <string name="settings_black_theme">Crna tema</string>
     <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto boje izabrane teme, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
     <string name="epg_link_action">Poveži program</string>

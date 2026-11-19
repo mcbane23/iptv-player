@@ -34,12 +34,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +60,7 @@ import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.TvStartViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
@@ -72,7 +75,8 @@ private val RailExpanded = 240.dp
 
 /**
  * Početni ekran na TV-u: uzan bočni meni sa ikonicama levo i izabrana sekcija desno.
- * Meni se raširi (prikaže nazive) čim fokus pređe na njega, preko sadržaja, da se sadržaj ne pomera.
+ * Meni se raširi (prikaže nazive) čim fokus pređe na njega i pomeri sadržaj udesno; strelica na vrhu
+ * menija ga prebacuje na samo ikonice (bez širenja) i nazad. Izbor se pamti.
  * Pretraga i Vodič otvaraju poseban ekran; ostale stavke menjaju sekciju desno.
  */
 @OptIn(ExperimentalComposeUiApi::class)
@@ -96,7 +100,9 @@ fun TvHomeScreen(
     onRemoteButtons: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
+    val iconsOnly by settingsViewModel.tvRailIconsOnly.collectAsStateWithLifecycle()
     val recording by recordingsViewModel.active.collectAsStateWithLifecycle()
     val liveState by liveTvViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(TvTab.HOME) }
@@ -129,7 +135,12 @@ fun TvHomeScreen(
     var railFocused by remember { mutableStateOf(false) }
     // Bez animacije širine i bez senke: senka i animacija se crtaju u svakom kadru, što na slabijim
     // TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
-    val railWidth = if (railFocused) RailExpanded else RailCollapsed
+    val railExpanded = railFocused && !iconsOnly
+    val railWidth = if (railExpanded) RailExpanded else RailCollapsed
+    // Raširen meni pomera sadržaj udesno samo kao pomeraj pri crtanju: ništa se ne preslaže, pa je i na
+    // slabijem uređaju bez zastoja (desna ivica za to vreme izlazi van ekrana).
+    val density = LocalDensity.current
+    val slidePx = with(density) { (RailExpanded - RailCollapsed).toPx() }
     val selectedFocus = remember { FocusRequester() }
     val contentFocus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -155,6 +166,7 @@ fun TvHomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(start = RailCollapsed - 32.dp)
+                .graphicsLayer { translationX = if (railExpanded) slidePx else 0f }
                 .focusRequester(contentFocus)
                 .focusGroup(),
         ) {
@@ -234,6 +246,13 @@ fun TvHomeScreen(
             // Dok se ne zna da li postoji lista, stavke se ne crtaju: inače se pri pokretanju na
             // trenutak vidi kratak meni (kao bez liste), pa tek onda ceo.
             if (liveState.loading) return@Column
+            // Strelica na vrhu: samo ikonice ili meni koji se širi i pomera sadržaj. Fokus ostaje na njoj.
+            RailItem(
+                icon = if (iconsOnly) AppIcons.ChevronRight else AppIcons.ChevronLeft,
+                label = stringResource(if (iconsOnly) R.string.tv_rail_expand else R.string.tv_rail_collapse),
+                expanded = railExpanded,
+                onClick = { settingsViewModel.setTvRailIconsOnly(!iconsOnly) },
+            )
             if (recording.isNotEmpty() || recordingFocused) {
                 val single = recording.singleOrNull()
                 RailItem(
@@ -243,20 +262,20 @@ fun TvHomeScreen(
                         recording.isNotEmpty() -> stringResource(R.string.recording_home_many, recording.size)
                         else -> stringResource(R.string.recordings_title)
                     },
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     onClick = onRecordings,
                     modifier = Modifier.onFocusChanged { recordingFocused = it.isFocused },
                     tint = if (recording.isNotEmpty()) MaterialTheme.colorScheme.error else null,
                 )
             }
             if (playlistId != null) {
-                RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railFocused, onClick = onSearchAll)
+                RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railExpanded, onClick = onSearchAll)
             }
             if (playlistId != null) {
                 RailItem(
                     icon = AppIcons.Home,
                     label = stringResource(R.string.nav_home),
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     selected = tab == TvTab.HOME,
                     onClick = { tab = TvTab.HOME },
                     modifier = if (tab == TvTab.HOME) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -265,7 +284,7 @@ fun TvHomeScreen(
             RailItem(
                 icon = AppIcons.LiveTv,
                 label = stringResource(R.string.nav_live),
-                expanded = railFocused,
+                expanded = railExpanded,
                 selected = tab == TvTab.LIVE,
                 onClick = { tab = TvTab.LIVE },
                 modifier = if (tab == TvTab.LIVE) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -274,13 +293,13 @@ fun TvHomeScreen(
                 RailItem(
                     icon = AppIcons.Guide,
                     label = stringResource(R.string.guide_title),
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     onClick = { onGuide(playlistId) },
                 )
                 RailItem(
                     icon = AppIcons.MultiView,
                     label = stringResource(R.string.multiview_title),
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     onClick = onMultiView,
                 )
             }
@@ -288,7 +307,7 @@ fun TvHomeScreen(
                 RailItem(
                     icon = AppIcons.Movies,
                     label = stringResource(R.string.vod_movies),
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     selected = tab == TvTab.MOVIES,
                     onClick = { tab = TvTab.MOVIES },
                     modifier = if (tab == TvTab.MOVIES) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -296,7 +315,7 @@ fun TvHomeScreen(
                 RailItem(
                     icon = AppIcons.Series,
                     label = stringResource(R.string.vod_series),
-                    expanded = railFocused,
+                    expanded = railExpanded,
                     selected = tab == TvTab.SERIES,
                     onClick = { tab = TvTab.SERIES },
                     modifier = if (tab == TvTab.SERIES) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -305,7 +324,7 @@ fun TvHomeScreen(
             RailItem(
                 icon = AppIcons.Playlists,
                 label = stringResource(R.string.playlists_title),
-                expanded = railFocused,
+                expanded = railExpanded,
                 selected = tab == TvTab.PLAYLISTS,
                 onClick = { tab = TvTab.PLAYLISTS },
                 modifier = if (tab == TvTab.PLAYLISTS) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -313,7 +332,7 @@ fun TvHomeScreen(
             RailItem(
                 icon = AppIcons.Settings,
                 label = stringResource(R.string.settings_title),
-                expanded = railFocused,
+                expanded = railExpanded,
                 selected = tab == TvTab.SETTINGS,
                 onClick = { tab = TvTab.SETTINGS },
                 modifier = if (tab == TvTab.SETTINGS) Modifier.focusRequester(selectedFocus) else Modifier,
