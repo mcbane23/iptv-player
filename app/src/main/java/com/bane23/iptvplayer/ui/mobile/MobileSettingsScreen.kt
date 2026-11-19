@@ -89,6 +89,7 @@ fun MobileSettingsScreen(
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val vodLocalCache by viewModel.vodLocalCache.collectAsStateWithLifecycle()
     val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
+    val appFullScreen by viewModel.appFullScreen.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
@@ -296,6 +297,12 @@ fun MobileSettingsScreen(
                                     summary = stringResource(R.string.settings_under_cutout_summary),
                                     checked = drawUnderCutout,
                                     onChange = viewModel::setDrawUnderCutout,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_full_screen),
+                                    summary = stringResource(R.string.settings_full_screen_summary),
+                                    checked = appFullScreen,
+                                    onChange = viewModel::setAppFullScreen,
                                 )
                             }
 

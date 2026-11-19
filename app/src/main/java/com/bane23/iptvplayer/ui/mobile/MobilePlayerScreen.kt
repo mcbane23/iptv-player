@@ -519,12 +519,14 @@ internal fun TrackDialog(
 internal fun ImmersiveMode() {
     val activity = LocalActivity.current
     val view = LocalView.current
-    DisposableEffect(activity, view) {
+    // Kad je cela aplikacija preko celog ekrana, trake ostaju sakrivene i posle plejera.
+    val appFullScreen = LocalAppFullScreen.current
+    DisposableEffect(activity, view, appFullScreen) {
         val window = activity?.window
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller?.hide(WindowInsetsCompat.Type.systemBars())
-        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+        onDispose { if (!appFullScreen) controller?.show(WindowInsetsCompat.Type.systemBars()) }
     }
 }
 
