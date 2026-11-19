@@ -641,7 +641,7 @@
     <string name="favorite_list_create">Napravi listu</string>
     <string name="favorite_list_rename">Preimenuj</string>
     <string name="favorite_list_delete">Obriši listu</string>
-    <string name="favorite_list_delete_confirm">Obrisati listu „%1$s”? Kanali ostaju u Omiljenima.</string>
+    <string name="favorite_list_delete_confirm">Obrisati listu „%1$s”? Kanali ostaju u ostalim listama u kojima su.</string>
     <string name="favorite_list_name_taken">Upiši ime koje još ne postoji.</string>
     <string name="favorite_list_empty">U ovoj listi još nema kanala.</string>
     <string name="pause_paused">Pauzirano</string>

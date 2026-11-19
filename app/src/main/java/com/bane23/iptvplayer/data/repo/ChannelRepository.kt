@@ -185,13 +185,14 @@ class ChannelRepository @Inject constructor(
     }
 
     fun observeFavorite(channel: Channel): Flow<Boolean> = flowOfKey(channel.id) { key ->
-        favoriteDao.observeExists(channel.playlistId, key)
+        favoriteDao.observeInAnyList(channel.playlistId, key)
     }
 
     /** Imenovane liste omiljenih, sa brojem kanala vidljivih iz liste [playlistId]. */
     fun observeFavoriteLists(playlistId: Long): Flow<List<FavoriteList>> =
         favoriteListDao.observe(playlistId).map { rows -> rows.map { FavoriteList(it.id, it.name, it.channelCount) } }
 
+    /** Kanal je u samim „Omiljenima”; imenovane liste se ne računaju. */
     suspend fun isFavorite(channelId: Long): Boolean {
         val channel = channelDao.getById(channelId) ?: return false
         return favoriteDao.exists(channel.playlistId, channel.stableKey)
@@ -223,30 +224,28 @@ class ChannelRepository @Inject constructor(
         true
     }
 
-    /** Briše listu. Kanali iz nje ostaju u „Omiljenima”. */
+    /** Briše listu. Njeni kanali ostaju u ostalim listama u kojima su bili. */
     suspend fun deleteFavoriteList(listId: Long) = favoriteListDao.delete(listId)
 
     /**
-     * Stavlja kanal u imenovanu listu ili ga vadi iz nje. Kanal u bilo kojoj listi je uvek i u
-     * „Omiljenima”; vađenje iz liste ga tamo ostavlja.
+     * Stavlja kanal u imenovanu listu ili ga vadi iz nje. Liste su nezavisne: „Omiljeni” se pri tome
+     * ne menjaju, pa kanal može da bude samo u imenovanoj listi.
      */
     suspend fun setInFavoriteList(channelId: Long, listId: Long, member: Boolean) = db.withTransaction {
         val channel = channelDao.getById(channelId) ?: return@withTransaction
         val now = System.currentTimeMillis()
         if (member) {
-            favoriteDao.insert(FavoriteEntity(channel.playlistId, channel.stableKey, now))
             favoriteListDao.insertItem(FavoriteListItemEntity(listId, channel.playlistId, channel.stableKey, now))
         } else {
             favoriteListDao.deleteItem(listId, channel.playlistId, channel.stableKey)
         }
     }
 
-    /** Dodaje kanal u favorite ili ga uklanja iz njih (tada i iz svih imenovanih lista). */
+    /** Dodaje kanal u „Omiljene” ili ga uklanja iz njih; imenovane liste ostaju kakve jesu. */
     suspend fun toggleFavorite(channelId: Long) = db.withTransaction {
         val channel = channelDao.getById(channelId) ?: return@withTransaction
         if (favoriteDao.exists(channel.playlistId, channel.stableKey)) {
             favoriteDao.delete(channel.playlistId, channel.stableKey)
-            favoriteListDao.deleteItems(channel.playlistId, channel.stableKey)
         } else {
             favoriteDao.insert(FavoriteEntity(channel.playlistId, channel.stableKey, System.currentTimeMillis()))
         }

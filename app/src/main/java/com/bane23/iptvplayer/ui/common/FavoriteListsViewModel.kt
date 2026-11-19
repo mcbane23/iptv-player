@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 data class FavoritePick(
     val channelId: Long,
     val channelName: String,
-    /** Kanal je u „Omiljenima”. */
+    /** Kanal je u samim „Omiljenima” (nezavisno od imenovanih lista). */
     val favorite: Boolean,
     /** Imenovane liste u kojima je kanal. */
     val listIds: Set<Long>,
@@ -70,7 +70,7 @@ class FavoriteListsViewModel @Inject constructor(
         _pick.value = null
     }
 
-    /** Dodaje kanal iz izbora u „Omiljene” ili ga uklanja iz njih i iz svih imenovanih lista. */
+    /** Dodaje kanal iz izbora u „Omiljene” ili ga uklanja iz njih; imenovane liste se ne menjaju. */
     fun toggleFavorite() = change { pick ->
         repository.toggleFavorite(pick.channelId)
     }
@@ -102,7 +102,7 @@ class FavoriteListsViewModel @Inject constructor(
         }
     }
 
-    /** Briše listu; kanali iz nje ostaju u „Omiljenima”. */
+    /** Briše listu; kanali ostaju u ostalim listama u kojima su bili. */
     fun delete(listId: Long) {
         viewModelScope.launch { repository.deleteFavoriteList(listId) }
     }

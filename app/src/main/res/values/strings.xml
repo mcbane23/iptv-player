@@ -640,7 +640,7 @@
     <string name="favorite_list_create">Create list</string>
     <string name="favorite_list_rename">Rename</string>
     <string name="favorite_list_delete">Delete list</string>
-    <string name="favorite_list_delete_confirm">Delete the list “%1$s”? Its channels stay in Favorites.</string>
+    <string name="favorite_list_delete_confirm">Delete the list “%1$s”? Its channels stay in any other lists they are in.</string>
     <string name="favorite_list_name_taken">Enter a name that is not used yet.</string>
     <string name="favorite_list_empty">This list has no channels yet.</string>
     <string name="pause_paused">Paused</string>

@@ -624,6 +624,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       a istim potezom na listi se ona preimenuje ili briše. „Omiljeni” ostaju spisak svih omiljenih: kanal
       u nekoj listi je uvek i tamo, brisanje liste ga ne uklanja. Baza v16: `favorite_lists` i
       `favorite_list_items`. Liste se još ne šalju u prenosu sa telefona na TV
+- [x] Liste omiljenih pod jednim dugmetom (Bane, 19. 11. 2026): svaka lista je pravila svoje dugme, pa je
+      red čipova bio pretrpan. Po Banetovom izboru (predlog A) ostaje jedno dugme „Omiljeni”, a liste su
+      red kartica iznad kanala („Omiljeni”, imenovane liste, „+” za novu) na telefonu uspravno i položeno
+      i na TV-u (Gore iz kanala, Levo/Desno, OK otvara listu, dugi OK je meni liste). Red postoji tek kad
+      postoji bar jedna lista; dugme „Omiljeni” otvara karticu koja je bila otvorena poslednji put. Liste
+      su sada nezavisne (Banetov izbor): kanal može da bude samo u „Sport”, uklanjanje iz „Omiljenih” ga ne
+      vadi iz lista, a zvezdica svetli ako je u bar jednoj listi. Bez promene šeme baze
 - [x] Preuzimanje filmova i epizoda na telefon (Bane, 19. 11. 2026, četvrti krug predloga; samo telefon).
       Dugme „Preuzmi” u detaljima filma i strelica pored svake epizode; spisak je u Podešavanja → „Preuzeto”
       (napredak, veličina, pauza, nastavak, brisanje, zauzeće). Preuzima se jedno po jedno, u folder aplikacije
