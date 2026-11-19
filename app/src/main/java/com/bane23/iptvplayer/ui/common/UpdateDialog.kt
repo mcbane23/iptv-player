@@ -5,6 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,8 +15,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,13 +29,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -45,17 +63,24 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.AppUpdater
 import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.data.update.UpdateError
+import com.bane23.iptvplayer.data.update.UpdateManifest
+import com.bane23.iptvplayer.data.update.UpdateNotes
 import com.bane23.iptvplayer.data.update.UpdateState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : ViewModel() {
     val state: StateFlow<UpdateState> = updater.state
     val installedVersion: String = updater.installedVersionName
+
+    /** Stavke za „Šta je novo”: ono što ponuđena verzija donosi u odnosu na instaliranu. */
+    fun whatsNew(manifest: UpdateManifest, language: String): List<String> =
+        UpdateNotes.lines(manifest, updater.installedVersionCode, language)
     val channel: StateFlow<UpdateChannel> =
         updater.channel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UpdateChannel.DEFAULT)
 
@@ -95,6 +120,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
 
     // Jedan dijalog za sva stanja: menja se samo sadržaj, pa prozor ne nestaje i ne treperi
     // (npr. „Proveravam…” odmah prelazi u „Imate najnoviju verziju”).
+    val language = LocalLocale.current.platformLocale.language
     val content: AlertContent? = when (val s = state) {
         UpdateState.Idle -> null
         UpdateState.Checking -> AlertContent(
@@ -118,6 +144,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
                 viewModel.installedVersion,
                 afterUpdate,
             ),
+            notes = remember(s.manifest, language) { viewModel.whatsNew(s.manifest, language) },
             confirm = stringResource(R.string.update_install) to viewModel::update,
             dismiss = stringResource(R.string.update_later) to viewModel::dismiss,
             onDismiss = viewModel::dismiss,
@@ -170,6 +197,8 @@ private data class AlertContent(
     val dismiss: Pair<String, () -> Unit>? = null,
     /** Napredak od 0 do 1, negativno za neodređen, null bez trake. */
     val progress: Float? = null,
+    /** Šta je novo, jedna stavka po redu. Prikazuje se samo dok se čeka potvrda ažuriranja. */
+    val notes: List<String> = emptyList(),
 )
 
 /**
@@ -178,7 +207,7 @@ private data class AlertContent(
  */
 @Composable
 private fun UpdateAlert(content: AlertContent) {
-    val (title, text, confirm, onDismiss, dismiss, progress) = content
+    val (title, text, confirm, onDismiss, dismiss, progress, notes) = content
     val confirmFocus = remember { FocusRequester() }
     Dialog(
         onDismissRequest = onDismiss,
@@ -210,6 +239,7 @@ private fun UpdateAlert(content: AlertContent) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 16.dp),
                     )
+                    if (notes.isNotEmpty()) WhatsNew(notes, Modifier.weight(1f, fill = false))
                     if (progress != null) {
                         val modifier = Modifier
                             .fillMaxWidth()
@@ -239,6 +269,61 @@ private fun UpdateAlert(content: AlertContent) {
     }
     // Na TV-u fokus mora odmah biti na dugmetu, inače daljinski nema šta da pritisne.
     LaunchedEffect(title, confirm.first) { runCatching { confirmFocus.requestFocus() } }
+}
+
+/**
+ * Spisak novosti iznad dugmadi. Kad ne stane, lista se prstom, a na TV-u daljinskim: sa dugmeta
+ * „gore” prelazi na spisak (okvir pokazuje fokus), pa gore i dole pomeraju tekst. Sa kraja
+ * spiska „dole” vraća na dugmad.
+ */
+@Composable
+private fun WhatsNew(notes: List<String>, modifier: Modifier = Modifier) {
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val step = with(LocalDensity.current) { 72.dp.toPx() }
+    var focused by remember { mutableStateOf(false) }
+    Text(
+        text = stringResource(R.string.update_whats_new),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier
+            .padding(top = 8.dp)
+            .fillMaxWidth()
+            .heightIn(max = 240.dp)
+            .border(
+                width = 2.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = MaterialTheme.shapes.small,
+            )
+            .onFocusChanged { focused = it.isFocused }
+            .onKeyEvent { event ->
+                val delta = when (event.key) {
+                    Key.DirectionDown -> if (scroll.canScrollForward) step else 0f
+                    Key.DirectionUp -> if (scroll.canScrollBackward) -step else 0f
+                    else -> 0f
+                }
+                if (delta == 0f) {
+                    false
+                } else {
+                    if (event.type == KeyEventType.KeyDown) scope.launch { scroll.animateScrollBy(delta) }
+                    true
+                }
+            }
+            // Fokus prima samo kad ima šta da se lista; kratak spisak daljinski preskače.
+            .focusable(enabled = scroll.maxValue > 0)
+            .verticalScroll(scroll)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        notes.forEach { line ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("•", style = MaterialTheme.typography.bodyMedium)
+                Text(line, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
 }
 
 /** Otvara sistemsko podešavanje „Instaliranje nepoznatih aplikacija” za ovu aplikaciju. */
