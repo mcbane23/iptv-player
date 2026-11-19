@@ -17,8 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -62,8 +61,8 @@ import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 
 /**
- * Filmovi ili serije na telefonu: red „Nastavi gledanje”, kategorije kao čipovi i mreža postera
- * izabrane kategorije. Lupa u zaglavlju traži kroz sve kategorije.
+ * Filmovi ili serije na telefonu: čipovi (Favoriti, „Nastavi gledanje”, kategorija) kao u Uživo,
+ * naslov izabrane grupe i mreža postera. Lupa u zaglavlju traži kroz sve kategorije.
  */
 @Composable
 fun MobileVodScreen(
@@ -81,6 +80,8 @@ fun MobileVodScreen(
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     val watched by viewModel.watched.collectAsStateWithLifecycle()
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    // Uspravno: „Nastavi gledanje” je čip, kao zakačen red na TV-u; dok je izabran, mreža prikazuje te naslove.
+    var showingContinue by rememberSaveable { mutableStateOf(false) }
     // Kategorija koja je bila izabrana pre favorita, da drugi dodir na zvezdicu vrati na nju.
     var beforeFavorites by rememberSaveable { mutableStateOf<String?>(null) }
     val favoritesLabel = stringResource(R.string.category_favorites)
@@ -132,106 +133,141 @@ fun MobileVodScreen(
                 state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
                 state.categories.isEmpty() -> EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
-                else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 104.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (continueItems.isNotEmpty()) {
-                        item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.vod_continue_watching),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                )
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    items(continueItems, key = { it.id }) { item ->
-                                        ContinueTile(
-                                            item = item,
-                                            onOpen = onOpen,
-                                            onRemove = viewModel::dismissContinue,
-                                            modifier = Modifier.width(104.dp),
-                                        )
-                                    }
+                else -> Column(modifier = Modifier.weight(1f)) {
+                    // Prečice kao u Uživo, odmah ispod naslova i uvek na mestu: Favoriti (zvezdica),
+                    // „Nastavi gledanje” i čip kategorije, koji nosi naziv izabrane i otvara spisak svih.
+                    val inContinue = showingContinue && continueItems.isNotEmpty()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        GroupChip(
+                            label = favoritesLabel,
+                            selected = showingFavorites && !inContinue,
+                            onClick = {
+                                showingContinue = false
+                                // Zvezdica je prekidač: prvi dodir prikazuje favorite, drugi vraća prethodnu kategoriju.
+                                if (!showingFavorites) {
+                                    beforeFavorites = state.selected?.id
+                                    viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                                } else {
+                                    val back = state.categories.firstOrNull { it.id == beforeFavorites }
+                                        ?: state.categories.firstOrNull()
+                                    back?.let(viewModel::selectCategory)
                                 }
+                            },
+                            iconOnly = AppIcons.Star,
+                        )
+                        if (continueItems.isNotEmpty()) {
+                            GroupChip(
+                                label = stringResource(R.string.vod_continue_watching),
+                                selected = inContinue,
+                                onClick = { showingContinue = !showingContinue },
+                            )
+                        }
+                        GroupChip(
+                            label = state.selected?.takeIf { !showingFavorites }?.name
+                                ?: stringResource(R.string.category_chip_more),
+                            selected = !inContinue && !showingFavorites && state.selected != null,
+                            onClick = { pickerOpen = true },
+                            trailing = AppIcons.ArrowDown,
+                        )
+                    }
+                    // Naslov nad posterima: izabrana grupa i koliko ima stavki, kao naslov nad kanalima.
+                    val headingTitle = when {
+                        inContinue -> stringResource(R.string.vod_continue_watching)
+                        showingFavorites -> favoritesLabel
+                        else -> state.selected?.name
+                    }
+                    val headingCount = when {
+                        inContinue -> continueItems.size
+                        showingFavorites -> favorites.size
+                        state.loadingItems || state.itemsFailed -> null
+                        else -> state.items.size
+                    }
+                    if (headingTitle != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = headingTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (headingCount != null) {
+                                Text(
+                                    text = stringResource(R.string.vod_total, headingCount),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    modifier = Modifier
+                                        .padding(start = 10.dp)
+                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+                                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                                )
                             }
                         }
                     }
-                    item(key = "categories", span = { GridItemSpan(maxLineSpan) }) {
-                        // Prečice kao u Uživo: Favoriti jednim dodirom, a čip kategorije nosi naziv
-                        // izabrane kategorije i otvara spisak svih.
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            GroupChip(
-                                label = favoritesLabel,
-                                selected = showingFavorites,
-                                onClick = {
-                                    // Zvezdica je prekidač: prvi dodir prikazuje favorite, drugi vraća prethodnu kategoriju.
-                                    if (!showingFavorites) {
-                                        beforeFavorites = state.selected?.id
-                                        viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
-                                    } else {
-                                        val back = state.categories.firstOrNull { it.id == beforeFavorites }
-                                            ?: state.categories.firstOrNull()
-                                        back?.let(viewModel::selectCategory)
-                                    }
-                                },
-                                iconOnly = AppIcons.Star,
-                            )
-                            GroupChip(
-                                label = state.selected?.takeIf { !showingFavorites }?.name
-                                    ?: stringResource(R.string.category_chip_more),
-                                selected = !showingFavorites && state.selected != null,
-                                onClick = { pickerOpen = true },
-                                trailing = AppIcons.ArrowDown,
-                            )
-                        }
-                    }
-                    when {
-                        showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            EmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
-                        }
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 104.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        when {
+                            inContinue -> items(continueItems, key = { "c" + it.id }) { item ->
+                                ContinueTile(item = item, onOpen = onOpen, onRemove = viewModel::dismissContinue)
+                            }
 
-                        showingFavorites -> items(favorites, key = { it.id }) { item ->
-                            PosterTile(
-                                name = item.name,
-                                poster = item.poster,
-                                onClick = { onOpen(item) },
-                                favorite = true,
-                                watched = watched.of(item),
-                                onToggleFavorite = { viewModel.toggleFavorite(item) },
-                            )
-                        }
+                            showingFavorites && favorites.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
+                                EmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
+                            }
 
-                        state.loadingItems -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            VodLoading(
-                                series = series,
-                                accent = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.fillMaxWidth().padding(top = 96.dp),
-                            )
-                        }
+                            showingFavorites -> items(favorites, key = { it.id }) { item ->
+                                PosterTile(
+                                    name = item.name,
+                                    poster = item.poster,
+                                    onClick = { onOpen(item) },
+                                    favorite = true,
+                                    watched = watched.of(item),
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                )
+                            }
 
-                        state.itemsFailed -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            Failure(onRetry = viewModel::retryItems)
-                        }
+                            state.loadingItems -> item(span = { GridItemSpan(maxLineSpan) }) {
+                                VodLoading(
+                                    series = series,
+                                    accent = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.fillMaxWidth().padding(top = 96.dp),
+                                )
+                            }
 
-                        state.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                            EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
-                        }
+                            state.itemsFailed -> item(span = { GridItemSpan(maxLineSpan) }) {
+                                Failure(onRetry = viewModel::retryItems)
+                            }
 
-                        else -> items(state.items, key = { it.id }) { item ->
-                            PosterTile(
-                                name = item.name,
-                                poster = item.poster,
-                                onClick = { onOpen(item) },
-                                favorite = item.id in favoriteIds,
-                                watched = watched.of(item),
-                                onToggleFavorite = { viewModel.toggleFavorite(item) },
-                            )
+                            state.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
+                                EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
+                            }
+
+                            else -> items(state.items, key = { it.id }) { item ->
+                                PosterTile(
+                                    name = item.name,
+                                    poster = item.poster,
+                                    onClick = { onOpen(item) },
+                                    favorite = item.id in favoriteIds,
+                                    watched = watched.of(item),
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                )
+                            }
                         }
                     }
                 }
@@ -247,6 +283,7 @@ fun MobileVodScreen(
             selectedKey = state.selected?.id,
             onPick = { key ->
                 pickerOpen = false
+                showingContinue = false
                 val category = state.categories.firstOrNull { it.id == key } ?: VodCategory(FAVORITES_ID, favoritesLabel)
                 viewModel.selectCategory(category)
             },
