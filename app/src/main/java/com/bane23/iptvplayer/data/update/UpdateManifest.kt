@@ -28,7 +28,21 @@ data class UpdateManifest(
 )
 
 @Serializable
-data class UpdateChange(val code: Long, val title: String)
+data class UpdateChange(
+    val code: Long,
+    /** Naslov izmene na srpskom. */
+    val title: String,
+    /** Isti naslov na drugim jezicima, po oznaci jezika (`en`). Može da nedostaje. */
+    val titles: Map<String, String> = emptyMap(),
+) {
+    /** Srpski čita srpski naslov, ostali jezici svoj prevod, pa engleski, pa srpski kad prevoda nema. */
+    fun titleFor(language: String): String {
+        if (language == "sr") return title
+        return titles[language]?.takeIf { it.isNotBlank() }
+            ?: titles["en"]?.takeIf { it.isNotBlank() }
+            ?: title
+    }
+}
 
 /** Šta je novo u ponuđenoj verziji, kao spisak kratkih stavki za prozor ažuriranja. */
 object UpdateNotes {
@@ -38,18 +52,18 @@ object UpdateNotes {
 
     /**
      * Ručno pisan opis ima prednost (zvanična izdanja); bez njega se nabrajaju izmene novije od
-     * instaliranog builda. [language] je jezik aplikacije: srpski čita `sr`, svi ostali `en`,
-     * a ako tog jezika nema, uzima se onaj koji postoji.
+     * instaliranog builda. [language] je jezik aplikacije: opis izdanja se čita na njemu, pa na
+     * engleskom, pa na onom koji postoji; za naslove izmena vidi [UpdateChange.titleFor].
      */
     fun lines(manifest: UpdateManifest, installedVersionCode: Long, language: String): List<String> {
-        val preferred = if (language == "sr") "sr" else "en"
-        val text = manifest.notes[preferred]?.takeIf { it.isNotBlank() }
+        val text = manifest.notes[language]?.takeIf { it.isNotBlank() }
+            ?: manifest.notes["en"]?.takeIf { it.isNotBlank() }
             ?: manifest.notes.values.firstOrNull { it.isNotBlank() }
         val raw = text?.lines()
             ?: manifest.changes
                 .filter { it.code > installedVersionCode }
                 .sortedByDescending { it.code }
-                .map { it.title }
+                .map { it.titleFor(language) }
         return raw.asSequence()
             .map { it.trim().replace(bullet, "").take(MAX_LINE_LENGTH) }
             .filter { it.isNotEmpty() }

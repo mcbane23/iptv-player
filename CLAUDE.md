@@ -43,6 +43,10 @@ Faza ili izmena nije gotova dok CI nije zelen. Zbog toga: male izmene, čest pus
 - Jedna faza = jedna grana (`faza-N-kratak-opis`) + pull request. Ne pushovati
   direktno na `main` posle početnog commita.
 - Kad se stavka završi, označiti je u PLAN.md u istom pull request-u.
+- Naslov pull request-a (i squash commita) korisnik vidi u aplikaciji, u „Šta je novo” pri ažuriranju
+  test verzije: kratak, jasan, na srpskom. Opis squash commita mora da ima i red `EN: <isti naslov na
+  engleskom>`, da spisak prati jezik aplikacije. Zvanično izdanje traži `novosti/<verzija>.sr.txt` i
+  `.en.txt` (vidi README).
 - Svi tekstovi u interfejsu idu u `strings.xml` (srpski i engleski), ne u kod.
 - Svaki ekran mora da radi i na dodir i samo sa daljinskim upravljačem (D-pad).
 - Parseri (M3U, XMLTV) moraju imati unit testove sa izmišljenim podacima.

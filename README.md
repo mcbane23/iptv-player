@@ -99,7 +99,8 @@ Prozor za ažuriranje u aplikaciji pre potvrde prikazuje „Šta je novo”. Za 
 se piše ručno, u istom pull requestu koji menja `version.txt`: fajlovi `novosti/<verzija>.sr.txt` i
 `novosti/<verzija>.en.txt` (npr. `novosti/1.0.9.sr.txt`), jedna kratka stavka po redu, pisana za
 korisnika. Bez ta dva fajla build na grani pada i izdanje se ne pravi. Test buildovi umesto toga sami
-nabrajaju naslove izmena spojenih u `main` posle instaliranog builda.
+nabrajaju naslove izmena spojenih u `main` posle instaliranog builda. Naslov je na srpskom, a engleski
+prevod je red `EN: ...` u opisu squash commita; izmena bez tog reda prikazuje se na srpskom.
 
 ## Build
 

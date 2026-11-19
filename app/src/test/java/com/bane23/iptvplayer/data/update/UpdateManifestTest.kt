@@ -87,6 +87,19 @@ class UpdateManifestTest {
     }
 
     @Test
+    fun devBuildChangesFollowAppLanguageWhenTranslated() {
+        val m = UpdateManifestParser.parse(
+            """{"versionCode":1000012,"versionName":"1.0.0-dev.12","apk":"a.apk","changes":[
+               {"code":1000012,"title":"Druga izmena","titles":{"en":"Second change"}},
+               {"code":1000011,"title":"Prva izmena","titles":{}}]}""",
+        )!!
+        assertEquals(listOf("Druga izmena", "Prva izmena"), UpdateNotes.lines(m, 1000010, "sr"))
+        // Izmena bez prevoda ostaje na srpskom; jezik bez svog prevoda čita engleski.
+        assertEquals(listOf("Second change", "Prva izmena"), UpdateNotes.lines(m, 1000010, "en"))
+        assertEquals(listOf("Second change", "Prva izmena"), UpdateNotes.lines(m, 1000010, "de"))
+    }
+
+    @Test
     fun releaseNotesFollowAppLanguageAndWinOverChanges() {
         val m = UpdateManifestParser.parse(
             """{"versionCode":9,"versionName":"1.2.3","apk":"a.apk",
