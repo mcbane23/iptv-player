@@ -119,8 +119,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     liveTvViewModel = liveTvViewModel,
                     onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
                     onSearch = { backStack.add(Search) },
-                    onSearchAll = { backStack.add(SearchAll) },
-                    onGuide = { playlistId -> backStack.add(Guide(playlistId, null)) },
+                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
                     onOpenVod = { item, series ->
                         if (series) {
                             backStack.add(SeriesDetails(item.id, item.name, item.poster))

@@ -705,6 +705,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       udesno (bez preslaganja) umesto da ga pokrije. Izbor se pamti, prvi put je meni pun (Bane)
 - [x] Vodič na TV-u: desno na poslednjoj emisiji pomera vreme, a fokus ostaje desno na istoj emisiji
       (ranije je skakao na naziv kanala levo)
+- [x] Pretraga i Vodič na TV-u su kartice sa bočnim menijem kao ostale (Bane); levo sa naziva kanala u
+      Vodiču vraća vreme do sadašnjeg, pa ide u meni (ranije emisije dugmetom „Ranije”)
 
 ## 7. Testiranje
 
