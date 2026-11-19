@@ -622,8 +622,15 @@
     <string name="settings_language_summary">Language of menus and messages. Available: %1$s.</string>
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_summary">Background colors and the look of the selected item. Neon themes give the selected item a glow and icy blue progress bars. The change shows right away.</string>
+    <string name="settings_theme_tv_summary">Background colors and the look of the focused item. Neon themes give the focused item a glow and icy blue progress bars. Each press of OK switches to the next theme.</string>
+    <string name="theme_gray">Gray</string>
+    <string name="theme_navy">Navy</string>
+    <string name="theme_navy_neon">Navy with neon</string>
+    <string name="theme_gray_neon">Gray with neon</string>
     <string name="settings_black_theme">Black theme</string>
-    <string name="settings_black_theme_summary">The background is pure black instead of dark gray, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
+    <string name="settings_black_theme_summary">The background is pure black instead of the chosen theme color, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
     <string name="epg_link_action">Link guide</string>
     <string name="epg_link_title">Guide for \"%1$s\"</string>
     <string name="epg_link_subtitle">Pick the guide channel whose schedule matches</string>

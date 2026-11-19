@@ -610,6 +610,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       sledeća ne kreće sama
 - [x] Crna tema (Bane, 18. 11. 2026, treći krug predloga): prekidač u Podešavanjima (telefon i TV),
       podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
+- [x] Nova ikonica i izbor teme (Bane, 19. 11. 2026): ikonica i TV baner su neonska narandžasta kutija sa
+      ledeno plavim znakom za puštanje na teget pozadini (predlog 7B). Podešavanja → Izgled → „Tema” (telefon
+      i TV): Siva (dosadašnja, podrazumevana), Teget, Teget sa neonom, Siva sa neonom. Neonske teme daju
+      stavci u fokusu (TV) i izabranom čipu (telefon) sjaj u akcentnoj boji, a trake napretka su ledeno
+      plave. Crna tema ostaje poseban prekidač i radi uz svaku temu
 - [x] Ručno povezivanje kanala sa programom (Bane, 19. 11. 2026, četvrti krug predloga): za kanale kojima
       se oznaka u listi i u vodiču ne poklapaju. U Vodiču dugi OK na nazivu kanala (TV), odnosno „Poveži
       program” u detaljima kanala bez programa (telefon), nudi kanale vodiča sa najsličnijim nazivom i šta

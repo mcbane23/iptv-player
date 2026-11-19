@@ -51,6 +51,8 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonGlow
 
 /**
  * „Početna” na TV-u: redovi „Nastavi gledanje”, omiljeni kanali sa emisijom koja je sada na
@@ -202,11 +204,13 @@ private fun ChannelTile(channel: Channel, nowMs: Long, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(10.dp)
     val content = if (focused) colors.onPrimary else colors.onSurface
+    val neon = LocalNeon.current
     Box(
         modifier = Modifier
             .padding(horizontal = 5.dp)
             .width(CHANNEL_WIDTH)
             .height(CHANNEL_HEIGHT)
+            .neonGlow(neon, focused, shape)
             .clip(shape)
             .background(if (focused) colors.primary else colors.surface)
             .border(3.dp, if (focused) colors.primary else androidx.compose.ui.graphics.Color.Transparent, shape)
@@ -243,7 +247,12 @@ private fun ChannelTile(channel: Channel, nowMs: Long, onClick: () -> Unit) {
                     .align(Alignment.BottomStart)
                     .fillMaxWidth(progress)
                     .height(3.dp)
-                    .background(if (focused) colors.onPrimary.copy(alpha = 0.6f) else colors.primary.copy(alpha = 0.8f)),
+                    .background(
+                        when {
+                            focused -> colors.onPrimary.copy(alpha = 0.6f)
+                            else -> neon?.progress ?: colors.primary.copy(alpha = 0.8f)
+                        },
+                    ),
             )
         }
     }

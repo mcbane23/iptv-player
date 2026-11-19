@@ -46,6 +46,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.OutlinedButtonDefaults
 import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonGlow
 
 /**
  * Red u listi na TV-u: dobija fokus D-padom, OK ga bira. Fokusiran red je obojen akcentnom bojom,
@@ -71,6 +73,7 @@ fun TvListRow(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
+    val neon = LocalNeon.current
     val background = when {
         focused -> colors.primary
         selected && card -> colors.primary.copy(alpha = 0.16f)
@@ -87,6 +90,7 @@ fun TvListRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .neonGlow(neon, focused, shape)
             .clip(shape)
             .background(background)
             .then(if (card && selected && !focused) Modifier.border(1.5.dp, colors.primary, shape) else Modifier)

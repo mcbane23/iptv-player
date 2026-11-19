@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.common
 
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.AppTheme
 import com.bane23.iptvplayer.ui.common.theme.UiScale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -303,6 +304,15 @@ class SettingsViewModel @Inject constructor(
 
     fun setAccentColor(color: AccentColor) {
         viewModelScope.launch { settings.setAccentColor(color.name) }
+    }
+
+    /** Tema aplikacije (boje pozadine, neon); null dok se ne pročita, da se u podešavanjima ne trepne pogrešna. */
+    val appTheme: StateFlow<AppTheme?> = settings.appTheme
+        .map<String?, AppTheme?> { AppTheme.fromName(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setAppTheme(theme: AppTheme) {
+        viewModelScope.launch { settings.setAppTheme(theme.name) }
     }
 
     /** Sačuvano ime veličine prikaza (vidi `UiScale`); null dok korisnik ništa nije izabrao. */

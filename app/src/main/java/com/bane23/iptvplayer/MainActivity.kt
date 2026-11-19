@@ -16,6 +16,7 @@ import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.watchnext.WatchNextLink
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.AppTheme
 import com.bane23.iptvplayer.ui.common.theme.IptvTheme
 import com.bane23.iptvplayer.ui.common.theme.ScaledUi
 import com.bane23.iptvplayer.ui.common.theme.UiScale
@@ -64,13 +65,15 @@ class MainActivity : ComponentActivity() {
         // Boja se čita pre prvog crtanja, da se pri pokretanju ne vidi podrazumevana pa tek onda izabrana.
         val savedAccent = runBlocking { settingsStore.accentColor.first() }
         val savedBlack = runBlocking { settingsStore.blackTheme.first() }
+        val savedTheme = runBlocking { settingsStore.appTheme.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
         val savedScale = runBlocking { settingsStore.uiScale.first() }
         setContent {
             val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
             val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
             val black by settingsStore.blackTheme.collectAsStateWithLifecycle(initialValue = savedBlack)
-            IptvTheme(accent = AccentColor.fromName(accent), black = black) {
+            val theme by settingsStore.appTheme.collectAsStateWithLifecycle(initialValue = savedTheme)
+            IptvTheme(accent = AccentColor.fromName(accent), theme = AppTheme.fromName(theme), black = black) {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
                     if (isTv) {
                         // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
