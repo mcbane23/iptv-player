@@ -19,8 +19,10 @@ import androidx.room.RoomDatabase
         RecordingEntity::class,
         EpgChannelEntity::class,
         EpgLinkEntity::class,
+        FavoriteListEntity::class,
+        FavoriteListItemEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun channelDao(): ChannelDao
     abstract fun favoriteDao(): FavoriteDao
+    abstract fun favoriteListDao(): FavoriteListDao
     abstract fun historyDao(): HistoryDao
     abstract fun epgDao(): EpgDao
     abstract fun watchProgressDao(): WatchProgressDao

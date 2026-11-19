@@ -49,6 +49,12 @@ private const val FAVORITE_CHANNELS =
     "FROM channels ch JOIN favorites fav ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey " +
         "WHERE $IN_SCOPE GROUP BY ch.playlistId, ch.stableKey ORDER BY fav.addedAt, ch.playlistId, ch.sortOrder"
 
+/** Kanali jedne imenovane liste omiljenih (`:listId`), redom kojim su dodati. */
+private const val LISTED_CHANNELS =
+    "FROM channels ch JOIN favorite_list_items li ON li.playlistId = ch.playlistId AND li.channelKey = ch.stableKey " +
+        "WHERE li.listId = :listId AND $IN_SCOPE GROUP BY ch.playlistId, ch.stableKey " +
+        "ORDER BY li.addedAt, ch.playlistId, ch.sortOrder"
+
 /** Nedavno gledani kanali, najskoriji prvi. */
 private const val RECENT_CHANNELS =
     "FROM channels ch JOIN history h ON h.playlistId = ch.playlistId AND h.channelKey = ch.stableKey " +
@@ -221,6 +227,13 @@ interface ChannelDao {
 
     @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $FAVORITE_CHANNELS")
     fun favoritesPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
+
+    /** Kanali imenovane liste omiljenih [listId]. */
+    @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $LISTED_CHANNELS")
+    fun favoriteListPagingSource(playlistId: Long, listId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
+
+    @Query("SELECT ch.id $LISTED_CHANNELS")
+    suspend fun favoriteListIds(playlistId: Long, listId: Long): List<Long>
 
     @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS")
     fun recentPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
@@ -441,6 +454,57 @@ interface FavoriteDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey)")
     fun observeExists(playlistId: Long, channelKey: String): Flow<Boolean>
+}
+
+/** Liste omiljenih kanala kojima je korisnik dao ime. */
+@Dao
+interface FavoriteListDao {
+    @Insert
+    suspend fun insert(list: FavoriteListEntity): Long
+
+    @Query("UPDATE favorite_lists SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String)
+
+    @Query("DELETE FROM favorite_lists WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM favorite_lists")
+    suspend fun nextPosition(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_lists WHERE name = :name COLLATE NOCASE AND id != :exceptId)")
+    suspend fun nameTaken(name: String, exceptId: Long): Boolean
+
+    @Query("SELECT COUNT(*) FROM favorite_lists")
+    suspend fun count(): Int
+
+    @Query("SELECT * FROM favorite_lists ORDER BY position, id")
+    suspend fun all(): List<FavoriteListEntity>
+
+    /** Sve liste, sa brojem kanala koji se iz svake vide u listi kanala [playlistId] i spojenima sa njom. */
+    @Query(
+        "SELECT fl.id, fl.name, (SELECT COUNT(DISTINCT ch.playlistId || '|' || ch.stableKey) FROM channels ch " +
+            "JOIN favorite_list_items li ON li.playlistId = ch.playlistId AND li.channelKey = ch.stableKey " +
+            "WHERE li.listId = fl.id AND $IN_SCOPE) AS channelCount FROM favorite_lists fl ORDER BY fl.position, fl.id",
+    )
+    fun observe(playlistId: Long): Flow<List<FavoriteListRow>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertItem(item: FavoriteListItemEntity)
+
+    @Query("DELETE FROM favorite_list_items WHERE listId = :listId AND playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun deleteItem(listId: Long, playlistId: Long, channelKey: String)
+
+    /** Uklanja kanal iz svih imenovanih lista (kad prestane da bude omiljen). */
+    @Query("DELETE FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun deleteItems(playlistId: Long, channelKey: String)
+
+    /** Liste u kojima je kanal. */
+    @Query("SELECT listId FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun listsOf(playlistId: Long, channelKey: String): List<Long>
+
+    /** Ključevi kanala liste [playlistId] u imenovanoj listi [listId], redom kojim su dodati (za prenos na TV). */
+    @Query("SELECT channelKey FROM favorite_list_items WHERE listId = :listId AND playlistId = :playlistId ORDER BY addedAt")
+    suspend fun keys(listId: Long, playlistId: Long): List<String>
 }
 
 @Dao

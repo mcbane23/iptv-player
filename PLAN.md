@@ -604,6 +604,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       plejer sam pređe na isti kanal iz sledeće liste i to kratko javi; dugme „Izvori” u plejeru (samo kad
       izvora ima više) bira ručno. Posle dva bežanja zaredom sa iste liste, kanali kreću odmah sa sledećeg
       izvora dok je plejer otvoren. Unutar kategorija se ništa ne menja
+- [x] Više lista omiljenih kanala (Bane, 19. 11. 2026, četvrti krug predloga): liste sa imenom („Sport”,
+      „Deca”) samo za kanale uživo (Banetov izbor), među kategorijama odmah ispod „Omiljeni”. Dok nijedne
+      nema, dodavanje u omiljene radi kao do sada; kad postoji bar jedna, isti potez otvara izbor liste sa
+      kvačicama i poljem „Nova lista”. Prva lista se pravi dugim pritiskom (dugo OK na TV-u) na „Omiljeni”,
+      a istim potezom na listi se ona preimenuje ili briše. „Omiljeni” ostaju spisak svih omiljenih: kanal
+      u nekoj listi je uvek i tamo, brisanje liste ga ne uklanja. Baza v16: `favorite_lists` i
+      `favorite_list_items`. Liste se još ne šalju u prenosu sa telefona na TV
 
 ## 7. Testiranje
 

@@ -20,7 +20,22 @@ object ChannelGroups {
     /** „Svi kanali”: u upitima je to kategorija null, a u izboru na ekranu ova vrednost. */
     const val ALL = 0L
 
+    /** Imenovane liste omiljenih zauzimaju vrednosti ispod ove: lista sa ID-jem 1 je grupa -101. */
+    private const val LIST_BASE = -100L
+
     fun isVirtual(categoryId: Long?): Boolean = categoryId != null && categoryId < 0
+
+    /** Grupa koja stoji za imenovanu listu omiljenih [listId]. */
+    fun favoriteList(listId: Long): Long = LIST_BASE - listId
+
+    /** ID imenovane liste omiljenih koju grupa [groupId] predstavlja, ili null ako nije takva grupa. */
+    fun favoriteListId(groupId: Long?): Long? = groupId?.takeIf { it < LIST_BASE }?.let { LIST_BASE - it }
+}
+
+/** Lista omiljenih kanala kojoj je korisnik dao ime. */
+data class FavoriteList(val id: Long, val name: String, val channelCount: Int) {
+    /** Vrednost kojom se lista bira na mestu kategorije. */
+    val groupId: Long get() = ChannelGroups.favoriteList(id)
 }
 
 data class Channel(

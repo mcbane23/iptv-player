@@ -456,9 +456,17 @@ internal fun PinnedRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onFocused: () -> Unit = {},
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    TvListRow(onClick = onClick, selected = selected, onFocused = onFocused, modifier = modifier, card = true) { color ->
+    TvListRow(
+        onClick = onClick,
+        selected = selected,
+        onFocused = onFocused,
+        onLongClick = onLongClick,
+        modifier = modifier,
+        card = true,
+    ) { color ->
         // Ikonica je u akcentnoj boji, kao na telefonu; na fokusiranom redu prati boju teksta.
         Icon(icon, contentDescription = null, tint = if (color == colors.onPrimary) color else colors.primary, modifier = Modifier.size(22.dp))
         Column(modifier = Modifier.padding(start = 12.dp)) {

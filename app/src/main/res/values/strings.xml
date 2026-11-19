@@ -630,4 +630,15 @@
     <string name="player_source_current">%1$s · playing now</string>
     <string name="player_source_failed">%1$s · not responding</string>
     <string name="player_source_switched">The channel did not respond. Switched to playlist %1$s.</string>
+    <string name="favorite_pick_title">Favorites: %1$s</string>
+    <string name="favorite_pick_subtitle">Choose the lists this channel is in.</string>
+    <string name="favorite_list_new">New list</string>
+    <string name="favorite_list_add">Add</string>
+    <string name="favorite_list_name">List name</string>
+    <string name="favorite_list_create">Create list</string>
+    <string name="favorite_list_rename">Rename</string>
+    <string name="favorite_list_delete">Delete list</string>
+    <string name="favorite_list_delete_confirm">Delete the list “%1$s”? Its channels stay in Favorites.</string>
+    <string name="favorite_list_name_taken">Enter a name that is not used yet.</string>
+    <string name="favorite_list_empty">This list has no channels yet.</string>
 </resources>

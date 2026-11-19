@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import android.app.PendingIntent
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.BroadcastReceiver
@@ -107,6 +108,8 @@ fun MobilePlayerScreen(
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
     SourceNotices(viewModel.sourceNotice)
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    MobileFavoritePickDialog(favoriteLists)
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
@@ -241,7 +244,7 @@ fun MobilePlayerScreen(
                         onInfo = { infoVisible = !infoVisible },
                         isFavorite = isFavorite,
                         nowNext = nowNext,
-                        onFavorite = viewModel::toggleFavorite,
+                        onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
                         isRecording = isRecording,
                         onRecord = record,
                         onPip = rememberEnterPictureInPicture(),

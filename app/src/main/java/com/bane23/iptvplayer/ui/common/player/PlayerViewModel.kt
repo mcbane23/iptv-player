@@ -341,11 +341,6 @@ class PlayerViewModel @Inject constructor(
         repository.activePlaylistId.first()?.let { playlists.maxConnections(it) } == 1
     } ?: false
 
-    fun toggleFavorite() {
-        val channel = _ui.value.channel ?: return
-        viewModelScope.launch { repository.toggleFavorite(channel.id) }
-    }
-
     fun togglePlayPause() = engine.togglePlayPause()
 
     /** Kanal koji se gleda, u obliku za slanje na TV (cast). Null ako strim ne može da se sastavi. */

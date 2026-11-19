@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import android.view.KeyEvent as AndroidKeyEvent
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -100,6 +101,8 @@ fun TvPlayerScreen(
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
     SourceNotices(viewModel.sourceNotice)
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    TvFavoritePickDialog(favoriteLists)
     var overlay by remember { mutableStateOf(Overlay.INFO) }
     var channelList by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
@@ -301,7 +304,7 @@ fun TvPlayerScreen(
                     onSettings = { settingsOpen = true },
                     infoVisible = infoVisible,
                     onInfo = { infoVisible = !infoVisible },
-                    onFavorite = viewModel::toggleFavorite,
+                    onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
                     isRecording = isRecording,
                     onRecord = record,
                 )

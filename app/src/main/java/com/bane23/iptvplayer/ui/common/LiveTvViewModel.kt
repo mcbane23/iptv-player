@@ -11,6 +11,7 @@ import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
@@ -43,6 +44,8 @@ data class LiveTvUiState(
     val totalChannels: Int = 0,
     val favoriteCount: Int = 0,
     val recentCount: Int = 0,
+    /** Liste omiljenih kojima je korisnik dao ime. */
+    val favoriteLists: List<FavoriteList> = emptyList(),
     /** Lista je Xtream nalog, pa ima i filmove i serije. */
     val hasVod: Boolean = false,
     /**
@@ -55,8 +58,12 @@ data class LiveTvUiState(
     fun hasGroup(groupId: Long): Boolean = when (groupId) {
         ChannelGroups.FAVORITES, ChannelGroups.ALL -> true
         ChannelGroups.RECENT -> recentCount > 0
-        else -> categories.any { it.id == groupId }
+        else -> categories.any { it.id == groupId } || favoriteList(groupId) != null
     }
+
+    /** Imenovana lista omiljenih koju grupa [groupId] predstavlja, ili null. */
+    fun favoriteList(groupId: Long?): FavoriteList? =
+        ChannelGroups.favoriteListId(groupId)?.let { id -> favoriteLists.firstOrNull { it.id == id } }
 }
 
 /** Kategorije aktivne liste. */
@@ -92,7 +99,11 @@ class LiveTvViewModel @Inject constructor(
                             favoriteCount = favorites,
                             recentCount = recent,
                             hasVod = xtream,
-                            lastCategoryId = LastLiveCategory.resolve(last, categories, recent > 0),
+                        )
+                    }.combine(repository.observeFavoriteLists(playlistId)) { ui, lists ->
+                        ui.copy(
+                            favoriteLists = lists,
+                            lastCategoryId = LastLiveCategory.resolve(last, ui.categories, ui.recentCount > 0, lists),
                         )
                     }
                     // Izbor napravljen dok je aplikacija otvorena ima prednost nad sačuvanim, da grupa
@@ -140,20 +151,31 @@ object LastLiveCategory {
     private const val RECENT = "recent"
     private const val ALL = "all"
     private const val CATEGORY = "c:"
+    private const val LIST = "l:"
 
     fun token(groupId: Long, categories: List<Category>): String? = when (groupId) {
         ChannelGroups.FAVORITES -> FAVORITES
         ChannelGroups.RECENT -> RECENT
         ChannelGroups.ALL -> ALL
-        else -> categories.firstOrNull { it.id == groupId }?.let { CATEGORY + plainName(it.name) }
+        else -> ChannelGroups.favoriteListId(groupId)?.let { LIST + it }
+            ?: categories.firstOrNull { it.id == groupId }?.let { CATEGORY + plainName(it.name) }
     }
 
-    fun resolve(token: String?, categories: List<Category>, hasRecent: Boolean): Long? {
+    fun resolve(
+        token: String?,
+        categories: List<Category>,
+        hasRecent: Boolean,
+        lists: List<FavoriteList> = emptyList(),
+    ): Long? {
         if (token == null) return null
         return when {
             token == FAVORITES -> ChannelGroups.FAVORITES
             token == RECENT -> ChannelGroups.RECENT.takeIf { hasRecent }
             token == ALL -> ChannelGroups.ALL
+            token.startsWith(LIST) -> {
+                val id = token.removePrefix(LIST).toLongOrNull()
+                lists.firstOrNull { it.id == id }?.groupId
+            }
             token.startsWith(CATEGORY) -> {
                 val name = token.removePrefix(CATEGORY)
                 categories.firstOrNull { plainName(it.name) == name }?.id
@@ -184,10 +206,6 @@ class ChannelListViewModel @Inject constructor(
     fun select(playlistId: Long, categoryId: Long?) {
         selection.value = Selection(playlistId, categoryId)
     }
-
-    fun toggleFavorite(channelId: Long) {
-        viewModelScope.launch { repository.toggleFavorite(channelId) }
-    }
 }
 
 data class SearchUiState(val playlistId: Long? = null, val query: String = "")
@@ -217,10 +235,6 @@ class SearchViewModel @Inject constructor(
 
     fun setQuery(text: String) {
         query.value = text
-    }
-
-    fun toggleFavorite(channelId: Long) {
-        viewModelScope.launch { repository.toggleFavorite(channelId) }
     }
 
     private companion object {

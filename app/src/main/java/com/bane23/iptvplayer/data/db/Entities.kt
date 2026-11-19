@@ -245,6 +245,44 @@ data class FavoriteEntity(
     val addedAt: Long,
 )
 
+/** Lista omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala. */
+@Entity(tableName = "favorite_lists")
+data class FavoriteListEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val position: Int,
+)
+
+/** Omiljeni kanal svrstan u jednu imenovanu listu. Isti kanal može biti u više lista. */
+@Entity(
+    tableName = "favorite_list_items",
+    primaryKeys = ["listId", "playlistId", "channelKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = FavoriteListEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["listId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "channelKey")],
+)
+data class FavoriteListItemEntity(
+    val listId: Long,
+    val playlistId: Long,
+    val channelKey: String,
+    val addedAt: Long,
+)
+
+/** Imenovana lista omiljenih sa brojem kanala koji se iz nje vide u izabranoj listi kanala. */
+data class FavoriteListRow(val id: Long, val name: String, val channelCount: Int)
+
 /** Kanal koji je gledan; čuva se samo vreme poslednjeg gledanja. */
 @Entity(
     tableName = "history",

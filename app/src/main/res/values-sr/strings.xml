@@ -631,4 +631,15 @@
     <string name="player_source_current">%1$s · gleda se sada</string>
     <string name="player_source_failed">%1$s · ne javlja se</string>
     <string name="player_source_switched">Kanal se nije javio. Prebačeno na listu %1$s.</string>
+    <string name="favorite_pick_title">Omiljeni: %1$s</string>
+    <string name="favorite_pick_subtitle">Izaberi liste u kojima je kanal.</string>
+    <string name="favorite_list_new">Nova lista</string>
+    <string name="favorite_list_add">Dodaj</string>
+    <string name="favorite_list_name">Ime liste</string>
+    <string name="favorite_list_create">Napravi listu</string>
+    <string name="favorite_list_rename">Preimenuj</string>
+    <string name="favorite_list_delete">Obriši listu</string>
+    <string name="favorite_list_delete_confirm">Obrisati listu „%1$s”? Kanali ostaju u Omiljenima.</string>
+    <string name="favorite_list_name_taken">Upiši ime koje još ne postoji.</string>
+    <string name="favorite_list_empty">U ovoj listi još nema kanala.</string>
 </resources>
