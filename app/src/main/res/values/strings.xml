@@ -271,7 +271,7 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">General</string>
-    <string name="settings_language">Language (Jezik)</string>
+    <string name="settings_language">Language</string>
     <string name="settings_language_system">Same as device</string>
     <string name="settings_language_serbian" translatable="false">Srpski</string>
     <string name="settings_language_english" translatable="false">English</string>
@@ -615,7 +615,7 @@
     <string name="settings_recordings_summary">Recorded channels and scheduled recordings</string>
     <string name="settings_tv_preview_summary">In the channel list, the focused channel plays muted on the right, with what is on now and next.</string>
     <string name="settings_tv_vod_preview_summary">The title, details and description of the focused movie or series show above the posters.</string>
-    <string name="settings_language_summary">Language of menus and messages in the app</string>
+    <string name="settings_language_summary">Language of menus and messages. Available: %1$s.</string>
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
     <string name="settings_black_theme">Black theme</string>

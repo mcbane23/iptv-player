@@ -37,6 +37,7 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.ui.common.AppLanguage
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.label
+import com.bane23.iptvplayer.ui.common.languageSummary
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
 import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
@@ -119,6 +120,20 @@ fun TvSettingsScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
+                    // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
+                    TvTextRow(
+                        text = stringResource(R.string.settings_language),
+                        trailing = AppLocale.get(context).label(),
+                        onClick = {
+                            // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
+                            val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
+                            AppLocale.change(context, AppLanguage.entries[next])
+                        },
+                        onFocused = {
+                            focusedChoice = LANGUAGE_ROW
+                            openChoice = null
+                        },
+                    )
                     if (onCategories != null) {
                         TvTextRow(
                             text = stringResource(R.string.categories_manage_title),
@@ -267,19 +282,6 @@ fun TvSettingsScreen(
                         },
                         onFocused = {
                             focusedChoice = AUTOSTART_ROW
-                            openChoice = null
-                        },
-                    )
-                    TvTextRow(
-                        text = stringResource(R.string.settings_language),
-                        trailing = AppLocale.get(context).label(),
-                        onClick = {
-                            // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
-                            val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
-                            AppLocale.change(context, AppLanguage.entries[next])
-                        },
-                        onFocused = {
-                            focusedChoice = LANGUAGE_ROW
                             openChoice = null
                         },
                     )
@@ -466,7 +468,7 @@ private fun FocusedSummary(
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
-        LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
+        LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
         WATCH_NEXT_ROW -> stringResource(R.string.settings_watch_next_summary)

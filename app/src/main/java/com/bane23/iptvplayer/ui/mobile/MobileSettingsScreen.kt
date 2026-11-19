@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.ui.common.label
+import com.bane23.iptvplayer.ui.common.languageSummary
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -106,6 +107,34 @@ fun MobileSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
+            // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
+            SettingsGroup(title = null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { languageOpen = true }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_language),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = languageSummary(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = language.label(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
+            }
             if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onOpenSubtitles != null ||
                 onRecordings != null || onDownloads != null || onTransfer != null
             ) {
@@ -195,31 +224,6 @@ fun MobileSettingsScreen(
                     checked = drawUnderCutout,
                     onChange = viewModel::setDrawUnderCutout,
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { languageOpen = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_language),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_language_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = language.label(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 12.dp),
-                    )
-                }
                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
                 SettingsSwitchRow(
                     title = stringResource(R.string.settings_black_theme),
@@ -484,13 +488,15 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
 
 /** Grupa podešavanja: naslov iznad i zaobljena kartica sa redovima. */
 @Composable
-private fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
-    )
+private fun SettingsGroup(title: String?, content: @Composable ColumnScope.() -> Unit) {
+    if (title != null) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
+        )
+    }
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
