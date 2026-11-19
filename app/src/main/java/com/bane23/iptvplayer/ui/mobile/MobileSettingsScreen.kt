@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,8 +39,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -56,6 +59,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.languageSummary
+import com.bane23.iptvplayer.ui.common.SettingsGroup
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -98,294 +102,244 @@ fun MobileSettingsScreen(
     var channelOpen by remember { mutableStateOf(false) }
     val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
 
+    // Otvorena grupa; null je glavni ekran sa spiskom grupa.
+    var group by rememberSaveable { mutableStateOf<SettingsGroup?>(null) }
+    val current = group
+    BackHandler(enabled = current != null) { group = null }
+    val groups = SettingsGroup.entries.filter { it != SettingsGroup.ACCOUNTS || onTrakt != null || onTransfer != null }
+    // Podešavanja plejera koja pripadaju otvorenoj grupi.
+    val choiceRows: @Composable () -> Unit = {
+        choices.forEachIndexed { index, choice ->
+            if (choice.group != current) return@forEachIndexed
+            if (choice.toggle) {
+                SettingsSwitchRow(choice.title, choice.summary, choice.checked) { choice.flip() }
+            } else {
+                SettingsValueRow(choice.title, choice.summary, choice.value) { openChoice = index }
+            }
+        }
+    }
+
     // Providno: pozadinu sa sjajem crta početni ekran.
     Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
-            // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
-            SettingsGroup(title = null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { languageOpen = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_language),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = languageSummary(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = language.label(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 12.dp),
-                    )
-                }
-            }
-            if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onOpenSubtitles != null ||
-                onRecordings != null || onDownloads != null || onTransfer != null
+        // Svaki ekran (glavni i svaka grupa) ima svoj položaj pomeranja.
+        key(current) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                SettingsGroup(stringResource(R.string.settings_content_header)) {
-                    if (onPlaylists != null) {
-                        SettingsLinkRow(
-                            AppIcons.Playlists,
-                            stringResource(R.string.playlists_title),
-                            stringResource(R.string.settings_playlists_summary),
-                            onPlaylists,
+                if (current == null) {
+                    SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
+                    // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
+                    SettingsCard {
+                        SettingsValueRow(
+                            title = stringResource(R.string.settings_language),
+                            summary = languageSummary(),
+                            value = language.label(),
+                            onClick = { languageOpen = true },
                         )
                     }
-                    if (onCategories != null) {
-                        SettingsLinkRow(
-                            AppIcons.Categories,
-                            stringResource(R.string.categories_manage_title),
-                            stringResource(R.string.settings_categories_summary),
-                            onCategories,
-                        )
-                    }
-                    if (onParental != null) {
-                        SettingsLinkRow(
-                            AppIcons.Lock,
-                            stringResource(R.string.parental_title),
-                            stringResource(R.string.settings_parental_summary),
-                            onParental,
-                        )
-                    }
-                    if (onTrakt != null) {
-                        SettingsLinkRow(
-                            AppIcons.Check,
-                            stringResource(R.string.trakt_title),
-                            stringResource(R.string.settings_trakt_summary),
-                            onTrakt,
-                        )
-                    }
-                    if (onOpenSubtitles != null) {
-                        SettingsLinkRow(
-                            AppIcons.Subtitles,
-                            stringResource(R.string.opensubtitles_title),
-                            stringResource(R.string.settings_opensubtitles_summary),
-                            onOpenSubtitles,
-                        )
-                    }
-                    if (onRecordings != null) {
-                        SettingsLinkRow(
-                            AppIcons.Record,
-                            stringResource(R.string.recordings_title),
-                            stringResource(R.string.settings_recordings_summary),
-                            onRecordings,
-                        )
-                    }
-                    if (onDownloads != null) {
-                        SettingsLinkRow(
-                            AppIcons.Download,
-                            stringResource(R.string.downloads_title),
-                            stringResource(R.string.settings_downloads_summary),
-                            onDownloads,
-                        )
-                    }
-                    if (onTransfer != null) {
-                        SettingsLinkRow(
-                            AppIcons.Cast,
-                            stringResource(R.string.transfer_all_title),
-                            stringResource(R.string.settings_transfer_summary),
-                            onTransfer,
-                        )
-                    }
-                }
-            }
-            SettingsGroup(stringResource(R.string.settings_general_header)) {
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_resume_last),
-                    summary = stringResource(R.string.settings_resume_last_summary),
-                    checked = resumeLastChannel,
-                    onChange = viewModel::setResumeLastChannel,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_auto_refresh),
-                    summary = stringResource(R.string.settings_auto_refresh_summary),
-                    checked = autoRefreshPlaylists,
-                    onChange = viewModel::setAutoRefreshPlaylists,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_under_cutout),
-                    summary = stringResource(R.string.settings_under_cutout_summary),
-                    checked = drawUnderCutout,
-                    onChange = viewModel::setDrawUnderCutout,
-                )
-                AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_black_theme),
-                    summary = stringResource(R.string.settings_black_theme_summary),
-                    checked = blackTheme,
-                    onChange = viewModel::setBlackTheme,
-                )
-                // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.setUiScale(UiScale.next(uiScale, isTv = false)) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.settings_ui_scale),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = stringResource(R.string.settings_ui_scale_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = uiScale.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 12.dp),
-                    )
-                }
-            }
-            SettingsGroup(stringResource(R.string.settings_player_header)) {
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_brightness_slider),
-                    summary = stringResource(R.string.settings_brightness_slider_summary),
-                    checked = brightnessSlider,
-                    onChange = viewModel::setPlayerBrightnessSlider,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_volume_slider),
-                    summary = stringResource(R.string.settings_volume_slider_summary),
-                    checked = volumeSlider,
-                    onChange = viewModel::setPlayerVolumeSlider,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_background_play),
-                    summary = stringResource(R.string.settings_background_play_summary),
-                    checked = backgroundPlay,
-                    onChange = viewModel::setBackgroundPlay,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_download_mobile),
-                    summary = stringResource(R.string.settings_download_mobile_summary),
-                    checked = downloadOnMobile,
-                    onChange = viewModel::setDownloadOnMobile,
-                )
-                SettingsSwitchRow(
-                    title = stringResource(R.string.settings_pause_info),
-                    summary = stringResource(R.string.settings_pause_info_summary),
-                    checked = pauseInfo,
-                    onChange = viewModel::setPauseInfo,
-                )
-                choices.forEachIndexed { index, choice ->
-                    if (choice.toggle) {
-                        SettingsSwitchRow(choice.title, choice.summary, choice.checked) { choice.flip() }
-                        return@forEachIndexed
-                    }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { openChoice = index }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = choice.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = choice.value,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .padding(start = 12.dp)
-                                    .widthIn(max = 160.dp),
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SettingsCard {
+                        groups.forEach {
+                            SettingsLinkRow(
+                                icon = it.icon,
+                                title = stringResource(it.title),
+                                summary = stringResource(it.summary),
+                                onClick = { group = it },
+                                accent = true,
                             )
                         }
+                    }
+                } else {
+                    SectionTopBar(title = stringResource(current.title), onBack = { group = null })
+                    SettingsCard {
+                        when (current) {
+                            SettingsGroup.CONTENT -> {
+                                if (onPlaylists != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Playlists,
+                                        stringResource(R.string.playlists_title),
+                                        stringResource(R.string.settings_playlists_summary),
+                                        onPlaylists,
+                                    )
+                                }
+                                if (onCategories != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Categories,
+                                        stringResource(R.string.categories_manage_title),
+                                        stringResource(R.string.settings_categories_summary),
+                                        onCategories,
+                                    )
+                                }
+                                if (onParental != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Lock,
+                                        stringResource(R.string.parental_title),
+                                        stringResource(R.string.settings_parental_summary),
+                                        onParental,
+                                    )
+                                }
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_auto_refresh),
+                                    summary = stringResource(R.string.settings_auto_refresh_summary),
+                                    checked = autoRefreshPlaylists,
+                                    onChange = viewModel::setAutoRefreshPlaylists,
+                                )
+                            }
+
+                            SettingsGroup.WATCHING -> {
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_resume_last),
+                                    summary = stringResource(R.string.settings_resume_last_summary),
+                                    checked = resumeLastChannel,
+                                    onChange = viewModel::setResumeLastChannel,
+                                )
+                                choiceRows()
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_pause_info),
+                                    summary = stringResource(R.string.settings_pause_info_summary),
+                                    checked = pauseInfo,
+                                    onChange = viewModel::setPauseInfo,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_background_play),
+                                    summary = stringResource(R.string.settings_background_play_summary),
+                                    checked = backgroundPlay,
+                                    onChange = viewModel::setBackgroundPlay,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_brightness_slider),
+                                    summary = stringResource(R.string.settings_brightness_slider_summary),
+                                    checked = brightnessSlider,
+                                    onChange = viewModel::setPlayerBrightnessSlider,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_volume_slider),
+                                    summary = stringResource(R.string.settings_volume_slider_summary),
+                                    checked = volumeSlider,
+                                    onChange = viewModel::setPlayerVolumeSlider,
+                                )
+                            }
+
+                            SettingsGroup.SUBTITLES -> {
+                                choiceRows()
+                                if (onOpenSubtitles != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Subtitles,
+                                        stringResource(R.string.opensubtitles_title),
+                                        stringResource(R.string.settings_opensubtitles_summary),
+                                        onOpenSubtitles,
+                                    )
+                                }
+                            }
+
+                            SettingsGroup.LOOK -> {
+                                AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_black_theme),
+                                    summary = stringResource(R.string.settings_black_theme_summary),
+                                    checked = blackTheme,
+                                    onChange = viewModel::setBlackTheme,
+                                )
+                                // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
+                                SettingsValueRow(
+                                    title = stringResource(R.string.settings_ui_scale),
+                                    summary = stringResource(R.string.settings_ui_scale_summary),
+                                    value = uiScale.label,
+                                    onClick = { viewModel.setUiScale(UiScale.next(uiScale, isTv = false)) },
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_under_cutout),
+                                    summary = stringResource(R.string.settings_under_cutout_summary),
+                                    checked = drawUnderCutout,
+                                    onChange = viewModel::setDrawUnderCutout,
+                                )
+                            }
+
+                            SettingsGroup.RECORDINGS -> {
+                                if (onRecordings != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Record,
+                                        stringResource(R.string.recordings_title),
+                                        stringResource(R.string.settings_recordings_summary),
+                                        onRecordings,
+                                    )
+                                }
+                                if (onDownloads != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Download,
+                                        stringResource(R.string.downloads_title),
+                                        stringResource(R.string.settings_downloads_summary),
+                                        onDownloads,
+                                    )
+                                }
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_download_mobile),
+                                    summary = stringResource(R.string.settings_download_mobile_summary),
+                                    checked = downloadOnMobile,
+                                    onChange = viewModel::setDownloadOnMobile,
+                                )
+                            }
+
+                            SettingsGroup.ACCOUNTS -> {
+                                if (onTrakt != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Check,
+                                        stringResource(R.string.trakt_title),
+                                        stringResource(R.string.settings_trakt_summary),
+                                        onTrakt,
+                                    )
+                                }
+                                if (onTransfer != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Cast,
+                                        stringResource(R.string.transfer_all_title),
+                                        stringResource(R.string.settings_transfer_summary),
+                                        onTransfer,
+                                    )
+                                }
+                            }
+
+                            SettingsGroup.PICTURE -> choiceRows()
+
+                            SettingsGroup.ABOUT -> {
+                                SettingsValueRow(
+                                    title = stringResource(R.string.update_check),
+                                    summary = stringResource(R.string.update_check_summary),
+                                    value = updateViewModel.installedVersion,
+                                    onClick = updateViewModel::check,
+                                )
+                                SettingsValueRow(
+                                    title = stringResource(R.string.update_channel),
+                                    summary = stringResource(R.string.update_channel_summary),
+                                    value = updateChannel.label(),
+                                    onClick = { channelOpen = true },
+                                )
+                            }
+                        }
+                    }
+                    if (current == SettingsGroup.SUBTITLES) {
+                        // Probni titl: odmah pokazuje izabranu veličinu, položaj i pozadinu.
+                        SubtitlePreview(
+                            settings = playerSettings,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+                    }
+                    if (choices.any { it.group == current }) {
                         Text(
-                            text = choice.summary,
+                            text = stringResource(R.string.settings_player_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 2.dp),
+                            modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp),
                         )
                     }
                 }
-                // Probni titl: odmah pokazuje izabranu veličinu, položaj i pozadinu.
-                SubtitlePreview(
-                    settings = playerSettings,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                )
+                Spacer(modifier = Modifier.height(24.dp))
             }
-            Text(
-                text = stringResource(R.string.settings_player_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp),
-            )
-            SettingsGroup(stringResource(R.string.settings_about_header)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = updateViewModel::check)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.update_check),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Text(
-                        text = stringResource(R.string.update_current_version, updateViewModel.installedVersion),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.update_check_summary),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { channelOpen = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.update_channel),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-                    Text(
-                        text = updateChannel.label(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.update_channel_summary),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
@@ -486,17 +440,9 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
     }
 }
 
-/** Grupa podešavanja: naslov iznad i zaobljena kartica sa redovima. */
+/** Zaobljena kartica sa redovima podešavanja. */
 @Composable
-private fun SettingsGroup(title: String?, content: @Composable ColumnScope.() -> Unit) {
-    if (title != null) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
-        )
-    }
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
@@ -505,6 +451,37 @@ private fun SettingsGroup(title: String?, content: @Composable ColumnScope.() ->
             .padding(horizontal = 16.dp),
     ) {
         Column(content = content)
+    }
+}
+
+/** Podešavanje sa vrednošću: naziv i opis levo, trenutna vrednost desno. Dodir ga menja ili otvara izbor. */
+@Composable
+private fun SettingsValueRow(title: String, summary: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .widthIn(max = 160.dp),
+        )
     }
 }
 
@@ -532,7 +509,14 @@ private fun SettingsSwitchRow(title: String, summary: String, checked: Boolean, 
 
 /** Red koji vodi na drugi ekran (npr. Liste): ikonica, naziv sa opisom i strelica desno. */
 @Composable
-private fun SettingsLinkRow(icon: ImageVector, title: String, summary: String, onClick: () -> Unit) {
+private fun SettingsLinkRow(
+    icon: ImageVector,
+    title: String,
+    summary: String,
+    onClick: () -> Unit,
+    // Ikonica u boji aplikacije: za grupe na glavnom ekranu.
+    accent: Boolean = false,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -540,7 +524,11 @@ private fun SettingsLinkRow(icon: ImageVector, title: String, summary: String, o
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (accent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
