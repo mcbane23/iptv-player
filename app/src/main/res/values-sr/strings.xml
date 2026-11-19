@@ -624,11 +624,9 @@
     <string name="settings_accent_color_summary">Boja dugmadi, oznaka i sjaja u pozadini</string>
     <string name="update_check_summary">Traži noviju verziju i nudi da je instalira. Liste i podešavanja ostaju.</string>
     <string name="settings_theme">Tema</string>
-    <string name="settings_theme_summary">Boje pozadine. Neonske teme daju blago svetlo iza izabranog dugmeta u meniju i ledeno plave trake napretka.</string>
+    <string name="settings_theme_summary">Boja pozadine i površina: siva ili teget.</string>
     <string name="theme_gray">Siva</string>
     <string name="theme_navy">Teget</string>
-    <string name="theme_navy_neon">Teget sa neonom</string>
-    <string name="theme_gray_neon">Siva sa neonom</string>
     <string name="settings_black_theme">Crna tema</string>
     <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto boje izabrane teme, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
     <string name="epg_link_action">Poveži program</string>

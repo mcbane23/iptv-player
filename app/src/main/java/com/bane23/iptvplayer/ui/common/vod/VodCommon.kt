@@ -42,7 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.bane23.iptvplayer.ui.common.theme.OnSurfaceVariant
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
 import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
@@ -129,7 +128,7 @@ fun Poster(
                     modifier = Modifier
                         .fillMaxWidth(progress.coerceIn(0f, 1f))
                         .fillMaxHeight()
-                        .background(LocalNeon.current?.progress ?: Color.White.copy(alpha = 0.85f)),
+                        .background(Color.White.copy(alpha = 0.85f)),
                 )
             }
         }

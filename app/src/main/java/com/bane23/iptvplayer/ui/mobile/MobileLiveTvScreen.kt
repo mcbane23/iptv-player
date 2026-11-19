@@ -84,9 +84,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
-import androidx.compose.material3.FilterChipDefaults
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonHalo
 
 /** Oznaka za „Svi kanali” među čipovima (pravi ID-jevi kategorija su pozitivni, posebne grupe negativne). */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -570,25 +567,11 @@ internal fun GroupChip(
             }
         }
     }
-    val neon = LocalNeon.current
     FilterChip(
         selected = selected,
         // Otpuštanje prsta posle dugog pritiska ne sme da izabere čip.
         onClick = { if (longPressed) longPressed = false else onClick() },
         interactionSource = interactions,
-        // Neonska tema: blago svetlo oko izabranog čipa (vidljiv čip je visok 32 dp, zaobljen 8 dp).
-        modifier = Modifier.neonHalo(neon, selected, corner = 8.dp, height = FilterChipDefaults.Height),
-        // Neonska tema: izabrani čip dobija tanak neonski okvir u akcentnoj boji.
-        border = if (neon != null) {
-            FilterChipDefaults.filterChipBorder(
-                enabled = true,
-                selected = selected,
-                selectedBorderColor = MaterialTheme.colorScheme.primary,
-                selectedBorderWidth = 1.5.dp,
-            )
-        } else {
-            FilterChipDefaults.filterChipBorder(enabled = true, selected = selected)
-        },
         label = {
             if (iconOnly != null) {
                 Icon(iconOnly, contentDescription = label, modifier = Modifier.size(18.dp))

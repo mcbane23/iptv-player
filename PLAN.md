@@ -612,10 +612,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
 - [x] Nova ikonica i izbor teme (Bane, 19. 11. 2026): ikonica i TV baner su neonska narandžasta kutija sa
       ledeno plavim znakom za puštanje na teget pozadini (predlog 7B). Podešavanja → Izgled → „Tema” (telefon
-      i TV, bira se sa spiska): Siva, Teget, Teget sa neonom (podrazumevana, Banetov izbor), Siva sa neonom.
-      Neonske teme daju blago svetlo iza izabranog dugmeta u donjem meniju (telefon) i bočnom meniju (TV),
-      a trake napretka su ledeno plave; čipovi i kartice izgledaju kao u običnoj temi. Crna tema ostaje
-      poseban prekidač i radi uz svaku temu
+      i TV, bira se sa spiska): Siva (podrazumevana) i Teget. Neonske teme iz 1.0.11 su uklonjene (Bane);
+      ko ih je izabrao dobija istu boju bez neona. Donji meni na telefonu nema podlogu oko ikone izabrane
+      kartice. Crna tema ostaje poseban prekidač i radi uz svaku temu
+- [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i
       pri svakom ulasku sa druge kartice otvara na „Nedavno”; dok nedavno gledanih nema, na grupi od prošlog
