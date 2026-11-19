@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.displayCutout
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -327,8 +326,8 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
                             .size(width = 48.dp, height = 26.dp)
                             // Neonska tema: blago svetlo iza podloge izabrane ikonice.
                             .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
+                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuju boja i svetlo.
                             .clip(RoundedCornerShape(13.dp))
-                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent)
                             .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -387,8 +386,8 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
                             .size(width = 48.dp, height = 26.dp)
                             // Neonska tema: blago svetlo iza podloge izabrane ikonice.
                             .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
+                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuju boja i svetlo.
                             .clip(RoundedCornerShape(13.dp))
-                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent)
                             .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
                     ) {

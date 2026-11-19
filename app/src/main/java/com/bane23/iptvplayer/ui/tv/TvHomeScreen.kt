@@ -365,8 +365,10 @@ private fun RailItem(
             contentDescription = label,
             tint = content,
             modifier = Modifier
-                // Neonska tema: blago svetlo iza ikonice izabranog odeljka.
-                .neonBackdrop(LocalNeon.current, selected && !focused, width = 76.dp, height = 46.dp)
+                // Neonska tema: blago svetlo iza ikonice izabranog odeljka, samo dok je meni sklopljen
+                // (kao donja traka na telefonu). Dok se kroz meni kreće, izbor pokazuje samo fokus, da
+                // ne budu obeležene dve stavke.
+                .neonBackdrop(LocalNeon.current, selected && !expanded, width = 76.dp, height = 46.dp)
                 .size(24.dp),
         )
         if (expanded) {
