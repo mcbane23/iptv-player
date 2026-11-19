@@ -65,4 +65,43 @@ class UpdateManifestTest {
         assertNull(UpdateChannel.fromTag("nešto drugo"))
         assertNull(UpdateChannel.fromTag(null))
     }
+
+    @Test
+    fun oldManifestWithoutNotesHasNothingToShow() {
+        val m = UpdateManifestParser.parse("""{"versionCode":5,"versionName":"x","apk":"a.apk"}""")!!
+        assertTrue(UpdateNotes.lines(m, installedVersionCode = 1, language = "sr").isEmpty())
+    }
+
+    @Test
+    fun devBuildListsOnlyChangesNewerThanInstalled() {
+        val m = UpdateManifestParser.parse(
+            """{"versionCode":1000012,"versionName":"1.0.0-dev.12","apk":"a.apk","changes":[
+               {"code":1000012,"title":"Treća izmena"},
+               {"code":1000011,"title":" Druga izmena "},
+               {"code":1000010,"title":"Prva izmena"}]}""",
+        )!!
+        assertEquals(
+            listOf("Treća izmena", "Druga izmena"),
+            UpdateNotes.lines(m, installedVersionCode = 1000010, language = "en"),
+        )
+    }
+
+    @Test
+    fun releaseNotesFollowAppLanguageAndWinOverChanges() {
+        val m = UpdateManifestParser.parse(
+            """{"versionCode":9,"versionName":"1.2.3","apk":"a.apk",
+               "changes":[{"code":9,"title":"Naslov izmene"}],
+               "notes":{"sr":"- Prva novost\n\n• Druga novost\n","en":"First\nSecond"}}""",
+        )!!
+        assertEquals(listOf("Prva novost", "Druga novost"), UpdateNotes.lines(m, 1, "sr"))
+        assertEquals(listOf("First", "Second"), UpdateNotes.lines(m, 1, "de"))
+    }
+
+    @Test
+    fun missingLanguageFallsBackToTheOtherOne() {
+        val m = UpdateManifestParser.parse(
+            """{"versionCode":9,"versionName":"1.2.3","apk":"a.apk","notes":{"sr":"Samo srpski","en":" "}}""",
+        )!!
+        assertEquals(listOf("Samo srpski"), UpdateNotes.lines(m, 1, "en"))
+    }
 }

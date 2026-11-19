@@ -366,6 +366,7 @@
     <string name="update_up_to_date">Imate najnoviju verziju (%1$s).</string>
     <string name="update_available_title">Nova verzija</string>
     <string name="update_available_text">Dostupna je verzija %1$s (instalirana: %2$s). %3$s Liste i omiljeni ostaju.</string>
+    <string name="update_whats_new">Šta je novo</string>
     <string name="update_reopen_auto">Posle ažuriranja aplikacija se sama ponovo otvara.</string>
     <string name="update_reopen_manual">Posle ažuriranja aplikacija se zatvara. Ako se ne otvori sama, otvorite je ponovo.</string>
     <string name="settings_reopen_after_update">Otvori posle ažuriranja</string>

@@ -337,6 +337,9 @@ a uputstvo za gestove u plejeru se prikazuje samo pri prvom pokretanju.
       potpisana istim ključem i dele brojanje verzija, a kanal se bira u Podešavanjima („Verzija za
       ažuriranje”). Prelazi se samo na noviji build. Dev buildovi stariji od ove promene (debug
       ključ) traže jednokratno brisanje.
+- [x] „Šta je novo” u prozoru ažuriranja pre potvrde, na telefonu i TV-u (odluka vlasnika 2026-11-19):
+      test buildovi nabrajaju naslove izmena novijih od instaliranog builda, zvanična izdanja
+      prikazuju ručno pisane novosti iz `novosti/<verzija>.sr.txt` i `.en.txt`.
 
 ### Faza 9: Naknadne ideje
 

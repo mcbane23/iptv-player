@@ -95,6 +95,12 @@ aplikacija ažurira. Ako oznaka za tu verziju već postoji, ne radi ništa. Ime 
 `version.txt`, a broj verzije (`versionCode`) je 1 000 000 + broj commitova u `main`-u, isti račun kao
 za dev buildove.
 
+Prozor za ažuriranje u aplikaciji pre potvrde prikazuje „Šta je novo”. Za zvanično izdanje taj tekst
+se piše ručno, u istom pull requestu koji menja `version.txt`: fajlovi `novosti/<verzija>.sr.txt` i
+`novosti/<verzija>.en.txt` (npr. `novosti/1.0.9.sr.txt`), jedna kratka stavka po redu, pisana za
+korisnika. Bez ta dva fajla build na grani pada i izdanje se ne pravi. Test buildovi umesto toga sami
+nabrajaju naslove izmena spojenih u `main` posle instaliranog builda.
+
 ## Build
 
 Lokalni build: `./gradlew assembleDebug` (potreban JDK 17 ili noviji i Android SDK).
