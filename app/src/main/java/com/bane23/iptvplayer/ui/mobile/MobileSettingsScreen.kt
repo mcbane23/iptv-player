@@ -82,6 +82,7 @@ fun MobileSettingsScreen(
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
+    val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
@@ -261,6 +262,12 @@ fun MobileSettingsScreen(
                     summary = stringResource(R.string.settings_background_play_summary),
                     checked = backgroundPlay,
                     onChange = viewModel::setBackgroundPlay,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_pause_info),
+                    summary = stringResource(R.string.settings_pause_info_summary),
+                    checked = pauseInfo,
+                    onChange = viewModel::setPauseInfo,
                 )
                 choices.forEachIndexed { index, choice ->
                     if (choice.toggle) {

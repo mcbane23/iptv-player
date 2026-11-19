@@ -43,6 +43,9 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.NextEpisodeCard
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
+import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -108,7 +111,12 @@ fun TvVodPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
-    val pauseDim = rememberPauseDim(playback.status, onExit = onClose)
+    val pauseInfoOn = rememberPauseInfoEnabled()
+    val pauseDim = rememberPauseDim(
+        status = playback.status,
+        info = pauseInfoOn && tracks == null && !onlineOpen && !settingsOpen,
+        onExit = onClose,
+    )
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = tracks != null || onlineOpen || settingsOpen || controls
 
@@ -265,7 +273,15 @@ fun TvVodPlayerScreen(
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
-        PauseDimLayer(pauseDim) {
+        PauseDimLayer(
+            state = pauseDim,
+            info = {
+                PauseInfoScreen(
+                    vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                    compact = false,
+                )
+            },
+        ) {
             if (infoVisible) {
                 PlayerStreamInfo(
                     player = viewModel.player,

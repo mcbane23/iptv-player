@@ -621,6 +621,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       a istim potezom na listi se ona preimenuje ili briše. „Omiljeni” ostaju spisak svih omiljenih: kanal
       u nekoj listi je uvek i tamo, brisanje liste ga ne uklanja. Baza v16: `favorite_lists` i
       `favorite_list_items`. Liste se još ne šalju u prenosu sa telefona na TV
+- [x] Ekran pauze sa opisom (Bane, 19. 11. 2026, četvrti krug predloga; telefon i TV, filmovi, serije i
+      kanali uživo, Banetov izbor): posle 5 sekundi pauze kontrole ustupe mesto naslovu, oznakama (ocena,
+      godina, žanr), opisu, tome koliko je ostalo do kraja i satu; za kanal emisija iz vodiča sa opisom i
+      šta sledi. Prvi taster ili dodir samo vraća kontrole, dugme za puštanje nastavlja odmah. Posle
+      minut pauze i dalje sledi zatamnjenje, a posle 30 minuta izlaz. Gasi se u Podešavanjima („Ekran pauze”)
 
 ## 7. Testiranje
 

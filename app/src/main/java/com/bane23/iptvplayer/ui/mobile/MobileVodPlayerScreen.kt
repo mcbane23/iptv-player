@@ -31,6 +31,9 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.NextEpisodeCard
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
+import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -78,9 +81,11 @@ fun MobileVodPlayerScreen(
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
     // Izbor zvuka i titlova su zasebni prozori, pa se dodiri u njima ovde ne vide.
+    val pauseInfoOn = rememberPauseInfoEnabled()
     val pauseDim = rememberPauseDim(
         status = playback.status,
         enabled = panel == VodPanel.NONE || panel == VodPanel.SETTINGS,
+        info = pauseInfoOn && panel == VodPanel.NONE,
         onExit = onClose,
     )
     ImmersiveMode()
@@ -143,7 +148,17 @@ fun MobileVodPlayerScreen(
     ) {
         VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
 
-        PauseDimLayer(pauseDim) {
+        PauseDimLayer(
+            state = pauseDim,
+            info = {
+                if (!inPip) {
+                    PauseInfoScreen(
+                        vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                        compact = true,
+                    )
+                }
+            },
+        ) {
             // U slici u slici ostaje samo video, kao kod kanala.
             if (inPip) return@PauseDimLayer
 

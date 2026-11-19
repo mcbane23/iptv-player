@@ -644,4 +644,11 @@
     <string name="favorite_list_delete_confirm">Obrisati listu „%1$s”? Kanali ostaju u Omiljenima.</string>
     <string name="favorite_list_name_taken">Upiši ime koje još ne postoji.</string>
     <string name="favorite_list_empty">U ovoj listi još nema kanala.</string>
+    <string name="pause_paused">Pauzirano</string>
+    <string name="pause_left_minutes">Pauzirano · još %1$d min</string>
+    <string name="pause_left_hours">Pauzirano · još %1$d h %2$d min</string>
+    <string name="pause_on_channel">Pauzirano · %1$s</string>
+    <string name="pause_next">Sledi u %1$s: %2$s</string>
+    <string name="settings_pause_info">Ekran pauze</string>
+    <string name="settings_pause_info_summary">Posle nekoliko sekundi pauze umesto kontrola se vide naslov, opis, koliko je ostalo i sat. Prvi taster ili dodir vraća kontrole.</string>
 </resources>

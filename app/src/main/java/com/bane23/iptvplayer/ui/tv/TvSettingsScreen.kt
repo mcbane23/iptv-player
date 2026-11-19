@@ -68,6 +68,7 @@ fun TvSettingsScreen(
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
+    val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
@@ -203,6 +204,15 @@ fun TvSettingsScreen(
                         onClick = { viewModel.setMatchFrameRate(!matchFrameRate) },
                         onFocused = {
                             focusedChoice = MATCH_FRAME_RATE_ROW
+                            openChoice = null
+                        },
+                    )
+                    TvTextRow(
+                        text = stringResource(R.string.settings_pause_info),
+                        checked = pauseInfo,
+                        onClick = { viewModel.setPauseInfo(!pauseInfo) },
+                        onFocused = {
+                            focusedChoice = PAUSE_INFO_ROW
                             openChoice = null
                         },
                     )
@@ -441,6 +451,7 @@ private fun FocusedSummary(
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
+        PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
@@ -489,6 +500,7 @@ private const val VOD_PREVIEW_ROW = -16
 private const val UPDATE_CHECK_ROW = -17
 private const val WATCH_NEXT_ROW = -18
 private const val BLACK_THEME_ROW = -19
+private const val PAUSE_INFO_ROW = -20
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable
