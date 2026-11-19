@@ -685,7 +685,7 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   - [x] Novi izgled dok se učitava (Bane izabrao C, svuda; predlozi u `dizajn/ucitavanje/`): umesto sivih obrisa
         krug u akcentnoj boji i poruka „Učitavam filmove…”/„Učitavam serije…” u sredini, na telefonu (uspravno
         i položeno) i TV-u; pri prvom otvaranju sekcije i rečenica da prvo učitavanje može da potraje
-- [ ] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
+- [x] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
   - [x] V1 Jedan izgled redova na TV-u: svi spiskovi (Podešavanja, pretraga, snimci, arhiva, epizode,
         izbori u plejeru, dijalozi) su pločice kao kategorije, razmak 6 dp; bočni meni počinje u visini naslova
   - [x] V2 Teget tema do kraja: podloga postera i slika epizoda, prelaz iza naziva bez postera, obrisi pri
@@ -698,6 +698,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
         red postera, naslovi grupa sa brojem pogodaka (telefon i TV)
   - [x] V6 Sat na svim TV ekranima: pretraga, Više kanala, snimci i arhiva imaju isti naslov sa satom
         (ekrani sa formularima bez sata)
+  - [x] F4 Obrisi pri učitavanju kanala na telefonu imaju oblik pločice kanala
+  - F1 do F3 ostaju kako jesu (Bane): bez Početne na telefonu, isti redosled kartica, grupa
+    Podešavanja na TV-u prati fokus
 
 ## 7. Testiranje
 

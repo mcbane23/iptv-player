@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.ui.mobile
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -331,10 +332,16 @@ fun ProgramProgress(progress: Float, modifier: Modifier = Modifier) {
 /** Zlatna zvezdica, ista na svim mestima gde se prikazuju omiljeni. */
 private val FavoriteColor = androidx.compose.ui.graphics.Color(0xFFFFD166)
 
-/** Obrisi nekoliko redova kanala, dok se lista prvi put učitava. */
+/**
+ * Obrisi nekoliko redova kanala, dok se lista prvi put učitava. Istog su oblika i razmaka kao pločice
+ * u Uživo, da spisak ne skoči kad kanali stignu.
+ */
 @Composable
 fun MobileChannelSkeletonList(modifier: Modifier = Modifier, rows: Int = 10) {
-    Column(modifier = modifier.padding(top = 8.dp)) {
-        repeat(rows) { MobileChannelRow(channel = null, onClick = {}) }
+    Column(
+        modifier = modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        repeat(rows) { MobileChannelCard(channel = null, onClick = {}, onToggleFavorite = {}) }
     }
 }
