@@ -285,6 +285,9 @@ class VodRepository @Inject constructor(
      */
     val updates: SharedFlow<VodKind> = _updates.asSharedFlow()
 
+    /** Da li se spiskovi filmova i serija čuvaju na uređaju (Podešavanja). */
+    val localCacheEnabled: Flow<Boolean> get() = settings.vodLocalCache
+
     /** Upis pozicije mora da se završi i kad se ekran plejera zatvori. */
     private val writeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

@@ -46,8 +46,8 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.VodSort
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
-import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
-import com.bane23.iptvplayer.ui.common.vod.SkeletonPoster
+import com.bane23.iptvplayer.ui.common.vod.VodLoading
+import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseUiState
 import com.bane23.iptvplayer.ui.common.vod.WatchedMarks
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
@@ -213,9 +213,12 @@ fun MobileVodLandscape(
                         }
                     }
 
-                    state.loadingCategories || state.loadingItems -> PosterGrid {
-                        items(SKELETON_POSTERS) { SkeletonPoster() }
-                    }
+                    state.loadingCategories || state.loadingItems -> VodLoading(
+                        series = series,
+                        accent = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        hint = if (state.loadingCategories) vodLoadingHint(state.storedOnDevice) else null,
+                        modifier = Modifier.fillMaxSize(),
+                    )
 
                     state.categoriesFailed || state.itemsFailed -> Failure(onRetry = onRetry)
 

@@ -56,9 +56,8 @@ import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.ui.common.vod.Poster
-import com.bane23.iptvplayer.ui.common.vod.SKELETON_POSTERS
-import com.bane23.iptvplayer.ui.common.vod.SkeletonPoster
-import com.bane23.iptvplayer.ui.common.skeleton
+import com.bane23.iptvplayer.ui.common.vod.VodLoading
+import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.data.repo.VodSort
@@ -214,25 +213,12 @@ fun TvVodScreen(
             modifier = Modifier.padding(bottom = 16.dp),
         )
         when {
-            state.loadingCategories -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Column(
-                    modifier = Modifier
-                        .weight(0.28f)
-                        .padding(top = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                ) {
-                    repeat(SKELETON_CATEGORIES) {
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 16.dp)
-                                .fillMaxWidth(0.7f)
-                                .height(16.dp)
-                                .skeleton(4.dp),
-                        )
-                    }
-                }
-                Column(modifier = Modifier.weight(0.72f)) { SkeletonPosterGrid() }
-            }
+            state.loadingCategories -> VodLoading(
+                series = series,
+                accent = MaterialTheme.colorScheme.primary,
+                hint = vodLoadingHint(state.storedOnDevice),
+                modifier = Modifier.fillMaxSize(),
+            )
 
             state.categoriesFailed -> {
                 TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
@@ -389,7 +375,11 @@ fun TvVodScreen(
                         }
 
                         state.selected == null -> Note(stringResource(R.string.vod_pick_category))
-                        state.loadingItems -> SkeletonPosterGrid()
+                        state.loadingItems -> VodLoading(
+                            series = series,
+                            accent = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxSize(),
+                        )
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                         state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
@@ -497,16 +487,8 @@ internal fun PinnedRow(
     }
 }
 
-/** Obrisi postera dok se kategorija učitava; nisu fokusirani, pa fokus ostaje u kategorijama. */
-@Composable
-private fun SkeletonPosterGrid() {
-    PosterGrid {
-        items(SKELETON_POSTERS) { SkeletonPoster(modifier = Modifier.padding(5.dp)) }
-    }
-}
 
 private const val FOCUSED_POSTER_SCALE = 1.08f
-private const val SKELETON_CATEGORIES = 8
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val MOVE_SETTLE_MS = 150L

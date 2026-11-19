@@ -56,6 +56,8 @@ data class VodBrowseUiState(
      * put izašao sa neke kategorije; tada se otvara ona.
      */
     val startOnContinue: Boolean = true,
+    /** Da li se spiskovi čuvaju na uređaju; tada poruka pri učitavanju kaže da je to samo prvi put. */
+    val storedOnDevice: Boolean = true,
 )
 
 /** Kategorije filmova ili serija i sadržaj izabrane kategorije. */
@@ -115,6 +117,9 @@ class VodBrowseViewModel @Inject constructor(
         loadCategories()
         viewModelScope.launch {
             repository.updates.filter { it == kind }.collect { refreshQuietly() }
+        }
+        viewModelScope.launch {
+            repository.localCacheEnabled.collect { enabled -> _state.update { it.copy(storedOnDevice = enabled) } }
         }
     }
 

@@ -579,6 +579,10 @@
     <string name="settings_auto_refresh_summary">Playlists are downloaded again once a day so channels and movies stay current. Playlists loaded from a file are not refreshed.</string>
     <string name="settings_vod_cache">Keep movies and series on this device</string>
     <string name="settings_vod_cache_summary">Movie and series lists are saved so Movies and Series open right away. New lists arrive when the playlist is refreshed, once a day or manually.</string>
+    <string name="vod_loading_movies">Loading movies…</string>
+    <string name="vod_loading_series">Loading series…</string>
+    <string name="vod_loading_hint">Loading can take a while.</string>
+    <string name="vod_loading_hint_stored">The first load can take a while. After that the list opens right away.</string>
     <string name="vod_sort">Sort order</string>
     <string name="vod_sort_current">Order: %1$s</string>
     <string name="vod_sort_default">Provider order</string>
