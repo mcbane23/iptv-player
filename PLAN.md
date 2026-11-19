@@ -628,6 +628,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       samo se nastavlja kad se plejer zatvori, i ide samo preko Wi-Fi mreže dok se u Podešavanjima ne uključi
       „Preuzimanje preko mobilnih podataka”. Prekinuto preuzimanje se nastavlja tamo gde je stalo. Preuzeto se
       pušta sa uređaja, bez interneta, i iz „Preuzeto” i iz detalja filma ili serije. Baza v17 (`downloads`).
+- [x] Snimci i preuzeto u Downloads/Glowbox (Bane, 19. 11. 2026; telefon i TV). Snimci idu u
+      `Downloads/Glowbox/Snimci`, a preuzeti filmovi i epizode u `Downloads/Glowbox/Preuzeto`, pod čitljivim
+      imenom (naslov i oznaka epizode), pa se vide u svakom upravniku fajlova i ostaju posle deinstalacije.
+      Izbor SD kartice ili USB memorije za snimke ostaje kakav je bio. Po Banetovom izboru se pri prvom
+      pokretanju prenose i postojeći fajlovi iz foldera aplikacije (snimci samo iz memorije uređaja); što ne
+      može da se prenese ostaje na starom mestu i dalje radi. Od Androida 11 ne treba dozvola; na Androidu 10
+      i starijim se traži dozvola za memoriju, a bez nje se i dalje koristi folder aplikacije.
 - [x] Dugmad daljinskog po izboru (Bane, 19. 11. 2026, četvrti krug predloga; TV, plejer kanala). Podešavanja →
       „Dugmad daljinskog”: za crveno, zeleno, žuto i plavo dugme, kanal gore i dole, meni i dugo OK bira se
       radnja (prethodno gledani kanal, sledeći ili prethodni kanal, spisak kanala, program, omiljeni, zvuk,

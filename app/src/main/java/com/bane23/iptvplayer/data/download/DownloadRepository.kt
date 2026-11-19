@@ -10,6 +10,7 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.DownloadEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.VodRepository
+import com.bane23.iptvplayer.data.storage.PublicFolder
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.domain.StreamSource
 import com.bane23.iptvplayer.player.PlaybackActivity
@@ -84,7 +85,40 @@ class DownloadRepository @Inject constructor(
         }.stateIn(scope, SharingStarted.Eagerly, DownloadHold.OFFLINE)
 
     init {
-        scope.launch { pump() }
+        scope.launch {
+            moveOldToPublic()
+            pump()
+        }
+    }
+
+    /**
+     * Fajlovi preuzeti dok su se čuvali u folderu aplikacije prelaze u Downloads/Glowbox/Preuzeto
+     * (Banetov izbor, 19. 11. 2026). Radi se pre nego što red krene, pa se nijedan fajl ne menja dok
+     * se prenosi. Što ne može da se prenese (nema mesta, nema dozvole) ostaje gde jeste i dalje radi.
+     */
+    private suspend fun moveOldToPublic() = withContext(Dispatchers.IO) {
+        try {
+            val target = PublicFolder.directory(context, PUBLIC_FOLDER) ?: return@withContext
+            PublicFolder.clearUnfinished(target)
+            val old = appDirectories()
+            for (row in dao.all()) {
+                val file = File(row.path)
+                if (file.parentFile !in old || !file.exists()) continue
+                val name = DownloadRules.readableName(row.title, row.subtitle, row.kind, row.itemId)
+                val moved = PublicFolder.transfer(file, target, name, DownloadRules.safeExtension(row.extension)) ?: continue
+                if (dao.getById(row.id) == null) {
+                    // Obrisano dok se prenosilo.
+                    moved.delete()
+                } else {
+                    dao.setPath(row.id, moved.absolutePath)
+                }
+                if (file.exists()) file.delete()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Prenos nije obavezan: fajlovi koji nisu preneti ostaju u folderu aplikacije.
+        }
     }
 
     /** Vodi red: dok ništa ne zadržava, preuzima jedno po jedno. Kad zadržavanje počne, prekida ono što traje. */
@@ -230,9 +264,9 @@ class DownloadRepository @Inject constructor(
         }
         val dir = directory() ?: return@withContext DownloadStartError.NO_STORAGE
         if (dir.usableSpace < MIN_FREE_BYTES) return@withContext DownloadStartError.NO_SPACE
-        val file = File(dir, DownloadRules.fileName(kind, playlistId, itemId, extension))
-        // Ostatak nekog ranijeg, obrisanog preuzimanja ne sme da se nadoveže na novi fajl.
-        file.delete()
+        // Uvek nov, prazan fajl: ostatak nekog ranijeg preuzimanja ne sme da se nadoveže na novi.
+        val name = DownloadRules.readableName(title, subtitle, kind, itemId)
+        val file = PublicFolder.freeFile(dir, name, DownloadRules.safeExtension(extension))
         dao.insert(
             DownloadEntity(
                 playlistId = playlistId,
@@ -310,19 +344,25 @@ class DownloadRepository @Inject constructor(
     }
 
     suspend fun storage(): DownloadStorage = withContext(Dispatchers.IO) {
-        val dir = directory()
         DownloadStorage(
-            usedBytes = dir?.listFiles()?.sumOf { it.length() } ?: 0,
-            freeBytes = dir?.usableSpace ?: 0,
+            // Po zapisima, a ne po folderu: neki fajlovi mogu još da budu na starom mestu.
+            usedBytes = dao.all().sumOf { File(it.path).length() },
+            freeBytes = directory()?.usableSpace ?: 0,
         )
     }
 
-    /** Folder aplikacije u memoriji uređaja (za njega ne treba dozvola); briše se kad se aplikacija deinstalira. */
-    private fun directory(): File? {
+    /**
+     * Folder za nova preuzimanja: Downloads/Glowbox/Preuzeto, da se fajlovi vide u upravniku fajlova
+     * i ostanu posle deinstalacije. Kad on nije dostupan (stariji Android bez dozvole), folder aplikacije.
+     */
+    private fun directory(): File? =
+        PublicFolder.directory(context, PUBLIC_FOLDER) ?: appDirectories().firstOrNull { it.isDirectory || it.mkdirs() }
+
+    /** Folderi aplikacije u kojima su preuzimanja bila ranije (za njih ne treba dozvola). */
+    private fun appDirectories(): List<File> {
         val external = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             ?.takeIf { Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
-        val dir = File(external ?: context.filesDir, FOLDER)
-        return dir.takeIf { it.isDirectory || it.mkdirs() }
+        return listOfNotNull(external, context.filesDir).map { File(it, FOLDER) }
     }
 
     private val DownloadEntity.label: String get() = listOfNotNull(title, subtitle).joinToString(" · ")
@@ -331,6 +371,7 @@ class DownloadRepository @Inject constructor(
         /** Ispod ovoliko slobodnog prostora preuzimanje ne kreće, a ono koje traje staje. */
         const val MIN_FREE_BYTES = 300L * 1024 * 1024
         private const val FOLDER = "preuzeto"
+        private const val PUBLIC_FOLDER = "Preuzeto"
         private const val RESUME_DELAY_MS = 3_000L
         private const val SHOW_EVERY_MS = 1_000L
         private const val SAVE_EVERY_MS = 5_000L

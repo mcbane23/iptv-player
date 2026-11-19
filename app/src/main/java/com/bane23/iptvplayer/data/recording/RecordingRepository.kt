@@ -8,6 +8,7 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
+import com.bane23.iptvplayer.data.storage.PublicFolder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -110,6 +111,36 @@ class RecordingRepository @Inject constructor(
         val now = System.currentTimeMillis()
         for (row in dao.byStatus(RecordingEntity.STATUS_SCHEDULED)) {
             if (row.startedAt <= now) startScheduled(row.id) else RecordingAlarms.set(context, row.id, row.startedAt)
+        }
+        moveOldToPublic()
+    }
+
+    /**
+     * Završeni snimci iz foldera aplikacije u memoriji uređaja prelaze u Downloads/Glowbox/Snimci
+     * (Banetov izbor, 19. 11. 2026). Snimci na SD kartici i USB memoriji se ne diraju. Što ne može da
+     * se prenese (nema mesta, nema dozvole) ostaje gde jeste i dalje radi.
+     */
+    private suspend fun moveOldToPublic() {
+        try {
+            val target = PublicFolder.directory(context, PUBLIC_FOLDER) ?: return
+            PublicFolder.clearUnfinished(target)
+            val old = listOfNotNull(appRoots().firstOrNull(), File(context.filesDir, "recordings"))
+            for (row in dao.byStatus(RecordingEntity.STATUS_DONE)) {
+                val file = File(row.path)
+                if (row.path.isEmpty() || file.parentFile !in old || !file.exists()) continue
+                val moved = PublicFolder.transfer(file, target, file.nameWithoutExtension, file.extension.ifEmpty { "ts" }) ?: continue
+                if (dao.getById(row.id) == null) {
+                    // Obrisan dok se prenosio.
+                    moved.delete()
+                } else {
+                    dao.setPath(row.id, moved.absolutePath)
+                }
+                if (file.exists()) file.delete()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Prenos nije obavezan: snimci koji nisu preneti ostaju u folderu aplikacije.
         }
     }
 
@@ -271,7 +302,8 @@ class RecordingRepository @Inject constructor(
 
     suspend fun storage(): RecordingStorage = withContext(Dispatchers.IO) {
         RecordingStorage(
-            usedBytes = roots().sumOf { root -> root.listFiles()?.sumOf { it.length() } ?: 0 },
+            // Po zapisima, a ne po folderima: neki snimci mogu još da budu na starom mestu.
+            usedBytes = dao.observeAll().first().sumOf { if (it.path.isEmpty()) 0L else File(it.path).length() },
             freeBytes = directory()?.usableSpace ?: 0,
         )
     }
@@ -291,8 +323,19 @@ class RecordingRepository @Inject constructor(
         settings.setRecordingDir(if (path == roots.firstOrNull()?.absolutePath) "" else path)
     }
 
-    /** Folderi aplikacije na svim priključenim memorijama (za njih ne treba dozvola); prvi je memorija uređaja. */
+    /**
+     * Mesta za snimke; prvo je memorija uređaja: Downloads/Glowbox/Snimci, da se snimci vide u
+     * upravniku fajlova i ostanu posle deinstalacije, a folder aplikacije kad on nije dostupan
+     * (stariji Android bez dozvole). Ostala su folderi aplikacije na SD kartici i USB memoriji.
+     */
     private fun roots(): List<File> {
+        val app = appRoots()
+        val public = PublicFolder.directory(context, PUBLIC_FOLDER) ?: return app
+        return listOf(public) + app.drop(1)
+    }
+
+    /** Folderi aplikacije na svim priključenim memorijama (za njih ne treba dozvola); prvi je memorija uređaja. */
+    private fun appRoots(): List<File> {
         val external = context.getExternalFilesDirs(Environment.DIRECTORY_MOVIES).filterNotNull()
             .filter { Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
         val all = external.ifEmpty { listOf(File(context.filesDir, "recordings")) }
@@ -313,6 +356,7 @@ class RecordingRepository @Inject constructor(
         /** Ispod ovoliko se na ekranu „Snimci” upozorava da ponestaje prostora. */
         const val LOW_FREE_BYTES = 2L * 1024 * 1024 * 1024
         private const val SAVE_EVERY_MS = 5_000L
+        private const val PUBLIC_FOLDER = "Snimci"
 
         /** Naziv fajla: naziv kanala bez znakova koje sistem fajlova ne podnosi, i vreme početka. */
         fun fileName(channelName: String, startedAt: Long): String {

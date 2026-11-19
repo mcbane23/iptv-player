@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.RecordingEntity
 import com.bane23.iptvplayer.data.recording.RecordingLocation
+import com.bane23.iptvplayer.data.storage.PublicFolder
 import com.bane23.iptvplayer.data.recording.RecordingStorage
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.player.formatDuration
@@ -91,20 +92,26 @@ fun RecordingNotices(notices: Flow<Int>) {
 
 /**
  * Dugme za snimanje: na Androidu 13+ prvo traži dozvolu za obaveštenja, da se vidi da snimanje traje
- * i da može da se zaustavi iz obaveštenja. Snimanje kreće i kad korisnik dozvolu odbije.
+ * i da može da se zaustavi iz obaveštenja. Na Androidu 10 i starijim traži dozvolu za memoriju, da
+ * fajl ode u Downloads/Glowbox. Snimanje kreće i kad korisnik dozvolu odbije.
  */
 @Composable
 fun rememberRecordingToggle(isRecording: Boolean, toggle: () -> Unit): () -> Unit {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { toggle() }
     return {
-        val needsPermission = !isRecording && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        if (needsPermission) {
+        // Android 13+: obaveštenja. Android 10 i stariji: pisanje u Downloads/Glowbox (noviji ga ne traže).
+        val permission = when {
+            isRecording -> null
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> Manifest.permission.POST_NOTIFICATIONS
+            PublicFolder.needsPermission -> Manifest.permission.WRITE_EXTERNAL_STORAGE
+            else -> null
+        }?.takeIf { ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED }
+        if (permission != null) {
             try {
-                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                launcher.launch(permission)
             } catch (_: Exception) {
-                // Uređaj nema ekran za dozvole (neki televizori): snima se bez obaveštenja.
+                // Uređaj nema ekran za dozvole (neki televizori): snima se bez obaveštenja, u folder aplikacije.
                 toggle()
             }
         } else {

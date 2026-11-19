@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.data.download
 
 import com.bane23.iptvplayer.data.db.DownloadEntity
+import com.bane23.iptvplayer.data.storage.PublicFolder
 
 /** Mreža preko koje uređaj trenutno izlazi na internet. Kablovska mreža se računa kao Wi-Fi. */
 enum class NetworkKind { NONE, MOBILE, WIFI }
@@ -86,11 +87,13 @@ object DownloadRules {
     fun percent(bytes: Long, total: Long): Int? =
         if (total <= 0) null else (bytes * 100 / total).toInt().coerceIn(0, 100)
 
-    /** Naziv fajla na uređaju. Nastavak dolazi od provajdera, pa se iz njega uzimaju samo slova i cifre. */
-    fun fileName(kind: String, playlistId: Long, itemId: Long, extension: String): String {
-        val safe = extension.filter { it.isLetterOrDigit() }.take(8).lowercase().ifEmpty { "mp4" }
-        return "${kind}_${playlistId}_$itemId.$safe"
-    }
+    /** Nastavak fajla dolazi od provajdera, pa se iz njega uzimaju samo slova i cifre. */
+    fun safeExtension(extension: String): String =
+        extension.filter { it.isLetterOrDigit() }.take(8).lowercase().ifEmpty { "mp4" }
+
+    /** Naziv fajla bez nastavka, čitljiv u upravniku fajlova: naslov i, za epizodu, njena oznaka. */
+    fun readableName(title: String, subtitle: String?, kind: String, itemId: Long): String =
+        PublicFolder.safeName(listOfNotNull(title, subtitle).joinToString(" "), fallback = "${kind}_$itemId")
 
     /** Oznaka epizode u spisku, npr. „S1 E3”. */
     fun episodeLabel(season: Int, number: Int): String = "S$season E$number"
