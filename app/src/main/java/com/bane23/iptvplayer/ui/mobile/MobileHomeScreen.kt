@@ -52,6 +52,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonBackdrop
 import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
@@ -279,6 +281,7 @@ private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onSt
  */
 @Composable
 private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
+    val neon = LocalNeon.current
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
@@ -294,6 +297,7 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .neonBackdrop(neon, isSelected)
                         .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -327,6 +331,7 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
  */
 @Composable
 private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
+    val neon = LocalNeon.current
     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxHeight()) {
         Column(
             modifier = Modifier
@@ -342,6 +347,7 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)
+                        .neonBackdrop(neon, isSelected)
                         .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,

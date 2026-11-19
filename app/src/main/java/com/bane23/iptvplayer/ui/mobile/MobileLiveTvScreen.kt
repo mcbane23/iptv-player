@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,8 +84,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonGlow
 
 /** Oznaka za „Svi kanali” među čipovima (pravi ID-jevi kategorija su pozitivni, posebne grupe negativne). */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -570,34 +567,10 @@ internal fun GroupChip(
             }
         }
     }
-    // Neonska tema: izabran čip nije pun, nego ima akcentni okvir koji sija.
-    val neon = LocalNeon.current
-    val primary = MaterialTheme.colorScheme.primary
     FilterChip(
         selected = selected,
         // Otpuštanje prsta posle dugog pritiska ne sme da izabere čip.
         onClick = { if (longPressed) longPressed = false else onClick() },
-        modifier = Modifier.neonGlow(neon, selected, FilterChipDefaults.shape),
-        colors = if (neon == null) {
-            FilterChipDefaults.filterChipColors()
-        } else {
-            FilterChipDefaults.filterChipColors(
-                selectedContainerColor = Color.Transparent,
-                selectedLabelColor = primary,
-                selectedLeadingIconColor = primary,
-                selectedTrailingIconColor = primary,
-            )
-        },
-        border = if (neon == null) {
-            FilterChipDefaults.filterChipBorder(enabled = true, selected = selected)
-        } else {
-            FilterChipDefaults.filterChipBorder(
-                enabled = true,
-                selected = selected,
-                selectedBorderColor = primary,
-                selectedBorderWidth = 1.5.dp,
-            )
-        },
         interactionSource = interactions,
         label = {
             if (iconOnly != null) {

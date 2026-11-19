@@ -11,6 +11,8 @@ import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.theme.AppTheme
+import com.bane23.iptvplayer.ui.common.theme.label
 import java.util.Locale
 
 /**
@@ -231,3 +233,14 @@ fun languageSummary(): String {
     val names = AppLanguage.entries.filter { it.tag != null }.map { it.label() }
     return stringResource(R.string.settings_language_summary, names.joinToString(", "))
 }
+
+/** Tema aplikacije kao obično podešavanje sa spiskom (grupa Izgled), isto na telefonu i TV-u. */
+@Composable
+fun themeChoice(current: AppTheme?, onSelect: (AppTheme) -> Unit): SettingChoice = SettingChoice(
+    title = stringResource(R.string.settings_theme),
+    summary = stringResource(R.string.settings_theme_summary),
+    options = AppTheme.entries.map { it.label() },
+    selected = (current ?: AppTheme.DEFAULT).ordinal,
+    group = SettingsGroup.LOOK,
+    onSelect = { onSelect(AppTheme.entries[it]) },
+)
