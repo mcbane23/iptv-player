@@ -103,7 +103,7 @@ fun TvLiveTvScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
     val playlistId = state.playlistId
-    // Kreće se od kategorije koja je bila otvorena prošli put. Ključevi vraćaju izbor na početak
+    // Kreće se od nedavno gledanih (bez njih od kategorije otvorene prošli put). Ključevi vraćaju izbor na početak
     // kad se lista učita i kad se promeni aktivna lista.
     var selectedCategory by rememberSaveable(state.loading, playlistId) {
         mutableStateOf(state.lastCategoryId ?: ALL_CHANNELS)

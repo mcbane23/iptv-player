@@ -113,6 +113,15 @@ fun MobileHomeScreen(
     // na trenutak vide tri kartice, pa tek onda svih pet.
     val shownTabs = if (liveState.loading) emptyList() else tabs
     val holder = rememberSaveableStateHolder()
+    // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
+    // Filmovi i serije pamte svoju kategoriju.
+    LaunchedEffect(tab) {
+        if (tab != MobileTab.SETTINGS) holder.removeState(MobileTab.SETTINGS.name)
+        if (tab != MobileTab.LIVE) {
+            holder.removeState(MobileTab.LIVE.name)
+            liveTvViewModel.startFresh()
+        }
+    }
     // Nazad iz druge kartice prvo vraća na Uživo, tek odatle izlazi iz aplikacije.
     BackHandler(enabled = tab != MobileTab.LIVE) { tab = MobileTab.LIVE }
     ExitOnDoubleBack(enabled = tab == MobileTab.LIVE)

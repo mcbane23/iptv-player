@@ -616,6 +616,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       Neonske teme daju blago svetlo iza izabranog dugmeta u donjem meniju (telefon) i bočnom meniju (TV),
       a trake napretka su ledeno plave; čipovi i kartice izgledaju kao u običnoj temi. Crna tema ostaje
       poseban prekidač i radi uz svaku temu
+- [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
+      na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i
+      pri svakom ulasku sa druge kartice otvara na „Nedavno”; dok nedavno gledanih nema, na grupi od prošlog
+      puta. Filmovi i serije i dalje pamte poslednju kategoriju
 - [x] Ručno povezivanje kanala sa programom (Bane, 19. 11. 2026, četvrti krug predloga): za kanale kojima
       se oznaka u listi i u vodiču ne poklapaju. U Vodiču dugi OK na nazivu kanala (TV), odnosno „Poveži
       program” u detaljima kanala bez programa (telefon), nudi kanale vodiča sa najsličnijim nazivom i šta

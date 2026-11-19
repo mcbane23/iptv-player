@@ -118,6 +118,15 @@ fun TvHomeScreen(
     BackHandler(enabled = tab != startTab) { tab = startTab }
     ExitOnDoubleBack(enabled = tab == startTab)
     val holder = rememberSaveableStateHolder()
+    // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
+    // Filmovi i serije pamte svoju kategoriju.
+    LaunchedEffect(tab) {
+        if (tab != TvTab.SETTINGS) holder.removeState(TvTab.SETTINGS.name)
+        if (tab != TvTab.LIVE) {
+            holder.removeState(TvTab.LIVE.name)
+            liveTvViewModel.startFresh()
+        }
+    }
     val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
 
     var railFocused by remember { mutableStateOf(false) }
