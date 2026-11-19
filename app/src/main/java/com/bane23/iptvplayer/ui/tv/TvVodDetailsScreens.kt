@@ -65,6 +65,7 @@ import com.bane23.iptvplayer.ui.common.vod.genresOf
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.rememberOpenTrailer
 import com.bane23.iptvplayer.ui.common.vod.statusText
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
 
 /** Detalji filma na TV-u. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -493,7 +494,7 @@ private fun EpisodeRow(
                 TvProgressBar(
                     progress = (progress.positionMs.toFloat() / progress.durationMs).coerceIn(0f, 1f),
                     trackColor = Color.Black.copy(alpha = 0.5f),
-                    barColor = Color.White.copy(alpha = 0.85f),
+                    barColor = LocalNeon.current?.progress ?: Color.White.copy(alpha = 0.85f),
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .fillMaxWidth(),

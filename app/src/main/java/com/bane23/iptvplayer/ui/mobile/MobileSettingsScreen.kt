@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.semantics
 import com.bane23.iptvplayer.ui.common.AppLanguage
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
+import com.bane23.iptvplayer.ui.common.theme.AppTheme
 import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
 import androidx.compose.foundation.layout.Column
@@ -94,6 +95,7 @@ fun MobileSettingsScreen(
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
+    val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
     val choices = playerSettingChoices(playerSettings, viewModel)
@@ -265,6 +267,14 @@ fun MobileSettingsScreen(
                             }
 
                             SettingsGroup.LOOK -> {
+                                // Svaki dodir prelazi na sledeću temu; promena se vidi odmah.
+                                SettingsValueRow(
+                                    title = stringResource(R.string.settings_theme),
+                                    summary = stringResource(R.string.settings_theme_summary),
+                                    value = (appTheme ?: AppTheme.DEFAULT).label(),
+                                    options = AppTheme.entries.map { it.label() },
+                                    onClick = { viewModel.setAppTheme(AppTheme.next(appTheme ?: AppTheme.DEFAULT)) },
+                                )
                                 AccentColorRow(selected = accentColor, onSelect = viewModel::setAccentColor)
                                 SettingsSwitchRow(
                                     title = stringResource(R.string.settings_black_theme),

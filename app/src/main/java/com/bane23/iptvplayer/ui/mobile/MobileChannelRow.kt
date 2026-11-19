@@ -38,6 +38,7 @@ import com.bane23.iptvplayer.ui.common.SkeletonLogo
 import com.bane23.iptvplayer.ui.common.SkeletonTextLines
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
 
 /**
  * Red sa kanalom na telefonu: broj, logo, naziv, emisija koja je sada na programu sa trakom
@@ -320,7 +321,7 @@ fun ProgramProgress(progress: Float, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth(progress)
                 .fillMaxHeight()
-                .background(color.copy(alpha = 0.55f)),
+                .background(LocalNeon.current?.progress ?: color.copy(alpha = 0.55f)),
         )
     }
 }

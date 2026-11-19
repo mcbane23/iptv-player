@@ -351,6 +351,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[BLACK_THEME] = enabled }
     }
 
+    /** Ime teme aplikacije koju je korisnik izabrao (vidi `AppTheme`), ili null za podrazumevanu. */
+    val appTheme: Flow<String?> = dataStore.data.map { it[APP_THEME] }.distinctUntilChanged()
+
+    suspend fun setAppTheme(name: String) {
+        dataStore.edit { it[APP_THEME] = name }
+    }
+
     /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
     val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
 
@@ -466,6 +473,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
+        val APP_THEME = stringPreferencesKey("app_theme")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")

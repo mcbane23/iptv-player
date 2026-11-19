@@ -32,6 +32,8 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonGlow
 
 /**
  * Polje za filtriranje spiska (npr. kategorija) na TV-u. Dok se samo prolazi D-padom preko njega,
@@ -62,6 +64,7 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
+            .neonGlow(LocalNeon.current, focused, shape)
             .background(colors.surface, shape)
             .border(2.dp, if (focused) colors.primary else Color.Transparent, shape)
             .then(

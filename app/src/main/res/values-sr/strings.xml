@@ -623,8 +623,15 @@
     <string name="settings_language_summary">Jezik menija i poruka. Dostupni jezici: %1$s.</string>
     <string name="settings_accent_color_summary">Boja dugmadi, oznaka i sjaja u pozadini</string>
     <string name="update_check_summary">Traži noviju verziju i nudi da je instalira. Liste i podešavanja ostaju.</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_summary">Boje pozadine i izgled izabrane stavke. Neonske teme daju izabranoj stavci sjaj i ledeno plave trake napretka. Promena se vidi odmah.</string>
+    <string name="settings_theme_tv_summary">Boje pozadine i izgled stavke u fokusu. Neonske teme daju stavci u fokusu sjaj i ledeno plave trake napretka. Svaki pritisak na OK prelazi na sledeću temu.</string>
+    <string name="theme_gray">Siva</string>
+    <string name="theme_navy">Teget</string>
+    <string name="theme_navy_neon">Teget sa neonom</string>
+    <string name="theme_gray_neon">Siva sa neonom</string>
     <string name="settings_black_theme">Crna tema</string>
-    <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto tamnosive, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
+    <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto boje izabrane teme, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
     <string name="epg_link_action">Poveži program</string>
     <string name="epg_link_title">Program za „%1$s”</string>
     <string name="epg_link_subtitle">Izaberi kanal iz vodiča čiji program odgovara</string>

@@ -41,6 +41,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonGlow
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -536,7 +538,10 @@ fun TvLiveTvScreen(
                                         TvProgressBar(
                                             progress = progress,
                                             trackColor = color.copy(alpha = 0.15f),
-                                            barColor = color.copy(alpha = 0.5f),
+                                            // Na redu u fokusu (pun akcentom) traka ostaje u boji teksta.
+                                            barColor = LocalNeon.current?.progress
+                                                ?.takeIf { color != MaterialTheme.colorScheme.onPrimary }
+                                                ?: color.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(top = 3.dp),
                                         )
                                     }
@@ -748,7 +753,7 @@ private fun ChannelPreviewPane(
                 TvProgressBar(
                     progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
                     trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                    barColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    barColor = LocalNeon.current?.progress ?: MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -873,6 +878,7 @@ private fun TvTabChip(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
+    val neon = LocalNeon.current
     val shape = RoundedCornerShape(50)
     Text(
         text = text,
@@ -886,6 +892,7 @@ private fun TvTabChip(
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .widthIn(max = 200.dp)
+            .neonGlow(neon, focused, shape)
             .clip(shape)
             .background(
                 when {
