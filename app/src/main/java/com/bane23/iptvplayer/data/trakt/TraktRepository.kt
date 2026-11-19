@@ -60,9 +60,17 @@ class TraktRepository @Inject constructor(
     /** TMDB ID-jevi filmova odgledanih na nalogu. */
     val watchedMovies: Flow<Set<Long>> = dao.observeWatchedMovies().map { it.toSet() }
 
-    /** Odgledane epizode jedne serije na nalogu, kao par (sezona, epizoda). */
-    fun watchedEpisodes(showTmdbId: Long): Flow<Set<Pair<Int, Int>>> =
-        dao.observeWatchedEpisodes(showTmdbId).map { rows -> rows.mapTo(HashSet()) { it.season to it.episode } }
+    /** Odgledane epizode jedne serije na nalogu: par (sezona, epizoda) i kada je poslednji put gledana (ms; 0 kad se ne zna). */
+    fun watchedEpisodes(showTmdbId: Long): Flow<Map<Pair<Int, Int>, Long>> =
+        dao.observeWatchedEpisodes(showTmdbId).map { rows -> rows.associate { (it.season to it.episode) to it.watchedAt } }
+
+    /**
+     * Traži svežu sinhronizaciju ako je poslednja bila poodavno: pri povratku u aplikaciju i pri
+     * otvaranju detalja filma ili serije, da se vidi ono što je u međuvremenu gledano na drugom uređaju.
+     */
+    fun refreshIfStale() {
+        if (isAvailable) scheduler.syncIfStale()
+    }
 
     /** Prijava koja je u toku: kod za korisnika i PKCE tajna koja ide uz preuzimanje tokena. */
     class PendingLogin(val code: DeviceCode, internal val verifier: String)
@@ -335,6 +343,12 @@ class TraktRepository @Inject constructor(
         var applied = since
         for ((pausedAt, item) in items) {
             val key = TraktPayloads.playbackKey(item) ?: continue
+            // Posle ove pauze je odgledano do kraja (ovde ili drugde): stara pozicija se ne vraća.
+            val watchedAt = dao.watchedAt(key.kind, key.tmdbId, key.season, key.episode)
+            if (TraktPayloads.finishedSince(watchedAt, pausedAt)) {
+                applied = pausedAt
+                continue
+            }
             try {
                 panel { vod.applyRemoteProgress(key, item.progress, pausedAt) }
             } catch (e: CancellationException) {

@@ -7,6 +7,7 @@ import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.db.WatchProgressEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.trakt.TraktKey
+import com.bane23.iptvplayer.data.trakt.TraktPayloads
 import com.bane23.iptvplayer.data.trakt.TraktQueue
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
@@ -72,7 +73,14 @@ data class VodItem(
  * Zapamćena pozicija gledanja filma ili epizode. [watched] je oznaka „odgledano”: postavi se sama
  * kad se pogleda do kraja ([FINISHED_PERCENT]) ili je korisnik postavi ručno.
  */
-data class WatchProgress(val itemId: Long, val positionMs: Long, val durationMs: Long, val watched: Boolean = false) {
+data class WatchProgress(
+    val itemId: Long,
+    val positionMs: Long,
+    val durationMs: Long,
+    val watched: Boolean = false,
+    /** Kada je pozicija zapamćena (ms); 0 kad se ne zna ili kad je samo ručno označeno. */
+    val updatedAt: Long = 0,
+) {
     /** Odgledano: kvačica i, kod serija, nastavak od sledeće epizode. */
     val finished: Boolean get() = watched
 
@@ -600,6 +608,8 @@ class VodRepository @Inject constructor(
         val kind = if (isMovie) KIND_MOVIE else KIND_EPISODE
         val existing = progressDao.get(playlistId, kind, target.itemId)
         if (existing != null && existing.updatedAt >= pausedAtMs) return@withContext
+        // Ovde je posle te pauze odgledano do kraja ili označeno: stara pozicija se ne vraća.
+        if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return@withContext
         // Sklonjeno iz reda „Nastavi gledanje” ne vraća pozicija starija od sklanjanja.
         val dismissedAt = target.seriesId?.let { progressDao.seriesDismissedAt(playlistId, it) } ?: existing?.dismissedAt
         if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return@withContext
@@ -815,7 +825,7 @@ class VodRepository @Inject constructor(
     private fun Session.api(action: String, parameter: String, value: String): String =
         XtreamUrls.playerApi(server, username, password, action, parameter, value)
 
-    private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs, watched = watchedAt != null)
+    private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs, watched = watchedAt != null, updatedAt = updatedAt)
 
     private suspend fun <V : Any> ConcurrentHashMap<String, V>.getOrPutSuspending(key: String, load: suspend () -> V): V {
         this[key]?.let { return it }

@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import com.bane23.iptvplayer.data.trakt.TraktRepository
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
 import com.bane23.iptvplayer.ui.tv.TvEdgeScroll
@@ -38,9 +39,17 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var settingsStore: SettingsStore
 
+    @Inject lateinit var trakt: TraktRepository
+
     /** Jezik izabran u podešavanjima važi za sve tekstove aktivnosti. */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
+    }
+
+    /** Pri svakom povratku u aplikaciju preuzima se ono što je u međuvremenu gledano na drugom uređaju. */
+    override fun onStart() {
+        super.onStart()
+        trakt.refreshIfStale()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

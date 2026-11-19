@@ -287,6 +287,7 @@ class MovieViewModel @Inject constructor(
     fun open(movieId: Long, name: String, poster: String?, extension: String?) {
         if (opened) return
         opened = true
+        trakt.refreshIfStale()
         _state.update { it.copy(movieId = movieId, name = name, poster = poster, extension = extension) }
         viewModelScope.launch {
             val details = try {
@@ -353,7 +354,7 @@ data class SeriesUiState(
     val selectedSeason: Int? = null,
     /** Napredak po ID-ju epizode. */
     val progress: Map<Long, WatchProgress> = emptyMap(),
-    /** Epizoda od koje se nastavlja gledanje: poslednje gledana, ili sledeća ako je ta odgledana. */
+    /** Epizoda od koje se nastavlja gledanje, vidi [resumeEpisode]. */
     val resumeEpisode: Episode? = null,
     val favorite: Boolean = false,
 ) {
@@ -382,7 +383,7 @@ class SeriesViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val traktEpisodes = showTmdbId.flatMapLatest { tmdb ->
-        if (tmdb == null) flowOf(emptySet()) else trakt.watchedEpisodes(tmdb)
+        if (tmdb == null) flowOf(emptyMap<Pair<Int, Int>, Long>()) else trakt.watchedEpisodes(tmdb)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -401,17 +402,7 @@ class SeriesViewModel @Inject constructor(
                 merged[episode.id] = (merged[episode.id] ?: WatchProgress(episode.id, 0, 0)).copy(watched = true)
             }
         }
-        val last = watched.firstOrNull()
-        val resume = if (details == null) {
-            null
-        } else if (last == null) {
-            // Ovde još ništa nije gledano: nastavlja se posle poslednje epizode odgledane na Trakt-u.
-            details.episodes.lastOrNull { merged[it.id]?.watched == true }?.let { details.episodeAfter(it.id) }
-        } else if (!last.resumable && merged[last.itemId]?.finished == true) {
-            details.episodeAfter(last.itemId)
-        } else {
-            details.episodes.firstOrNull { it.id == last.itemId }
-        }
+        val resume = details?.let { resumeEpisode(it, watched, onTrakt) }
         current.copy(
             favorite = isFavorite,
             progress = merged,
@@ -426,6 +417,7 @@ class SeriesViewModel @Inject constructor(
     fun open(id: Long, name: String, poster: String?) {
         if (opened) return
         opened = true
+        trakt.refreshIfStale()
         seriesId.value = id
         base.update { it.copy(seriesId = id, name = name, poster = poster) }
         load()
@@ -476,6 +468,37 @@ class SeriesViewModel @Inject constructor(
         val targets = episodes.map { WatchTarget(it.id, current.name, current.poster) }
         val keys = showTmdbId.value?.let { tmdb -> episodes.map { TraktKey.episode(tmdb, it.season, it.number) } }.orEmpty()
         viewModelScope.launch { repository.setWatched(id, targets, watched, keys) }
+    }
+}
+
+/**
+ * Epizoda od koje se nastavlja gledanje serije: ono što je poslednje gledano na bilo kom uređaju,
+ * a ako je to odgledano do kraja, sledeća epizoda. Null kad nema šta da se nastavi.
+ *
+ * [local] je napredak zapamćen na ovom uređaju, poslednje gledano prvo. [onTrakt] su epizode
+ * odgledane na Trakt nalogu, kao (sezona, epizoda), sa vremenom gledanja (0 kad se ne zna).
+ * Epizoda odgledana drugde posle onoga što je ovde zapamćeno ima prednost: bez toga bi stara
+ * pozicija sa ovog uređaja nudila nastavak epizode koja je u međuvremenu odgledana na drugom.
+ */
+fun resumeEpisode(details: SeriesDetails, local: List<WatchProgress>, onTrakt: Map<Pair<Int, Int>, Long>): Episode? {
+    val episodes = details.episodes
+    val last = local.firstOrNull()
+    // Poslednje odgledana na nalogu; od istovremeno označenih (cela sezona) ona koja je dalje u seriji.
+    val remote = episodes.withIndex()
+        .filter { (it.value.season to it.value.number) in onTrakt }
+        .maxWithOrNull(compareBy({ onTrakt.getValue(it.value.season to it.value.number) }, { it.index }))
+        ?.value
+    val remoteAt = remote?.let { onTrakt.getValue(it.season to it.number) } ?: 0L
+    if (remote != null && (last == null || remoteAt > last.updatedAt)) return details.episodeAfter(remote.id)
+    if (last == null) return null
+    val episode = episodes.firstOrNull { it.id == last.itemId } ?: return null
+    val lastOnTrakt = onTrakt[episode.season to episode.number]
+    return when {
+        // Odgledana do kraja (ovde ili na nalogu), a pozicija ne nudi nastavak.
+        !last.resumable && (last.watched || lastOnTrakt != null) -> details.episodeAfter(episode.id)
+        // Ovde započeta, a na nalogu odgledana ne zna se kada: računa se da je završena drugde.
+        !last.watched && lastOnTrakt == 0L -> details.episodeAfter(episode.id)
+        else -> episode
     }
 }
 
