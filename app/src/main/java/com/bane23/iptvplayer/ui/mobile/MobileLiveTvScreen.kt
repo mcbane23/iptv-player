@@ -130,7 +130,10 @@ fun MobileLiveTvScreen(
     val selected = chosen?.takeIf { it in groups }
         ?: state.lastCategoryId?.takeIf { it in groups }
         ?: if (state.favoriteCount > 0) ChannelGroups.FAVORITES else ALL_CHANNELS
+    // Grupa koja je bila izabrana pre omiljenih, da drugi dodir na zvezdicu vrati na nju.
+    var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
     val choose: (Long) -> Unit = { group ->
+        if (group == ChannelGroups.FAVORITES && selected != ChannelGroups.FAVORITES) beforeFavorites = selected
         chosen = group
         viewModel.rememberCategory(group)
     }
@@ -250,7 +253,7 @@ fun MobileLiveTvScreen(
                                 columns = GridCells.Fixed(1),
                                 state = listState,
                                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(3.dp),
                             ) {
                                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                                     val channel = channels[index]
@@ -331,7 +334,14 @@ fun MobileLiveTvScreen(
                             favoriteLists = state.favoriteLists,
                             onListMenu = { listMenu = FavoriteListMenu(it) },
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
-                            onSelect = choose,
+                            // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
+                            onSelect = { group ->
+                                if (group == ChannelGroups.FAVORITES && selected == ChannelGroups.FAVORITES) {
+                                    choose(beforeFavorites?.takeIf { it in groups && it != ChannelGroups.FAVORITES } ?: ALL_CHANNELS)
+                                } else {
+                                    choose(group)
+                                }
+                            },
                             onMore = { pickerOpen = true },
                         )
                         if (pickerOpen) {
@@ -429,7 +439,7 @@ private fun QuickGroupChips(
             label = stringResource(R.string.category_favorites),
             selected = selected == ChannelGroups.FAVORITES,
             onClick = { onSelect(ChannelGroups.FAVORITES) },
-            leading = AppIcons.Star,
+            iconOnly = AppIcons.Star,
             onLongClick = { onListMenu(null) },
         )
         favoriteLists.forEach { list ->
@@ -462,6 +472,10 @@ private fun QuickGroupChips(
     }
 }
 
+/**
+ * Čip grupe. Sa [iconOnly] čip nosi samo tu ikonicu (npr. zvezdicu za omiljene), a [label] čitaju
+ * čitači ekrana.
+ */
 @Composable
 internal fun GroupChip(
     label: String,
@@ -469,6 +483,7 @@ internal fun GroupChip(
     onClick: () -> Unit,
     leading: ImageVector? = null,
     trailing: ImageVector? = null,
+    iconOnly: ImageVector? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
     // Čip sam ne javlja dugi pritisak, pa se on prepoznaje po tome koliko dugo dodir traje.
@@ -496,12 +511,16 @@ internal fun GroupChip(
         onClick = { if (longPressed) longPressed = false else onClick() },
         interactionSource = interactions,
         label = {
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 180.dp),
-            )
+            if (iconOnly != null) {
+                Icon(iconOnly, contentDescription = label, modifier = Modifier.size(18.dp))
+            } else {
+                Text(
+                    text = label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 180.dp),
+                )
+            }
         },
         leadingIcon = leading?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
         trailingIcon = trailing?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },

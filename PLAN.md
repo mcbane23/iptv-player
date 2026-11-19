@@ -57,7 +57,8 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
       (`applicationId`) ostaje isti, da nadogradnja ne obriše podatke.
 - [x] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
       (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica rešena 16. 11. 2026: ekran
-      sa znakom za puštanje i postoljem na tamnoj pozadini; TV baner je ta slika + „Glowbox”.
+      sa znakom za puštanje i postoljem; TV baner je ta slika + „Glowbox”. Od 19. 11. 2026.
+      pozadina ikonice i banera je tamno teget, sa toplim sjajem iza ekrana.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 - [x] **Sinhronizacija preko naloga (Faza 9).** Rešeno 16. 11. 2026: sopstvena prijava
       (Google ili email) nije potrebna. Odgledano i pozicija gledanja idu preko korisnikovog
@@ -562,6 +563,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   jednoj koloni, kao redovi sa brojem, logom, nazivom i emisijom „do HH:mm”. Na položenom telefonu desno je
   pregled kao na TV-u: prvi dodir bira kanal i pušta ga u malom pregledu bez zvuka, drugi dodir ili dugme ga
   otvara preko celog ekrana. Uspravno dodir odmah pušta kanal. Spisak grupa sa izborom liste i ikonicama je isti.
+- [x] Uživo, dorada (Bane, 19. 11. 2026): na telefonu su logoi kanala manji (32dp) i redovi gušći, čip
+  omiljenih je samo zvezdica (i u Filmovima i Serijama), a dok kanal nije izabran u crnom okviru pregleda
+  stoji uputstvo, na telefonu i na TV-u. Na TV-u su redovi kanala niži (logo 32dp), pa staje kanal više.
+- [x] Uspravan telefon, zvezdica kao prekidač (Bane, 19. 11. 2026): prvi dodir na čip omiljenih prikazuje
+  omiljene, drugi vraća na grupu koja je bila izabrana pre toga (Uživo, Filmovi, Serije). Položen telefon i TV
+  ostaju isti, jer je tamo ceo spisak kategorija stalno na ekranu.
 - [x] Zaštita ekrana od urezivanja slike (Bane, 18. 11. 2026): posle 1 minuta pauze slika se zatamni na
   oko 30%, a kontrole se sklone; prvi taster ili dodir samo vraća sliku. Posle 30 minuta pauze plejer se
   zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,

@@ -601,6 +601,7 @@
     <string name="subtitle_shift_later">Subtitles later</string>
     <string name="subtitle_shift_value">%1$s s</string>
     <string name="live_preview_hint">Tap a channel to preview it.</string>
+    <string name="live_preview_hint_tv">Select a channel to preview it.</string>
     <string name="live_preview_open">Open full screen</string>
     <string name="live_badge">LIVE</string>
     <string name="epg_until">%1$s · until %2$s</string>

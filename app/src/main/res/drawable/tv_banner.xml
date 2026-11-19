@@ -12,8 +12,21 @@
                 android:type="linear"
                 android:startX="0" android:startY="0"
                 android:endX="320" android:endY="180">
-                <item android:offset="0" android:color="#FF1C232B" />
-                <item android:offset="1" android:color="@color/background" />
+                <item android:offset="0" android:color="#FF13264F" />
+                <item android:offset="1" android:color="#FF081226" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Topao sjaj iza ekrana. -->
+    <path android:pathData="M-4.5,87a70,70 0,1 0,140,0a70,70 0,1 0,-140,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="65.5" android:centerY="87"
+                android:gradientRadius="70">
+                <item android:offset="0" android:color="#80FFB74D" />
+                <item android:offset="0.55" android:color="#29FF8F3A" />
+                <item android:offset="1" android:color="#00FF8F3A" />
             </gradient>
         </aapt:attr>
     </path>

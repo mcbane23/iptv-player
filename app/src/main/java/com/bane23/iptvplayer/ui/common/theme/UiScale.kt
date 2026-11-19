@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.common.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 
@@ -39,16 +40,18 @@ enum class UiScale(val factor: Float) {
     }
 }
 
-/** Crta [content] umanjen na [scale]. Veličina fonta iz sistemskih podešavanja se i dalje poštuje. */
+/**
+ * Crta [content] umanjen na [scale]. Veličina fonta iz sistemskih podešavanja se i dalje poštuje.
+ *
+ * Sadržaj se uvek crta na istom mestu, i za 100%. Kad bi se za 100% crtao mimo
+ * `CompositionLocalProvider`, promena između 100% i neke druge vrednosti bi srušila i ponovo
+ * napravila ceo interfejs, pa bi se navigacija vratila na početni ekran.
+ */
 @Composable
 fun ScaledUi(scale: UiScale, content: @Composable () -> Unit) {
-    if (scale == UiScale.P100) {
-        content()
-        return
-    }
     val density = LocalDensity.current
-    CompositionLocalProvider(
-        LocalDensity provides Density(density.density * scale.factor, density.fontScale),
-        content = content,
-    )
+    val scaled = remember(density, scale) {
+        if (scale == UiScale.P100) density else Density(density.density * scale.factor, density.fontScale)
+    }
+    CompositionLocalProvider(LocalDensity provides scaled, content = content)
 }

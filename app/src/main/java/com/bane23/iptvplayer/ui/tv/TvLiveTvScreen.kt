@@ -466,6 +466,8 @@ fun TvLiveTvScreen(
                             },
                             modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            // Niži red i manji logo, da na ekran stane kanal više.
+                            verticalPadding = 6.dp,
                         ) { color ->
                             Text(
                                 text = channel?.number?.toString().orEmpty(),
@@ -479,14 +481,14 @@ fun TvLiveTvScreen(
                             )
                             if (channel == null) {
                                 // Strana liste se još učitava: obrisi umesto praznog reda.
-                                SkeletonLogo(size = 40.dp)
+                                SkeletonLogo(size = 32.dp)
                                 SkeletonTextLines(
                                     modifier = Modifier
                                         .weight(1f)
                                         .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
                                 )
                             } else {
-                                ChannelLogo(url = channel.logo, name = channel.name, size = 40.dp)
+                                ChannelLogo(url = channel.logo, name = channel.name, size = 32.dp)
                                 Column(
                                     modifier = Modifier
                                         .weight(1f)
@@ -513,7 +515,7 @@ fun TvLiveTvScreen(
                                             progress = progress,
                                             trackColor = color.copy(alpha = 0.15f),
                                             barColor = color.copy(alpha = 0.5f),
-                                            modifier = Modifier.padding(top = 5.dp),
+                                            modifier = Modifier.padding(top = 3.dp),
                                         )
                                     }
                                 }
@@ -655,6 +657,17 @@ private fun ChannelPreviewPane(
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
+            } else {
+                // Fokus još nije na kanalu: uputstvo u crnom okviru.
+                Text(
+                    text = stringResource(R.string.live_preview_hint_tv),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp),
+                )
             }
             if (current != null) {
                 Text(

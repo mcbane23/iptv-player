@@ -186,7 +186,7 @@ fun MobileChannelCard(
                     onClick = { channel?.let(onClick) },
                     onLongClick = { menuOpen = true },
                 )
-                .padding(start = 2.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
+                .padding(start = 2.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -201,14 +201,14 @@ fun MobileChannelCard(
                     .padding(end = 8.dp),
             )
             if (channel == null) {
-                SkeletonLogo()
+                SkeletonLogo(size = CardLogoSize)
                 SkeletonTextLines(
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 12.dp),
                 )
             } else {
-                ChannelLogo(url = channel.logo, name = channel.name)
+                ChannelLogo(url = channel.logo, name = channel.name, size = CardLogoSize)
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -234,7 +234,7 @@ fun MobileChannelCard(
                         // Traka u akcentnoj boji, ali tanka: jedina boja u redu.
                         Box(
                             modifier = Modifier
-                                .padding(top = 5.dp)
+                                .padding(top = 3.dp)
                                 .fillMaxWidth()
                                 .height(2.dp)
                                 .background(muted.copy(alpha = 0.15f)),
@@ -286,6 +286,9 @@ fun MobileChannelCard(
 }
 
 private val CardShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+
+/** Logo u redu kanala: manji nego u pretrazi, da na ekran stane više kanala. */
+private val CardLogoSize = 32.dp
 
 /** Zvezdica za dodavanje u omiljene i uklanjanje iz njih. */
 @Composable
