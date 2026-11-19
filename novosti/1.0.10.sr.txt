@@ -1,0 +1,7 @@
+Podešavanja su u grupama, lakše se nalaze na telefonu i TV-u
+Jezik aplikacije je prva stavka u Podešavanjima
+Više podrazumevanih jezika za titlove i zvuk
+Liste omiljenih pod jednim dugmetom „Omiljeni”
+Nastavak gledanja prati ono što je poslednje gledano na bilo kom uređaju
+Snimci i preuzeti sadržaj su u folderu Downloads/Glowbox
+„Šta je novo” kod test verzija prati jezik aplikacije
