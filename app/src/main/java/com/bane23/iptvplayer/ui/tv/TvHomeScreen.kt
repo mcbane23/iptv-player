@@ -353,8 +353,6 @@ private fun RailItem(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            // Neonska tema: blago svetlo iza izabranog odeljka.
-            .neonBackdrop(LocalNeon.current, selected)
             .clip(RoundedCornerShape(12.dp))
             .background(if (focused) colors.primary else Color.Transparent)
             .onFocusChanged { focused = it.isFocused }
@@ -362,7 +360,15 @@ private fun RailItem(
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(imageVector = icon, contentDescription = label, tint = content, modifier = Modifier.size(24.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = content,
+            modifier = Modifier
+                // Neonska tema: blago svetlo iza ikonice izabranog odeljka.
+                .neonBackdrop(LocalNeon.current, selected && !focused, width = 76.dp, height = 46.dp)
+                .size(24.dp),
+        )
         if (expanded) {
             Text(
                 text = label,

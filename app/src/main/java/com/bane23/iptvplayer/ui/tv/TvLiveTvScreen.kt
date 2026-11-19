@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonHalo
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -890,6 +891,8 @@ private fun TvTabChip(
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .widthIn(max = 200.dp)
+            // Neonska tema: blago svetlo oko izabrane kartice dok nije u fokusu.
+            .neonHalo(LocalNeon.current, selected && !focused)
             .clip(shape)
             .background(
                 when {

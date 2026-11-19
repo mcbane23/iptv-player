@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +33,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -302,20 +306,30 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
             tabs.forEach { item ->
                 val isSelected = item == selected
                 val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                val interactions = remember { MutableInteractionSource() }
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .neonBackdrop(neon, isSelected)
-                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
+                        // Bez pravougaonog senčenja cele kolone: dodir se vidi samo na podlozi ikonice.
+                        .selectable(
+                            selected = isSelected,
+                            interactionSource = interactions,
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelect(item) },
+                        ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Box(
                         modifier = Modifier
                             .size(width = 48.dp, height = 26.dp)
+                            // Neonska tema: blago svetlo iza podloge izabrane ikonice.
+                            .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
                             .clip(RoundedCornerShape(13.dp))
-                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent),
+                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent)
+                            .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(imageVector = item.icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
@@ -352,20 +366,30 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
             tabs.forEach { item ->
                 val isSelected = item == selected
                 val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                val interactions = remember { MutableInteractionSource() }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)
-                        .neonBackdrop(neon, isSelected)
-                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(item) }),
+                        // Bez pravougaonog senčenja cele kolone: dodir se vidi samo na podlozi ikonice.
+                        .selectable(
+                            selected = isSelected,
+                            interactionSource = interactions,
+                            indication = null,
+                            role = Role.Tab,
+                            onClick = { onSelect(item) },
+                        ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Box(
                         modifier = Modifier
                             .size(width = 48.dp, height = 26.dp)
+                            // Neonska tema: blago svetlo iza podloge izabrane ikonice.
+                            .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
                             .clip(RoundedCornerShape(13.dp))
-                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent),
+                            .background(if (isSelected) color.copy(alpha = 0.18f) else Color.Transparent)
+                            .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(imageVector = item.icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
@@ -383,3 +407,7 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
         }
     }
 }
+
+/** Veličina neonskog svetla iza izabrane kartice u donjoj traci i bočnoj traci telefona. */
+private val NAV_GLOW_WIDTH = 110.dp
+private val NAV_GLOW_HEIGHT = 64.dp
