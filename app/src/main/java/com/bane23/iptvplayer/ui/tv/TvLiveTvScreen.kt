@@ -79,6 +79,11 @@ import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -110,6 +115,9 @@ fun TvLiveTvScreen(
     var focusedCategory by remember(state.loading, playlistId) { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
     val channelFocus = remember { FocusRequester() }
+    // Prvi kanal vidljiv na vrhu spiska: Desno sa kategorija ide na njega (Bane), ne na kanal u visini kategorije.
+    val topChannelFocus = remember { FocusRequester() }
+    val channelListState = rememberLazyListState()
     val categoryListState = rememberLazyListState()
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
@@ -355,7 +363,13 @@ fun TvLiveTvScreen(
                     state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .onPreviewKeyEvent { event ->
+                            if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
+                            // Ako prvi vidljivi kanal ne može da primi fokus (spisak je prazan ili se
+                            // učitava), Desno radi kao i pre.
+                            event.type == KeyEventType.KeyDown && topChannelFocus.tryRequestFocus()
+                        },
                     // Isti izgled kao spisak levo kod filmova i serija i kao na telefonu: redovi su pločice.
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -465,6 +479,7 @@ fun TvLiveTvScreen(
                 }
                 TvFavoriteHint()
                 LazyColumn(
+                    state = channelListState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
@@ -486,7 +501,8 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
+                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus)
+                                .then(focusTarget(index == channelListState.firstVisibleItemIndex, topChannelFocus)),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
