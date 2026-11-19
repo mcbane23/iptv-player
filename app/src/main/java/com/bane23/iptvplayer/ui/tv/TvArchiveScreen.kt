@@ -48,14 +48,11 @@ fun TvArchiveScreen(
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = listOf(stringResource(R.string.archive_title), state.channelName)
+        // Isto zaglavlje kao na ostalim TV ekranima: naslov levo, sat desno.
+        TvHeader(
+            title = listOf(stringResource(R.string.archive_title), state.channelName)
                 .filter { it.isNotBlank() }
                 .joinToString(" · "),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(bottom = 16.dp),
         )
         when {

@@ -696,6 +696,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
         „Nastavi gledanje”, kategorija), ispod naslov sa brojem stavki
   - [x] V5 Pretraga izgleda kao ostatak aplikacije: kanali kao pločice iz Uživo, filmovi i serije kao
         red postera, naslovi grupa sa brojem pogodaka (telefon i TV)
+  - [x] V6 Sat na svim TV ekranima: pretraga, Više kanala, snimci i arhiva imaju isti naslov sa satom
+        (ekrani sa formularima bez sata)
 
 ## 7. Testiranje
 
