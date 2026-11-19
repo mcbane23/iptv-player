@@ -57,6 +57,12 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.WatchProgress
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.XtreamVodParser
+import com.bane23.iptvplayer.data.download.DownloadState
+import com.bane23.iptvplayer.ui.common.download.DownloadItem
+import com.bane23.iptvplayer.ui.common.download.DownloadNotices
+import com.bane23.iptvplayer.ui.common.download.DownloadsViewModel
+import com.bane23.iptvplayer.ui.common.download.rememberDownloadStart
+import com.bane23.iptvplayer.ui.common.download.shortLabel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.vod.MovieViewModel
@@ -78,8 +84,10 @@ fun MobileMovieScreen(
     poster: String?,
     extension: String?,
     onPlay: (extension: String, startOver: Boolean) -> Unit,
+    onDownloads: () -> Unit,
     onBack: () -> Unit,
     viewModel: MovieViewModel = hiltViewModel(),
+    downloads: DownloadsViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(movieId) { viewModel.open(movieId, name, poster, extension) }
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -87,6 +95,11 @@ fun MobileMovieScreen(
     val playExtension = state.extension ?: XtreamVodParser.DEFAULT_EXTENSION
     val openTrailer = rememberOpenTrailer()
     val progress = state.progress
+    val download = downloads.movies.collectAsStateWithLifecycle().value[movieId]
+    DownloadNotices(downloads.notices)
+    val startDownload = rememberDownloadStart {
+        downloads.downloadMovie(movieId, state.name.ifEmpty { name }, state.poster, playExtension)
+    }
 
     Scaffold { padding ->
         LazyColumn(
@@ -117,6 +130,12 @@ fun MobileMovieScreen(
                     },
                     onPrimary = { onPlay(playExtension, progress?.resumable != true) },
                     onStartOver = { onPlay(playExtension, true) }.takeIf { progress?.resumable == true },
+                )
+            }
+            item {
+                DownloadButton(
+                    label = download?.shortLabel() ?: stringResource(R.string.download_action),
+                    onClick = if (download == null) startDownload else onDownloads,
                 )
             }
             item {
@@ -154,8 +173,10 @@ fun MobileSeriesScreen(
     name: String,
     poster: String?,
     onPlay: (episodeId: Long, startOver: Boolean) -> Unit,
+    onDownloads: () -> Unit,
     onBack: () -> Unit,
     viewModel: SeriesViewModel = hiltViewModel(),
+    downloads: DownloadsViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(seriesId) { viewModel.open(seriesId, name, poster) }
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -165,6 +186,14 @@ fun MobileSeriesScreen(
     val openTrailer = rememberOpenTrailer()
     // Red sa dugmetom „Trejler” postoji samo kad trejlera ima, pa pomera redove epizoda za jedan.
     val rowsBeforeEpisodes = ROWS_BEFORE_EPISODES + if (details?.trailer != null) 1 else 0
+    val episodeDownloads by downloads.episodes.collectAsStateWithLifecycle()
+    DownloadNotices(downloads.notices)
+    // Dozvola za obaveštenja se traži jednom za ceo ekran, pa se pamti koja epizoda je čekala na nju.
+    var pendingDownload by remember { mutableStateOf<Episode?>(null) }
+    val startDownload = rememberDownloadStart {
+        pendingDownload?.let { downloads.downloadEpisode(seriesId, state.name.ifEmpty { name }, state.poster, it) }
+        pendingDownload = null
+    }
 
     Scaffold { padding ->
         LazyColumn(
@@ -258,7 +287,13 @@ fun MobileSeriesScreen(
                             episode = episode,
                             progress = watched,
                             fallbackImage = state.poster,
+                            download = episodeDownloads[episode.id],
                             onClick = { onPlay(episode.id, watched?.resumable != true) },
+                            onDownload = {
+                                pendingDownload = episode
+                                startDownload()
+                            },
+                            onDownloads = onDownloads,
                             onToggleWatched = { viewModel.toggleWatched(episode) },
                         )
                     }
@@ -389,6 +424,20 @@ private fun WatchedButton(label: String, onClick: () -> Unit) {
     }
 }
 
+/** Dugme „Preuzmi” preko cele širine; kad je film već u preuzimanjima, pokazuje stanje i vodi na „Preuzeto”. */
+@Composable
+private fun DownloadButton(label: String, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        ButtonIcon(AppIcons.Download)
+        Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 /** Dugme „Trejler” preko cele širine; otvara trejler u drugoj aplikaciji. */
 @Composable
 private fun TrailerButton(onClick: () -> Unit) {
@@ -443,19 +492,22 @@ private fun EpisodeRow(
     episode: Episode,
     progress: WatchProgress?,
     fallbackImage: String?,
+    download: DownloadItem?,
     onClick: () -> Unit,
+    onDownload: () -> Unit,
+    onDownloads: () -> Unit,
     onToggleWatched: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .width(128.dp)
+                .width(112.dp)
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF22262E)),
@@ -522,9 +574,32 @@ private fun EpisodeRow(
                 }
             }
         }
+        // Preuzimanje: strelica dok epizoda nije preuzeta, procenat dok se preuzima; posle vodi na „Preuzeto”.
+        val percent = if (download?.state == DownloadState.DOWNLOADING) download.percent else null
+        IconButton(onClick = if (download == null) onDownload else onDownloads, modifier = Modifier.size(40.dp)) {
+            if (percent != null) {
+                Text(
+                    text = "$percent%",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                )
+            } else {
+                Icon(
+                    imageVector = AppIcons.Download,
+                    contentDescription = download?.shortLabel() ?: stringResource(R.string.download_action),
+                    tint = when (download?.state) {
+                        null -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        DownloadState.DONE -> MaterialTheme.colorScheme.primary
+                        DownloadState.FAILED -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+        }
         // Kvačica desno: označava epizodu kao odgledanu, odnosno poništava.
         val watched = progress?.watched == true
-        IconButton(onClick = onToggleWatched) {
+        IconButton(onClick = onToggleWatched, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = AppIcons.Check,
                 contentDescription = stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched),

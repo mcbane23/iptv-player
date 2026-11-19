@@ -21,8 +21,9 @@ import androidx.room.RoomDatabase
         EpgLinkEntity::class,
         FavoriteListEntity::class,
         FavoriteListItemEntity::class,
+        DownloadEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,4 +38,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vodFavoriteDao(): VodFavoriteDao
     abstract fun traktDao(): TraktDao
     abstract fun recordingDao(): RecordingDao
+    abstract fun downloadDao(): DownloadDao
 }

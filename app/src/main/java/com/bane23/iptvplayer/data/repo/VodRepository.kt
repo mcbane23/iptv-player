@@ -428,6 +428,21 @@ class VodRepository @Inject constructor(
         StreamSource(listOf(url), session.userAgent, referrer = null)
     }
 
+    /**
+     * Adresa fajla za preuzimanje na uređaj. Za razliku od puštanja, lista je zadata: preuzimanje
+     * može da čeka u redu i dok je aktivna neka druga lista.
+     */
+    suspend fun downloadSource(playlistId: Long, episode: Boolean, itemId: Long, extension: String): StreamSource =
+        withContext(Dispatchers.IO) {
+            val session = session(playlistId)
+            val url = if (episode) {
+                XtreamUrls.episodeStream(session.server, session.username, session.password, itemId, extension)
+            } else {
+                XtreamUrls.movieStream(session.server, session.username, session.password, itemId, extension)
+            }
+            StreamSource(listOf(url), session.userAgent, referrer = null)
+        }
+
     suspend fun movieProgress(movieId: Long): WatchProgress? {
         val playlistId = settings.activePlaylistId.first() ?: return null
         return progressDao.get(playlistId, KIND_MOVIE, movieId)?.toDomain()
@@ -773,8 +788,10 @@ class VodRepository @Inject constructor(
 
     private val VodKind.favoriteKind: String get() = if (this == VodKind.MOVIES) KIND_MOVIE else KIND_SERIES
 
-    private suspend fun session(): Session {
-        val playlistId = settings.activePlaylistId.first() ?: throw VodUnavailableException()
+    private suspend fun session(): Session =
+        session(settings.activePlaylistId.first() ?: throw VodUnavailableException())
+
+    private suspend fun session(playlistId: Long): Session {
         val playlist = playlistDao.getById(playlistId) ?: throw VodUnavailableException()
         if (playlist.type != PlaylistType.XTREAM) throw VodUnavailableException()
         val server = XtreamUrls.normalizeServer(playlist.source) ?: throw VodUnavailableException()

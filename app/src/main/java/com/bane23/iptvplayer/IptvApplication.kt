@@ -2,6 +2,7 @@ package com.bane23.iptvplayer
 
 import android.app.Application
 import android.content.Context
+import com.bane23.iptvplayer.data.download.DownloadRepository
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.reminder.ReminderRepository
 import com.bane23.iptvplayer.data.watchnext.WatchNextSync
@@ -31,6 +32,10 @@ class IptvApplication : Application() {
     /** Čim se napravi, vraća budilnike zakazanih snimanja (ne preživljavaju gašenje uređaja). */
     @Inject
     lateinit var recordings: RecordingRepository
+
+    /** Čim se napravi, nastavlja preuzimanja koja su ostala u redu. */
+    @Inject
+    lateinit var downloads: DownloadRepository
 
     @Inject
     lateinit var reminders: ReminderRepository

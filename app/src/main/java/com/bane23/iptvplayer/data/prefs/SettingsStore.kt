@@ -317,6 +317,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     private fun lastCategoryKey(playlistId: Long, section: String) =
         stringPreferencesKey("last_category_${section}_$playlistId")
 
+    /** Da li preuzimanje filmova i epizoda sme da ide i preko mobilnih podataka; inače samo preko Wi-Fi mreže. */
+    val downloadOnMobile: Flow<Boolean> = dataStore.data.map { it[DOWNLOAD_ON_MOBILE] ?: false }.distinctUntilChanged()
+
+    suspend fun setDownloadOnMobile(enabled: Boolean) {
+        dataStore.edit { it[DOWNLOAD_ON_MOBILE] = enabled }
+    }
+
     /** Ekran pauze: posle nekoliko sekundi pauze naslov, opis i sat umesto kontrola. */
     val pauseInfo: Flow<Boolean> = dataStore.data.map { it[PAUSE_INFO] ?: true }.distinctUntilChanged()
 
@@ -434,6 +441,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
+        val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")

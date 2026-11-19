@@ -700,3 +700,31 @@ interface RecordingDao {
     @Query("DELETE FROM recordings WHERE id = :id")
     suspend fun delete(id: Long)
 }
+
+@Dao
+interface DownloadDao {
+    @Query("SELECT * FROM downloads ORDER BY createdAt, id")
+    fun observeAll(): Flow<List<DownloadEntity>>
+
+    @Query("SELECT * FROM downloads WHERE id = :id")
+    suspend fun getById(id: Long): DownloadEntity?
+
+    @Query("SELECT * FROM downloads WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun find(playlistId: Long, kind: String, itemId: Long): DownloadEntity?
+
+    /** Sledeće na redu: najstarije koje čeka. */
+    @Query("SELECT * FROM downloads WHERE status = 'queued' ORDER BY createdAt, id LIMIT 1")
+    suspend fun nextQueued(): DownloadEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(download: DownloadEntity): Long
+
+    @Query("UPDATE downloads SET sizeBytes = :sizeBytes, totalBytes = :totalBytes WHERE id = :id")
+    suspend fun setProgress(id: Long, sizeBytes: Long, totalBytes: Long)
+
+    @Query("UPDATE downloads SET status = :status, error = :error WHERE id = :id")
+    suspend fun setStatus(id: Long, status: String, error: String?)
+
+    @Query("DELETE FROM downloads WHERE id = :id")
+    suspend fun delete(id: Long)
+}

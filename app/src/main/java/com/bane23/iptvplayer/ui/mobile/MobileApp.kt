@@ -29,6 +29,8 @@ import com.bane23.iptvplayer.ui.common.navigation.TraktAccount
 import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
+import com.bane23.iptvplayer.ui.common.navigation.Downloads
+import com.bane23.iptvplayer.ui.common.navigation.PlayDownload
 import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
 import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
@@ -106,6 +108,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onTransfer = { backStack.add(TransferToTv) },
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
                     onRecordings = { backStack.add(Recordings) },
+                    onDownloads = { backStack.add(Downloads) },
                     onMultiView = { backStack.add(MultiView) },
                 )
             }
@@ -190,6 +193,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         onPlay = { extension, startOver ->
                             backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
                         },
+                        onDownloads = { backStack.add(Downloads) },
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
@@ -203,6 +207,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         onPlay = { episodeId, startOver ->
                             backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
                         },
+                        onDownloads = { backStack.add(Downloads) },
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
@@ -256,6 +261,23 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onPlay = { id -> backStack.add(PlayRecording(id)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
+            }
+            entry<Downloads> {
+                MobileDownloadsScreen(
+                    onPlay = { item ->
+                        val series = item.entity.seriesId
+                        backStack.add(PlayDownload(item.id, series = series != null, lockId = series ?: item.entity.itemId))
+                    },
+                    onBack = { backStack.removeLastOrNull() },
+                )
+            }
+            entry<PlayDownload> { key ->
+                MobilePinGate(LockTarget.Vod(series = key.series, itemId = key.lockId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileVodPlayerScreen(
+                        start = { it.startDownload(key.downloadId) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<PlayRecording> { key ->
                 MobileVodPlayerScreen(

@@ -71,6 +71,7 @@ fun MobileSettingsScreen(
     onTrakt: (() -> Unit)? = null,
     onOpenSubtitles: (() -> Unit)? = null,
     onRecordings: (() -> Unit)? = null,
+    onDownloads: (() -> Unit)? = null,
     onTransfer: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
@@ -83,6 +84,7 @@ fun MobileSettingsScreen(
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
+    val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
@@ -105,7 +107,7 @@ fun MobileSettingsScreen(
         ) {
             SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
             if (onPlaylists != null || onCategories != null || onParental != null || onTrakt != null || onOpenSubtitles != null ||
-                onRecordings != null || onTransfer != null
+                onRecordings != null || onDownloads != null || onTransfer != null
             ) {
                 SettingsGroup(stringResource(R.string.settings_content_header)) {
                     if (onPlaylists != null) {
@@ -154,6 +156,14 @@ fun MobileSettingsScreen(
                             stringResource(R.string.recordings_title),
                             stringResource(R.string.settings_recordings_summary),
                             onRecordings,
+                        )
+                    }
+                    if (onDownloads != null) {
+                        SettingsLinkRow(
+                            AppIcons.Download,
+                            stringResource(R.string.downloads_title),
+                            stringResource(R.string.settings_downloads_summary),
+                            onDownloads,
                         )
                     }
                     if (onTransfer != null) {
@@ -262,6 +272,12 @@ fun MobileSettingsScreen(
                     summary = stringResource(R.string.settings_background_play_summary),
                     checked = backgroundPlay,
                     onChange = viewModel::setBackgroundPlay,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.settings_download_mobile),
+                    summary = stringResource(R.string.settings_download_mobile_summary),
+                    checked = downloadOnMobile,
+                    onChange = viewModel::setDownloadOnMobile,
                 )
                 SettingsSwitchRow(
                     title = stringResource(R.string.settings_pause_info),
