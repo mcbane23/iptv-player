@@ -50,4 +50,16 @@ class FavoriteListGroupsTest {
         assertEquals(sport, state.favoriteList(sport.groupId))
         assertNull(state.favoriteList(5L))
     }
+
+    @Test
+    fun `favorites and its lists are one group on screen`() {
+        val state = LiveTvUiState(categories = categories, favoriteLists = listOf(sport))
+        assertTrue(state.isFavoritesGroup(ChannelGroups.FAVORITES))
+        assertTrue(state.isFavoritesGroup(sport.groupId))
+        assertEquals(false, state.isFavoritesGroup(kids.groupId))
+        assertEquals(false, state.isFavoritesGroup(ChannelGroups.RECENT))
+        assertEquals(false, state.isFavoritesGroup(ChannelGroups.ALL))
+        assertEquals(false, state.isFavoritesGroup(5L))
+        assertEquals(false, state.isFavoritesGroup(null))
+    }
 }

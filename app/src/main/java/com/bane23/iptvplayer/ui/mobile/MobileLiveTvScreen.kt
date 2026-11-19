@@ -130,12 +130,31 @@ fun MobileLiveTvScreen(
     val selected = chosen?.takeIf { it in groups }
         ?: state.lastCategoryId?.takeIf { it in groups }
         ?: if (state.favoriteCount > 0) ChannelGroups.FAVORITES else ALL_CHANNELS
+    // „Omiljeni” su jedno dugme: imenovane liste su kartice iznad kanala, ne zasebna dugmad.
+    val inFavorites = state.isFavoritesGroup(selected)
+    // Kartica omiljenih koja je bila otvorena poslednji put, da se dugme „Omiljeni” vrati na nju.
+    var favoritesTab by rememberSaveable { mutableStateOf(ChannelGroups.FAVORITES) }
+    LaunchedEffect(selected) { if (inFavorites) favoritesTab = selected }
     // Grupa koja je bila izabrana pre omiljenih, da drugi dodir na zvezdicu vrati na nju.
     var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
     val choose: (Long) -> Unit = { group ->
-        if (group == ChannelGroups.FAVORITES && selected != ChannelGroups.FAVORITES) beforeFavorites = selected
+        if (state.isFavoritesGroup(group) && !inFavorites) beforeFavorites = selected
         chosen = group
         viewModel.rememberCategory(group)
+    }
+    val openFavorites = { choose(favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES) }
+    // Red sa listama omiljenih; postoji tek kad korisnik napravi bar jednu listu.
+    val favoriteTabs: @Composable (Modifier) -> Unit = { tabsModifier ->
+        if (inFavorites && state.favoriteLists.isNotEmpty()) {
+            FavoriteListTabs(
+                lists = state.favoriteLists,
+                selected = selected,
+                onSelect = choose,
+                onListMenu = { listMenu = FavoriteListMenu(it) },
+                onNew = { listMenu = FavoriteListMenu(list = null, create = true) },
+                modifier = tabsModifier,
+            )
+        }
     }
     val categoryId = selected.takeIf { it != ALL_CHANNELS }
 
@@ -277,7 +296,9 @@ fun MobileLiveTvScreen(
                             GroupPanel(
                                 state = state,
                                 selected = selected,
-                                onSelect = choose,
+                                onSelect = { group ->
+                                    if (group != ChannelGroups.FAVORITES) choose(group) else if (!inFavorites) openFavorites()
+                                },
                                 header = {
                                     // Izbor liste i dugmad stoje na vrhu spiska, da kanali počnu u istoj visini.
                                     val active = playlists.playlists.firstOrNull { it.id == playlistId }
@@ -310,7 +331,10 @@ fun MobileLiveTvScreen(
                                     .fillMaxHeight(),
                             )
                             // Bez naslova: izabrana grupa i broj kanala već pišu u spisku levo.
-                            channelGrid(Modifier.weight(0.58f))
+                            Column(modifier = Modifier.weight(0.58f)) {
+                                favoriteTabs(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp))
+                                channelGrid(Modifier.weight(1f))
+                            }
                             val previewChannel = previewId?.let { id ->
                                 channels.itemSnapshotList.items.firstOrNull { it.id == id }
                             }
@@ -330,16 +354,18 @@ fun MobileLiveTvScreen(
                         val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name, count = it.channelCount) }
                         QuickGroupChips(
                             selected = selected,
+                            inFavorites = inFavorites,
                             showRecent = state.recentCount > 0,
-                            favoriteLists = state.favoriteLists,
                             onListMenu = { listMenu = FavoriteListMenu(it) },
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
                             // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
                             onSelect = { group ->
-                                if (group == ChannelGroups.FAVORITES && selected == ChannelGroups.FAVORITES) {
-                                    choose(beforeFavorites?.takeIf { it in groups && it != ChannelGroups.FAVORITES } ?: ALL_CHANNELS)
-                                } else {
-                                    choose(group)
+                                when {
+                                    group != ChannelGroups.FAVORITES -> choose(group)
+                                    inFavorites -> choose(
+                                        beforeFavorites?.takeIf { it in groups && !state.isFavoritesGroup(it) } ?: ALL_CHANNELS,
+                                    )
+                                    else -> openFavorites()
                                 }
                             },
                             onMore = { pickerOpen = true },
@@ -364,6 +390,7 @@ fun MobileLiveTvScreen(
                                 ),
                             )
                         }
+                        favoriteTabs(Modifier.padding(horizontal = 16.dp))
                         ChannelsHeading(title = headingTitle, count = headingCount, modifier = Modifier.padding(top = 8.dp))
                         channelGrid(Modifier.weight(1f))
                     }
@@ -420,8 +447,8 @@ private fun PlaylistSwitcher(
 @Composable
 private fun QuickGroupChips(
     selected: Long,
+    inFavorites: Boolean,
     showRecent: Boolean,
-    favoriteLists: List<FavoriteList>,
     onListMenu: (FavoriteList?) -> Unit,
     categoryName: String?,
     onSelect: (Long) -> Unit,
@@ -437,20 +464,11 @@ private fun QuickGroupChips(
     ) {
         GroupChip(
             label = stringResource(R.string.category_favorites),
-            selected = selected == ChannelGroups.FAVORITES,
+            selected = inFavorites,
             onClick = { onSelect(ChannelGroups.FAVORITES) },
-            iconOnly = AppIcons.Star,
+            leading = AppIcons.Star,
             onLongClick = { onListMenu(null) },
         )
-        favoriteLists.forEach { list ->
-            GroupChip(
-                label = list.name,
-                selected = selected == list.groupId,
-                onClick = { onSelect(list.groupId) },
-                leading = AppIcons.StarOutline,
-                onLongClick = { onListMenu(list) },
-            )
-        }
         if (showRecent) {
             GroupChip(
                 label = stringResource(R.string.category_chip_recent),
@@ -468,6 +486,50 @@ private fun QuickGroupChips(
             selected = categoryName != null,
             onClick = onMore,
             trailing = AppIcons.ArrowDown,
+        )
+    }
+}
+
+/**
+ * Liste omiljenih kao red kartica iznad kanala: „Omiljeni”, pa imenovane liste i „+” za novu.
+ * Dugi pritisak na listu otvara meni (preimenuj, obriši).
+ */
+@Composable
+private fun FavoriteListTabs(
+    lists: List<FavoriteList>,
+    selected: Long,
+    onSelect: (Long) -> Unit,
+    onListMenu: (FavoriteList?) -> Unit,
+    onNew: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .then(modifier),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GroupChip(
+            label = stringResource(R.string.category_favorites),
+            selected = selected == ChannelGroups.FAVORITES,
+            onClick = { onSelect(ChannelGroups.FAVORITES) },
+            onLongClick = { onListMenu(null) },
+        )
+        lists.forEach { list ->
+            GroupChip(
+                label = list.name,
+                selected = selected == list.groupId,
+                onClick = { onSelect(list.groupId) },
+                onLongClick = { onListMenu(list) },
+            )
+        }
+        GroupChip(
+            label = stringResource(R.string.favorite_list_new),
+            selected = false,
+            onClick = onNew,
+            iconOnly = AppIcons.Add,
         )
     }
 }
@@ -603,19 +665,10 @@ private fun GroupPanel(
                 text = stringResource(R.string.category_favorites),
                 icon = AppIcons.Star,
                 subtitle = stringResource(R.string.vod_total, state.favoriteCount),
-                selected = selected == ChannelGroups.FAVORITES,
+                // Jedan red za sve liste omiljenih; koja je otvorena, vidi se u karticama nad kanalima.
+                selected = state.isFavoritesGroup(selected),
                 onClick = { onSelect(ChannelGroups.FAVORITES) },
                 onLongClick = { onListMenu(null) },
-            )
-        }
-        items(state.favoriteLists, key = { it.groupId }) { list ->
-            PanelRow(
-                text = list.name,
-                icon = AppIcons.StarOutline,
-                subtitle = stringResource(R.string.vod_total, list.channelCount),
-                selected = selected == list.groupId,
-                onClick = { onSelect(list.groupId) },
-                onLongClick = { onListMenu(list) },
             )
         }
         if (state.recentCount > 0) {

@@ -61,6 +61,9 @@ data class LiveTvUiState(
         else -> categories.any { it.id == groupId } || favoriteList(groupId) != null
     }
 
+    /** Grupa je „Omiljeni” ili neka imenovana lista omiljenih. */
+    fun isFavoritesGroup(groupId: Long?): Boolean = groupId == ChannelGroups.FAVORITES || favoriteList(groupId) != null
+
     /** Imenovana lista omiljenih koju grupa [groupId] predstavlja, ili null. */
     fun favoriteList(groupId: Long?): FavoriteList? =
         ChannelGroups.favoriteListId(groupId)?.let { id -> favoriteLists.firstOrNull { it.id == id } }

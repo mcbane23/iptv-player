@@ -8,9 +8,11 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
-/** Kolona koja kaže da li je kanal među favoritima. */
+/** Kolona koja kaže da li je kanal u „Omiljenima” ili u bar jednoj imenovanoj listi omiljenih. */
 private const val FAVORITE_COLUMN =
-    "EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) AS favorite"
+    "(EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) " +
+        "OR EXISTS(SELECT 1 FROM favorite_list_items fli WHERE fli.playlistId = ch.playlistId " +
+        "AND fli.channelKey = ch.stableKey)) AS favorite"
 
 /** Emisija koja je u trenutku `:now` na programu kanala (uslov za podupit). */
 private const val NOW_PROGRAM =
@@ -452,8 +454,12 @@ interface FavoriteDao {
     @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey)")
     suspend fun exists(playlistId: Long, channelKey: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey)")
-    fun observeExists(playlistId: Long, channelKey: String): Flow<Boolean>
+    /** Kanal je u „Omiljenima” ili u bar jednoj imenovanoj listi (zvezdica u plejeru). */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey) " +
+            "OR EXISTS(SELECT 1 FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey)",
+    )
+    fun observeInAnyList(playlistId: Long, channelKey: String): Flow<Boolean>
 }
 
 /** Liste omiljenih kanala kojima je korisnik dao ime. */

@@ -1,6 +1,13 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -125,6 +132,17 @@ fun TvLiveTvScreen(
     // Lista koja čeka brisanje dok fokus ne pređe sa njenog reda na „Omiljene”.
     var pendingListDelete by remember { mutableStateOf<Long?>(null) }
     val favoritesFocus = remember { FocusRequester() }
+    // Kartica omiljenih koja je bila otvorena poslednji put: red „Omiljeni” se vraća na nju.
+    var favoritesTab by rememberSaveable(playlistId) { mutableStateOf(ChannelGroups.FAVORITES) }
+    LaunchedEffect(selectedCategory) {
+        if (state.isFavoritesGroup(selectedCategory)) favoritesTab = selectedCategory
+    }
+    // Fokus na redu „Omiljeni” ne menja karticu koja je već otvorena.
+    val focusFavorites = {
+        if (!state.isFavoritesGroup(focusedCategory)) {
+            focusedCategory = favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES
+        }
+    }
 
     // Pregled ne sme da drži vezu kad se izađe sa ekrana ili aplikacija ode u pozadinu.
     DisposableEffect(Unit) { onDispose { previewViewModel.stop() } }
@@ -359,24 +377,13 @@ fun TvLiveTvScreen(
                             icon = AppIcons.Star,
                             title = stringResource(R.string.category_favorites),
                             subtitle = stringResource(R.string.vod_total, state.favoriteCount),
-                            selected = selectedCategory == ChannelGroups.FAVORITES,
-                            onFocused = { focusedCategory = ChannelGroups.FAVORITES; lastChannelId = null },
-                            onClick = { focusedCategory = ChannelGroups.FAVORITES },
+                            // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
+                            selected = state.isFavoritesGroup(selectedCategory),
+                            onFocused = { focusFavorites(); lastChannelId = null },
+                            onClick = focusFavorites,
                             onLongClick = { favoritesMenu = true },
-                            modifier = focusTarget(selectedCategory == ChannelGroups.FAVORITES, firstFocus)
+                            modifier = focusTarget(state.isFavoritesGroup(selectedCategory), firstFocus)
                                 .focusRequester(favoritesFocus),
-                        )
-                    }
-                    items(state.favoriteLists, key = { it.groupId }) { list ->
-                        PinnedRow(
-                            icon = AppIcons.StarOutline,
-                            title = list.name,
-                            subtitle = stringResource(R.string.vod_total, list.channelCount),
-                            selected = selectedCategory == list.groupId,
-                            onFocused = { focusedCategory = list.groupId; lastChannelId = null },
-                            onClick = { focusedCategory = list.groupId },
-                            onLongClick = { menuList = list },
-                            modifier = focusTarget(selectedCategory == list.groupId, firstFocus),
                         )
                     }
                     if (state.recentCount > 0) {
@@ -425,6 +432,20 @@ fun TvLiveTvScreen(
                         .weight(0.42f)
                         .fillMaxHeight(),
                 ) {
+                if (state.favoriteLists.isNotEmpty() && state.isFavoritesGroup(selectedCategory)) {
+                    // Liste omiljenih: Gore iz kanala, Levo/Desno po karticama, OK otvara listu.
+                    TvFavoriteListTabs(
+                        lists = state.favoriteLists,
+                        selected = selectedCategory,
+                        onSelect = { group ->
+                            lastChannelId = null
+                            focusedCategory = group
+                            selectedCategory = group
+                        },
+                        onListMenu = { menuList = it },
+                        onNew = { nameDialog = ListNameRequest(null) },
+                    )
+                } else {
                 ChannelsHeading(
                     title = when (selectedCategory) {
                         ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
@@ -441,6 +462,7 @@ fun TvLiveTvScreen(
                             ?: state.categories.firstOrNull { it.id == selectedCategory }?.channelCount ?: 0
                     },
                 )
+                }
                 TvFavoriteHint()
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -552,14 +574,11 @@ fun TvLiveTvScreen(
                         }
                     }
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
-                    // Redovi pre kategorija: pretraga, omiljeni, (liste omiljenih), (nedavno), svi kanali.
-                    val listRows = state.favoriteLists.size
-                    val allRow = listRows + if (state.recentCount > 0) 3 else 2
-                    val listRow = state.favoriteLists.indexOfFirst { it.groupId == selectedCategory }
+                    // Redovi pre kategorija: pretraga, omiljeni (sa svim listama), (nedavno), svi kanali.
+                    val allRow = if (state.recentCount > 0) 3 else 2
                     val selectedRow = when {
-                        selectedCategory == ChannelGroups.FAVORITES -> 1
-                        listRow >= 0 -> 2 + listRow
-                        selectedCategory == ChannelGroups.RECENT -> 2 + listRows
+                        state.isFavoritesGroup(selectedCategory) -> 1
+                        selectedCategory == ChannelGroups.RECENT -> 2
                         selectedCategory == ALL_CHANNELS -> allRow
                         else -> allRow + 1 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
                     }
@@ -803,6 +822,84 @@ private fun ChannelsHeading(title: String, count: Int) {
                 .padding(horizontal = 10.dp, vertical = 3.dp),
         )
     }
+}
+
+/**
+ * Liste omiljenih kao red kartica iznad kanala: „Omiljeni”, imenovane liste i „+” za novu. OK
+ * otvara listu, dugi OK na imenovanoj listi otvara meni (preimenuj, obriši).
+ */
+@Composable
+private fun TvFavoriteListTabs(
+    lists: List<FavoriteList>,
+    selected: Long,
+    onSelect: (Long) -> Unit,
+    onListMenu: (FavoriteList) -> Unit,
+    onNew: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TvTabChip(
+            text = stringResource(R.string.category_favorites),
+            selected = selected == ChannelGroups.FAVORITES,
+            onClick = { onSelect(ChannelGroups.FAVORITES) },
+        )
+        lists.forEach { list ->
+            TvTabChip(
+                text = list.name,
+                selected = selected == list.groupId,
+                onClick = { onSelect(list.groupId) },
+                onLongClick = { onListMenu(list) },
+            )
+        }
+        TvTabChip(text = "+", description = stringResource(R.string.favorite_list_new), selected = false, onClick = onNew)
+    }
+}
+
+/** Kartica u redu lista: u fokusu puna u akcentnoj boji, izabrana bez fokusa ima akcentni okvir. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TvTabChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    description: String? = null,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(50)
+    Text(
+        text = text,
+        color = when {
+            focused -> colors.onPrimary
+            selected -> colors.primary
+            else -> colors.onSurface
+        },
+        style = MaterialTheme.typography.labelLarge,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .widthIn(max = 200.dp)
+            .clip(shape)
+            .background(
+                when {
+                    focused -> colors.primary
+                    selected -> colors.primary.copy(alpha = 0.16f)
+                    else -> colors.surfaceVariant.copy(alpha = 0.6f)
+                },
+            )
+            .then(if (selected && !focused) Modifier.border(1.5.dp, colors.primary, shape) else Modifier)
+            .onFocusChanged { focused = it.isFocused }
+            .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    )
 }
 
 /** Oznaka „uživo” na slici pregleda. */
