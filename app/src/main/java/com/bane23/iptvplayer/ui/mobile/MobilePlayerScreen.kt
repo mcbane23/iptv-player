@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import android.app.PendingIntent
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
 import android.content.BroadcastReceiver
@@ -81,13 +82,15 @@ import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
+import com.bane23.iptvplayer.ui.common.player.SourceNotices
+import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
 
-private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE }
+private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE, SOURCES }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -104,6 +107,9 @@ fun MobilePlayerScreen(
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
+    SourceNotices(viewModel.sourceNotice)
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    MobileFavoritePickDialog(favoriteLists)
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
@@ -135,7 +141,7 @@ fun MobilePlayerScreen(
     // Izbor zvuka i snimanja su zasebni prozori, pa se dodiri u njima ovde ne vide.
     val pauseDim = rememberPauseDim(
         status = playback.status,
-        enabled = panel != Panel.AUDIO && panel != Panel.RECORD,
+        enabled = panel != Panel.AUDIO && panel != Panel.RECORD && panel != Panel.SOURCES,
         onExit = onClose,
     )
     ImmersiveMode()
@@ -231,13 +237,14 @@ fun MobilePlayerScreen(
                         onRetry = viewModel::retry,
                         onChannels = { panel = Panel.CHANNELS },
                         onSchedule = { panel = Panel.SCHEDULE },
+                        onSources = if (ui.sources.size > 1) ({ panel = Panel.SOURCES }) else null,
                         onAudio = { panel = Panel.AUDIO },
                         onSettings = { panel = Panel.SETTINGS },
                         infoVisible = infoVisible,
                         onInfo = { infoVisible = !infoVisible },
                         isFavorite = isFavorite,
                         nowNext = nowNext,
-                        onFavorite = viewModel::toggleFavorite,
+                        onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
                         isRecording = isRecording,
                         onRecord = record,
                         onPip = rememberEnterPictureInPicture(),
@@ -289,6 +296,14 @@ fun MobilePlayerScreen(
             onDismiss = { panel = Panel.NONE },
         )
 
+        Panel.SOURCES -> TrackDialog(
+            title = stringResource(R.string.player_sources),
+            options = ui.sources.map { it.label(ui) to (it.channelId == ui.sourceId) },
+            emptyText = null,
+            onSelect = { index -> ui.sources.getOrNull(index)?.let { viewModel.selectSource(it.channelId) } },
+            onDismiss = { panel = Panel.NONE },
+        )
+
         Panel.RECORD -> TrackDialog(
             title = stringResource(R.string.recording_duration_title),
             options = recordChoices.map { it.label to false },
@@ -315,6 +330,7 @@ private fun LiveControls(
     onRetry: () -> Unit,
     onChannels: () -> Unit,
     onSchedule: () -> Unit,
+    onSources: (() -> Unit)?,
     onAudio: () -> Unit,
     onSettings: () -> Unit,
     infoVisible: Boolean,
@@ -382,6 +398,10 @@ private fun LiveControls(
             PlayerChip(icon = AppIcons.ChannelList, label = stringResource(R.string.player_channels), onClick = onChannels)
             if (channel != null) {
                 PlayerChip(icon = AppIcons.Guide, label = stringResource(R.string.player_schedule), onClick = onSchedule)
+            }
+            // Isti kanal postoji i u spojenoj listi: može da se izabere odakle se gleda.
+            if (onSources != null) {
+                PlayerChip(icon = AppIcons.Swap, label = stringResource(R.string.player_sources), onClick = onSources)
             }
             PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
             PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)

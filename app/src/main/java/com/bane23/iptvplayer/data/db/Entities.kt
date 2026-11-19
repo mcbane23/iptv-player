@@ -182,7 +182,49 @@ data class WatchProgressEntity(
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
-data class ChannelEpgRow(val id: Long, val name: String, val tvgId: String?, val catchupType: String? = null)
+data class ChannelEpgRow(
+    val id: Long,
+    val name: String,
+    val tvgId: String?,
+    val catchupType: String? = null,
+    val stableKey: String = "",
+)
+
+/** Jedan izvor kanala: isti kanal u jednoj od spojenih lista. [firstOrder] samo bira prvi takav kanal u listi. */
+data class ChannelSourceRow(val id: Long, val playlistId: Long, val playlistName: String, val firstOrder: Int)
+
+/** Kanal koji postoji u vodiču liste (XMLTV `<channel>`), da korisnik može ručno da ga poveže sa kanalom liste. */
+@Entity(
+    tableName = "epg_channels",
+    primaryKeys = ["playlistId", "epgKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class EpgChannelEntity(val playlistId: Long, val epgKey: String, val name: String)
+
+/**
+ * Ručna veza kanala liste sa kanalom iz vodiča. Vezuje se za `stableKey` kanala, da preživi
+ * osvežavanje liste, i ima prednost nad `tvg-id` i nad poklapanjem po nazivu.
+ */
+@Entity(
+    tableName = "epg_links",
+    primaryKeys = ["playlistId", "stableKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class EpgLinkEntity(val playlistId: Long, val stableKey: String, val epgKey: String)
 
 /** Kanal koji je korisnik označio kao omiljen. */
 @Entity(
@@ -202,6 +244,44 @@ data class FavoriteEntity(
     val channelKey: String,
     val addedAt: Long,
 )
+
+/** Lista omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala. */
+@Entity(tableName = "favorite_lists")
+data class FavoriteListEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val position: Int,
+)
+
+/** Omiljeni kanal svrstan u jednu imenovanu listu. Isti kanal može biti u više lista. */
+@Entity(
+    tableName = "favorite_list_items",
+    primaryKeys = ["listId", "playlistId", "channelKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = FavoriteListEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["listId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("playlistId", "channelKey")],
+)
+data class FavoriteListItemEntity(
+    val listId: Long,
+    val playlistId: Long,
+    val channelKey: String,
+    val addedAt: Long,
+)
+
+/** Imenovana lista omiljenih sa brojem kanala koji se iz nje vide u izabranoj listi kanala. */
+data class FavoriteListRow(val id: Long, val name: String, val channelCount: Int)
 
 /** Kanal koji je gledan; čuva se samo vreme poslednjeg gledanja. */
 @Entity(

@@ -602,6 +602,25 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       sledeća ne kreće sama
 - [x] Crna tema (Bane, 18. 11. 2026, treći krug predloga): prekidač u Podešavanjima (telefon i TV),
       podrazumevano isključen. Pozadina je potpuno crna, površine za nijansu tamnije, bez sjaja u uglu
+- [x] Ručno povezivanje kanala sa programom (Bane, 19. 11. 2026, četvrti krug predloga): za kanale kojima
+      se oznaka u listi i u vodiču ne poklapaju. U Vodiču dugi OK na nazivu kanala (TV), odnosno „Poveži
+      program” u detaljima kanala bez programa (telefon), nudi kanale vodiča sa najsličnijim nazivom i šta
+      je sada na njima. Izbor se pamti po `stableKey` (`epg_links`), ima prednost nad `tvg-id` i preživljava
+      osvežavanje liste. Baza v15: `epg_channels` (spisak kanala vodiča) i `epg_links`. Za nepovezane kanale
+      vodiča čuva se samo program narednih 8 sati, bez opisa
+- [x] Rezervni izvor kanala (Bane, 19. 11. 2026, četvrti krug predloga): kanal sa potpuno istim nazivom
+      (Banetov izbor; „HD” i obična verzija ostaju odvojeni) u više spojenih lista prikazuje se jednom u
+      „Svi kanali”, pretrazi i Vodiču, iz prve liste. Kad se izvor ne javi ni posle ponovnih pokušaja,
+      plejer sam pređe na isti kanal iz sledeće liste i to kratko javi; dugme „Izvori” u plejeru (samo kad
+      izvora ima više) bira ručno. Posle dva bežanja zaredom sa iste liste, kanali kreću odmah sa sledećeg
+      izvora dok je plejer otvoren. Unutar kategorija se ništa ne menja
+- [x] Više lista omiljenih kanala (Bane, 19. 11. 2026, četvrti krug predloga): liste sa imenom („Sport”,
+      „Deca”) samo za kanale uživo (Banetov izbor), među kategorijama odmah ispod „Omiljeni”. Dok nijedne
+      nema, dodavanje u omiljene radi kao do sada; kad postoji bar jedna, isti potez otvara izbor liste sa
+      kvačicama i poljem „Nova lista”. Prva lista se pravi dugim pritiskom (dugo OK na TV-u) na „Omiljeni”,
+      a istim potezom na listi se ona preimenuje ili briše. „Omiljeni” ostaju spisak svih omiljenih: kanal
+      u nekoj listi je uvek i tamo, brisanje liste ga ne uklanja. Baza v16: `favorite_lists` i
+      `favorite_list_items`. Liste se još ne šalju u prenosu sa telefona na TV
 
 ## 7. Testiranje
 

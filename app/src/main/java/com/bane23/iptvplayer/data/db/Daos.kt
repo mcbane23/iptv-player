@@ -49,6 +49,12 @@ private const val FAVORITE_CHANNELS =
     "FROM channels ch JOIN favorites fav ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey " +
         "WHERE $IN_SCOPE GROUP BY ch.playlistId, ch.stableKey ORDER BY fav.addedAt, ch.playlistId, ch.sortOrder"
 
+/** Kanali jedne imenovane liste omiljenih (`:listId`), redom kojim su dodati. */
+private const val LISTED_CHANNELS =
+    "FROM channels ch JOIN favorite_list_items li ON li.playlistId = ch.playlistId AND li.channelKey = ch.stableKey " +
+        "WHERE li.listId = :listId AND $IN_SCOPE GROUP BY ch.playlistId, ch.stableKey " +
+        "ORDER BY li.addedAt, ch.playlistId, ch.sortOrder"
+
 /** Nedavno gledani kanali, najskoriji prvi. */
 private const val RECENT_CHANNELS =
     "FROM channels ch JOIN history h ON h.playlistId = ch.playlistId AND h.channelKey = ch.stableKey " +
@@ -58,12 +64,22 @@ private const val RECENT_CHANNELS =
 private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrder, cat.playlistId, cat.sortOrder"
 
 /**
+ * Isti kanal postoji i u nekoj spojenoj listi koja je u spisku ispred ove: kanal sa potpuno istim
+ * nazivom, u kategoriji koja nije sakrivena. U zajedničkim spiskovima se takav kanal prikazuje jednom
+ * (iz prve liste), a ostali su mu rezervni izvori, vidi [ChannelDao.sources]. Poređenje je tačno po
+ * nazivu, da može da koristi indeks.
+ */
+private const val DUPLICATE =
+    "EXISTS(SELECT 1 FROM channels d WHERE d.playlistId IN $SCOPE_IDS AND d.playlistId < ch.playlistId " +
+        "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND dc.hidden = 1))"
+
+/**
  * Uslov koji iz spiska „svi kanali” (`:categoryId` je null) izbacuje kanale sakrivenih kategorija.
  * Kad je kategorija zadata, ne menja ništa.
  */
 private const val VISIBLE_IN_ALL =
-    "AND (:categoryId IS NOT NULL OR NOT EXISTS(SELECT 1 FROM categories hc " +
-        "WHERE hc.id = ch.categoryId AND hc.hidden = 1))"
+    "AND (:categoryId IS NOT NULL OR (NOT EXISTS(SELECT 1 FROM categories hc " +
+        "WHERE hc.id = ch.categoryId AND hc.hidden = 1) AND NOT $DUPLICATE))"
 
 /** Kanal nije u sakrivenoj kategoriji. */
 private const val NOT_HIDDEN =
@@ -183,7 +199,7 @@ interface ChannelDao {
     suspend fun countByPlaylist(playlistId: Long): Int
 
     /** Broj kanala u spisku „svi kanali”: bez kanala sakrivenih kategorija. */
-    @Query("SELECT COUNT(*) FROM channels ch WHERE $IN_SCOPE $NOT_HIDDEN")
+    @Query("SELECT COUNT(*) FROM channels ch WHERE $IN_SCOPE $NOT_HIDDEN AND NOT $DUPLICATE")
     fun observeVisibleCount(playlistId: Long): Flow<Int>
 
     @Query("SELECT * FROM channels WHERE id = :id")
@@ -212,6 +228,13 @@ interface ChannelDao {
     @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $FAVORITE_CHANNELS")
     fun favoritesPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
 
+    /** Kanali imenovane liste omiljenih [listId]. */
+    @Query("SELECT ch.*, 1 AS favorite, $NOW_COLUMN $LISTED_CHANNELS")
+    fun favoriteListPagingSource(playlistId: Long, listId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
+
+    @Query("SELECT ch.id $LISTED_CHANNELS")
+    suspend fun favoriteListIds(playlistId: Long, listId: Long): List<Long>
+
     @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS")
     fun recentPagingSource(playlistId: Long, now: Long): PagingSource<Int, ChannelWithFavorite>
 
@@ -226,7 +249,8 @@ interface ChannelDao {
     /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE $IN_SCOPE " +
-            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
+            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN AND NOT $DUPLICATE " +
+            "ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
     )
     fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
 
@@ -303,11 +327,33 @@ interface ChannelDao {
     @Query("SELECT ch.* FROM channels ch WHERE $IN_SCOPE AND ch.number = :number ORDER BY ch.playlistId, ch.sortOrder LIMIT 1")
     suspend fun byNumber(playlistId: Long, number: Int): ChannelEntity?
 
-    @Query("SELECT id, name, tvgId, catchupType FROM channels WHERE playlistId = :playlistId")
+    @Query("SELECT id, name, tvgId, catchupType, stableKey FROM channels WHERE playlistId = :playlistId")
     suspend fun epgRows(playlistId: Long): List<ChannelEpgRow>
 
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id IN (:ids)")
     suspend fun setEpgKey(ids: List<Long>, epgKey: String)
+
+    /**
+     * Isti kanal (potpuno isti naziv) u listi `:playlistId` i u listama spojenim sa njom, po jedan iz
+     * svake liste: prvo iz same liste, pa iz ostalih. Kad liste nisu spojene, vraća samo jedan red.
+     */
+    @Query(
+        "SELECT ch.id AS id, ch.playlistId AS playlistId, p.name AS playlistName, MIN(ch.sortOrder) AS firstOrder " +
+            "FROM channels ch JOIN playlists p ON p.id = ch.playlistId WHERE $IN_SCOPE AND ch.name = :name " +
+            "GROUP BY ch.playlistId ORDER BY ch.playlistId != :playlistId, ch.playlistId",
+    )
+    suspend fun sources(playlistId: Long, name: String): List<ChannelSourceRow>
+
+    @Query("UPDATE channels SET epgKey = :epgKey WHERE id = :id")
+    suspend fun setEpgKeyOf(id: Long, epgKey: String?)
+
+    /** Posle osvežavanja liste vraća kanalima ručno izabran kanal iz vodiča (vidi [EpgLinkEntity]). */
+    @Query(
+        "UPDATE channels SET epgKey = (SELECT l.epgKey FROM epg_links l WHERE l.playlistId = channels.playlistId " +
+            "AND l.stableKey = channels.stableKey) WHERE playlistId = :playlistId AND EXISTS (" +
+            "SELECT 1 FROM epg_links l WHERE l.playlistId = channels.playlistId AND l.stableKey = channels.stableKey)",
+    )
+    suspend fun applyEpgLinks(playlistId: Long)
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
@@ -331,6 +377,27 @@ interface EpgDao {
             "AND stopMs > :from AND startMs < :to GROUP BY startMs ORDER BY startMs",
     )
     suspend fun range(playlistId: Long, channelKey: String, from: Long, to: Long): List<EpgProgramEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChannels(channels: List<EpgChannelEntity>)
+
+    @Query("DELETE FROM epg_channels WHERE playlistId = :playlistId")
+    suspend fun deleteChannels(playlistId: Long)
+
+    @Query("SELECT * FROM epg_channels WHERE playlistId = :playlistId")
+    suspend fun guideChannels(playlistId: Long): List<EpgChannelEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertLink(link: EpgLinkEntity)
+
+    @Query("DELETE FROM epg_links WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun deleteLink(playlistId: Long, stableKey: String)
+
+    @Query("SELECT * FROM epg_links WHERE playlistId = :playlistId")
+    suspend fun links(playlistId: Long): List<EpgLinkEntity>
+
+    @Query("SELECT epgKey FROM epg_links WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun linkedKey(playlistId: Long, stableKey: String): String?
 
     @Query("SELECT EXISTS(SELECT 1 FROM epg_programs WHERE playlistId = :playlistId)")
     fun observeHasPrograms(playlistId: Long): Flow<Boolean>
@@ -387,6 +454,57 @@ interface FavoriteDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey)")
     fun observeExists(playlistId: Long, channelKey: String): Flow<Boolean>
+}
+
+/** Liste omiljenih kanala kojima je korisnik dao ime. */
+@Dao
+interface FavoriteListDao {
+    @Insert
+    suspend fun insert(list: FavoriteListEntity): Long
+
+    @Query("UPDATE favorite_lists SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String)
+
+    @Query("DELETE FROM favorite_lists WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM favorite_lists")
+    suspend fun nextPosition(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_lists WHERE name = :name COLLATE NOCASE AND id != :exceptId)")
+    suspend fun nameTaken(name: String, exceptId: Long): Boolean
+
+    @Query("SELECT COUNT(*) FROM favorite_lists")
+    suspend fun count(): Int
+
+    @Query("SELECT * FROM favorite_lists ORDER BY position, id")
+    suspend fun all(): List<FavoriteListEntity>
+
+    /** Sve liste, sa brojem kanala koji se iz svake vide u listi kanala [playlistId] i spojenima sa njom. */
+    @Query(
+        "SELECT fl.id, fl.name, (SELECT COUNT(DISTINCT ch.playlistId || '|' || ch.stableKey) FROM channels ch " +
+            "JOIN favorite_list_items li ON li.playlistId = ch.playlistId AND li.channelKey = ch.stableKey " +
+            "WHERE li.listId = fl.id AND $IN_SCOPE) AS channelCount FROM favorite_lists fl ORDER BY fl.position, fl.id",
+    )
+    fun observe(playlistId: Long): Flow<List<FavoriteListRow>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertItem(item: FavoriteListItemEntity)
+
+    @Query("DELETE FROM favorite_list_items WHERE listId = :listId AND playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun deleteItem(listId: Long, playlistId: Long, channelKey: String)
+
+    /** Uklanja kanal iz svih imenovanih lista (kad prestane da bude omiljen). */
+    @Query("DELETE FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun deleteItems(playlistId: Long, channelKey: String)
+
+    /** Liste u kojima je kanal. */
+    @Query("SELECT listId FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun listsOf(playlistId: Long, channelKey: String): List<Long>
+
+    /** Ključevi kanala liste [playlistId] u imenovanoj listi [listId], redom kojim su dodati (za prenos na TV). */
+    @Query("SELECT channelKey FROM favorite_list_items WHERE listId = :listId AND playlistId = :playlistId ORDER BY addedAt")
+    suspend fun keys(listId: Long, playlistId: Long): List<String>
 }
 
 @Dao

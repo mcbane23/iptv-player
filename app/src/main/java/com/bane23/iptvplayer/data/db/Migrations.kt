@@ -120,8 +120,45 @@ object Migrations {
         }
     }
 
+    /** 14 → 15: spisak kanala iz vodiča i ručne veze kanala liste sa njima. */
+    private val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `epg_channels` (`playlistId` INTEGER NOT NULL, `epgKey` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, PRIMARY KEY(`playlistId`, `epgKey`), " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `epg_links` (`playlistId` INTEGER NOT NULL, `stableKey` TEXT NOT NULL, " +
+                    "`epgKey` TEXT NOT NULL, PRIMARY KEY(`playlistId`, `stableKey`), " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+        }
+    }
+
+    /** 15 → 16: liste omiljenih kanala sa imenom i kanali u njima. */
+    private val MIGRATION_15_16 = object : Migration(15, 16) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `favorite_lists` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `position` INTEGER NOT NULL)",
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `favorite_list_items` (`listId` INTEGER NOT NULL, " +
+                    "`playlistId` INTEGER NOT NULL, `channelKey` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`listId`, `playlistId`, `channelKey`), " +
+                    "FOREIGN KEY(`listId`) REFERENCES `favorite_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_favorite_list_items_playlistId_channelKey` " +
+                    "ON `favorite_list_items` (`playlistId`, `channelKey`)",
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14,
+        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16,
     )
 }

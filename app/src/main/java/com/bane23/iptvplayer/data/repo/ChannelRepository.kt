@@ -12,6 +12,9 @@ import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.db.ChannelEntity
 import com.bane23.iptvplayer.data.db.ChannelWithFavorite
 import com.bane23.iptvplayer.data.db.FavoriteEntity
+import com.bane23.iptvplayer.data.db.FavoriteListEntity
+import com.bane23.iptvplayer.data.db.FavoriteListItemEntity
+import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.data.db.HistoryEntity
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.data.prefs.SettingsStore
@@ -34,6 +37,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
+/** Jedan izvor kanala: kanal [channelId] iz liste [playlistName], vidi [ChannelRepository.sources]. */
+data class ChannelSource(val channelId: Long, val playlistId: Long, val playlistName: String)
+
 /** Ulaz UI sloja za kategorije, kanale i adrese strimova. */
 @Singleton
 class ChannelRepository @Inject constructor(
@@ -46,6 +52,7 @@ class ChannelRepository @Inject constructor(
     private val categoryDao = db.categoryDao()
     private val channelDao = db.channelDao()
     private val favoriteDao = db.favoriteDao()
+    private val favoriteListDao = db.favoriteListDao()
     private val historyDao = db.historyDao()
 
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
@@ -126,10 +133,13 @@ class ChannelRepository @Inject constructor(
             config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = true, jumpThreshold = PAGE_SIZE * 3),
             initialKey = (startIndex - PAGE_SIZE / 2).coerceAtLeast(0),
             pagingSourceFactory = {
-                when (categoryId) {
-                    ChannelGroups.FAVORITES -> channelDao.favoritesPagingSource(playlistId, System.currentTimeMillis())
-                    ChannelGroups.RECENT -> channelDao.recentPagingSource(playlistId, System.currentTimeMillis())
-                    else -> channelDao.pagingSource(playlistId, categoryId, System.currentTimeMillis())
+                val now = System.currentTimeMillis()
+                val listId = ChannelGroups.favoriteListId(categoryId)
+                when {
+                    listId != null -> channelDao.favoriteListPagingSource(playlistId, listId, now)
+                    categoryId == ChannelGroups.FAVORITES -> channelDao.favoritesPagingSource(playlistId, now)
+                    categoryId == ChannelGroups.RECENT -> channelDao.recentPagingSource(playlistId, now)
+                    else -> channelDao.pagingSource(playlistId, categoryId, now)
                 }
             },
         ).flow.map { page -> page.map { it.toDomain() } }
@@ -171,18 +181,72 @@ class ChannelRepository @Inject constructor(
     suspend fun groupChannelIds(playlistId: Long, groupId: Long): List<Long> = when (groupId) {
         ChannelGroups.FAVORITES -> channelDao.favoriteIds(playlistId)
         ChannelGroups.RECENT -> channelDao.recentIds(playlistId)
-        else -> emptyList()
+        else -> ChannelGroups.favoriteListId(groupId)?.let { channelDao.favoriteListIds(playlistId, it) }.orEmpty()
     }
 
     fun observeFavorite(channel: Channel): Flow<Boolean> = flowOfKey(channel.id) { key ->
         favoriteDao.observeExists(channel.playlistId, key)
     }
 
-    /** Dodaje kanal u favorite ili ga uklanja iz njih. */
+    /** Imenovane liste omiljenih, sa brojem kanala vidljivih iz liste [playlistId]. */
+    fun observeFavoriteLists(playlistId: Long): Flow<List<FavoriteList>> =
+        favoriteListDao.observe(playlistId).map { rows -> rows.map { FavoriteList(it.id, it.name, it.channelCount) } }
+
+    suspend fun isFavorite(channelId: Long): Boolean {
+        val channel = channelDao.getById(channelId) ?: return false
+        return favoriteDao.exists(channel.playlistId, channel.stableKey)
+    }
+
+    suspend fun hasFavoriteLists(): Boolean = favoriteListDao.count() > 0
+
+    /** Liste u kojima je kanal. */
+    suspend fun favoriteListsOf(channelId: Long): Set<Long> {
+        val channel = channelDao.getById(channelId) ?: return emptySet()
+        return favoriteListDao.listsOf(channel.playlistId, channel.stableKey).toSet()
+    }
+
+    /**
+     * Pravi listu omiljenih sa imenom [name]. Vraća njen ID, ili null kad je ime prazno ili već
+     * postoji lista sa tim imenom.
+     */
+    suspend fun createFavoriteList(name: String): Long? = db.withTransaction {
+        val clean = name.trim()
+        if (clean.isEmpty() || favoriteListDao.nameTaken(clean, 0)) return@withTransaction null
+        favoriteListDao.insert(FavoriteListEntity(name = clean, position = favoriteListDao.nextPosition()))
+    }
+
+    /** Menja ime liste. Vraća false kad je ime prazno ili zauzeto. */
+    suspend fun renameFavoriteList(listId: Long, name: String): Boolean = db.withTransaction {
+        val clean = name.trim()
+        if (clean.isEmpty() || favoriteListDao.nameTaken(clean, listId)) return@withTransaction false
+        favoriteListDao.rename(listId, clean)
+        true
+    }
+
+    /** Briše listu. Kanali iz nje ostaju u „Omiljenima”. */
+    suspend fun deleteFavoriteList(listId: Long) = favoriteListDao.delete(listId)
+
+    /**
+     * Stavlja kanal u imenovanu listu ili ga vadi iz nje. Kanal u bilo kojoj listi je uvek i u
+     * „Omiljenima”; vađenje iz liste ga tamo ostavlja.
+     */
+    suspend fun setInFavoriteList(channelId: Long, listId: Long, member: Boolean) = db.withTransaction {
+        val channel = channelDao.getById(channelId) ?: return@withTransaction
+        val now = System.currentTimeMillis()
+        if (member) {
+            favoriteDao.insert(FavoriteEntity(channel.playlistId, channel.stableKey, now))
+            favoriteListDao.insertItem(FavoriteListItemEntity(listId, channel.playlistId, channel.stableKey, now))
+        } else {
+            favoriteListDao.deleteItem(listId, channel.playlistId, channel.stableKey)
+        }
+    }
+
+    /** Dodaje kanal u favorite ili ga uklanja iz njih (tada i iz svih imenovanih lista). */
     suspend fun toggleFavorite(channelId: Long) = db.withTransaction {
         val channel = channelDao.getById(channelId) ?: return@withTransaction
         if (favoriteDao.exists(channel.playlistId, channel.stableKey)) {
             favoriteDao.delete(channel.playlistId, channel.stableKey)
+            favoriteListDao.deleteItems(channel.playlistId, channel.stableKey)
         } else {
             favoriteDao.insert(FavoriteEntity(channel.playlistId, channel.stableKey, System.currentTimeMillis()))
         }
@@ -249,6 +313,16 @@ class ChannelRepository @Inject constructor(
     suspend fun previous(channel: Channel, categoryId: Long?): Channel? =
         (channelDao.previous(channel.playlistId, categoryId, channel.playlistId, channel.sortOrder)
             ?: channelDao.last(channel.playlistId, categoryId))?.toDomain()
+
+    /**
+     * Izvori kanala: on sam i kanali sa potpuno istim nazivom u listama spojenim sa njegovom, po jedan
+     * iz svake liste. Prvi je uvek sam [channel]. Bez spojenih lista spisak ima samo njega.
+     */
+    suspend fun sources(channel: Channel): List<ChannelSource> =
+        channelDao.sources(channel.playlistId, channel.name).map { row ->
+            val own = row.playlistId == channel.playlistId
+            ChannelSource(if (own) channel.id else row.id, row.playlistId, row.playlistName)
+        }.ifEmpty { listOf(ChannelSource(channel.id, channel.playlistId, "")) }
 
     suspend fun byNumber(playlistId: Long, number: Int): Channel? =
         channelDao.byNumber(playlistId, number)?.toDomain()

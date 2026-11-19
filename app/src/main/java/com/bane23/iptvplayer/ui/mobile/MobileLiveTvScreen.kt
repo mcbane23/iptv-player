@@ -66,6 +66,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.semantics.Role
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.domain.FavoriteList
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
 import androidx.compose.runtime.DisposableEffect
@@ -103,8 +113,16 @@ fun MobileLiveTvScreen(
     // ako ih ima, pa svi kanali).
     var chosen by rememberSaveable { mutableStateOf<Long?>(null) }
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    MobileFavoritePickDialog(favoriteLists)
+    // Meni posle dugog pritiska na „Omiljene” ili na imenovanu listu omiljenih.
+    var listMenu by remember { mutableStateOf<FavoriteListMenu?>(null) }
+    listMenu?.let { menu ->
+        MobileFavoriteListMenuDialog(menu = menu, viewModel = favoriteLists, onClose = { listMenu = null })
+    }
     val groups = buildList {
         add(ChannelGroups.FAVORITES)
+        state.favoriteLists.forEach { add(it.groupId) }
         if (state.recentCount > 0) add(ChannelGroups.RECENT)
         add(ALL_CHANNELS)
         state.categories.forEach { add(it.id) }
@@ -183,13 +201,15 @@ fun MobileLiveTvScreen(
                         ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
                         ChannelGroups.RECENT -> stringResource(R.string.category_recent)
                         ALL_CHANNELS -> stringResource(R.string.category_all)
-                        else -> state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
+                        else -> state.favoriteList(selected)?.name
+                            ?: state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
                     }
                     val headingCount = when (selected) {
                         ChannelGroups.FAVORITES -> state.favoriteCount
                         ChannelGroups.RECENT -> state.recentCount
                         ALL_CHANNELS -> state.totalChannels
-                        else -> state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
+                        else -> state.favoriteList(selected)?.channelCount
+                            ?: state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
                     }
                     // Kanal u pregledu (samo položen telefon): prvi dodir ga bira i pušta u malom pregledu
                     // desno, drugi dodir ili dugme ga otvara preko celog ekrana, kao fokus i OK na TV-u.
@@ -217,9 +237,16 @@ fun MobileLiveTvScreen(
                             }
                             if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
                                 val favorites = selected == ChannelGroups.FAVORITES
+                                val namedList = state.favoriteList(selected) != null
                                 EmptyState(
-                                    icon = if (favorites) AppIcons.StarOutline else AppIcons.LiveTv,
-                                    text = stringResource(if (favorites) R.string.favorites_empty else R.string.channels_empty),
+                                    icon = if (favorites || namedList) AppIcons.StarOutline else AppIcons.LiveTv,
+                                    text = stringResource(
+                                        when {
+                                            favorites -> R.string.favorites_empty
+                                            namedList -> R.string.favorite_list_empty
+                                            else -> R.string.channels_empty
+                                        },
+                                    ),
                                 )
                             }
                             LazyVerticalGrid(
@@ -236,7 +263,7 @@ fun MobileLiveTvScreen(
                                         onClick = { tapped ->
                                             if (!showPreview || tapped.id == previewId) open(tapped.id) else previewId = tapped.id
                                         },
-                                        onToggleFavorite = channelsViewModel::toggleFavorite,
+                                        onToggleFavorite = favoriteLists::favoriteAction,
                                         onGuide = { picked -> onGuide(picked.playlistId, categoryId) },
                                     )
                                 }
@@ -276,6 +303,7 @@ fun MobileLiveTvScreen(
                                 onHide = viewModel::hideCategory,
                                 onMoveToTop = viewModel::moveCategoryToTop,
                                 onManage = onCategories,
+                                onListMenu = { listMenu = FavoriteListMenu(it) },
                                 modifier = Modifier
                                     .padding(start = 8.dp, top = 8.dp)
                                     .width(210.dp)
@@ -303,6 +331,8 @@ fun MobileLiveTvScreen(
                         QuickGroupChips(
                             selected = selected,
                             showRecent = state.recentCount > 0,
+                            favoriteLists = state.favoriteLists,
+                            onListMenu = { listMenu = FavoriteListMenu(it) },
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
                             // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
                             onSelect = { group ->
@@ -391,6 +421,8 @@ private fun PlaylistSwitcher(
 private fun QuickGroupChips(
     selected: Long,
     showRecent: Boolean,
+    favoriteLists: List<FavoriteList>,
+    onListMenu: (FavoriteList?) -> Unit,
     categoryName: String?,
     onSelect: (Long) -> Unit,
     onMore: () -> Unit,
@@ -408,7 +440,17 @@ private fun QuickGroupChips(
             selected = selected == ChannelGroups.FAVORITES,
             onClick = { onSelect(ChannelGroups.FAVORITES) },
             iconOnly = AppIcons.Star,
+            onLongClick = { onListMenu(null) },
         )
+        favoriteLists.forEach { list ->
+            GroupChip(
+                label = list.name,
+                selected = selected == list.groupId,
+                onClick = { onSelect(list.groupId) },
+                leading = AppIcons.StarOutline,
+                onLongClick = { onListMenu(list) },
+            )
+        }
         if (showRecent) {
             GroupChip(
                 label = stringResource(R.string.category_chip_recent),
@@ -442,10 +484,32 @@ internal fun GroupChip(
     leading: ImageVector? = null,
     trailing: ImageVector? = null,
     iconOnly: ImageVector? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
+    // Čip sam ne javlja dugi pritisak, pa se on prepoznaje po tome koliko dugo dodir traje.
+    val interactions = remember { MutableInteractionSource() }
+    var longPressed by remember { mutableStateOf(false) }
+    val longPressMs = LocalViewConfiguration.current.longPressTimeoutMillis
+    val haptics = LocalHapticFeedback.current
+    if (onLongClick != null) {
+        val latest by rememberUpdatedState(onLongClick)
+        LaunchedEffect(interactions) {
+            interactions.interactions.collectLatest { interaction ->
+                if (interaction is PressInteraction.Press) {
+                    longPressed = false
+                    delay(longPressMs)
+                    longPressed = true
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    latest()
+                }
+            }
+        }
+    }
     FilterChip(
         selected = selected,
-        onClick = onClick,
+        // Otpuštanje prsta posle dugog pritiska ne sme da izabere čip.
+        onClick = { if (longPressed) longPressed = false else onClick() },
+        interactionSource = interactions,
         label = {
             if (iconOnly != null) {
                 Icon(iconOnly, contentDescription = label, modifier = Modifier.size(18.dp))
@@ -513,6 +577,7 @@ private fun GroupPanel(
     onHide: (Long) -> Unit,
     onMoveToTop: (Long) -> Unit,
     onManage: () -> Unit,
+    onListMenu: (FavoriteList?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Isti izgled kao spisak kategorija kod filmova i serija: svaki red je svoja zaobljena pločica.
@@ -540,6 +605,17 @@ private fun GroupPanel(
                 subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                 selected = selected == ChannelGroups.FAVORITES,
                 onClick = { onSelect(ChannelGroups.FAVORITES) },
+                onLongClick = { onListMenu(null) },
+            )
+        }
+        items(state.favoriteLists, key = { it.groupId }) { list ->
+            PanelRow(
+                text = list.name,
+                icon = AppIcons.StarOutline,
+                subtitle = stringResource(R.string.vod_total, list.channelCount),
+                selected = selected == list.groupId,
+                onClick = { onSelect(list.groupId) },
+                onLongClick = { onListMenu(list) },
             )
         }
         if (state.recentCount > 0) {

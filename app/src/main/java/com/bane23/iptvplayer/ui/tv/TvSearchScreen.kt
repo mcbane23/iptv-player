@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.background
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +43,8 @@ fun TvSearchScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
     val fieldFocus = remember { FocusRequester() }
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    TvFavoritePickDialog(favoriteLists)
 
     Column(
         modifier = Modifier
@@ -79,7 +82,7 @@ fun TvSearchScreen(
                 val channel = results[index]
                 TvListRow(
                     onClick = { channel?.let { onPlay(it.id) } },
-                    onLongClick = { channel?.let { viewModel.toggleFavorite(it.id) } },
+                    onLongClick = { channel?.let { favoriteLists.favoriteAction(it.id) } },
                 ) { color ->
                     ChannelLogo(url = channel?.logo, name = channel?.name, size = 36.dp)
                     Text(

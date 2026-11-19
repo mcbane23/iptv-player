@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.layout.Column
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +44,8 @@ fun MobileSearchScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
     val fieldFocus = remember { FocusRequester() }
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    MobileFavoritePickDialog(favoriteLists)
 
     Scaffold { padding ->
         Column(
@@ -78,7 +81,7 @@ fun MobileSearchScreen(
                     MobileChannelRow(
                         channel = results[index],
                         onClick = onPlay,
-                        onToggleFavorite = viewModel::toggleFavorite,
+                        onToggleFavorite = favoriteLists::favoriteAction,
                     )
                 }
             }

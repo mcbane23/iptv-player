@@ -37,6 +37,8 @@ import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.domain.FavoriteList
+import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SkeletonLogo
@@ -114,6 +116,15 @@ fun TvLiveTvScreen(
     var focusTargetId by remember { mutableStateOf<Long?>(null) }
     val moveFocus = remember { FocusRequester() }
     var movedToTop by remember { mutableIntStateOf(0) }
+    val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    // Meni liste omiljenih (dugi OK): za „Omiljene” nova lista, za imenovanu listu ime i brisanje.
+    var favoritesMenu by remember { mutableStateOf(false) }
+    var menuList by remember { mutableStateOf<FavoriteList?>(null) }
+    var nameDialog by remember { mutableStateOf<ListNameRequest?>(null) }
+    var deleteList by remember { mutableStateOf<FavoriteList?>(null) }
+    // Lista koja čeka brisanje dok fokus ne pređe sa njenog reda na „Omiljene”.
+    var pendingListDelete by remember { mutableStateOf<Long?>(null) }
+    val favoritesFocus = remember { FocusRequester() }
 
     // Pregled ne sme da drži vezu kad se izađe sa ekrana ili aplikacija ode u pozadinu.
     DisposableEffect(Unit) { onDispose { previewViewModel.stop() } }
@@ -150,6 +161,57 @@ fun TvLiveTvScreen(
         viewModel.hideCategory(id)
         focusTargetId = null
         pendingHide = null
+    }
+    LaunchedEffect(pendingListDelete) {
+        val id = pendingListDelete ?: return@LaunchedEffect
+        var moved = false
+        var attempts = 0
+        while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            moved = favoritesFocus.tryRequestFocus()
+            attempts++
+        }
+        focusedCategory = ChannelGroups.FAVORITES
+        favoriteLists.delete(id)
+        pendingListDelete = null
+    }
+    TvFavoritePickDialog(favoriteLists)
+    if (favoritesMenu) {
+        TvActionDialog(
+            title = stringResource(R.string.category_favorites),
+            options = listOf(stringResource(R.string.favorite_list_new)),
+            onSelect = { nameDialog = ListNameRequest(null) },
+            onClose = { favoritesMenu = false },
+        )
+    }
+    menuList?.let { list ->
+        TvActionDialog(
+            title = list.name,
+            options = listOf(
+                stringResource(R.string.favorite_list_rename),
+                stringResource(R.string.favorite_list_delete),
+                stringResource(R.string.favorite_list_new),
+            ),
+            onSelect = { option ->
+                when (option) {
+                    0 -> nameDialog = ListNameRequest(list)
+                    1 -> deleteList = list
+                    else -> nameDialog = ListNameRequest(null)
+                }
+            },
+            onClose = { menuList = null },
+        )
+    }
+    nameDialog?.let { request ->
+        TvFavoriteListNameDialog(list = request.list, viewModel = favoriteLists, onClose = { nameDialog = null })
+    }
+    deleteList?.let { list ->
+        TvActionDialog(
+            title = stringResource(R.string.favorite_list_delete_confirm, list.name),
+            options = listOf(stringResource(R.string.action_cancel), stringResource(R.string.favorite_list_delete)),
+            onSelect = { option -> if (option == 1) pendingListDelete = list.id },
+            onClose = { deleteList = null },
+        )
     }
     LaunchedEffect(movedToTop) {
         if (movedToTop > 0) {
@@ -300,7 +362,21 @@ fun TvLiveTvScreen(
                             selected = selectedCategory == ChannelGroups.FAVORITES,
                             onFocused = { focusedCategory = ChannelGroups.FAVORITES; lastChannelId = null },
                             onClick = { focusedCategory = ChannelGroups.FAVORITES },
-                            modifier = focusTarget(selectedCategory == ChannelGroups.FAVORITES, firstFocus),
+                            onLongClick = { favoritesMenu = true },
+                            modifier = focusTarget(selectedCategory == ChannelGroups.FAVORITES, firstFocus)
+                                .focusRequester(favoritesFocus),
+                        )
+                    }
+                    items(state.favoriteLists, key = { it.groupId }) { list ->
+                        PinnedRow(
+                            icon = AppIcons.StarOutline,
+                            title = list.name,
+                            subtitle = stringResource(R.string.vod_total, list.channelCount),
+                            selected = selectedCategory == list.groupId,
+                            onFocused = { focusedCategory = list.groupId; lastChannelId = null },
+                            onClick = { focusedCategory = list.groupId },
+                            onLongClick = { menuList = list },
+                            modifier = focusTarget(selectedCategory == list.groupId, firstFocus),
                         )
                     }
                     if (state.recentCount > 0) {
@@ -354,13 +430,15 @@ fun TvLiveTvScreen(
                         ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
                         ChannelGroups.RECENT -> stringResource(R.string.category_recent)
                         ALL_CHANNELS -> stringResource(R.string.category_all)
-                        else -> state.categories.firstOrNull { it.id == selectedCategory }?.name.orEmpty()
+                        else -> state.favoriteList(selectedCategory)?.name
+                            ?: state.categories.firstOrNull { it.id == selectedCategory }?.name.orEmpty()
                     },
                     count = when (selectedCategory) {
                         ChannelGroups.FAVORITES -> state.favoriteCount
                         ChannelGroups.RECENT -> state.recentCount
                         ALL_CHANNELS -> state.totalChannels
-                        else -> state.categories.firstOrNull { it.id == selectedCategory }?.channelCount ?: 0
+                        else -> state.favoriteList(selectedCategory)?.channelCount
+                            ?: state.categories.firstOrNull { it.id == selectedCategory }?.channelCount ?: 0
                     },
                 )
                 TvFavoriteHint()
@@ -378,7 +456,7 @@ fun TvLiveTvScreen(
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
-                            onLongClick = { channel?.let { channelsViewModel.toggleFavorite(it.id) } },
+                            onLongClick = { channel?.let { favoriteLists.favoriteAction(it.id) } },
                             onFocused = {
                                 channel?.let {
                                     lastChannelId = it.id
@@ -474,12 +552,15 @@ fun TvLiveTvScreen(
                         }
                     }
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
-                    // Redovi pre kategorija: pretraga, omiljeni, (nedavno), svi kanali.
-                    val allRow = if (state.recentCount > 0) 3 else 2
-                    val selectedRow = when (selectedCategory) {
-                        ChannelGroups.FAVORITES -> 1
-                        ChannelGroups.RECENT -> 2
-                        ALL_CHANNELS -> allRow
+                    // Redovi pre kategorija: pretraga, omiljeni, (liste omiljenih), (nedavno), svi kanali.
+                    val listRows = state.favoriteLists.size
+                    val allRow = listRows + if (state.recentCount > 0) 3 else 2
+                    val listRow = state.favoriteLists.indexOfFirst { it.groupId == selectedCategory }
+                    val selectedRow = when {
+                        selectedCategory == ChannelGroups.FAVORITES -> 1
+                        listRow >= 0 -> 2 + listRow
+                        selectedCategory == ChannelGroups.RECENT -> 2 + listRows
+                        selectedCategory == ALL_CHANNELS -> allRow
                         else -> allRow + 1 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
                     }
                     runCatching { categoryListState.scrollToItem((selectedRow - 3).coerceAtLeast(0)) }
@@ -494,6 +575,9 @@ fun TvLiveTvScreen(
 }
 
 /** Samo izabrani red nosi [requester], da bi početni fokus išao baš na njega. */
+/** Zahtev za prozor sa imenom liste: [list] je null za novu listu. */
+private data class ListNameRequest(val list: FavoriteList?)
+
 private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 

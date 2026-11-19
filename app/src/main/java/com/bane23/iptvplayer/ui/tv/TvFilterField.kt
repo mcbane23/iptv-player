@@ -39,7 +39,10 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
  * okvir u akcentnoj boji.
  */
 @Composable
-fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = AppIcons.Search,
+) {
     var focused by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     // Posle „Gotovo” na tastaturi fokus se vraća na red, da daljinski ne ostane bez fokusa.
@@ -74,7 +77,7 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(AppIcons.Search, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Icon(icon, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
         Box(
             modifier = Modifier
                 .weight(1f)
