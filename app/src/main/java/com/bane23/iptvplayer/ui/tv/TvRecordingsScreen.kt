@@ -87,7 +87,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
                 modifier = Modifier
                     .weight(0.65f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 // Izbor mesta ima smisla samo kad je priključena SD kartica ili USB memorija. OK menja mesto.
                 if (locations.size > 1) {
@@ -137,7 +137,7 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
             }
             Column(
                 modifier = Modifier.weight(0.35f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (open != null) {
                     val recordingNow = open.status == RecordingEntity.STATUS_RECORDING

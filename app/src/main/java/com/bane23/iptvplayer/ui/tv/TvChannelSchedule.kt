@@ -82,7 +82,7 @@ fun TvChannelSchedulePanel(
     val list = programs
     val hasArchive = channel.archiveDays != null
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(0.4f)

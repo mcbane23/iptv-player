@@ -203,7 +203,7 @@ fun TvParentalScreen(viewModel: ParentalViewModel = hiltViewModel()) {
                 val open = stringResource(R.string.parental_unlocked)
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(0.75f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     item(key = "hint") {
                         Text(

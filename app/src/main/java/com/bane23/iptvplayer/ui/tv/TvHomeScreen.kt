@@ -227,8 +227,8 @@ fun TvHomeScreen(
                 // Kad fokus uđe u meni, ide na izabranu sekciju, a ne na najbližu stavku.
                 .focusRestorer(selectedFocus)
                 .focusGroup()
-                // Margine zbog overscan-a na televizorima.
-                .padding(horizontal = 16.dp, vertical = 48.dp),
+                // Margine zbog overscan-a na televizorima; prva stavka je u visini naslova sekcije (27 dp).
+                .padding(horizontal = 16.dp, vertical = 27.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             // Dok se ne zna da li postoji lista, stavke se ne crtaju: inače se pri pokretanju na

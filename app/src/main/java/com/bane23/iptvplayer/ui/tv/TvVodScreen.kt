@@ -329,7 +329,6 @@ fun TvVodScreen(
                                     viewModel.selectCategory(category)
                                 },
                                 onLongClick = { menuCategory = category },
-                                card = true,
                                 modifier = (if (selected) Modifier.focusRequester(firstFocus) else Modifier)
                                     .then(if (focusTargetId == category.id) Modifier.focusRequester(moveFocus) else Modifier),
                             )
@@ -477,7 +476,6 @@ internal fun PinnedRow(
         onFocused = onFocused,
         onLongClick = onLongClick,
         modifier = modifier,
-        card = true,
     ) { color ->
         // Ikonica je u akcentnoj boji, kao na telefonu; na fokusiranom redu prati boju teksta.
         Icon(icon, contentDescription = null, tint = if (color == colors.onPrimary) color else colors.primary, modifier = Modifier.size(22.dp))

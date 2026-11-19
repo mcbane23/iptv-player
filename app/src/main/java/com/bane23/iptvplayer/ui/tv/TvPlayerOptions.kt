@@ -56,7 +56,7 @@ fun TvTrackPanel(
     val focusIndex = rows.indexOfFirst { it.second }.coerceAtLeast(0)
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(0.32f)
@@ -122,7 +122,7 @@ fun TvChoicePanel(
 ) {
     val firstFocus = remember { FocusRequester() }
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(0.32f)
@@ -159,7 +159,7 @@ fun TvChoicePanel(
 fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
     val firstFocus = remember { FocusRequester() }
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(0.4f)
@@ -219,7 +219,7 @@ fun TvOnlineSubtitlesPanel(
     }
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .fillMaxHeight()
             .fillMaxWidth(0.45f)

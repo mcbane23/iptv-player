@@ -183,7 +183,7 @@ private fun TvSideDialog(onClose: () -> Unit, content: LazyListScope.() -> Unit)
         SideEffect { window?.setWindowAnimations(0) }
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(0.36f)

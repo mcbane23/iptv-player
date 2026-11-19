@@ -97,7 +97,7 @@ fun TvMultiViewScreen(onOpen: (channelId: Long) -> Unit, viewModel: MultiViewVie
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val rows = if (state.count == 2) listOf(listOf(0, 1)) else listOf(listOf(0, 1), listOf(2, 3))
             rows.forEach { row ->
                 Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -216,7 +216,7 @@ private fun TileMenu(
                     }
                     true
                 },
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (channel != null) {
                 Text(
@@ -340,7 +340,7 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
             modifier = Modifier.padding(bottom = 16.dp),
         )
         if (picker.categoryId == null) {
-            LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(categories, key = { it.id }) { category ->
                     TvTextRow(
                         text = category.name,
@@ -352,7 +352,7 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
             }
             LaunchedEffect(categories.isEmpty()) { firstRow.tryRequestFocus() }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                     val channel = channels[index]
                     TvTextRow(
