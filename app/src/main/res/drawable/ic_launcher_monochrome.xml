@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Jednobojna verzija za teme ikonica (Android 13+): isti crtež kao ikonica, sve u jednoj boji. -->
+<!-- Ikonica „Glowbox”: jednobojna verzija za teme ikonica (Android 13+), isti crtež u jednoj boji.
+     Crtež je umanjen oko središta da ceo stane u bezbednu zonu adaptivne ikonice (prečnik 66). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,24 +8,18 @@
     android:viewportHeight="108">
     <group
         android:pivotX="54"
-        android:pivotY="55"
-        android:scaleX="0.8"
-        android:scaleY="0.8"
-        android:translateY="-1">
+        android:pivotY="54"
+        android:scaleX="0.86"
+        android:scaleY="0.86">
         <path
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="4.5"
-            android:pathData="M34,32H74A8,8 0,0 1,82 40V62A8,8 0,0 1,74 70H34A8,8 0,0 1,26 62V40A8,8 0,0 1,34 32Z" />
+            android:strokeWidth="3.6"
+            android:pathData="M40,33H68A11,11 0,0 1,79 44V64A11,11 0,0 1,68 75H40A11,11 0,0 1,29 64V44A11,11 0,0 1,40 33Z" />
         <path
             android:fillColor="#FFFFFFFF"
             android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="4"
+            android:strokeWidth="2.8"
             android:strokeLineJoin="round"
-            android:pathData="M48,42.5L62,51L48,59.5Z" />
-        <path
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="4.5"
-            android:strokeLineCap="round"
-            android:pathData="M44,78H64" />
+            android:pathData="M49,45L63,54L49,63Z" />
     </group>
 </vector>
