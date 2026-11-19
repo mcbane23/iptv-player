@@ -44,6 +44,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+/** Oznake za ekran pauze: ocena (osim prazne i nule), godina i žanr, samo ono što postoji. */
+internal fun pauseMeta(rating: String?, releaseDate: String?, genre: String?): List<String> = listOfNotNull(
+    rating?.trim()?.takeIf { it.toFloatOrNull()?.let { value -> value > 0f } == true }?.let { "★ $it" },
+    releaseDate?.trim()?.take(4)?.takeIf { it.length == 4 && it.all(Char::isDigit) },
+    genre?.trim()?.takeIf { it.isNotEmpty() },
+)
+
 data class VodPlayerUiState(
     val title: String = "",
     /** Sezona i epizoda (za serije). */
@@ -51,6 +58,10 @@ data class VodPlayerUiState(
     val episode: Int? = null,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    /** Opis filma ili epizode za ekran pauze; null dok nije učitan ili ga nema. */
+    val description: String? = null,
+    /** Kratke oznake za ekran pauze (ocena, godina, žanr; za epizodu sezona i broj). */
+    val meta: List<String> = emptyList(),
     /** Mesto na koje će se premotati kad se strelica pusti; null kad se ne premotava. */
     val scrubMs: Long? = null,
     /** Pozicija sa koje je premotavanje krenulo, za prikaz pomaka. */
@@ -188,6 +199,17 @@ class VodPlayerViewModel @Inject constructor(
         started = true
         item = Item(movieId, seriesId = null, title = name, poster = poster, extension = extension)
         _ui.update { it.copy(title = name, onlineSubtitles = subtitles.isAvailable) }
+        // Opis za ekran pauze; puštanje ga ne čeka i radi i kad se ne učita.
+        viewModelScope.launch {
+            runCatching { repository.movie(movieId) }.onSuccess { details ->
+                _ui.update {
+                    it.copy(
+                        description = details.plot?.takeIf(String::isNotBlank),
+                        meta = pauseMeta(details.rating, details.releaseDate, details.genre),
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             play(startOver) {
                 val start = repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs
@@ -514,6 +536,8 @@ class VodPlayerViewModel @Inject constructor(
                 title = listOfNotNull(details.name, episode.title).joinToString(" · "),
                 season = episode.season,
                 episode = episode.number,
+                description = (episode.plot ?: details.plot)?.takeIf(String::isNotBlank),
+                meta = listOf("S${episode.season} E${episode.number}") + pauseMeta(null, null, details.genre),
                 positionMs = 0,
                 durationMs = 0,
                 scrubMs = null,

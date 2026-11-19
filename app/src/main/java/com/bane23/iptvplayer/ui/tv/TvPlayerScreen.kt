@@ -57,6 +57,9 @@ import com.bane23.iptvplayer.ui.common.guide.nextLine
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
+import com.bane23.iptvplayer.ui.common.player.livePauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -130,7 +133,8 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
-    val pauseDim = rememberPauseDim(playback.status, onExit = onClose)
+    val pauseInfoOn = rememberPauseInfoEnabled()
+    val pauseDim = rememberPauseDim(playback.status, info = pauseInfoOn && !panelOpen, onExit = onClose)
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = panelOpen || overlay != Overlay.HIDDEN
 
@@ -253,7 +257,10 @@ fun TvPlayerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        PauseDimLayer(pauseDim) {
+        PauseDimLayer(
+            state = pauseDim,
+            info = { ui.channel?.let { PauseInfoScreen(livePauseInfo(it.name, nowNext), compact = false) } },
+        ) {
             if (infoVisible && !channelList) {
                 PlayerStreamInfo(
                     player = viewModel.player,

@@ -73,6 +73,9 @@ import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
+import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
+import com.bane23.iptvplayer.ui.common.player.livePauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -142,6 +145,7 @@ fun MobilePlayerScreen(
     val pauseDim = rememberPauseDim(
         status = playback.status,
         enabled = panel != Panel.AUDIO && panel != Panel.RECORD && panel != Panel.SOURCES,
+        info = rememberPauseInfoEnabled() && panel == Panel.NONE && !inPip,
         onExit = onClose,
     )
     ImmersiveMode()
@@ -189,7 +193,10 @@ fun MobilePlayerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        PauseDimLayer(pauseDim) {
+        PauseDimLayer(
+            state = pauseDim,
+            info = { ui.channel?.let { PauseInfoScreen(livePauseInfo(it.name, nowNext), compact = true) } },
+        ) {
             if (!inPip) {
                 statusMessage(ui, playback)?.let { message ->
                     Text(
