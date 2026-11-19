@@ -1,0 +1,2 @@
+New icon: a glowing neon box
+New "Theme" item in Settings: gray, navy and two neon themes
