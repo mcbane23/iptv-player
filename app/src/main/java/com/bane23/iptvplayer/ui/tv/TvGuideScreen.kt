@@ -46,7 +46,6 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.guide.GuideCell
 import com.bane23.iptvplayer.ui.common.guide.GuideSelection
@@ -66,8 +65,8 @@ private const val WINDOW_MS = 150 * 60_000L
 /**
  * TV vodič na TV-u: levo kanal, desno njegove emisije na zajedničkoj vremenskoj osi.
  * Fokus na emisiji prikazuje njene detalje dole, OK pušta kanal. Levo sa naziva kanala
- * pomera vodič unazad, desno sa poslednje emisije unapred. Kod kanala sa arhivom OK na nazivu
- * kanala ili na emisiji koja je završena otvara arhivu tog kanala.
+ * pomera vodič unazad do sadašnjeg vremena (pa u bočni meni), desno sa poslednje emisije unapred.
+ * Kod kanala sa arhivom OK na nazivu kanala ili na emisiji koja je završena otvara arhivu tog kanala.
  */
 @Composable
 fun TvGuideScreen(
@@ -119,7 +118,7 @@ fun TvGuideScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
+            // Pozadinu (i svetlo) crta početni ekran; Vodič je njegova kartica.
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -219,6 +218,16 @@ private fun GuideRow(
         value = viewModel.row(channel.id, windowStart, WINDOW_MS)
     }
     val channelFocus = remember { FocusRequester() }
+    // Desno na poslednjoj emisiji pomera vreme; fokus ostaje desno, na istoj emisiji (ako se nastavlja)
+    // ili na poslednjoj, umesto da skoči na naziv kanala.
+    val shiftFocus = remember { FocusRequester() }
+    var shiftTarget by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(cells) {
+        if (shiftTarget != null) {
+            shiftFocus.tryRequestFocus()
+            shiftTarget = null
+        }
+    }
     if (restoreFocus) {
         LaunchedEffect(Unit) {
             channelFocus.tryRequestFocus()
@@ -245,12 +254,17 @@ private fun GuideRow(
                 .width(CHANNEL_WIDTH)
                 .focusRequester(channelFocus)
                 .onPreviewKeyEvent { event ->
-                    val left = event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT
+                    // Levo vraća vreme do sadašnjeg; odatle levo ide u bočni meni (ranije: dugme „Ranije”).
+                    val left = event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_LEFT &&
+                        !viewModel.atOrBeforeNow()
                     if (left && event.type == KeyEventType.KeyDown) viewModel.shift(-1)
                     left
                 },
         )
         val lastIndex = cells.lastIndex
+        val targetIndex = shiftTarget?.let { start ->
+            cells.indexOfFirst { it.program?.startMs == start }.takeIf { it >= 0 }
+        } ?: lastIndex
         cells.forEachIndexed { index, cell ->
             val program = cell.program
             val marked = program != null && recordings.marks(channel, program, now)
@@ -273,12 +287,12 @@ private fun GuideRow(
                 },
                 modifier = Modifier
                     .weight(cell.weight)
+                    .then(if (index == targetIndex) Modifier.focusRequester(shiftFocus) else Modifier)
                     .onPreviewKeyEvent { event ->
                         val right = index == lastIndex &&
                             event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_RIGHT
                         if (right && event.type == KeyEventType.KeyDown) {
-                            // Fokus se prvo vraća na naziv kanala, jer se ćelije posle pomeranja menjaju.
-                            runCatching { channelFocus.requestFocus() }
+                            shiftTarget = program?.startMs ?: -1L
                             viewModel.shift(1)
                         }
                         right

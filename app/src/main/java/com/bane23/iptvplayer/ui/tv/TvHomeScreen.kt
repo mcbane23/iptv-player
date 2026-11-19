@@ -62,12 +62,13 @@ import com.bane23.iptvplayer.ui.common.CategorySection
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.TvStartViewModel
+import com.bane23.iptvplayer.ui.common.guide.GuideViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 
 /** Sekcije koje se otvaraju u početnom ekranu, pored bočnog menija. */
-private enum class TvTab { HOME, LIVE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
+private enum class TvTab { SEARCH, HOME, LIVE, GUIDE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
 
 /** Širina skupljenog menija (samo ikonice) i raširenog (ikonice i nazivi). */
 private val RailCollapsed = 88.dp
@@ -77,7 +78,7 @@ private val RailExpanded = 240.dp
  * Početni ekran na TV-u: uzan bočni meni sa ikonicama levo i izabrana sekcija desno.
  * Meni se raširi (prikaže nazive) čim fokus pređe na njega i pomeri sadržaj udesno; strelica na vrhu
  * menija ga prebacuje na samo ikonice (bez širenja) i nazad. Izbor se pamti.
- * Pretraga i Vodič otvaraju poseban ekran; ostale stavke menjaju sekciju desno.
+ * Sve stavke (i Pretraga i Vodič) menjaju sekciju desno, pored menija.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -85,8 +86,7 @@ fun TvHomeScreen(
     liveTvViewModel: LiveTvViewModel,
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onSearch: () -> Unit,
-    onSearchAll: () -> Unit,
-    onGuide: (playlistId: Long) -> Unit,
+    onArchive: (channelId: Long) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
     onSearchVod: (series: Boolean) -> Unit,
     onAddPlaylist: () -> Unit,
@@ -189,6 +189,23 @@ fun TvHomeScreen(
                         viewModel = liveTvViewModel,
                     )
 
+                    // Pretraga svega kao kartica, sa bočnim menijem kao ostale sekcije (Bane).
+                    TvTab.SEARCH -> TvSearchAllScreen(
+                        onPlay = { channelId -> onPlay(channelId, null) },
+                        onOpenVod = onOpenVod,
+                    )
+
+                    // Vodič kao kartica, sa bočnim menijem kao ostale sekcije (Bane).
+                    TvTab.GUIDE -> if (playlistId != null) {
+                        TvGuideScreen(
+                            playlistId = playlistId,
+                            categoryId = null,
+                            onPlay = { channelId -> onPlay(channelId, null) },
+                            onArchive = onArchive,
+                            viewModel = hiltViewModel<GuideViewModel>(key = "guide-$playlistId"),
+                        )
+                    }
+
                     // Spisak pripada aktivnoj listi, pa se posle promene liste učitava iznova.
                     TvTab.MOVIES -> TvVodScreen(
                         series = false,
@@ -269,7 +286,14 @@ fun TvHomeScreen(
                 )
             }
             if (playlistId != null) {
-                RailItem(AppIcons.Search, stringResource(R.string.action_search), expanded = railExpanded, onClick = onSearchAll)
+                RailItem(
+                    icon = AppIcons.Search,
+                    label = stringResource(R.string.action_search),
+                    expanded = railExpanded,
+                    selected = tab == TvTab.SEARCH,
+                    onClick = { tab = TvTab.SEARCH },
+                    modifier = if (tab == TvTab.SEARCH) Modifier.focusRequester(selectedFocus) else Modifier,
+                )
             }
             if (playlistId != null) {
                 RailItem(
@@ -294,7 +318,9 @@ fun TvHomeScreen(
                     icon = AppIcons.Guide,
                     label = stringResource(R.string.guide_title),
                     expanded = railExpanded,
-                    onClick = { onGuide(playlistId) },
+                    selected = tab == TvTab.GUIDE,
+                    onClick = { tab = TvTab.GUIDE },
+                    modifier = if (tab == TvTab.GUIDE) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
                 RailItem(
                     icon = AppIcons.MultiView,

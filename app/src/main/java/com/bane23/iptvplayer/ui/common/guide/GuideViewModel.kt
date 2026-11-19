@@ -187,6 +187,9 @@ class GuideViewModel @Inject constructor(
 
     fun jumpToNow() = _ui.update { it.copy(windowStart = currentSlot()) }
 
+    /** Da li vodič počinje od sadašnjeg vremena ili ranije (tada levo sa naziva kanala ide u bočni meni). */
+    fun atOrBeforeNow(): Boolean = _ui.value.windowStart <= currentSlot()
+
     fun select(channel: Channel, program: Program?) = _ui.update { it.copy(selection = GuideSelection(channel, program)) }
 
     fun clearSelection() = _ui.update { it.copy(selection = null) }

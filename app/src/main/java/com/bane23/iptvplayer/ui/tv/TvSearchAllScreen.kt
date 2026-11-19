@@ -43,7 +43,6 @@ import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
-import com.bane23.iptvplayer.ui.common.theme.glowBackground
 
 /**
  * Jedna pretraga za sve na TV-u: polje za unos gore, ispod rezultati po grupama (kanali, emisije
@@ -64,7 +63,6 @@ fun TvSearchAllScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
