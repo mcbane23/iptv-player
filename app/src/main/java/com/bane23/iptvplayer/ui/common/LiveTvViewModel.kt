@@ -366,6 +366,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setDrawUnderCutout(enabled) }
     }
 
+    val appFullScreen: StateFlow<Boolean> = settings.appFullScreen
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAppFullScreen(enabled: Boolean) {
+        viewModelScope.launch { settings.setAppFullScreen(enabled) }
+    }
+
     val playerBrightnessSlider: StateFlow<Boolean> = settings.playerBrightnessSlider
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 

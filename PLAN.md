@@ -703,6 +703,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
     Podešavanja na TV-u prati fokus
 - [x] Bočni meni na TV-u: strelica na vrhu prebacuje na samo ikonice i nazad; raširen meni pomera sadržaj
       udesno (bez preslaganja) umesto da ga pokrije. Izbor se pamti, prvi put je meni pun (Bane)
+- [x] Ceo ekran na telefonu: gornja i donja sistemska traka sakrivene na svim ekranima, uspravno i
+      položeno; prevlačenje od ivice ih privremeno pokaže. Opcija „Ceo ekran” u Podešavanjima > Izgled,
+      uključena podrazumevano (Bane)
 - [x] Vodič na TV-u: desno na poslednjoj emisiji pomera vreme, a fokus ostaje desno na istoj emisiji
       (ranije je skakao na naziv kanala levo)
 - [x] Pretraga i Vodič na TV-u su kartice sa bočnim menijem kao ostale (Bane); levo sa naziva kanala u
