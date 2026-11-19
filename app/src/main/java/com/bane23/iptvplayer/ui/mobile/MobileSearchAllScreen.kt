@@ -1,6 +1,12 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -79,7 +85,7 @@ fun MobileSearchAllScreen(
             }
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                 if (state.channels.isNotEmpty()) {
-                    item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels)) }
+                    item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                     items(state.channels, key = { "c${it.id}" }) { channel ->
                         ResultRow(title = channel.name, onClick = { onPlay(channel.id) }) {
                             ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
@@ -87,7 +93,7 @@ fun MobileSearchAllScreen(
                     }
                 }
                 if (state.programs.isNotEmpty()) {
-                    item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs)) }
+                    item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
                     items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
                         val onAir = hit.startMs <= now
                         val reminded = hit.key in reminders
@@ -106,35 +112,57 @@ fun MobileSearchAllScreen(
                         ) { GroupIcon(AppIcons.Guide) }
                     }
                 }
+                // Filmovi i serije kao red postera, kao u svojim karticama.
                 if (state.movies.isNotEmpty()) {
-                    item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies)) }
-                    items(state.movies, key = { "m${it.id}" }) { item ->
-                        ResultRow(title = item.name, subtitle = item.rating?.let { "★ $it" }, onClick = { onOpenVod(item, false) }) {
-                            GroupIcon(AppIcons.Movies)
-                        }
-                    }
+                    item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
+                    item(key = "r-movies") { PosterRow(state.movies) { onOpenVod(it, false) } }
                 }
                 if (state.series.isNotEmpty()) {
-                    item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series)) }
-                    items(state.series, key = { "s${it.id}" }) { item ->
-                        ResultRow(title = item.name, subtitle = item.rating?.let { "★ $it" }, onClick = { onOpenVod(item, true) }) {
-                            GroupIcon(AppIcons.Series)
-                        }
-                    }
+                    item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
+                    item(key = "r-series") { PosterRow(state.series) { onOpenVod(it, true) } }
                 }
             }
         }
     }
 }
 
+/** Naslov grupe sa brojem pogodaka, kao naslov nad kanalima u Uživo. */
 @Composable
-private fun GroupTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-    )
+private fun GroupTitle(text: String, count: Int) {
+    Row(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier
+                .padding(start = 10.dp)
+                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        )
+    }
+}
+
+/** Red postera za filmove ili serije u rezultatima. */
+@Composable
+private fun PosterRow(list: List<VodItem>, onOpen: (VodItem) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        items(list, key = { it.id }) { item ->
+            PosterTile(
+                name = item.name,
+                poster = item.poster,
+                onClick = { onOpen(item) },
+                modifier = Modifier.width(104.dp),
+            )
+        }
+    }
 }
 
 @Composable
@@ -150,11 +178,15 @@ private fun ResultRow(
     trailing: String? = null,
     leading: @Composable () -> Unit,
 ) {
+    // Pločica kao red kanala u Uživo.
     Row(
         modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 2.dp)
             .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leading()
