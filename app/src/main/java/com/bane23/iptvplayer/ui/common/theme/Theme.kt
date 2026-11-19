@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
@@ -74,7 +75,11 @@ fun IptvTheme(
     val tvColors = remember(accent, theme, black) {
         TvColors.copy(primary = accent.color, background = background, surface = surface, surfaceVariant = surfaceVariant)
     }
+    // Crna tema zadržava sive obrise, kao i pre.
+    val placeholders = if (black) GrayPlaceholders else theme.placeholders
     MaterialTheme(colorScheme = mobileColors, typography = MobileType) {
-        TvMaterialTheme(colorScheme = tvColors, typography = TvType, content = content)
+        TvMaterialTheme(colorScheme = tvColors, typography = TvType) {
+            CompositionLocalProvider(LocalPlaceholderColors provides placeholders, content = content)
+        }
     }
 }

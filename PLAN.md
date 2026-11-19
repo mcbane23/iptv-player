@@ -681,6 +681,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [ ] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
   - [x] V1 Jedan izgled redova na TV-u: svi spiskovi (Podešavanja, pretraga, snimci, arhiva, epizode,
         izbori u plejeru, dijalozi) su pločice kao kategorije, razmak 6 dp; bočni meni počinje u visini naslova
+  - [x] V2 Teget tema do kraja: podloga postera i slika epizoda, prelaz iza naziva bez postera, obrisi pri
+        učitavanju i inicijali kanala bez logoa prate temu (`PlaceholderColors`); Siva i crna tema bez promene
 
 ## 7. Testiranje
 

@@ -10,18 +10,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.composed
+import com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Boja obrisa koji stoje na mestu sadržaja dok se on učitava. Obrisi su namerno nepomični
- * (bez „talasa”), da ne troše snagu slabijih TV uređaja.
+ * Zaobljena površina na mestu sadržaja koji se još učitava, u boji teme. Obrisi su namerno
+ * nepomični (bez „talasa”), da ne troše snagu slabijih TV uređaja.
  */
-private val SkeletonColor = Color(0xFF232930)
-
-/** Siva zaobljena površina na mestu sadržaja koji se još učitava. */
-fun Modifier.skeleton(radius: Dp = 6.dp): Modifier = background(SkeletonColor, RoundedCornerShape(radius))
+fun Modifier.skeleton(radius: Dp = 6.dp): Modifier = composed {
+    background(LocalPlaceholderColors.current.skeleton, RoundedCornerShape(radius))
+}
 
 /** Obris logoa kanala iste veličine kao [ChannelLogo]. */
 @Composable

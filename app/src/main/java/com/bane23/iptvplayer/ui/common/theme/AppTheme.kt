@@ -10,9 +10,14 @@ import com.bane23.iptvplayer.R
  * čuva ime vrednosti, zato se postojeća imena ne menjaju. Crna tema je poseban prekidač i preko bilo
  * koje od ovih stavlja potpuno crnu pozadinu.
  */
-enum class AppTheme(val background: Color, val surface: Color, val surfaceVariant: Color) {
-    GRAY(Background, Surface, SurfaceVariant),
-    NAVY(NavyBackground, NavySurface, NavySurfaceVariant),
+enum class AppTheme(
+    val background: Color,
+    val surface: Color,
+    val surfaceVariant: Color,
+    val placeholders: PlaceholderColors,
+) {
+    GRAY(Background, Surface, SurfaceVariant, GrayPlaceholders),
+    NAVY(NavyBackground, NavySurface, NavySurfaceVariant, NavyPlaceholders),
     ;
 
     companion object {
