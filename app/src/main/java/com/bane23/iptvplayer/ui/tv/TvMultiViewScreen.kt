@@ -219,9 +219,8 @@ private fun TileMenu(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (channel != null) {
-                // Isto zaglavlje kao na ostalim TV ekranima: naslov levo, sat desno.
-                TvHeader(
-                    title = channel.name,
+                Text(
+                    text = channel.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -332,10 +331,11 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = picker.categoryName ?: stringResource(R.string.multiview_pick),
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
+        // Isto zaglavlje kao na ostalim TV ekranima: naslov levo, sat desno.
+        TvHeader(
+            title = picker.categoryName ?: stringResource(R.string.multiview_pick),
+            modifier = Modifier.padding(bottom = 16.dp),
+        )
         if (picker.categoryId == null) {
             LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(categories, key = { it.id }) { category ->
