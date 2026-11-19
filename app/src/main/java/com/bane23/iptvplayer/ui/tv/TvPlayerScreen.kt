@@ -67,7 +67,11 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
+import com.bane23.iptvplayer.domain.REMOTE_LONG_PRESS_MS
+import com.bane23.iptvplayer.domain.RemoteAction
+import com.bane23.iptvplayer.domain.RemoteButton
 import com.bane23.iptvplayer.ui.common.player.PlayerClock
+import com.bane23.iptvplayer.ui.common.player.RemoteButtonsViewModel
 import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerUiState
 import com.bane23.iptvplayer.ui.common.player.SourceNotices
@@ -80,12 +84,17 @@ import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
 
+private fun Int.isOkKey(): Boolean = this == AndroidKeyEvent.KEYCODE_DPAD_CENTER ||
+    this == AndroidKeyEvent.KEYCODE_ENTER ||
+    this == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER
+
 /** Kontrole preko slike: sklonjene, samo prikazane posle promene kanala, ili u fokusu. */
 private enum class Overlay { HIDDEN, INFO, ACTIVE }
 
 /**
  * Plejer kanala na TV-u, upravlja se samo daljinskim. Dok su kontrole sklonjene: gore/dole menja
  * kanal, levo otvara listu kanala, OK (ili desno) prikazuje kontrole, cifre biraju kanal po broju.
+ * Obojena dugmad, kanal gore i dole, meni i dugo OK rade ono što je izabrano u Podešavanjima.
  * Kontrole izgledaju kao u plejeru filmova: naziv kanala gore, a dole emisija sa trakom i dugmad
  * Kanali, Audio, Podešavanja i Omiljeni. Odnos slike se menja na kraju trake i u Podešavanjima. Nazad prvo zatvara spisak ili kontrole.
  */
@@ -123,6 +132,11 @@ fun TvPlayerScreen(
     val record = rememberRecordingToggle(isRecording) {
         if (isRecording) viewModel.toggleRecording() else recordPanel = true
     }
+    // Šta koje dugme daljinskog radi (Podešavanja → „Dugmad daljinskog”).
+    val remoteButtons: RemoteButtonsViewModel = hiltViewModel()
+    val remote by remoteButtons.mapping.collectAsStateWithLifecycle()
+    // Dugo OK je već izvršilo svoju radnju; ostatak tog pritiska se preskače.
+    var longOkFired by remember { mutableStateOf(false) }
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
@@ -151,6 +165,34 @@ fun TvPlayerScreen(
         }
     }
     BackHandler(enabled = backCloses) { closeTop() }
+
+    fun perform(action: RemoteAction) {
+        when (action) {
+            RemoteAction.NONE -> Unit
+            RemoteAction.LAST_CHANNEL -> viewModel.playLastChannel()
+            RemoteAction.NEXT_CHANNEL -> viewModel.next()
+            RemoteAction.PREVIOUS_CHANNEL -> viewModel.previous()
+            RemoteAction.CHANNEL_LIST -> channelList = true
+            RemoteAction.SCHEDULE -> scheduleOpen = true
+            RemoteAction.FAVORITE -> {
+                ui.channel?.let { favoriteLists.favoriteAction(it.id) }
+                // Zvezdica je među kontrolama, pa se one kratko pokažu da se vidi šta se promenilo.
+                if (overlay == Overlay.HIDDEN) overlay = Overlay.INFO
+            }
+            RemoteAction.AUDIO -> tracks = TvTrackKind.AUDIO
+            RemoteAction.SUBTITLES -> tracks = TvTrackKind.SUBTITLES
+            RemoteAction.QUICK_SETTINGS -> settingsOpen = true
+            RemoteAction.INFO -> infoVisible = !infoVisible
+            RemoteAction.CONTROLS -> overlay = Overlay.ACTIVE
+        }
+    }
+
+    // Radnja koja se ponavlja kreće na pritisak; ostale kad se dugme pusti, da isti pritisak
+    // ne bi odmah nešto izabrao u spisku koji se otvorio.
+    fun press(button: RemoteButton, isDown: Boolean, isUp: Boolean) {
+        val action = remote[button] ?: button.defaultAction
+        if (if (action.repeats) isDown else isUp) perform(action)
+    }
 
     // Posle promene kanala kratko se prikaže šta se gleda.
     LaunchedEffect(ui.channel?.id) {
@@ -181,6 +223,13 @@ fun TvPlayerScreen(
             .pauseDimInput(pauseDim)
             .onPreviewKeyEvent {
                 if (it.type == KeyEventType.KeyDown) activity++
+                // Posle dugog OK ostatak pritiska ne sme da stigne do spiska koji se upravo otvorio.
+                if (longOkFired && it.nativeKeyEvent.keyCode.isOkKey()) {
+                    val fresh = it.type == KeyEventType.KeyDown && it.nativeKeyEvent.repeatCount == 0
+                    if (it.type == KeyEventType.KeyUp || fresh) longOkFired = false
+                    // Nov pritisak (puštanje starog je otišlo u prozor za izbor) se više ne preskače.
+                    if (!fresh) return@onPreviewKeyEvent true
+                }
                 false
             }
             .onKeyEvent { event ->
@@ -200,15 +249,25 @@ fun TvPlayerScreen(
                     if (isUp) closeTop()
                     return@onKeyEvent true
                 }
+                val button = RemoteButton.ofKey(code)
+                // Obojena dugmad nemaju drugu ulogu, pa rade i dok su kontrole na ekranu.
+                if (button != null && button.isColor && !panelOpen) {
+                    press(button, isDown, isUp)
+                    return@onKeyEvent true
+                }
                 // Ostali tasteri ovde stižu samo dok je fokus na samom plejeru.
                 if (overlay == Overlay.ACTIVE || panelOpen) return@onKeyEvent false
+                if (button != null) {
+                    press(button, isDown, isUp)
+                    return@onKeyEvent true
+                }
                 when (code) {
-                    AndroidKeyEvent.KEYCODE_DPAD_UP, AndroidKeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                    AndroidKeyEvent.KEYCODE_DPAD_UP -> {
                         if (isDown) viewModel.previous()
                         true
                     }
 
-                    AndroidKeyEvent.KEYCODE_DPAD_DOWN, AndroidKeyEvent.KEYCODE_CHANNEL_UP -> {
+                    AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
                         if (isDown) viewModel.next()
                         true
                     }
@@ -228,9 +287,21 @@ fun TvPlayerScreen(
                     AndroidKeyEvent.KEYCODE_DPAD_CENTER,
                     AndroidKeyEvent.KEYCODE_ENTER,
                     AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
-                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT,
-                    AndroidKeyEvent.KEYCODE_MENU,
                     -> {
+                        val native = event.nativeKeyEvent
+                        val longAction = remote[RemoteButton.LONG_OK] ?: RemoteButton.LONG_OK.defaultAction
+                        val held = native.repeatCount > 0 && native.eventTime - native.downTime >= REMOTE_LONG_PRESS_MS
+                        if (isDown && held && longAction != RemoteAction.NONE) {
+                            // Dugo OK: radnja kreće dok se dugme još drži; kratko OK i dalje otvara kontrole.
+                            longOkFired = true
+                            perform(longAction)
+                        } else if (isUp) {
+                            overlay = Overlay.ACTIVE
+                        }
+                        true
+                    }
+
+                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
                         if (isUp) overlay = Overlay.ACTIVE
                         true
                     }

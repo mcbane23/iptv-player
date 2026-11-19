@@ -674,4 +674,24 @@
     <string name="settings_downloads_summary">Movies and episodes downloaded for watching offline</string>
     <string name="settings_download_mobile">Download over mobile data</string>
     <string name="settings_download_mobile_summary">While off, movies and episodes download over Wi-Fi only, and wait when there is none.</string>
+    <string name="remote_buttons_title">Remote buttons</string>
+    <string name="settings_remote_buttons_summary">Choose what the colour buttons, channel up and down, menu and long OK do while you watch a channel.</string>
+    <string name="remote_button_red">Red button</string>
+    <string name="remote_button_green">Green button</string>
+    <string name="remote_button_yellow">Yellow button</string>
+    <string name="remote_button_blue">Blue button</string>
+    <string name="remote_button_channel_up">Channel up (CH+)</string>
+    <string name="remote_button_channel_down">Channel down (CH−)</string>
+    <string name="remote_button_menu">Menu</string>
+    <string name="remote_button_long_ok">Long OK</string>
+    <string name="remote_button_summary">Press OK, then choose what the button does while you watch a channel. If your remote does not have it, this changes nothing.</string>
+    <string name="remote_button_menu_summary">Press OK, then choose what the menu button does while you watch a channel and the controls are hidden. If your remote does not have it, this changes nothing.</string>
+    <string name="remote_button_long_ok_summary">Press OK, then choose what happens when you hold OK while you watch a channel. A short OK still opens the controls.</string>
+    <string name="remote_action_none">Nothing</string>
+    <string name="remote_action_next_channel">Next channel</string>
+    <string name="remote_action_previous_channel">Previous channel in the list</string>
+    <string name="remote_action_channel_list">Channel list</string>
+    <string name="remote_action_schedule">Channel schedule</string>
+    <string name="remote_action_favorite">Add to or remove from favorites</string>
+    <string name="remote_action_controls">Player controls</string>
 </resources>

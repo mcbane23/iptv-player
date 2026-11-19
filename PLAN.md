@@ -628,6 +628,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       samo se nastavlja kad se plejer zatvori, i ide samo preko Wi-Fi mreže dok se u Podešavanjima ne uključi
       „Preuzimanje preko mobilnih podataka”. Prekinuto preuzimanje se nastavlja tamo gde je stalo. Preuzeto se
       pušta sa uređaja, bez interneta, i iz „Preuzeto” i iz detalja filma ili serije. Baza v17 (`downloads`).
+- [x] Dugmad daljinskog po izboru (Bane, 19. 11. 2026, četvrti krug predloga; TV, plejer kanala). Podešavanja →
+      „Dugmad daljinskog”: za crveno, zeleno, žuto i plavo dugme, kanal gore i dole, meni i dugo OK bira se
+      radnja (prethodno gledani kanal, sledeći ili prethodni kanal, spisak kanala, program, omiljeni, zvuk,
+      titlovi, brza podešavanja, informacije o strimu, kontrole, ništa). Podrazumevano po Banetovom izboru:
+      crveno = prethodno gledani kanal, zeleno = program, žuto = omiljeni, plavo = zvuk, CH± = sledeći i
+      prethodni kanal, meni = brza podešavanja, dugo OK = spisak kanala. Plejer filmova i serija se ne menja.
 - [x] Ekran pauze sa opisom (Bane, 19. 11. 2026, četvrti krug predloga; telefon i TV, filmovi, serije i
       kanali uživo, Banetov izbor): posle 5 sekundi pauze kontrole ustupe mesto naslovu, oznakama (ocena,
       godina, žanr), opisu, tome koliko je ostalo do kraja i satu; za kanal emisija iz vodiča sa opisom i

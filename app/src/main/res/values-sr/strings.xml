@@ -675,4 +675,24 @@
     <string name="settings_downloads_summary">Filmovi i epizode preuzeti za gledanje bez interneta</string>
     <string name="settings_download_mobile">Preuzimanje preko mobilnih podataka</string>
     <string name="settings_download_mobile_summary">Dok je isključeno, filmovi i epizode se preuzimaju samo preko Wi-Fi mreže, a bez nje preuzimanje čeka.</string>
+    <string name="remote_buttons_title">Dugmad daljinskog</string>
+    <string name="settings_remote_buttons_summary">Bira šta obojena dugmad, kanal gore i dole, meni i dugo OK rade dok gledaš kanal.</string>
+    <string name="remote_button_red">Crveno dugme</string>
+    <string name="remote_button_green">Zeleno dugme</string>
+    <string name="remote_button_yellow">Žuto dugme</string>
+    <string name="remote_button_blue">Plavo dugme</string>
+    <string name="remote_button_channel_up">Kanal gore (CH+)</string>
+    <string name="remote_button_channel_down">Kanal dole (CH−)</string>
+    <string name="remote_button_menu">Meni</string>
+    <string name="remote_button_long_ok">Dugo OK</string>
+    <string name="remote_button_summary">Pritisni OK pa izaberi šta dugme radi dok gledaš kanal. Ako ga tvoj daljinski nema, ovo ništa ne menja.</string>
+    <string name="remote_button_menu_summary">Pritisni OK pa izaberi šta dugme meni radi dok gledaš kanal i kontrole nisu na ekranu. Ako ga tvoj daljinski nema, ovo ništa ne menja.</string>
+    <string name="remote_button_long_ok_summary">Pritisni OK pa izaberi šta se dešava kad OK držiš duže dok gledaš kanal. Kratko OK i dalje otvara kontrole.</string>
+    <string name="remote_action_none">Ništa</string>
+    <string name="remote_action_next_channel">Sledeći kanal</string>
+    <string name="remote_action_previous_channel">Prethodni kanal u spisku</string>
+    <string name="remote_action_channel_list">Spisak kanala</string>
+    <string name="remote_action_schedule">Program kanala</string>
+    <string name="remote_action_favorite">Dodaj u omiljene ili ukloni</string>
+    <string name="remote_action_controls">Kontrole plejera</string>
 </resources>
