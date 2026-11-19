@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -55,6 +56,8 @@ data class VodBrowseUiState(
      * put izašao sa neke kategorije; tada se otvara ona.
      */
     val startOnContinue: Boolean = true,
+    /** Da li se spiskovi čuvaju na uređaju; tada poruka pri učitavanju kaže da je to samo prvi put. */
+    val storedOnDevice: Boolean = true,
 )
 
 /** Kategorije filmova ili serija i sadržaj izabrane kategorije. */
@@ -112,6 +115,36 @@ class VodBrowseViewModel @Inject constructor(
             if (sort != VodSort.DEFAULT) applySort(sort)
         }
         loadCategories()
+        viewModelScope.launch {
+            repository.updates.filter { it == kind }.collect { refreshQuietly() }
+        }
+        viewModelScope.launch {
+            repository.localCacheEnabled.collect { enabled -> _state.update { it.copy(storedOnDevice = enabled) } }
+        }
+    }
+
+    /**
+     * U pozadini je stigao noviji spisak od onog sačuvanog na uređaju: kategorije i izabrana
+     * kategorija se zamene bez obrisa učitavanja.
+     */
+    private suspend fun refreshQuietly() {
+        try {
+            val categories = repository.categories(kind)
+            _state.update { it.copy(categories = categories) }
+            val selected = _state.value.selected ?: return
+            if (selected.id == FAVORITES_ID || _state.value.loadingItems) return
+            if (categories.none { it.id == selected.id }) return
+            val items = repository.items(kind, selected.id)
+            if (_state.value.selected?.id != selected.id || _state.value.loadingItems) return
+            rawItems = items
+            val sort = _state.value.sort
+            val sorted = withContext(Dispatchers.Default) { sortVodItems(items, sort) }
+            if (rawItems === items && _state.value.sort == sort) _state.update { it.copy(items = sorted) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Ostaje spisak koji se već vidi.
+        }
     }
 
     /** Menja redosled postera i pamti ga za sledeći put. */

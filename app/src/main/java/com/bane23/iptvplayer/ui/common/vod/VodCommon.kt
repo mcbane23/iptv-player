@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -51,7 +52,6 @@ import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
-import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.player.formatDuration
 
 /**
@@ -213,25 +213,39 @@ fun WatchProgress.statusText(): String? = when {
     else -> null
 }
 
-/** Obris postera sa nazivom ispod, dok se filmovi ili serije učitavaju. */
+/**
+ * Učitavanje filmova ili serija, isto na telefonu i TV-u: krug u akcentnoj boji i kratka poruka u
+ * sredini. [hint] je druga, sitnija rečenica (samo pri prvom učitavanju sekcije).
+ */
 @Composable
-fun SkeletonPoster(modifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(POSTER_RATIO)
-                .skeleton(8.dp),
+fun VodLoading(series: Boolean, accent: Color, modifier: Modifier = Modifier, hint: String? = null) {
+    androidx.compose.foundation.layout.Column(
+        modifier = modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        androidx.compose.material3.CircularProgressIndicator(
+            color = accent,
+            trackColor = accent.copy(alpha = 0.18f),
+            strokeWidth = 4.dp,
+            modifier = Modifier.size(44.dp),
         )
-        Box(
-            modifier = Modifier
-                .padding(top = 6.dp)
-                .fillMaxWidth(0.7f)
-                .height(10.dp)
-                .skeleton(4.dp),
+        BasicText(
+            text = stringResource(if (series) R.string.vod_loading_series else R.string.vod_loading_movies),
+            style = TextStyle(color = OnBackground, fontSize = 17.sp, textAlign = TextAlign.Center),
+            modifier = Modifier.padding(top = 16.dp),
         )
+        if (hint != null) {
+            BasicText(
+                text = hint,
+                style = TextStyle(color = com.bane23.iptvplayer.ui.common.theme.OnSurfaceVariant, fontSize = 13.sp, textAlign = TextAlign.Center),
+                modifier = Modifier.padding(top = 8.dp).widthIn(max = 280.dp),
+            )
+        }
     }
 }
 
-/** Broj obrisa postera koji se prikazuju dok se kategorija učitava. */
-const val SKELETON_POSTERS = 15
+/** Druga rečenica poruke pri prvom učitavanju sekcije. */
+@Composable
+fun vodLoadingHint(storedOnDevice: Boolean): String =
+    stringResource(if (storedOnDevice) R.string.vod_loading_hint_stored else R.string.vod_loading_hint)
