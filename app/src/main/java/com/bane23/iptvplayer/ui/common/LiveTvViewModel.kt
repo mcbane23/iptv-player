@@ -326,6 +326,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAppTheme(theme.name) }
     }
 
+    /** Bočni meni na TV-u samo sa ikonicama; menja se strelicom na vrhu menija. */
+    val tvRailIconsOnly: StateFlow<Boolean> = settings.tvRailIconsOnly
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setTvRailIconsOnly(enabled: Boolean) {
+        viewModelScope.launch { settings.setTvRailIconsOnly(enabled) }
+    }
+
     /** Sačuvano ime veličine prikaza (vidi `UiScale`); null dok korisnik ništa nije izabrao. */
     val uiScale: StateFlow<String?> = settings.uiScale
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

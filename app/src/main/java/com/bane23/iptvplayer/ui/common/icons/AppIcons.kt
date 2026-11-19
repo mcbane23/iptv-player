@@ -148,6 +148,7 @@ object AppIcons {
     val DragHandle by icon("M20 9H4v2h16V9zM4 15h16v-2H4v2z")
     val MoveTop by icon("M8 11h3v10h2V11h3l-4-4-4 4zM4 3v2h16V3H4z")
     val ChevronRight by icon("M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z")
+    val ChevronLeft by icon("M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z")
 }
 
 /** Ikonica se pravi tek kad prvi put zatreba, pa se pamti. */

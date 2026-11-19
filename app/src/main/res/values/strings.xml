@@ -632,6 +632,8 @@
     <string name="settings_theme_summary">Background and surface color: gray or navy.</string>
     <string name="theme_gray">Gray</string>
     <string name="theme_navy">Navy</string>
+    <string name="tv_rail_collapse">Icons only</string>
+    <string name="tv_rail_expand">Show menu names</string>
     <string name="settings_black_theme">Black theme</string>
     <string name="settings_black_theme_summary">The background is pure black instead of the chosen theme color, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
     <string name="epg_link_action">Link guide</string>
