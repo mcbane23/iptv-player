@@ -1,0 +1,12 @@
+Nova ikonica aplikacije, tamno teget sa sjajem
+TV: nova Početna sa nastavkom gledanja i omiljenim
+Telefon: preuzimanje filmova i epizoda za gledanje bez interneta
+TV: dugmad daljinskog po izboru (obojena dugmad, CH+ i CH−, meni, dugo OK)
+Ekran pauze sa naslovom, opisom i satom
+Liste omiljenih kanala sa imenom
+Ručno povezivanje kanala sa programom iz vodiča
+Spajanje lista i rezervni izvor istog kanala
+Program kanala u plejeru i kartica za sledeću epizodu
+Crna tema i doteran izgled kanala uživo
+Zaštita ekrana: zatamnjenje na pauzi i zatvaranje posle 30 minuta
+Pre ažuriranja se vidi šta je novo
