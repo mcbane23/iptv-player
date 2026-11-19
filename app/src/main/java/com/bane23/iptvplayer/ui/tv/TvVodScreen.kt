@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -104,6 +106,9 @@ fun TvVodScreen(
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
     var focusTargetId by remember { mutableStateOf<String?>(null) }
     val moveFocus = remember { FocusRequester() }
+    // Drugi OK na već izabranoj kategoriji ide na postere, kao Desno (Bane).
+    val focusManager = LocalFocusManager.current
+    val toItems: () -> Unit = { focusManager.moveFocus(FocusDirection.Right) }
     var movedToTop by remember { mutableIntStateOf(0) }
     var shownCategoryIds by remember { mutableStateOf(emptyList<String>()) }
     // Meni postera u „Nastavi gledanje” (dugi OK): skloni iz reda.
@@ -268,9 +273,13 @@ fun TvVodScreen(
                         subtitle = stringResource(R.string.vod_total, favorites.size),
                         selected = showFavorites,
                         onClick = {
-                            lastItemId = null
-                            continueChosen = false
-                            viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                            if (showFavorites) {
+                                toItems()
+                            } else {
+                                lastItemId = null
+                                continueChosen = false
+                                viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
+                            }
                         },
                         modifier = (if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier)
                             .then(if (focusTargetId == FAVORITES_ID) Modifier.focusRequester(moveFocus) else Modifier),
@@ -282,9 +291,13 @@ fun TvVodScreen(
                             subtitle = stringResource(R.string.vod_total, continueItems.size),
                             selected = showContinue,
                             onClick = {
-                                lastItemId = null
-                                continueChosen = true
-                                viewModel.rememberContinue()
+                                if (showContinue) {
+                                    toItems()
+                                } else {
+                                    lastItemId = null
+                                    continueChosen = true
+                                    viewModel.rememberContinue()
+                                }
                             },
                             modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
                         )
@@ -310,9 +323,13 @@ fun TvVodScreen(
                                 text = category.name,
                                 selected = selected,
                                 onClick = {
-                                    lastItemId = null
-                                    continueChosen = false
-                                    viewModel.selectCategory(category)
+                                    if (selected) {
+                                        toItems()
+                                    } else {
+                                        lastItemId = null
+                                        continueChosen = false
+                                        viewModel.selectCategory(category)
+                                    }
                                 },
                                 onLongClick = { menuCategory = category },
                                 modifier = (if (selected) Modifier.focusRequester(firstFocus) else Modifier)

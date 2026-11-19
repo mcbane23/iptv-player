@@ -149,8 +149,15 @@ fun TvLiveTvScreen(
         if (state.isFavoritesGroup(selectedCategory)) favoritesTab = selectedCategory
     }
     // OK na redu „Omiljeni” ne menja karticu koja je već otvorena.
+    // OK na kategoriji je bira; drugi OK na već izabranoj ide na kanale, kao Desno (Bane).
+    val pickCategory: (Long) -> Unit = { id ->
+        if (selectedCategory == id) topChannelFocus.tryRequestFocus() else focusedCategory = id
+    }
     val focusFavorites = {
-        if (!state.isFavoritesGroup(focusedCategory)) {
+        // Drugi OK na već izabranoj grupi ide na kanale, kao Desno.
+        if (state.isFavoritesGroup(selectedCategory)) {
+            topChannelFocus.tryRequestFocus()
+        } else if (!state.isFavoritesGroup(focusedCategory)) {
             focusedCategory = favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES
         }
     }
@@ -407,7 +414,7 @@ fun TvLiveTvScreen(
                             subtitle = stringResource(R.string.vod_total, state.recentCount),
                             selected = selectedCategory == ChannelGroups.RECENT,
                             onFocused = { lastChannelId = null },
-                            onClick = { focusedCategory = ChannelGroups.RECENT },
+                            onClick = { pickCategory(ChannelGroups.RECENT) },
                             modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
                         )
                     }
@@ -417,7 +424,7 @@ fun TvLiveTvScreen(
                         subtitle = stringResource(R.string.vod_total, state.totalChannels),
                         selected = selectedCategory == ALL_CHANNELS,
                         onFocused = { lastChannelId = null },
-                        onClick = { focusedCategory = ALL_CHANNELS },
+                        onClick = { pickCategory(ALL_CHANNELS) },
                         modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
                             .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
                     )
@@ -444,7 +451,7 @@ fun TvLiveTvScreen(
                                 trailing = category.channelCount.toString(),
                                 selected = selectedCategory == category.id,
                                 onFocused = { lastChannelId = null },
-                                onClick = { focusedCategory = category.id },
+                                onClick = { pickCategory(category.id) },
                                 onLongClick = { menuCategory = category },
                                 modifier = focusTarget(selectedCategory == category.id, firstFocus)
                                     .then(focusTarget(focusTargetId == category.id, moveFocus)),

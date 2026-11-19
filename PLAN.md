@@ -710,6 +710,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       (ranije je skakao na naziv kanala levo)
 - [x] Pretraga i Vodič na TV-u su kartice sa bočnim menijem kao ostale (Bane); levo sa naziva kanala u
       Vodiču vraća vreme do sadašnjeg, pa ide u meni (ranije emisije dugmetom „Ranije”)
+- [x] TV, Uživo, Filmovi i Serije: drugi OK na već izabranoj kategoriji (i Omiljeni, Nedavno, Svi, Nastavi
+      gledanje) prelazi na njene stavke, kao Desno (Bane)
 
 ## 7. Testiranje
 
