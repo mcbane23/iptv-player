@@ -30,6 +30,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -231,6 +234,7 @@ class VodRepository @Inject constructor(
     private val cipher: PasswordCipher,
     private val locks: LockRepository,
     private val trakt: TraktQueue,
+    private val disk: VodDiskCache,
 ) {
     private val playlistDao = db.playlistDao()
     private val progressDao = db.watchProgressDao()
@@ -244,6 +248,8 @@ class VodRepository @Inject constructor(
         val userAgent: String?,
         /** Početak ključeva keša za ovu listu, vidi [cachePrefix]. */
         val cache: String,
+        /** Vreme poslednjeg osvežavanja liste (0 ako nije poznato); uz spiskove sačuvane na uređaju. */
+        val stamp: Long,
     )
 
     private val cacheStamps = ConcurrentHashMap<Long, String>()
@@ -268,6 +274,16 @@ class VodRepository @Inject constructor(
     private val categoryCache = ConcurrentHashMap<String, List<VodCategory>>()
     private val itemCache = ConcurrentHashMap<String, List<VodItem>>()
     private val seriesCache = ConcurrentHashMap<String, SeriesDetails>()
+
+    private val refreshing: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    private val _updates = MutableSharedFlow<VodKind>(extraBufferCapacity = 8)
+
+    /**
+     * Javlja kad je u pozadini stigao noviji spisak filmova, odnosno serija, od onog sačuvanog na
+     * uređaju, da ekran može tiho da ga prikaže.
+     */
+    val updates: SharedFlow<VodKind> = _updates.asSharedFlow()
 
     /** Upis pozicije mora da se završi i kad se ekran plejera zatvori. */
     private val writeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -351,7 +367,14 @@ class VodRepository @Inject constructor(
     /** Kategorije onako kako ih šalje server, za ekran roditeljske zaštite. */
     suspend fun allCategories(kind: VodKind): List<VodCategory> = withContext(Dispatchers.IO) {
         val session = session()
-        categoryCache.getOrPutSuspending("${session.cache}$kind") {
+        cached(
+            memory = categoryCache,
+            key = "${session.cache}$kind",
+            kind = kind,
+            readDisk = { disk.readCategories(session.playlistId, kind) },
+            writeDisk = { disk.writeCategories(session.playlistId, kind, session.stamp, it) },
+            stamp = session.stamp,
+        ) {
             val action = if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_CATEGORIES else XtreamUrls.ACTION_SERIES_CATEGORIES
             api.categories(session.api(action), session.userAgent).mapNotNull { category ->
                 val id = category.id?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
@@ -403,7 +426,14 @@ class VodRepository @Inject constructor(
 
     private suspend fun loadItems(kind: VodKind, categoryId: String): List<VodItem> = withContext(Dispatchers.IO) {
         val session = session()
-        itemCache.getOrPutSuspending("${session.cache}$kind/$categoryId") {
+        cached(
+            memory = itemCache,
+            key = "${session.cache}$kind/$categoryId",
+            kind = kind,
+            readDisk = { disk.readItems(session.playlistId, kind, categoryId) },
+            writeDisk = { disk.writeItems(session.playlistId, kind, categoryId, session.stamp, it) },
+            stamp = session.stamp,
+        ) {
             val url = session.listUrl(if (kind == VodKind.MOVIES) XtreamUrls.ACTION_VOD_STREAMS else XtreamUrls.ACTION_SERIES, categoryId)
             val body = if (kind == VodKind.MOVIES) api.vodStreams(url, session.userAgent) else api.series(url, session.userAgent)
             body.use { readVodItems(kind, it.byteStream()) }
@@ -813,7 +843,7 @@ class VodRepository @Inject constructor(
         } catch (e: Exception) {
             throw IOException("Stored password can not be read", e)
         }
-        return Session(playlistId, server, username, password, playlist.userAgent, cachePrefix(playlistId, playlist.lastRefreshedAt))
+        return Session(playlistId, server, username, password, playlist.userAgent, cachePrefix(playlistId, playlist.lastRefreshedAt), playlist.lastRefreshedAt ?: 0)
     }
 
     /** Spisak jedne kategorije, ili cele liste kad je [categoryId] [ALL_CATEGORIES]. */
@@ -826,6 +856,61 @@ class VodRepository @Inject constructor(
         XtreamUrls.playerApi(server, username, password, action, parameter, value)
 
     private fun WatchProgressEntity.toDomain() = WatchProgress(itemId, positionMs, durationMs, watched = watchedAt != null, updatedAt = updatedAt)
+
+    /**
+     * Spisak iz memorije, inače sa uređaja (ako je čuvanje uključeno), inače sa servera. Spisak sa
+     * uređaja preuzet pre poslednjeg osvežavanja liste se prikazuje odmah, a noviji se preuzima u
+     * pozadini i javlja kroz [updates].
+     */
+    private suspend fun <V : Any> cached(
+        memory: ConcurrentHashMap<String, V>,
+        key: String,
+        kind: VodKind,
+        readDisk: () -> VodCached<V>?,
+        writeDisk: (V) -> Unit,
+        stamp: Long,
+        fetch: suspend () -> V,
+    ): V {
+        memory[key]?.let { return it }
+        val local = settings.vodLocalCache.first()
+        if (local) {
+            val stored = readDisk()
+            if (stored != null) {
+                memory[key] = stored.value
+                if (stored.stamp != stamp) refreshInBackground(memory, key, kind, writeDisk, fetch)
+                return stored.value
+            }
+        }
+        val value = fetch()
+        memory[key] = value
+        if (local) writeDisk(value)
+        return value
+    }
+
+    private fun <V : Any> refreshInBackground(
+        memory: ConcurrentHashMap<String, V>,
+        key: String,
+        kind: VodKind,
+        writeDisk: (V) -> Unit,
+        fetch: suspend () -> V,
+    ) {
+        if (!refreshing.add(key)) return
+        writeScope.launch {
+            try {
+                val value = fetch()
+                // Ako je lista u međuvremenu ponovo osvežena, ključ je izbačen i ovaj spisak je zastareo.
+                if (memory.replace(key, value) == null) return@launch
+                if (settings.vodLocalCache.first()) writeDisk(value)
+                _updates.emit(kind)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Bez mreže ostaje sačuvani spisak; pokušava se opet pri sledećem otvaranju.
+            } finally {
+                refreshing.remove(key)
+            }
+        }
+    }
 
     private suspend fun <V : Any> ConcurrentHashMap<String, V>.getOrPutSuspending(key: String, load: suspend () -> V): V {
         this[key]?.let { return it }

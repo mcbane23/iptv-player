@@ -578,6 +578,8 @@
     </plurals>
     <string name="settings_auto_refresh">Automatsko osvežavanje lista</string>
     <string name="settings_auto_refresh_summary">Liste se jednom dnevno same preuzimaju iznova, da kanali i filmovi budu sveži. Liste iz fajla se ne osvežavaju.</string>
+    <string name="settings_vod_cache">Čuvaj filmove i serije na uređaju</string>
+    <string name="settings_vod_cache_summary">Spiskovi filmova i serija se pamte, pa se Filmovi i Serije otvaraju odmah. Novi spiskovi stižu kad se lista osveži, jednom dnevno ili ručno.</string>
     <string name="vod_sort">Redosled</string>
     <string name="vod_sort_current">Redosled: %1$s</string>
     <string name="vod_sort_default">Kao kod provajdera</string>

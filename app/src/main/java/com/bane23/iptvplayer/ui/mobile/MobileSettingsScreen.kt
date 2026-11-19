@@ -87,6 +87,7 @@ fun MobileSettingsScreen(
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
+    val vodLocalCache by viewModel.vodLocalCache.collectAsStateWithLifecycle()
     val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
@@ -217,6 +218,12 @@ fun MobileSettingsScreen(
                                     summary = stringResource(R.string.settings_auto_refresh_summary),
                                     checked = autoRefreshPlaylists,
                                     onChange = viewModel::setAutoRefreshPlaylists,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_vod_cache),
+                                    summary = stringResource(R.string.settings_vod_cache_summary),
+                                    checked = vodLocalCache,
+                                    onChange = viewModel::setVodLocalCache,
                                 )
                             }
 

@@ -115,6 +115,17 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[AUTO_REFRESH_PLAYLISTS] = enabled }
     }
 
+    /**
+     * Da li se spiskovi filmova i serija čuvaju na uređaju, da se Filmovi i Serije otvaraju odmah.
+     * Uključeno dok korisnik ne isključi.
+     */
+    val vodLocalCache: Flow<Boolean> =
+        dataStore.data.map { it[VOD_LOCAL_CACHE] ?: true }.distinctUntilChanged()
+
+    suspend fun setVodLocalCache(enabled: Boolean) {
+        dataStore.edit { it[VOD_LOCAL_CACHE] = enabled }
+    }
+
     /** TV: osvežavanje ekrana se usklađuje sa brojem sličica snimka dok je plejer otvoren. */
     val matchFrameRate: Flow<Boolean> = dataStore.data.map { it[MATCH_FRAME_RATE] ?: false }.distinctUntilChanged()
 
@@ -470,6 +481,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val AUTOSTART = booleanPreferencesKey("autostart")
         val REOPEN_AFTER_UPDATE = booleanPreferencesKey("reopen_after_update")
         val AUTO_REFRESH_PLAYLISTS = booleanPreferencesKey("auto_refresh_playlists")
+        val VOD_LOCAL_CACHE = booleanPreferencesKey("vod_local_cache")
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")

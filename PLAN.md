@@ -678,6 +678,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       izabranu emisiju čita samo donji panel); pregled kanala ne trepće (program prethodnog kanala ostaje
       prigušen dok ne stigne novi) i slika prethodnog kanala staje čim fokus krene; sjaj pozadine se crta
       jednom; bočni meni bez senke
+- [ ] Brže prvo otvaranje Filmova i Serija (Bane, 19. 11. 2026; telefon i TV)
+  - [x] Spiskovi kategorija, filmova i serija se čuvaju na uređaju (Podešavanja → Sadržaj → „Čuvaj filmove i
+        serije na uređaju”, uključeno). Sačuvani spisak se prikazuje odmah; kad se lista osveži (dnevno ili
+        ručno), noviji se preuzima u pozadini i tiho zameni prikaz. Isključivanje briše sačuvano
+  - [ ] Novi izgled dok se učitava (predlozi u `dizajn/ucitavanje/`)
 - [ ] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
   - [x] V1 Jedan izgled redova na TV-u: svi spiskovi (Podešavanja, pretraga, snimci, arhiva, epizode,
         izbori u plejeru, dijalozi) su pločice kao kategorije, razmak 6 dp; bočni meni počinje u visini naslova
