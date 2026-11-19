@@ -63,10 +63,9 @@ fun TvRecordingsScreen(onPlay: (Long) -> Unit, viewModel: RecordingsViewModel = 
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = stringResource(R.string.recordings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+        // Isto zaglavlje kao na ostalim TV ekranima: naslov levo, sat desno.
+        TvHeader(
+            title = stringResource(R.string.recordings_title),
             modifier = Modifier.padding(bottom = 4.dp),
         )
         Text(

@@ -51,10 +51,9 @@ fun TvVodSearchScreen(
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
-        Text(
-            text = stringResource(if (series) R.string.vod_series else R.string.vod_movies),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+        // Isto zaglavlje kao na ostalim TV ekranima: naslov levo, sat desno.
+        TvHeader(
+            title = stringResource(if (series) R.string.vod_series else R.string.vod_movies),
             modifier = Modifier.padding(bottom = 16.dp),
         )
         OutlinedTextField(
