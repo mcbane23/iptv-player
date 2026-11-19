@@ -1,6 +1,8 @@
 package com.bane23.iptvplayer.ui.common
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.BufferSize
@@ -8,7 +10,23 @@ import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import java.util.Locale
+
+/**
+ * Grupe u Podešavanjima, redom kojim se prikazuju: najčešće korišćene su na vrhu. Iste su na
+ * telefonu i na TV-u; grupa bez ijedne stavke na uređaju se ne prikazuje.
+ */
+enum class SettingsGroup(@StringRes val title: Int, @StringRes val summary: Int, val icon: ImageVector) {
+    CONTENT(R.string.settings_group_content, R.string.settings_group_content_summary, AppIcons.Playlists),
+    WATCHING(R.string.settings_group_watching, R.string.settings_group_watching_summary, AppIcons.Play),
+    SUBTITLES(R.string.settings_group_subtitles, R.string.settings_group_subtitles_summary, AppIcons.Subtitles),
+    LOOK(R.string.settings_group_look, R.string.settings_group_look_summary, AppIcons.Brightness),
+    RECORDINGS(R.string.settings_group_recordings, R.string.settings_group_recordings_summary, AppIcons.Record),
+    ACCOUNTS(R.string.settings_group_accounts, R.string.settings_group_accounts_summary, AppIcons.Cast),
+    PICTURE(R.string.settings_group_picture, R.string.settings_group_picture_summary, AppIcons.LiveTv),
+    ABOUT(R.string.settings_about_header, R.string.settings_group_about_summary, AppIcons.Info),
+}
 
 /** Jedno podešavanje sa spiskom vrednosti. Isti opis koriste ekrani za telefon i za TV. */
 data class SettingChoice(
@@ -20,6 +38,8 @@ data class SettingChoice(
     val subtitleLook: Boolean = false,
     /** Podešavanje uključeno/isključeno: prikazuje se kao prekidač. Prva vrednost znači uključeno. */
     val toggle: Boolean = false,
+    /** Grupa u Podešavanjima u kojoj se podešavanje prikazuje; null za izbore van Podešavanja (plejer). */
+    val group: SettingsGroup? = null,
     val onSelect: (Int) -> Unit,
 ) {
     val value: String get() = options.getOrElse(selected) { "" }
@@ -57,7 +77,11 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
         val extra = current.isNotEmpty() && current !in LANGUAGE_CODES
         val codes = listOf("") + LANGUAGE_CODES + if (extra) listOf(current) else emptyList()
         val names = listOf(first) + languageNames + if (extra) listOf(languageName(current)) else emptyList()
-        return SettingChoice(title, summary, names, codes.indexOf(current).coerceAtLeast(0), onSelect = { set(codes[it]) })
+        return SettingChoice(
+            title, summary, names, codes.indexOf(current).coerceAtLeast(0),
+            group = SettingsGroup.SUBTITLES,
+            onSelect = { set(codes[it]) },
+        )
     }
 
     return listOf(
@@ -70,6 +94,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.buffer_large),
             ),
             selected = BufferSize.entries.indexOf(settings.buffer),
+            group = SettingsGroup.PICTURE,
             onSelect = { viewModel.setBuffer(BufferSize.entries[it]) },
         ),
         SettingChoice(
@@ -81,6 +106,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.decoder_tunnel),
             ),
             selected = DecoderMode.entries.indexOf(settings.decoder),
+            group = SettingsGroup.PICTURE,
             onSelect = { viewModel.setDecoder(DecoderMode.entries[it]) },
         ),
         SettingChoice(
@@ -88,14 +114,8 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             summary = stringResource(R.string.settings_seek_step_summary),
             options = PlayerSettings.SEEK_STEP_OPTIONS.map { stringResource(R.string.seek_step_seconds, it) },
             selected = PlayerSettings.SEEK_STEP_OPTIONS.indexOf(settings.seekStepSeconds).coerceAtLeast(0),
+            group = SettingsGroup.WATCHING,
             onSelect = { viewModel.setSeekStep(PlayerSettings.SEEK_STEP_OPTIONS[it]) },
-        ),
-        languageChoice(
-            title = stringResource(R.string.settings_audio_language),
-            summary = stringResource(R.string.settings_audio_language_summary),
-            first = stringResource(R.string.language_default),
-            current = settings.audioLanguage,
-            set = viewModel::setAudioLanguage,
         ),
         languageChoice(
             title = stringResource(R.string.settings_subtitle_language),
@@ -103,6 +123,13 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             first = stringResource(R.string.player_subtitles_off),
             current = settings.subtitleLanguage,
             set = viewModel::setSubtitleLanguage,
+        ),
+        languageChoice(
+            title = stringResource(R.string.settings_audio_language),
+            summary = stringResource(R.string.settings_audio_language_summary),
+            first = stringResource(R.string.language_default),
+            current = settings.audioLanguage,
+            set = viewModel::setAudioLanguage,
         ),
         SettingChoice(
             title = stringResource(R.string.settings_subtitle_size),
@@ -114,6 +141,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.subtitle_size_xlarge),
             ),
             selected = SubtitleSize.entries.indexOf(settings.subtitleSize),
+            group = SettingsGroup.SUBTITLES,
             subtitleLook = true,
             onSelect = { viewModel.setSubtitleSize(SubtitleSize.entries[it]) },
         ),
@@ -126,6 +154,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                 stringResource(R.string.subtitle_position_high),
             ),
             selected = SubtitlePosition.entries.indexOf(settings.subtitlePosition),
+            group = SettingsGroup.SUBTITLES,
             subtitleLook = true,
             onSelect = { viewModel.setSubtitlePosition(SubtitlePosition.entries[it]) },
         ),
@@ -134,6 +163,7 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             summary = stringResource(R.string.settings_subtitle_look_summary),
             options = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off)),
             selected = if (settings.subtitleBackground) 0 else 1,
+            group = SettingsGroup.SUBTITLES,
             subtitleLook = true,
             toggle = true,
             onSelect = { viewModel.setSubtitleBackground(it == 0) },
