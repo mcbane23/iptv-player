@@ -48,7 +48,7 @@ fun TvEpgLinkDialog(channel: Channel, onClose: () -> Unit, viewModel: EpgLinkVie
         SideEffect { window?.setWindowAnimations(0) }
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(0.44f)

@@ -87,7 +87,7 @@ fun TvSearchAllScreen(
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .padding(top = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (state.channels.isNotEmpty()) {
                 item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels)) }

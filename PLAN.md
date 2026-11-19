@@ -679,6 +679,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       prigušen dok ne stigne novi) i slika prethodnog kanala staje čim fokus krene; sjaj pozadine se crta
       jednom; bočni meni bez senke
 - [ ] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
+  - [x] V1 Jedan izgled redova na TV-u: svi spiskovi (Podešavanja, pretraga, snimci, arhiva, epizode,
+        izbori u plejeru, dijalozi) su pločice kao kategorije, razmak 6 dp; bočni meni počinje u visini naslova
 
 ## 7. Testiranje
 

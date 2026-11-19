@@ -277,7 +277,7 @@ fun TvSeriesScreen(
                         modifier = Modifier
                             .width(190.dp)
                             .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         if (resume != null) {
                             item(key = "resume") {
@@ -332,7 +332,7 @@ fun TvSeriesScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         state.selectedSeason?.let { season ->
                             item(key = "season-watched") {

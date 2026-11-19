@@ -76,7 +76,7 @@ fun TvSearchScreen(
             modifier = Modifier
                 .fillMaxWidth(0.6f)
                 .padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
                 val channel = results[index]

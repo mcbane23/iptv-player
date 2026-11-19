@@ -68,7 +68,7 @@ fun TvRemoteButtonsScreen(viewModel: RemoteButtonsViewModel = hiltViewModel()) {
                 modifier = Modifier
                     .weight(0.55f)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 buttons.forEach { button ->
                     TvTextRow(
@@ -103,7 +103,7 @@ fun TvRemoteButtonsScreen(viewModel: RemoteButtonsViewModel = hiltViewModel()) {
                     val current = mapping[button] ?: button.defaultAction
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                         contentPadding = PaddingValues(bottom = 27.dp),
                     ) {
                         itemsIndexed(actions) { index, action ->

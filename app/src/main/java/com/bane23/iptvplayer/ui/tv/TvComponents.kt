@@ -52,9 +52,9 @@ import androidx.tv.material3.Text
  * a [selected] red (npr. trenutna kategorija ili kanal) ostaje blago istaknut i kad nema fokus.
  * [content] dobija boju teksta koja odgovara pozadini.
  *
- * Sa [card] red je zaobljena pločica sa podlogom, kao kategorije na telefonu: fokus je i dalje pun
- * u akcentnoj boji, a izabrani red bez fokusa ima akcentni okvir i tekst, da se na ekranu ne vide
- * dva puna akcentna reda.
+ * Sa [card] (podrazumevano, u svim spiskovima na TV-u isti izgled) red je zaobljena pločica sa
+ * podlogom, kao kategorije na telefonu: fokus je i dalje pun u akcentnoj boji, a izabrani red bez
+ * fokusa ima akcentni okvir i tekst, da se na ekranu ne vide dva puna akcentna reda.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -65,7 +65,7 @@ fun TvListRow(
     onFocused: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
     container: Color = Color.Transparent,
-    card: Boolean = false,
+    card: Boolean = true,
     verticalPadding: Dp = 10.dp,
     content: @Composable RowScope.(contentColor: Color) -> Unit,
 ) {
@@ -116,7 +116,7 @@ fun TvTextRow(
     checked: Boolean? = null,
     onLongClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
-    card: Boolean = false,
+    card: Boolean = true,
 ) {
     TvListRow(
         onClick = onClick,

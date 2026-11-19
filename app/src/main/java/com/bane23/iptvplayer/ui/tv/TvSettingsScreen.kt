@@ -258,7 +258,7 @@ fun TvSettingsScreen(
                     modifier = Modifier
                         .weight(0.30f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
                     TvTextRow(
@@ -317,7 +317,7 @@ fun TvSettingsScreen(
                             }
                         }
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     items.forEachIndexed { index, item ->
                         key(item.id) {
@@ -368,7 +368,7 @@ fun TvSettingsScreen(
                         val change = stringResource(R.string.settings_language_change)
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                             contentPadding = PaddingValues(bottom = 27.dp),
                         ) {
                             if (slot == null && parent.slots.isNotEmpty()) {

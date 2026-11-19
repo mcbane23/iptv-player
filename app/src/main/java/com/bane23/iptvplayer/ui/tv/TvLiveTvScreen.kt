@@ -331,7 +331,7 @@ fun TvLiveTvScreen(
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(0.42f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(modifier = Modifier.weight(0.42f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     repeat(SKELETON_ROWS) {
                         Row(
                             modifier = Modifier.padding(start = 62.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
@@ -434,7 +434,6 @@ fun TvLiveTvScreen(
                             onFocused = { lastChannelId = null },
                             onClick = { focusedCategory = category.id },
                             onLongClick = { menuCategory = category },
-                            card = true,
                             modifier = focusTarget(selectedCategory == category.id, firstFocus)
                                 .then(focusTarget(focusTargetId == category.id, moveFocus)),
                         )

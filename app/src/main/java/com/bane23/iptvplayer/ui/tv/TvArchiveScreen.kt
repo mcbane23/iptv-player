@@ -80,7 +80,7 @@ fun TvArchiveScreen(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(0.75f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     state.days.forEach { day ->
                         item(key = day.label) {
