@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tamna pozadina ikonice sa blagim prelivom. -->
+<!-- Tamno teget pozadina ikonice sa blagim prelivom. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -12,8 +12,8 @@
                 android:type="linear"
                 android:startX="0" android:startY="0"
                 android:endX="108" android:endY="108">
-                <item android:offset="0" android:color="#FF1C232B" />
-                <item android:offset="1" android:color="@color/background" />
+                <item android:offset="0" android:color="#FF13264F" />
+                <item android:offset="1" android:color="#FF081226" />
             </gradient>
         </aapt:attr>
     </path>

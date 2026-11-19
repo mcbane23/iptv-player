@@ -2,10 +2,24 @@
 <!-- Ikonica „Glowbox”: ekran sa znakom za puštanje i postoljem (koncept B).
      Crtež je umanjen oko središta da ceo stane u bezbednu zonu adaptivne ikonice (prečnik 66). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Topao sjaj iza ekrana. -->
+    <path android:pathData="M14,52a40,40 0,1 0,80,0a40,40 0,1 0,-80,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54" android:centerY="52"
+                android:gradientRadius="40">
+                <item android:offset="0" android:color="#80FFB74D" />
+                <item android:offset="0.55" android:color="#29FF8F3A" />
+                <item android:offset="1" android:color="#00FF8F3A" />
+            </gradient>
+        </aapt:attr>
+    </path>
     <group
         android:pivotX="54"
         android:pivotY="55"
