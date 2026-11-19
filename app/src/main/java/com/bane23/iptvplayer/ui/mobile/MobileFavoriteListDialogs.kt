@@ -101,8 +101,11 @@ fun MobileFavoritePickDialog(viewModel: FavoriteListsViewModel) {
     )
 }
 
-/** Šta je korisnik dugo pritisnuo među grupama: „Omiljene” ([list] je null) ili imenovanu listu. */
-data class FavoriteListMenu(val list: FavoriteList?)
+/**
+ * Šta je korisnik dugo pritisnuo među grupama: „Omiljene” ([list] je null) ili imenovanu listu.
+ * Sa [create] se odmah traži ime nove liste, bez menija.
+ */
+data class FavoriteListMenu(val list: FavoriteList?, val create: Boolean = false)
 
 private enum class MenuStep { MENU, NAME_NEW, NAME_RENAME, DELETE }
 
@@ -113,7 +116,7 @@ private enum class MenuStep { MENU, NAME_NEW, NAME_RENAME, DELETE }
 @Composable
 fun MobileFavoriteListMenuDialog(menu: FavoriteListMenu, viewModel: FavoriteListsViewModel, onClose: () -> Unit) {
     val list = menu.list
-    var step by remember(menu) { mutableStateOf(MenuStep.MENU) }
+    var step by remember(menu) { mutableStateOf(if (menu.create) MenuStep.NAME_NEW else MenuStep.MENU) }
     when (step) {
         MenuStep.MENU -> AlertDialog(
             onDismissRequest = onClose,
