@@ -309,6 +309,8 @@
     <string name="background_play_stop">Zaustavi</string>
     <string name="settings_under_cutout">Cela širina ekrana</string>
     <string name="settings_under_cutout_summary">Kad je telefon položen, sadržaj ide do ivice ekrana, i ispod kamere</string>
+    <string name="settings_full_screen">Ceo ekran</string>
+    <string name="settings_full_screen_summary">Sakriva gornju i donju traku telefona; prevuci od ivice da se privremeno pojave</string>
     <string name="vod_total">Ukupno: %1$d</string>
     <string name="settings_tv_vod_preview">Opis filma i serije iznad postera</string>
     <string name="vod_continue_remove">Skloni iz „Nastavi gledanje”</string>

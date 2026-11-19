@@ -25,6 +25,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import com.bane23.iptvplayer.data.trakt.TraktRepository
+import com.bane23.iptvplayer.ui.mobile.AppFullScreen
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
 import com.bane23.iptvplayer.ui.tv.TvEdgeScroll
@@ -68,6 +69,8 @@ class MainActivity : ComponentActivity() {
         val savedTheme = runBlocking { settingsStore.appTheme.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
         val savedScale = runBlocking { settingsStore.uiScale.first() }
+        // I ceo ekran na telefonu, da se trake pri pokretanju ne pojave pa tek onda sakriju.
+        val savedFullScreen = !isTv && runBlocking { settingsStore.appFullScreen.first() }
         setContent {
             val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
             val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
@@ -79,7 +82,10 @@ class MainActivity : ComponentActivity() {
                         // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
                         TvEdgeScroll { TvApp(watchLink = watchLink, onWatchLinkHandled = { watchLink = null }) }
                     } else {
-                        MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                        val fullScreen by settingsStore.appFullScreen.collectAsStateWithLifecycle(initialValue = savedFullScreen)
+                        AppFullScreen(enabled = fullScreen) {
+                            MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                        }
                     }
                     UpdateDialog()
                 }

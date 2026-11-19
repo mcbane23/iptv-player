@@ -83,6 +83,14 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[DRAW_UNDER_CUTOUT] = enabled }
     }
 
+    /** Da li je aplikacija na telefonu preko celog ekrana (bez gornje i donje sistemske trake). */
+    val appFullScreen: Flow<Boolean> =
+        dataStore.data.map { it[APP_FULL_SCREEN] ?: true }.distinctUntilChanged()
+
+    suspend fun setAppFullScreen(enabled: Boolean) {
+        dataStore.edit { it[APP_FULL_SCREEN] = enabled }
+    }
+
     /** Traka za osvetljenje uz levu ivicu plejera na telefonu. Isključena dok je korisnik ne uključi. */
     val playerBrightnessSlider: Flow<Boolean> =
         dataStore.data.map { it[PLAYER_BRIGHTNESS_SLIDER] ?: false }.distinctUntilChanged()
@@ -485,6 +493,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_CHANNEL_PREVIEW = booleanPreferencesKey("tv_channel_preview")
         val TV_VOD_PREVIEW = booleanPreferencesKey("tv_vod_preview")
         val DRAW_UNDER_CUTOUT = booleanPreferencesKey("draw_under_cutout")
+        val APP_FULL_SCREEN = booleanPreferencesKey("app_full_screen")
         val PLAYER_BRIGHTNESS_SLIDER = booleanPreferencesKey("player_brightness_slider")
         val PLAYER_VOLUME_SLIDER = booleanPreferencesKey("player_volume_slider")
         val BACKGROUND_PLAY = booleanPreferencesKey("background_play")
