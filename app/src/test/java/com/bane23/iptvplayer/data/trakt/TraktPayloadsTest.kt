@@ -126,4 +126,28 @@ class TraktPayloadsTest {
         val json = TraktJson.encodeToString(ScrobbleBody.serializer(), TraktPayloads.scrobble(TraktKey.episode(9, 1, 2), 33.5f))
         assertEquals("""{"show":{"ids":{"tmdb":9}},"episode":{"season":1,"number":2},"progress":33.5}""", json)
     }
+
+    @Test
+    fun `watched rows keep the time of watching, never in the future`() {
+        val shows = TraktJson.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(WatchedShow.serializer()),
+            """[{"show":{"title":"Izmisljena","ids":{"tmdb":9}},"seasons":[{"number":1,"episodes":[
+               {"number":1,"plays":1,"last_watched_at":"2026-01-01T00:00:00.000Z"},
+               {"number":2,"plays":1,"last_watched_at":"2026-01-03T00:00:00.000Z"},
+               {"number":3,"plays":1}]}]}]""",
+        )
+        val first = TraktPayloads.parseTime("2026-01-01T00:00:00.000Z")!!
+        val now = TraktPayloads.parseTime("2026-01-02T00:00:00.000Z")!!
+        val rows = TraktPayloads.watchedRows(emptyList(), shows, now)
+        assertEquals(listOf(first, now, 0L), rows.map { it.watchedAt })
+    }
+
+    @Test
+    fun `a pause older than the watched mark no longer counts`() {
+        assertEquals(true, TraktPayloads.finishedSince(watchedAtMs = 200, pausedAtMs = 100))
+        assertEquals(false, TraktPayloads.finishedSince(watchedAtMs = 100, pausedAtMs = 200))
+        assertEquals(false, TraktPayloads.finishedSince(watchedAtMs = null, pausedAtMs = 200))
+        // Vreme gledanja koje se ne zna (0) ne poništava poziciju.
+        assertEquals(false, TraktPayloads.finishedSince(watchedAtMs = 0, pausedAtMs = 200))
+    }
 }

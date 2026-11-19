@@ -649,6 +649,10 @@ interface TraktDao {
     @Query("SELECT * FROM trakt_watched WHERE kind = 'episode' AND tmdbId = :showTmdbId")
     fun observeWatchedEpisodes(showTmdbId: Long): Flow<List<TraktWatchedEntity>>
 
+    /** Kada je film, odnosno epizoda, odgledana na nalogu; null ako nije. */
+    @Query("SELECT watchedAt FROM trakt_watched WHERE kind = :kind AND tmdbId = :tmdbId AND season = :season AND episode = :episode")
+    suspend fun watchedAt(kind: String, tmdbId: Long, season: Int, episode: Int): Long?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWatched(rows: List<TraktWatchedEntity>)
 

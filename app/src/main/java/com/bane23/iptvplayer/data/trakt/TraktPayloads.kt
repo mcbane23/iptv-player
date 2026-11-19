@@ -41,24 +41,33 @@ object TraktPayloads {
         return HistoryBody(movies = movies, shows = shows)
     }
 
-    /** Sve odgledano sa naloga kao redovi za bazu; stavke bez TMDB ID-ja se preskaču. */
+    /**
+     * Sve odgledano sa naloga kao redovi za bazu; stavke bez TMDB ID-ja se preskaču. Uz svaku se
+     * pamti kada je poslednji put gledana (po tome se bira epizoda za nastavak); kad Trakt to vreme
+     * ne pošalje, ostaje 0, to jest „ne zna se, davno”.
+     */
     fun watchedRows(movies: List<WatchedMovie>, shows: List<WatchedShow>, now: Long): List<TraktWatchedEntity> {
         val rows = ArrayList<TraktWatchedEntity>()
         for (movie in movies) {
             val tmdb = movie.movie?.ids?.tmdb ?: continue
-            rows.add(TraktWatchedEntity(TraktKey.MOVIE, tmdb, 0, 0, now))
+            rows.add(TraktWatchedEntity(TraktKey.MOVIE, tmdb, 0, 0, watchedTime(movie.lastWatchedAt, now)))
         }
         for (show in shows) {
             val tmdb = show.show?.ids?.tmdb ?: continue
             for (season in show.seasons) {
                 for (episode in season.episodes) {
                     if (!episode.isWatched) continue
-                    rows.add(TraktWatchedEntity(TraktKey.EPISODE, tmdb, season.number, episode.number, now))
+                    rows.add(
+                        TraktWatchedEntity(TraktKey.EPISODE, tmdb, season.number, episode.number, watchedTime(episode.lastWatchedAt, now)),
+                    )
                 }
             }
         }
         return rows.distinctBy { listOf(it.kind, it.tmdbId, it.season, it.episode) }
     }
+
+    /** Vreme gledanja sa naloga; sat drugog uređaja ne sme da ga pomeri u budućnost. */
+    private fun watchedTime(text: String?, now: Long): Long = (parseTime(text) ?: 0L).coerceAtMost(now)
 
     /**
      * TMDB ID-jevi započetih serija: bar jedna odgledana epizoda, a nisu odgledane sve do sada
@@ -104,6 +113,12 @@ object TraktPayloads {
         val episode = item.episode ?: return null
         return TraktKey.episode(show, episode.season, episode.number)
     }
+
+    /**
+     * Da li je film ili epizoda odgledana ([watchedAtMs]; null: nije) posle pauze u [pausedAtMs].
+     * Tada pozicija te pauze više ne važi.
+     */
+    fun finishedSince(watchedAtMs: Long?, pausedAtMs: Long): Boolean = watchedAtMs != null && watchedAtMs >= pausedAtMs
 
     /** Vreme iz Trakt odgovora (`2026-11-16T09:30:00.000Z`) u milisekundama, ili null. */
     fun parseTime(text: String?): Long? {
