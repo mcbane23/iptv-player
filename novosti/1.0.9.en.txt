@@ -1,0 +1,12 @@
+New app icon, dark navy with a glow
+TV: new Home with continue watching and favorites
+Phone: download movies and episodes to watch offline
+TV: choose what remote buttons do (colour buttons, CH+ and CH−, menu, long OK)
+Pause screen with title, description and a clock
+Named lists of favorite channels
+Link a channel to its guide programme by hand
+Merged playlists and a backup source for the same channel
+Channel schedule in the player and a next-episode card
+Black theme and a tidier Live TV look
+Screen protection: dimming on pause and closing after 30 minutes
+See what is new before you update
