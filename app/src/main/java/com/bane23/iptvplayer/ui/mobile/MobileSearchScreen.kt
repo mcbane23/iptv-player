@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.mobile
 
 import androidx.compose.foundation.layout.Column
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -76,11 +77,15 @@ fun MobileSearchScreen(
             if (state.query.isNotBlank() && results.itemCount == 0 && results.loadState.refresh is LoadState.NotLoading) {
                 EmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty))
             }
-            LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+            // Isti red kanala kao u Uživo (pločica), da pretraga ne izgleda kao drugi deo aplikacije.
+            LazyColumn(
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
                 items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
-                    MobileChannelRow(
+                    MobileChannelCard(
                         channel = results[index],
-                        onClick = onPlay,
+                        onClick = { onPlay(it.id) },
                         onToggleFavorite = favoriteLists::favoriteAction,
                     )
                 }

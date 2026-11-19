@@ -166,9 +166,10 @@ fun MobileChannelCard(
     channel: Channel?,
     onClick: (Channel) -> Unit,
     onToggleFavorite: (Long) -> Unit,
-    onGuide: (Channel) -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
+    // Bez vodiča (npr. u pretrazi) meni nudi samo omiljene.
+    onGuide: ((Channel) -> Unit)? = null,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
@@ -272,14 +273,16 @@ fun MobileChannelCard(
                         onToggleFavorite(channel.id)
                     },
                 )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.guide_title)) },
-                    leadingIcon = { Icon(AppIcons.Guide, contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        onGuide(channel)
-                    },
-                )
+                if (onGuide != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.guide_title)) },
+                        leadingIcon = { Icon(AppIcons.Guide, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onGuide(channel)
+                        },
+                    )
+                }
             }
         }
     }

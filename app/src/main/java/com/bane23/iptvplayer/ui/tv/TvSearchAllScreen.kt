@@ -1,6 +1,13 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -90,7 +97,7 @@ fun TvSearchAllScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (state.channels.isNotEmpty()) {
-                item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels)) }
+                item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                 items(state.channels, key = { "c${it.id}" }) { channel ->
                     TvListRow(onClick = { onPlay(channel.id) }) { color ->
                         ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
@@ -99,7 +106,7 @@ fun TvSearchAllScreen(
                 }
             }
             if (state.programs.isNotEmpty()) {
-                item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs)) }
+                item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
                 items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
                     val onAir = hit.startMs <= now
                     val reminded = hit.key in reminders
@@ -128,36 +135,62 @@ fun TvSearchAllScreen(
                 }
             }
             if (state.movies.isNotEmpty()) {
-                item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies)) }
-                items(state.movies, key = { "m${it.id}" }) { item ->
-                    TvListRow(onClick = { onOpenVod(item, false) }) { color ->
-                        RowIcon(AppIcons.Movies, color)
-                        RowText(item.name, color, Modifier.weight(1f))
-                    }
-                }
+                item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
+                item(key = "r-movies") { PosterRow(state.movies) { onOpenVod(it, false) } }
             }
             if (state.series.isNotEmpty()) {
-                item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series)) }
-                items(state.series, key = { "s${it.id}" }) { item ->
-                    TvListRow(onClick = { onOpenVod(item, true) }) { color ->
-                        RowIcon(AppIcons.Series, color)
-                        RowText(item.name, color, Modifier.weight(1f))
-                    }
-                }
+                item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
+                item(key = "r-series") { PosterRow(state.series) { onOpenVod(it, true) } }
             }
         }
     }
     LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
 }
 
+/** Naslov grupe sa brojem pogodaka, kao naslov nad kanalima u Uživo. */
 @Composable
-private fun GroupTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 14.dp, bottom = 4.dp),
-    )
+private fun GroupTitle(text: String, count: Int) {
+    Row(
+        modifier = Modifier.padding(start = 16.dp, top = 14.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        )
+    }
+}
+
+/** Red postera za filmove ili serije u rezultatima, kao u karticama Filmovi i Serije. */
+@Composable
+private fun PosterRow(list: List<VodItem>, onOpen: (VodItem) -> Unit) {
+    LazyRow(
+        // Mesto za uvećan poster u fokusu, da ga ivica reda ne odseče.
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(list, key = { it.id }) { item ->
+            PosterCard(
+                name = item.name,
+                poster = item.poster,
+                onClick = { onOpen(item) },
+                onFocused = {},
+                modifier = Modifier.width(120.dp),
+            )
+        }
+    }
 }
 
 @Composable
