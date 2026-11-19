@@ -435,8 +435,8 @@ ta stavka izbačena. Sinhronizacija ide samo preko Trakt naloga (stavke iznad).
 - [x] Izgled titlova u podešavanjima: uključivanje/isključivanje crne pozadine,
       veličina slova i položaj na ekranu (visina od dna)
 - [x] Pregled izgleda titlova u samim podešavanjima: probni titl na umanjenoj slici (telefon i TV)
-- [x] Više podrazumevanih jezika po redu važnosti: tri stavke za titlove (prvi, drugi, treći jezik)
-      i tri za zvuk. Uključuje se prvi jezik koji sadržaj ima; ako nema nijednog, titl ostaje
+- [x] Više podrazumevanih jezika po redu važnosti: red „Jezici titlova” i red „Jezici zvuka”, a
+      svaki otvara tri mesta (prvi, drugi, treći jezik). Uključuje se prvi jezik koji sadržaj ima; ako nema nijednog, titl ostaje
       isključen. Izbor zvuka ili titla u plejeru važi samo za ono što se gleda i više ne menja
       podešavanja (zamenjuje ranije „Pamćenje izbora titlova”). Pretraga na OpenSubtitles stavlja
       izabrane jezike prve, a jezik uređaja, engleski i srodni jezici ostaju kao dodatak.

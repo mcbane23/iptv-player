@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -155,7 +156,12 @@ fun TvTextRow(
                 text = trailing,
                 color = color.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 12.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // Duga vrednost (npr. tri jezika) ne sme da istisne naziv reda.
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .widthIn(max = 200.dp),
             )
         }
         if (checked != null) {
