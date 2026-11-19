@@ -72,17 +72,30 @@ private fun languageName(code: String): String {
 fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel): List<SettingChoice> {
     val languageNames = LANGUAGE_CODES.map(::languageName)
 
-    /** Jezik koji nije u spisku (npr. zapamćen iz plejera) dodaje se na kraj, da izbor ne nestane. */
-    fun languageChoice(title: String, summary: String, first: String, current: String, set: (String) -> Unit): SettingChoice {
+    val notChosen = stringResource(R.string.language_not_chosen)
+
+    /** Jezik koji nije u spisku (npr. prenet sa drugog uređaja) dodaje se na kraj, da izbor ne nestane. */
+    fun languageChoice(title: String, summary: String, current: String, set: (String) -> Unit): SettingChoice {
         val extra = current.isNotEmpty() && current !in LANGUAGE_CODES
         val codes = listOf("") + LANGUAGE_CODES + if (extra) listOf(current) else emptyList()
-        val names = listOf(first) + languageNames + if (extra) listOf(languageName(current)) else emptyList()
+        val names = listOf(notChosen) + languageNames + if (extra) listOf(languageName(current)) else emptyList()
         return SettingChoice(
             title, summary, names, codes.indexOf(current).coerceAtLeast(0),
             group = SettingsGroup.SUBTITLES,
             onSelect = { set(codes[it]) },
         )
     }
+
+    val subtitleLanguageTitles = listOf(
+        stringResource(R.string.settings_subtitle_language_1),
+        stringResource(R.string.settings_subtitle_language_2),
+        stringResource(R.string.settings_subtitle_language_3),
+    )
+    val audioLanguageTitles = listOf(
+        stringResource(R.string.settings_audio_language_1),
+        stringResource(R.string.settings_audio_language_2),
+        stringResource(R.string.settings_audio_language_3),
+    )
 
     return listOf(
         SettingChoice(
@@ -117,20 +130,22 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             group = SettingsGroup.WATCHING,
             onSelect = { viewModel.setSeekStep(PlayerSettings.SEEK_STEP_OPTIONS[it]) },
         ),
-        languageChoice(
-            title = stringResource(R.string.settings_subtitle_language),
-            summary = stringResource(R.string.settings_subtitle_language_summary),
-            first = stringResource(R.string.player_subtitles_off),
-            current = settings.subtitleLanguage,
-            set = viewModel::setSubtitleLanguage,
-        ),
-        languageChoice(
-            title = stringResource(R.string.settings_audio_language),
-            summary = stringResource(R.string.settings_audio_language_summary),
-            first = stringResource(R.string.language_default),
-            current = settings.audioLanguage,
-            set = viewModel::setAudioLanguage,
-        ),
+        *subtitleLanguageTitles.mapIndexed { slot, title ->
+            languageChoice(
+                title = title,
+                summary = stringResource(R.string.settings_subtitle_language_summary),
+                current = settings.subtitleLanguageSlots.getOrElse(slot) { "" },
+                set = { viewModel.setSubtitleLanguage(slot, it) },
+            )
+        }.toTypedArray(),
+        *audioLanguageTitles.mapIndexed { slot, title ->
+            languageChoice(
+                title = title,
+                summary = stringResource(R.string.settings_audio_language_summary),
+                current = settings.audioLanguageSlots.getOrElse(slot) { "" },
+                set = { viewModel.setAudioLanguage(slot, it) },
+            )
+        }.toTypedArray(),
         SettingChoice(
             title = stringResource(R.string.settings_subtitle_size),
             summary = stringResource(R.string.settings_subtitle_look_summary),

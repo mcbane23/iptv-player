@@ -376,20 +376,10 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch { settings.setPlayerDecoder(mode) }
     }
 
-    /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći kanal ili film krene isto. */
-    fun selectAudio(option: com.bane23.iptvplayer.player.TrackOption) {
-        engine.selectAudio(option)
-        option.language?.let { language -> viewModelScope.launch { settings.setAudioLanguage(language) } }
-    }
+    /** Izbor u plejeru važi samo za kanal koji se gleda; podrazumevani jezici iz podešavanja se ne menjaju. */
+    fun selectAudio(option: com.bane23.iptvplayer.player.TrackOption) = engine.selectAudio(option)
 
-    fun selectText(option: com.bane23.iptvplayer.player.TrackOption?) {
-        engine.selectText(option)
-        if (option == null) {
-            viewModelScope.launch { settings.setSubtitleLanguage("") }
-        } else {
-            option.language?.let { language -> viewModelScope.launch { settings.setSubtitleLanguage(language) } }
-        }
-    }
+    fun selectText(option: com.bane23.iptvplayer.player.TrackOption?) = engine.selectText(option)
 
     /** Cifra sa daljinskog: brojevi se skupljaju, pa se posle kratke pauze prelazi na taj kanal. */
     fun typeDigit(digit: Int) {

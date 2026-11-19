@@ -490,11 +490,8 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
-    /** Izbor u plejeru se pamti kao podrazumevani jezik, da sledeći film ili epizoda krene isto. */
-    fun selectAudio(option: TrackOption) {
-        engine.selectAudio(option)
-        option.language?.let { language -> viewModelScope.launch { settings.setAudioLanguage(language) } }
-    }
+    /** Izbor u plejeru važi samo za ono što se gleda; podrazumevani jezici iz podešavanja se ne menjaju. */
+    fun selectAudio(option: TrackOption) = engine.selectAudio(option)
 
     fun selectText(option: TrackOption?) {
         engine.selectText(option)
@@ -504,11 +501,6 @@ class VodPlayerViewModel @Inject constructor(
         if (savedName != null && current != null && (option == null || !option.label.startsWith(savedName))) {
             savedSubtitleName = null
             viewModelScope.launch { subtitles.forget(current.id, episode = current.seriesId != null) }
-        }
-        if (option == null) {
-            viewModelScope.launch { settings.setSubtitleLanguage("") }
-        } else {
-            option.language?.let { language -> viewModelScope.launch { settings.setSubtitleLanguage(language) } }
         }
     }
 

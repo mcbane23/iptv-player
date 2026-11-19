@@ -50,7 +50,7 @@ class OpenSubtitlesRepository @Inject constructor(
 
     suspend fun search(query: SubtitleQuery): List<SubtitleResult> = withContext(Dispatchers.IO) {
         val languages = SubtitleSearch.languages(
-            preferred = settings.playerSettings.first().subtitleLanguage,
+            preferred = settings.playerSettings.first().subtitleLanguages,
             device = Locale.getDefault().language,
         )
         val languageParam = languages.sorted().joinToString(",")

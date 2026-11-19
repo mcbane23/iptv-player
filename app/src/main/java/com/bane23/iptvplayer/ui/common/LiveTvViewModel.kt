@@ -285,12 +285,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setPlayerDecoder(decoder) }
     }
 
-    fun setAudioLanguage(language: String) {
-        viewModelScope.launch { settings.setAudioLanguage(language) }
+    fun setAudioLanguage(slot: Int, language: String) {
+        viewModelScope.launch { settings.setAudioLanguage(slot, language) }
     }
 
-    fun setSubtitleLanguage(language: String) {
-        viewModelScope.launch { settings.setSubtitleLanguage(language) }
+    fun setSubtitleLanguage(slot: Int, language: String) {
+        viewModelScope.launch { settings.setSubtitleLanguage(slot, language) }
     }
 
     val resumeLastChannel: StateFlow<Boolean> = repository.resumeLastChannel

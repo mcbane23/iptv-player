@@ -70,21 +70,19 @@ object SubtitleSearch {
     }
 
     /**
-     * Jezici koji se traže, po redu važnosti: [preferred] (iz podešavanja titlova), jezik uređaja
-     * [device], pa engleski. Uz srpski, hrvatski ili bosanski idu i druga dva, jer su titlovi
+     * Jezici koji se traže, po redu važnosti: [preferred] (jezici titlova iz podešavanja, svojim
+     * redom), jezik uređaja [device], pa engleski. Uz srpski, hrvatski ili bosanski idu i druga dva, jer su titlovi
      * međusobno razumljivi, a često postoji samo jedan od njih.
      */
-    fun languages(preferred: String, device: String): List<String> {
-        val result = LinkedHashSet<String>()
-        for (code in listOf(preferred, device)) {
-            val language = code.trim().lowercase().substringBefore('-').substringBefore('_')
+    fun languages(preferred: List<String>, device: String): List<String> {
+        fun clean(code: String) = code.trim().lowercase().substringBefore('-').substringBefore('_')
+        val chosen = preferred.map(::clean).filter { it.isNotEmpty() }
+        // Izabrani jezici idu prvi, tačno svojim redom; srodni jezici se dodaju tek iza njih.
+        val result = LinkedHashSet(chosen)
+        for (language in chosen + clean(device)) {
             if (language.isEmpty()) continue
-            if (language in SOUTH_SLAVIC) {
-                result.add(language)
-                result.addAll(SOUTH_SLAVIC)
-            } else {
-                result.add(language)
-            }
+            result.add(language)
+            if (language in SOUTH_SLAVIC) result.addAll(SOUTH_SLAVIC)
         }
         result.add("en")
         return result.toList()

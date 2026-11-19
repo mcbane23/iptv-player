@@ -65,8 +65,10 @@ class TransferRepository @Inject constructor(
             settings = TransferSettings(
                 resumeLastChannel = settings.resumeLastChannel.first(),
                 buffer = player.buffer.name,
-                audioLanguage = player.audioLanguage,
-                subtitleLanguage = player.subtitleLanguage,
+                audioLanguage = player.audioLanguages.firstOrNull().orEmpty(),
+                subtitleLanguage = player.subtitleLanguages.firstOrNull().orEmpty(),
+                audioLanguages = player.audioLanguageSlots,
+                subtitleLanguages = player.subtitleLanguageSlots,
                 seekStepSeconds = player.seekStepSeconds,
                 subtitleBackground = player.subtitleBackground,
                 subtitleSize = player.subtitleSize.name,
@@ -262,8 +264,10 @@ class TransferRepository @Inject constructor(
     private suspend fun applySettings(incoming: TransferSettings) {
         settings.setResumeLastChannel(incoming.resumeLastChannel)
         BufferSize.entries.firstOrNull { it.name == incoming.buffer }?.let { settings.setPlayerBuffer(it) }
-        settings.setAudioLanguage(incoming.audioLanguage.take(MAX_LANGUAGE_LENGTH))
-        settings.setSubtitleLanguage(incoming.subtitleLanguage.take(MAX_LANGUAGE_LENGTH))
+        fun slots(list: List<String>?, single: String) =
+            (list ?: listOf(single)).take(PlayerSettings.LANGUAGE_SLOTS).map { it.take(MAX_LANGUAGE_LENGTH) }
+        settings.setAudioLanguageSlots(slots(incoming.audioLanguages, incoming.audioLanguage))
+        settings.setSubtitleLanguageSlots(slots(incoming.subtitleLanguages, incoming.subtitleLanguage))
         incoming.seekStepSeconds?.takeIf { it in PlayerSettings.SEEK_STEP_OPTIONS }?.let { settings.setSeekStep(it) }
         incoming.subtitleBackground?.let { settings.setSubtitleBackground(it) }
         SubtitleSize.entries.firstOrNull { it.name == incoming.subtitleSize }?.let { settings.setSubtitleSize(it) }

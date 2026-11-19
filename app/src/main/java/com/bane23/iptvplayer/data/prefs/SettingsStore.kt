@@ -388,8 +388,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         PlayerSettings(
             buffer = BufferSize.entries.firstOrNull { it.name == prefs[PLAYER_BUFFER] } ?: BufferSize.NORMAL,
             decoder = DecoderMode.entries.firstOrNull { it.name == prefs[PLAYER_DECODER] } ?: DecoderMode.AUTO,
-            audioLanguage = prefs[PLAYER_AUDIO_LANGUAGE].orEmpty(),
-            subtitleLanguage = prefs[PLAYER_SUBTITLE_LANGUAGE].orEmpty(),
+            audioLanguageSlots = PlayerSettings.parseLanguageSlots(prefs[PLAYER_AUDIO_LANGUAGE]),
+            subtitleLanguageSlots = PlayerSettings.parseLanguageSlots(prefs[PLAYER_SUBTITLE_LANGUAGE]),
             seekStepSeconds = prefs[PLAYER_SEEK_STEP]?.takeIf { it in PlayerSettings.SEEK_STEP_OPTIONS }
                 ?: PlayerSettings.DEFAULT_SEEK_STEP_SECONDS,
             subtitleBackground = prefs[SUBTITLE_BACKGROUND] ?: true,
@@ -423,12 +423,25 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[SUBTITLE_POSITION] = position.name }
     }
 
-    suspend fun setAudioLanguage(language: String) {
-        dataStore.edit { it[PLAYER_AUDIO_LANGUAGE] = language }
+    /** Jezik zvuka na mestu [slot] (0 = prvi po važnosti); prazno prazni to mesto. */
+    suspend fun setAudioLanguage(slot: Int, language: String) = setLanguageSlot(PLAYER_AUDIO_LANGUAGE, slot, language)
+
+    /** Jezik titlova na mestu [slot] (0 = prvi po važnosti); prazno prazni to mesto. */
+    suspend fun setSubtitleLanguage(slot: Int, language: String) = setLanguageSlot(PLAYER_SUBTITLE_LANGUAGE, slot, language)
+
+    suspend fun setAudioLanguageSlots(slots: List<String>) {
+        dataStore.edit { it[PLAYER_AUDIO_LANGUAGE] = PlayerSettings.formatLanguageSlots(slots) }
     }
 
-    suspend fun setSubtitleLanguage(language: String) {
-        dataStore.edit { it[PLAYER_SUBTITLE_LANGUAGE] = language }
+    suspend fun setSubtitleLanguageSlots(slots: List<String>) {
+        dataStore.edit { it[PLAYER_SUBTITLE_LANGUAGE] = PlayerSettings.formatLanguageSlots(slots) }
+    }
+
+    private suspend fun setLanguageSlot(key: Preferences.Key<String>, slot: Int, language: String) {
+        dataStore.edit { prefs ->
+            val slots = PlayerSettings.withLanguageSlot(PlayerSettings.parseLanguageSlots(prefs[key]), slot, language)
+            prefs[key] = PlayerSettings.formatLanguageSlots(slots)
+        }
     }
 
     private companion object {

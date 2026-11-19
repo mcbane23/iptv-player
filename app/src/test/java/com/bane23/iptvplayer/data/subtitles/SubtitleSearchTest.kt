@@ -43,14 +43,26 @@ class SubtitleSearchTest {
 
     @Test
     fun `languages put the preferred first and always end with english`() {
-        assertEquals(listOf("de", "fr", "en"), SubtitleSearch.languages(preferred = "de", device = "fr-FR"))
-        assertEquals(listOf("en"), SubtitleSearch.languages(preferred = "", device = "en"))
+        assertEquals(listOf("de", "fr", "en"), SubtitleSearch.languages(preferred = listOf("de"), device = "fr-FR"))
+        assertEquals(listOf("en"), SubtitleSearch.languages(preferred = emptyList(), device = "en"))
     }
 
     @Test
     fun `serbian brings croatian and bosnian along`() {
-        assertEquals(listOf("sr", "hr", "bs", "en"), SubtitleSearch.languages(preferred = "", device = "sr"))
-        assertEquals(listOf("hr", "sr", "bs", "en"), SubtitleSearch.languages(preferred = "hr", device = "en"))
+        assertEquals(listOf("sr", "hr", "bs", "en"), SubtitleSearch.languages(preferred = emptyList(), device = "sr"))
+        assertEquals(listOf("hr", "sr", "bs", "en"), SubtitleSearch.languages(preferred = listOf("hr"), device = "en"))
+    }
+
+    @Test
+    fun `several preferred languages keep their order ahead of the extras`() {
+        assertEquals(
+            listOf("sr", "en", "de", "hr", "bs"),
+            SubtitleSearch.languages(preferred = listOf("sr", "en", "de"), device = ""),
+        )
+        assertEquals(
+            listOf("de", "hr", "sr", "bs", "fr", "en"),
+            SubtitleSearch.languages(preferred = listOf("de", " HR ", ""), device = "fr-FR"),
+        )
     }
 
     @Test
