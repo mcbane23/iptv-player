@@ -308,8 +308,10 @@ class PlayerEngine(
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-            .setPreferredAudioLanguage(settings.audioLanguage.ifEmpty { null })
-            .setPreferredTextLanguage(settings.subtitleLanguage.ifEmpty { null })
+            .setPreferredAudioLanguages(*settings.audioLanguages.toTypedArray())
+            .setPreferredTextLanguages(*settings.subtitleLanguages.toTypedArray())
+            // Titl koji je u fajlu označen kao podrazumevan ne uključuje se sam: važe samo jezici iz podešavanja.
+            .setIgnoredTextSelectionFlags(C.SELECTION_FLAG_DEFAULT)
             .build()
         applyTunneling()
     }
@@ -330,6 +332,14 @@ class PlayerEngine(
         } else if (source != this.source) {
             externalSubtitles = emptyList()
             pendingSubtitleId = null
+        }
+        if (source != this.source) {
+            // Izbor zvuka i titla u plejeru važi samo za sadržaj koji se gledao; novi kreće po podešavanjima.
+            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                .build()
         }
         this.source = source
         urlIndex = 0

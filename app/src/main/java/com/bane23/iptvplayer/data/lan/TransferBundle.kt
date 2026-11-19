@@ -102,8 +102,12 @@ data class TransferVodCategories(
 data class TransferSettings(
     val resumeLastChannel: Boolean = false,
     val buffer: String = "",
+    /** Prvi jezik po važnosti; čitaju ga starije verzije, koje znaju samo za jedan jezik. */
     val audioLanguage: String = "",
     val subtitleLanguage: String = "",
+    /** Svi jezici po redu važnosti (mesta iz podešavanja); null kada šalje starija verzija. */
+    val audioLanguages: List<String>? = null,
+    val subtitleLanguages: List<String>? = null,
     // Sve ispod je null kada šalje starija verzija; TV tada ne dira svoje podešavanje.
     val seekStepSeconds: Int? = null,
     val subtitleBackground: Boolean? = null,

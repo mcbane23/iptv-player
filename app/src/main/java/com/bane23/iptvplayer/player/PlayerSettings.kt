@@ -28,10 +28,16 @@ enum class SubtitlePosition(val bottomFraction: Float) { LOW(0.08f), MIDDLE(0.18
 data class PlayerSettings(
     val buffer: BufferSize = BufferSize.NORMAL,
     val decoder: DecoderMode = DecoderMode.AUTO,
-    /** Jezik zvuka koji se bira kad ih ima više (npr. "sr"); prazno = onaj koji strim sam ponudi. */
-    val audioLanguage: String = "",
-    /** Jezik titlova koji se sam uključuje; prazno = titlovi su isključeni dok ih korisnik ne uključi. */
-    val subtitleLanguage: String = "",
+    /**
+     * Jezici zvuka po redu važnosti, kako stoje u podešavanjima (prvi, drugi, treći; npr. "sr").
+     * Prazno mesto znači da jezik nije izabran. Bez ijednog jezika ostaje zvuk koji strim sam ponudi.
+     */
+    val audioLanguageSlots: List<String> = emptyList(),
+    /**
+     * Jezici titlova po redu važnosti, na isti način. Uključuje se prvi koji sadržaj ima; bez
+     * ijednog poklapanja titlovi ostaju isključeni dok ih korisnik ne uključi u plejeru.
+     */
+    val subtitleLanguageSlots: List<String> = emptyList(),
     /** Za koliko sekundi dugmad napred i nazad premotaju film ili epizodu. */
     val seekStepSeconds: Int = DEFAULT_SEEK_STEP_SECONDS,
     /** Crna pozadina iza titlova; bez nje slova imaju samo crnu ivicu. */
@@ -39,8 +45,40 @@ data class PlayerSettings(
     val subtitleSize: SubtitleSize = SubtitleSize.NORMAL,
     val subtitlePosition: SubtitlePosition = SubtitlePosition.LOW,
 ) {
+    /** Izabrani jezici zvuka po redu važnosti, bez praznih mesta i ponavljanja. */
+    val audioLanguages: List<String> get() = languagePriority(audioLanguageSlots)
+
+    /** Izabrani jezici titlova po redu važnosti, bez praznih mesta i ponavljanja. */
+    val subtitleLanguages: List<String> get() = languagePriority(subtitleLanguageSlots)
+
     companion object {
         const val DEFAULT_SEEK_STEP_SECONDS = 10
+
+        /** Koliko jezika po redu važnosti može da se izabere za titlove, odnosno zvuk. */
+        const val LANGUAGE_SLOTS = 3
+
+        /** Mesta iz podešavanja kao spisak jezika po redu važnosti. */
+        fun languagePriority(slots: List<String>): List<String> =
+            slots.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+
+        /**
+         * Čita mesta iz zapisa u podešavanjima (jezici razdvojeni zarezom, prazno mesto ostaje prazno).
+         * Stariji zapis sa jednim jezikom postaje prvo mesto.
+         */
+        fun parseLanguageSlots(raw: String?): List<String> =
+            raw.orEmpty().split(',').map { it.trim() }.take(LANGUAGE_SLOTS).dropLastWhile { it.isEmpty() }
+
+        /** Zapis mesta za podešavanja; obrnuto od [parseLanguageSlots]. */
+        fun formatLanguageSlots(slots: List<String>): String =
+            slots.map { it.trim().replace(",", "") }.take(LANGUAGE_SLOTS).dropLastWhile { it.isEmpty() }.joinToString(",")
+
+        /** Mesta sa jezikom [language] na mestu [index] (od nule); prazan jezik prazni to mesto. */
+        fun withLanguageSlot(slots: List<String>, index: Int, language: String): List<String> {
+            if (index !in 0 until LANGUAGE_SLOTS) return slots
+            val padded = (slots + List(LANGUAGE_SLOTS) { "" }).take(LANGUAGE_SLOTS).toMutableList()
+            padded[index] = language.trim()
+            return padded.dropLastWhile { it.isEmpty() }
+        }
 
         /** Vrednosti koje se nude u podešavanjima. */
         val SEEK_STEP_OPTIONS = listOf(5, 10, 15, 30, 60)
