@@ -57,7 +57,8 @@ Predlog SDK nivoa: `minSdk 24`, `targetSdk` i `compileSdk` na najnovijem stabiln
       (`applicationId`) ostaje isti, da nadogradnja ne obriše podatke.
 - [x] **Ikonica.** Akcentna boja je rešena 16. 11. 2026: korisnik je bira u Podešavanjima
       (`AccentColor`), podrazumevana je svetlo narandžasta. Ikonica rešena 16. 11. 2026: ekran
-      sa znakom za puštanje i postoljem na tamnoj pozadini; TV baner je ta slika + „Glowbox”.
+      sa znakom za puštanje i postoljem; TV baner je ta slika + „Glowbox”. Od 19. 11. 2026.
+      pozadina ikonice i banera je tamno teget, sa toplim sjajem iza ekrana.
 - [ ] Da li je potrebna distribucija van GitHub-a (npr. Google Play). Utiče na Fazu 8.
 - [x] **Sinhronizacija preko naloga (Faza 9).** Rešeno 16. 11. 2026: sopstvena prijava
       (Google ili email) nije potrebna. Odgledano i pozicija gledanja idu preko korisnikovog
