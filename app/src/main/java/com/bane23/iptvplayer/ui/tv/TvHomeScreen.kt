@@ -53,6 +53,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
+import com.bane23.iptvplayer.ui.common.theme.LocalNeon
+import com.bane23.iptvplayer.ui.common.theme.neonBackdrop
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
@@ -342,6 +344,8 @@ private fun RailItem(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
+            // Neonska tema: blago svetlo iza izabranog odeljka.
+            .neonBackdrop(LocalNeon.current, selected)
             .clip(RoundedCornerShape(12.dp))
             .background(if (focused) colors.primary else Color.Transparent)
             .onFocusChanged { focused = it.isFocused }

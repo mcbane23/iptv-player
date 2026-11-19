@@ -42,7 +42,6 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonGlow
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -878,7 +877,6 @@ private fun TvTabChip(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val neon = LocalNeon.current
     val shape = RoundedCornerShape(50)
     Text(
         text = text,
@@ -892,7 +890,6 @@ private fun TvTabChip(
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .widthIn(max = 200.dp)
-            .neonGlow(neon, focused, shape)
             .clip(shape)
             .background(
                 when {

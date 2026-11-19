@@ -49,7 +49,6 @@ import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.label
 import com.bane23.iptvplayer.ui.common.languageSummary
 import com.bane23.iptvplayer.ui.common.theme.AccentColor
-import com.bane23.iptvplayer.ui.common.theme.AppTheme
 import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
@@ -60,6 +59,7 @@ import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
+import com.bane23.iptvplayer.ui.common.themeChoice
 import com.bane23.iptvplayer.work.Autostart
 
 /**
@@ -100,7 +100,7 @@ fun TvSettingsScreen(
     var permissionScreenMissing by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { autostartAllowed = Autostart.isAllowed(context) }
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
-    val choices = playerSettingChoices(playerSettings, viewModel)
+    val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme)
     val groups = SettingsGroup.entries.filter { it != SettingsGroup.RECORDINGS || onRecordings != null }
     val groupFocus = remember { SettingsGroup.entries.map { FocusRequester() } }
     val languageFocus = remember { FocusRequester() }
@@ -169,11 +169,8 @@ fun TvSettingsScreen(
             onOpenSubtitles?.let { TvItem(OPENSUBTITLES_ROW, stringResource(R.string.opensubtitles_title), "›", onClick = it) },
         )
 
-        SettingsGroup.LOOK -> listOf(
-            TvItem(THEME_ROW, stringResource(R.string.settings_theme), appTheme?.label()) {
-                // Svaki pritisak prelazi na sledeću temu; promena se vidi odmah.
-                viewModel.setAppTheme(AppTheme.next(appTheme ?: AppTheme.DEFAULT))
-            },
+        // Tema se bira sa spiska, kao i ostala podešavanja sa vrednostima.
+        SettingsGroup.LOOK -> choiceItems(SettingsGroup.LOOK) + listOf(
             TvItem(ACCENT_ROW, stringResource(R.string.settings_accent_color), accentColor?.label()) {
                 // Svaki pritisak prelazi na sledeću boju; promena se vidi odmah.
                 val current = accentColor ?: AccentColor.DEFAULT
@@ -469,7 +466,6 @@ private fun FocusedSummary(
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
-        THEME_ROW -> stringResource(R.string.settings_theme_tv_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
@@ -519,7 +515,6 @@ private const val VOD_PREVIEW_ROW = -16
 private const val UPDATE_CHECK_ROW = -17
 private const val WATCH_NEXT_ROW = -18
 private const val BLACK_THEME_ROW = -19
-private const val THEME_ROW = -22
 private const val PAUSE_INFO_ROW = -20
 private const val REMOTE_BUTTONS_ROW = -21
 

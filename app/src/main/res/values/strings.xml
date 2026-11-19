@@ -623,8 +623,7 @@
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
     <string name="settings_theme">Theme</string>
-    <string name="settings_theme_summary">Background colors and the look of the selected item. Neon themes give the selected item a glow and icy blue progress bars. The change shows right away.</string>
-    <string name="settings_theme_tv_summary">Background colors and the look of the focused item. Neon themes give the focused item a glow and icy blue progress bars. Each press of OK switches to the next theme.</string>
+    <string name="settings_theme_summary">Background colors. Neon themes add a soft light behind the selected menu button and icy blue progress bars.</string>
     <string name="theme_gray">Gray</string>
     <string name="theme_navy">Navy</string>
     <string name="theme_navy_neon">Navy with neon</string>

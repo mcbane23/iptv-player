@@ -50,8 +50,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonGlow
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
@@ -537,7 +535,6 @@ fun PosterCard(
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
-            .neonGlow(LocalNeon.current, focused, shape)
             .background(if (focused) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, shape)
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
             // Dug pritisak na OK dodaje u omiljene, odnosno uklanja; u „Nastavi gledanje” otvara meni.

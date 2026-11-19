@@ -3,18 +3,15 @@ package com.bane23.iptvplayer.ui.common.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.drawOutline
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.bane23.iptvplayer.R
 
 /**
  * Tema aplikacije koju korisnik bira u Podešavanjima: boje pozadine i površina i da li izabrana
- * stavka dobija neonski sjaj. U podešavanjima se čuva ime vrednosti, zato se postojeća imena ne menjaju.
+ * dugme u meniju dobija blago neonsko svetlo iza sebe. U podešavanjima se čuva ime vrednosti, zato se postojeća imena ne menjaju.
  * Crna tema je poseban prekidač i preko bilo koje od ovih stavlja potpuno crnu pozadinu.
  */
 enum class AppTheme(val background: Color, val surface: Color, val surfaceVariant: Color, val neon: Boolean) {
@@ -25,13 +22,10 @@ enum class AppTheme(val background: Color, val surface: Color, val surfaceVarian
     ;
 
     companion object {
-        val DEFAULT = GRAY
+        val DEFAULT = NAVY_NEON
 
         /** Tema po sačuvanom imenu; nepoznato ime ili null daje podrazumevanu. */
         fun fromName(name: String?): AppTheme = entries.firstOrNull { it.name == name } ?: DEFAULT
-
-        /** Sledeća tema u krug (svaki pritisak u podešavanjima prelazi na sledeću). */
-        fun next(current: AppTheme): AppTheme = entries[(current.ordinal + 1) % entries.size]
     }
 }
 
@@ -45,28 +39,31 @@ fun AppTheme.label(): String = stringResource(
     },
 )
 
-/** Boje neonske teme: [glow] je sjaj oko izabrane stavke, [progress] boja traka napretka. */
+/** Boje neonske teme: [glow] je svetlo iza izabranog dugmeta u meniju, [progress] boja traka napretka. */
 data class NeonStyle(val glow: Color, val progress: Color)
 
 /** Neonski stil trenutne teme, ili null kad tema nije neonska. */
 val LocalNeon = staticCompositionLocalOf<NeonStyle?> { null }
 
 /**
- * Neonski sjaj oko oblika [shape] kad je [active] i tema je neonska ([neon] nije null): nekoliko sve
- * širih i providnijih linija po ivici, bez zamućenja, pa je jeftino i na slabijim TV kutijama.
- * Stavlja se pre `clip` u nizu, da sjaj sme da izađe van stavke.
+ * Blago neonsko svetlo iza izabranog dugmeta u meniju (donja traka na telefonu, bočni meni na TV-u)
+ * kad je [active] i tema je neonska ([neon] nije null): mek kružni prelaz akcentne boje iz sredine
+ * dugmeta, bez okvira. Crta se jednom po veličini (drawWithCache), pa ne opterećuje slabije uređaje.
  */
-fun Modifier.neonGlow(neon: NeonStyle?, active: Boolean, shape: Shape): Modifier =
+fun Modifier.neonBackdrop(neon: NeonStyle?, active: Boolean): Modifier =
     if (neon == null || !active) {
         this
     } else {
-        drawBehind {
-            val outline = shape.createOutline(size, layoutDirection, this)
-            for ((width, alpha) in GLOW_LAYERS) {
-                drawOutline(outline, neon.glow.copy(alpha = alpha), style = Stroke(width.dp.toPx()))
-            }
+        drawWithCache {
+            val radius = size.maxDimension * BACKDROP_RADIUS
+            val brush = Brush.radialGradient(
+                colors = listOf(neon.glow.copy(alpha = BACKDROP_ALPHA), Color.Transparent),
+                center = center,
+                radius = radius,
+            )
+            onDrawBehind { drawCircle(brush, radius = radius, center = center) }
         }
     }
 
-/** Širina linije (dp) i providnost, od najšireg i najbleđeg sloja ka ivici. */
-private val GLOW_LAYERS = listOf(16f to 0.06f, 11f to 0.11f, 7f to 0.2f, 4f to 0.38f)
+private const val BACKDROP_ALPHA = 0.28f
+private const val BACKDROP_RADIUS = 0.75f
