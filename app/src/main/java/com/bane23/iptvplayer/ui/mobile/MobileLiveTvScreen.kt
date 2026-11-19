@@ -109,8 +109,8 @@ fun MobileLiveTvScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
     val playlistId = state.playlistId
-    // Izabrani čip; null dok korisnik ništa ne izabere (tada grupa od prošlog puta, inače omiljeni
-    // ako ih ima, pa svi kanali).
+    // Izabrani čip; null dok korisnik ništa ne izabere (tada nedavno gledani, bez njih grupa od
+    // prošlog puta, inače omiljeni ako ih ima, pa svi kanali).
     var chosen by rememberSaveable { mutableStateOf<Long?>(null) }
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()

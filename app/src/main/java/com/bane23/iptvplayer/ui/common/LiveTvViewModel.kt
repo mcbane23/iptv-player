@@ -107,7 +107,12 @@ class LiveTvViewModel @Inject constructor(
                     }.combine(repository.observeFavoriteLists(playlistId)) { ui, lists ->
                         ui.copy(
                             favoriteLists = lists,
-                            lastCategoryId = LastLiveCategory.resolve(last, ui.categories, ui.recentCount > 0, lists),
+                            // Uživo kreće od nedavno gledanih; bez njih od grupe otvorene prošli put.
+                            lastCategoryId = if (ui.recentCount > 0) {
+                                ChannelGroups.RECENT
+                            } else {
+                                LastLiveCategory.resolve(last, ui.categories, false, lists)
+                            },
                         )
                     }
                     // Izbor napravljen dok je aplikacija otvorena ima prednost nad sačuvanim, da grupa
@@ -126,13 +131,18 @@ class LiveTvViewModel @Inject constructor(
     /** Kanal koji treba pustiti odmah pri startu aplikacije, ili null. */
     suspend fun channelToResume(): Long? = repository.channelToResume()
 
-    /** Pamti grupu koju je korisnik otvorio, da se Uživo sledeći put otvori na njoj. */
+    /** Pamti grupu koju je korisnik otvorio; sačuvana grupa važi dok nema nedavno gledanih. */
     fun rememberCategory(groupId: Long) {
         val current = state.value
         val playlistId = current.playlistId ?: return
         picked.update { it + (playlistId to groupId) }
         val token = LastLiveCategory.token(groupId, current.categories) ?: return
         viewModelScope.launch { repository.setLastCategory(playlistId, token) }
+    }
+
+    /** Zaboravlja izbor iz ovog pokretanja, da Uživo sledeći put krene od nedavno gledanih. */
+    fun startFresh() {
+        picked.value = emptyMap()
     }
 
     /** Sakriva kategoriju; vraća se na ekranu „Uredi kategorije”. */
