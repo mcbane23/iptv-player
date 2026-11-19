@@ -1,0 +1,7 @@
+Settings are organized into groups, easier to find on phone and TV
+App language is the first item in Settings
+More default languages for subtitles and audio
+Favorites lists under a single "Favorites" button
+Continue watching follows what was last watched on any device
+Recordings and downloads are in the Downloads/Glowbox folder
+"What's new" for test versions follows the app language
