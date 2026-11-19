@@ -703,6 +703,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
     Podešavanja na TV-u prati fokus
 - [x] Bočni meni na TV-u: strelica na vrhu prebacuje na samo ikonice i nazad; raširen meni pomera sadržaj
       udesno (bez preslaganja) umesto da ga pokrije. Izbor se pamti, prvi put je meni pun (Bane)
+- [x] Vodič na TV-u: desno na poslednjoj emisiji pomera vreme, a fokus ostaje desno na istoj emisiji
+      (ranije je skakao na naziv kanala levo)
 
 ## 7. Testiranje
 

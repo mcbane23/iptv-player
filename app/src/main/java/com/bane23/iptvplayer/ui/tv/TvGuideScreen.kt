@@ -219,6 +219,16 @@ private fun GuideRow(
         value = viewModel.row(channel.id, windowStart, WINDOW_MS)
     }
     val channelFocus = remember { FocusRequester() }
+    // Desno na poslednjoj emisiji pomera vreme; fokus ostaje desno, na istoj emisiji (ako se nastavlja)
+    // ili na poslednjoj, umesto da skoči na naziv kanala.
+    val shiftFocus = remember { FocusRequester() }
+    var shiftTarget by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(cells) {
+        if (shiftTarget != null) {
+            shiftFocus.tryRequestFocus()
+            shiftTarget = null
+        }
+    }
     if (restoreFocus) {
         LaunchedEffect(Unit) {
             channelFocus.tryRequestFocus()
@@ -251,6 +261,9 @@ private fun GuideRow(
                 },
         )
         val lastIndex = cells.lastIndex
+        val targetIndex = shiftTarget?.let { start ->
+            cells.indexOfFirst { it.program?.startMs == start }.takeIf { it >= 0 }
+        } ?: lastIndex
         cells.forEachIndexed { index, cell ->
             val program = cell.program
             val marked = program != null && recordings.marks(channel, program, now)
@@ -273,12 +286,12 @@ private fun GuideRow(
                 },
                 modifier = Modifier
                     .weight(cell.weight)
+                    .then(if (index == targetIndex) Modifier.focusRequester(shiftFocus) else Modifier)
                     .onPreviewKeyEvent { event ->
                         val right = index == lastIndex &&
                             event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_RIGHT
                         if (right && event.type == KeyEventType.KeyDown) {
-                            // Fokus se prvo vraća na naziv kanala, jer se ćelije posle pomeranja menjaju.
-                            runCatching { channelFocus.requestFocus() }
+                            shiftTarget = program?.startMs ?: -1L
                             viewModel.shift(1)
                         }
                         right
