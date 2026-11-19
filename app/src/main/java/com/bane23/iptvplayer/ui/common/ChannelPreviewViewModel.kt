@@ -54,6 +54,10 @@ class ChannelPreviewViewModel @Inject constructor(
     private val _nowNext = MutableStateFlow(NowNext())
     val nowNext: StateFlow<NowNext> = _nowNext.asStateFlow()
 
+    private val _nowNextChannel = MutableStateFlow<Long?>(null)
+    /** Kanal kome pripadaju [nowNext] i [later]; dok se ne poklopi sa fokusom, program je od prethodnog kanala. */
+    val nowNextChannel: StateFlow<Long?> = _nowNextChannel.asStateFlow()
+
     private val _later = MutableStateFlow<List<Program>>(emptyList())
     /** Emisije koje slede na kanalu u fokusu, za kratak program ispod pregleda. */
     val later: StateFlow<List<Program>> = _later.asStateFlow()
@@ -70,13 +74,17 @@ class ChannelPreviewViewModel @Inject constructor(
         if (channelId == shownId) return
         shownId = channelId
         focusJob?.cancel()
+        // Slika prethodnog kanala staje odmah: dok se lista, dekoder ne sme da se otima o snagu sa menijem.
+        engine?.pause()
         focusJob = viewModelScope.launch {
-            _nowNext.value = NowNext()
-            _later.value = emptyList()
+            // Stari program ostaje dok ne stigne novi (ekran ga prigušuje), da pregled ne trepće pri svakom koraku.
             // Dok se taster drži i fokus brzo prelazi preko kanala, vodič se ne čita za svaki.
             delay(NOW_NEXT_DELAY_MS)
-            _nowNext.value = epg.nowNext(channelId)
-            _later.value = epg.later(channelId, LATER_COUNT)
+            val nowNext = epg.nowNext(channelId)
+            val later = epg.later(channelId, LATER_COUNT)
+            _nowNext.value = nowNext
+            _later.value = later
+            _nowNextChannel.value = channelId
             if (!enabled.first()) {
                 stop()
                 return@launch

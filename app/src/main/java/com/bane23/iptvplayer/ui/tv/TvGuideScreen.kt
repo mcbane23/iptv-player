@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import com.bane23.iptvplayer.domain.Program
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,6 +53,7 @@ import com.bane23.iptvplayer.ui.common.guide.GuideSelection
 import com.bane23.iptvplayer.ui.common.guide.GuideRecordings
 import com.bane23.iptvplayer.ui.common.guide.GuideViewModel
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
@@ -76,7 +78,9 @@ fun TvGuideScreen(
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(playlistId, categoryId) { viewModel.open(playlistId, categoryId) }
-    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    // Izabrana emisija se menja na svaki korak D-pada; čita je samo donji panel, pa se mreža ne crta iznova.
+    val uiState = viewModel.ui.collectAsStateWithLifecycle()
+    val windowStart by remember { derivedStateOf { uiState.value.windowStart } }
     val status by viewModel.status.collectAsStateWithLifecycle()
     val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
@@ -109,7 +113,8 @@ fun TvGuideScreen(
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
     var restoreChannelId by remember { mutableStateOf(lastChannelId) }
-    val now = System.currentTimeMillis()
+    // Vreme se osvežava povremeno, ne pri svakom crtanju: inače svaki korak iznova crta sve redove vodiča.
+    val now by rememberNow()
 
     Column(
         modifier = Modifier
@@ -148,7 +153,7 @@ fun TvGuideScreen(
             TvClock(modifier = Modifier.padding(start = 12.dp))
         }
         Text(
-            text = "${formatDayTime(ui.windowStart)} – ${formatTime(ui.windowStart + WINDOW_MS)}",
+            text = "${formatDayTime(windowStart)} – ${formatTime(windowStart + WINDOW_MS)}",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = CHANNEL_WIDTH + 8.dp, top = 12.dp, bottom = 8.dp),
@@ -163,7 +168,7 @@ fun TvGuideScreen(
                 if (channel != null) {
                     GuideRow(
                         channel = channel,
-                        windowStart = ui.windowStart,
+                        windowStart = windowStart,
                         reloadKey = status.refreshedAt,
                         now = now,
                         recordings = recordings,
@@ -183,7 +188,7 @@ fun TvGuideScreen(
             }
         }
 
-        SelectionPanel(ui.selection)
+        SelectionPanel(selected = { uiState.value.selection })
     }
     LaunchedEffect(Unit) {
         firstFocus.tryRequestFocus()
@@ -326,7 +331,8 @@ private fun GuideBox(
 
 /** Detalji emisije koja ima fokus. Visina je stalna, da se mreža ne pomera dok se lista. */
 @Composable
-private fun SelectionPanel(selection: GuideSelection?) {
+private fun SelectionPanel(selected: () -> GuideSelection?) {
+    val selection = selected()
     Column(
         modifier = Modifier
             .fillMaxWidth()

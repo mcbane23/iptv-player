@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +50,6 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
@@ -81,7 +81,6 @@ fun TvVodScreen(
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
     val previewEnabled by previewViewModel.enabled.collectAsStateWithLifecycle()
-    val preview by previewViewModel.preview.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
@@ -206,7 +205,7 @@ fun TvVodScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
+            // Pozadinu sa sjajem crta početni ekran, jednom za sve kartice.
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -342,10 +341,15 @@ fun TvVodScreen(
                         .weight(0.72f)
                         .fillMaxHeight(),
                 ) {
-                    if (previewEnabled) TvVodPreviewHeader(preview = preview)
+                    if (previewEnabled) {
+                        // Pregled čita svoje stanje sam: korak kroz postere ne crta iznova ceo ekran.
+                        val preview by previewViewModel.preview.collectAsStateWithLifecycle()
+                        TvVodPreviewHeader(preview = preview)
+                    }
                     when {
                         showContinue -> PosterGrid {
                             items(continueItems, key = { it.id }) { item ->
+                                val isLast = isLastItem(item.id) { lastItemId }
                                 PosterCard(
                                     name = item.name,
                                     poster = item.poster,
@@ -356,9 +360,9 @@ fun TvVodScreen(
                                         lastItemId = item.id
                                         previewViewModel.focus(item.toVodItem(), series)
                                     },
-                                    modifier = when (item.id) {
-                                        dismissFocusId -> Modifier.focusRequester(moveFocus)
-                                        lastItemId -> Modifier.focusRequester(posterFocus)
+                                    modifier = when {
+                                        item.id == dismissFocusId -> Modifier.focusRequester(moveFocus)
+                                        isLast -> Modifier.focusRequester(posterFocus)
                                         else -> Modifier
                                     },
                                 )
@@ -380,7 +384,7 @@ fun TvVodScreen(
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
-                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                    modifier = if (isLastItem(item.id) { lastItemId }) Modifier.focusRequester(posterFocus) else Modifier,
                                 )
                             }
                         }
@@ -403,7 +407,7 @@ fun TvVodScreen(
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
-                                    modifier = if (item.id == lastItemId) Modifier.focusRequester(posterFocus) else Modifier,
+                                    modifier = if (isLastItem(item.id) { lastItemId }) Modifier.focusRequester(posterFocus) else Modifier,
                                 )
                             }
                         }
@@ -430,6 +434,14 @@ fun TvVodScreen(
         }
     }
 }
+
+/**
+ * Da li je [id] poster na kome je fokus bio poslednji. Poster prati samo ovaj odgovor, a ne samu
+ * vrednost, pa se pri koraku D-pada iznova crtaju samo dva postera, a ne cela mreža.
+ */
+@Composable
+private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
+    remember(id) { derivedStateOf { lastItemId() == id } }.value
 
 @Composable
 private fun PosterGrid(content: LazyGridScope.() -> Unit) {

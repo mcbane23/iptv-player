@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -128,8 +127,8 @@ fun TvHomeScreen(
     val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
 
     var railFocused by remember { mutableStateOf(false) }
-    // Bez animacije širine: animacija ponovo raspoređuje i crta meni sa senkom u svakom kadru,
-    // što na slabijim TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
+    // Bez animacije širine i bez senke: senka i animacija se crtaju u svakom kadru, što na slabijim
+    // TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
     val railWidth = if (railFocused) RailExpanded else RailCollapsed
     val selectedFocus = remember { FocusRequester() }
     val contentFocus = remember { FocusRequester() }
@@ -218,7 +217,6 @@ fun TvHomeScreen(
                 .zIndex(1f)
                 .fillMaxHeight()
                 .width(railWidth)
-                .shadow(if (railFocused) 24.dp else 0.dp)
                 .background(MaterialTheme.colorScheme.surface)
                 .onFocusChanged { railFocused = it.hasFocus }
                 .onKeyEvent { event ->
