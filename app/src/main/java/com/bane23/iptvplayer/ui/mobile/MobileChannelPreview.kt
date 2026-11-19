@@ -82,6 +82,9 @@ fun MobileChannelPreviewPane(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val later by viewModel.later.collectAsStateWithLifecycle()
+    val nowNextChannel by viewModel.nowNextChannel.collectAsStateWithLifecycle()
+    // Program prethodnog kanala se ne prikazuje dok ne stigne program izabranog.
+    val programReady = channel != null && nowNextChannel == channel.id
     val now by rememberNow()
     val colors = MaterialTheme.colorScheme
     val openLabel = stringResource(R.string.live_preview_open)
@@ -142,7 +145,7 @@ fun MobileChannelPreviewPane(
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
-        nowNext.now?.let { program ->
+        nowNext.now?.takeIf { programReady }?.let { program ->
             Text(
                 text = program.title,
                 style = MaterialTheme.typography.titleSmall,
@@ -162,7 +165,7 @@ fun MobileChannelPreviewPane(
         }
         // Program za naredne sate: vreme i naziv, po jedan red.
         Column(modifier = Modifier.padding(top = 6.dp)) {
-            later.forEach { next ->
+            later.takeIf { programReady }.orEmpty().forEach { next ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

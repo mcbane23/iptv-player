@@ -53,7 +53,6 @@ import com.bane23.iptvplayer.ui.common.theme.UiScale
 import com.bane23.iptvplayer.ui.common.theme.label
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.update.UpdateChannel
-import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
@@ -246,7 +245,7 @@ fun TvSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
+            // Pozadinu sa sjajem crta početni ekran, jednom za sve kartice.
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {

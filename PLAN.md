@@ -672,6 +672,14 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       šta sledi. Prvi taster ili dodir samo vraća kontrole, dugme za puštanje nastavlja odmah. Posle
       minut pauze i dalje sledi zatamnjenje, a posle 30 minuta izlaz. Gasi se u Podešavanjima („Ekran pauze”)
 
+- [x] Brže kretanje na TV-u (Bane, 19. 11. 2026, pregled „Uskladi izgled cele aplikacije”, stavke P). Bez
+      promene izgleda: u Uživo i u Filmovima/Serijama korak D-pada više ne crta iznova ceo ekran i sve redove
+      (samo stari i novi red fokusa); vodič se više ne crta ceo na svaki korak (vreme se osvežava na 30 s,
+      izabranu emisiju čita samo donji panel); pregled kanala ne trepće (program prethodnog kanala ostaje
+      prigušen dok ne stigne novi) i slika prethodnog kanala staje čim fokus krene; sjaj pozadine se crta
+      jednom; bočni meni bez senke
+- [ ] Usklađivanje izgleda (isti pregled, stavke V1 do V6 i F1 do F4, slike u `dizajn/celina/`)
+
 ## 7. Testiranje
 
 - Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.

@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,7 +41,6 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
-import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -61,6 +61,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -278,7 +279,7 @@ fun TvLiveTvScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background)
+            // Pozadinu sa sjajem crta početni ekran, jednom za sve kartice.
             // Margine zbog overscan-a na televizorima.
             .padding(horizontal = 48.dp, vertical = 27.dp),
     ) {
@@ -501,8 +502,17 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus)
-                                .then(focusTarget(index == channelListState.firstVisibleItemIndex, topChannelFocus)),
+                            // Red čita samo da li je on poslednji ili prvi vidljivi, ne samu vrednost: tako se
+                            // pri svakom koraku D-pada iznova crtaju samo dva reda, a ne svi na ekranu.
+                            modifier = focusTarget(
+                                remember(channel?.id) { derivedStateOf { channel != null && channel.id == lastChannelId } }.value,
+                                channelFocus,
+                            ).then(
+                                focusTarget(
+                                    remember(index) { derivedStateOf { index == channelListState.firstVisibleItemIndex } }.value,
+                                    topChannelFocus,
+                                ),
+                            ),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -574,7 +584,8 @@ fun TvLiveTvScreen(
                 }
                 ChannelPreviewPane(
                     viewModel = previewViewModel,
-                    channel = focusedChannel?.takeIf { it.id == lastChannelId },
+                    // Kanal se čita tek u pregledu, da korak kroz kanale ne crta iznova ceo ekran.
+                    channel = { focusedChannel?.takeIf { it.id == lastChannelId } },
                     now = now,
                     modifier = Modifier
                         .weight(0.32f)
@@ -622,6 +633,9 @@ private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
 private const val MOVE_SETTLE_MS = 150L
 
+/** Prigušen program dok se učitava program novog kanala. */
+private const val STALE_ALPHA = 0.4f
+
 /** Zlatna zvezdica za omiljene kanale. */
 private val FavoriteGold = Color(0xFFFFD166)
 
@@ -650,7 +664,7 @@ fun TvProgressBar(progress: Float, trackColor: Color, barColor: Color, modifier:
 @Composable
 private fun ChannelPreviewPane(
     viewModel: ChannelPreviewViewModel,
-    channel: Channel?,
+    channel: () -> Channel?,
     now: Long,
     modifier: Modifier = Modifier,
 ) {
@@ -658,6 +672,10 @@ private fun ChannelPreviewPane(
     val playback by viewModel.playback.collectAsStateWithLifecycle()
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val later by viewModel.later.collectAsStateWithLifecycle()
+    val nowNextChannel by viewModel.nowNextChannel.collectAsStateWithLifecycle()
+    val channel = channel()
+    // Dok se program novog kanala učitava, stari tekst ostaje, samo prigušen: pregled ne trepće i ne skače.
+    val stale = channel != null && nowNextChannel != channel.id
     Column(modifier = modifier) {
         Box(
             modifier = Modifier
@@ -742,67 +760,69 @@ private fun ChannelPreviewPane(
                 )
             }
         }
-        val program = nowNext.now
-        if (program != null) {
-            Text(
-                text = program.title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            Text(
-                text = program.timeRangeLeft(now),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            if (program.stopMs > program.startMs) {
-                TvProgressBar(
-                    progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
-                    trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                    barColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        Column(modifier = Modifier.alpha(if (stale) STALE_ALPHA else 1f)) {
+            val program = nowNext.now
+            if (program != null) {
+                Text(
+                    text = program.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 8.dp),
                 )
-            }
-            program.description?.takeIf { it.isNotBlank() }?.let { description ->
                 Text(
-                    text = description,
+                    text = program.timeRangeLeft(now),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 12.dp),
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
-            }
-        }
-        // Program za naredne sate: vreme i naziv, po jedan red.
-        Column(modifier = Modifier.padding(top = 12.dp)) {
-            later.forEach { next ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.07f)),
-                )
-                Row(modifier = Modifier.padding(vertical = 6.dp)) {
-                    Text(
-                        text = formatTime(next.startMs),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        modifier = Modifier.width(56.dp),
+                if (program.stopMs > program.startMs) {
+                    TvProgressBar(
+                        progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
+                        trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                        barColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(top = 8.dp),
                     )
+                }
+                program.description?.takeIf { it.isNotBlank() }?.let { description ->
                     Text(
-                        text = next.title,
+                        text = description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.padding(top = 12.dp),
                     )
+                }
+            }
+            // Program za naredne sate: vreme i naziv, po jedan red.
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                later.forEach { next ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color.White.copy(alpha = 0.07f)),
+                    )
+                    Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                        Text(
+                            text = formatTime(next.startMs),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            modifier = Modifier.width(56.dp),
+                        )
+                        Text(
+                            text = next.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
