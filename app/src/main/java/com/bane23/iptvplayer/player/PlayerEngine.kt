@@ -33,6 +33,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -295,6 +297,14 @@ class PlayerEngine(
     }
 
     init {
+        // Preuzimanje na telefon staje dok plejer drži vezu sa provajderom; fajl sa uređaja je ne drži.
+        scope.launch {
+            state.map { it.status }.distinctUntilChanged().collect { status ->
+                val busy = status != PlaybackStatus.IDLE && status != PlaybackStatus.FAILED
+                val local = source?.urls?.firstOrNull()?.startsWith("file:") == true
+                PlaybackActivity.set(this@PlayerEngine, busy && !local)
+            }
+        }
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
@@ -471,6 +481,7 @@ class PlayerEngine(
     }
 
     fun release() {
+        PlaybackActivity.set(this, false)
         retryJob?.cancel()
         statsJob?.cancel()
         player.removeListener(listener)

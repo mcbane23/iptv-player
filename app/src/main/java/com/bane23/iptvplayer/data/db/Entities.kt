@@ -437,3 +437,52 @@ data class RecordingEntity(
         const val ERROR_NO_CHANNEL = "channel"
     }
 }
+
+/**
+ * Film ili epizoda preuzeta na telefon, za gledanje bez interneta. Ne zavisi od liste (kao ni snimak),
+ * pa fajl ostaje i kad se lista obriše.
+ */
+@Entity(tableName = "downloads", indices = [Index(value = ["playlistId", "kind", "itemId"], unique = true)])
+data class DownloadEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val playlistId: Long,
+    /** [KIND_MOVIE] ili [KIND_EPISODE]. */
+    val kind: String,
+    /** ID filma, odnosno epizode, kod provajdera. */
+    val itemId: Long,
+    /** Serija kojoj epizoda pripada; null za film. */
+    val seriesId: Long? = null,
+    /** Naziv filma, odnosno serije. */
+    val title: String,
+    /** Za epizodu: sezona, broj i naziv epizode. */
+    val subtitle: String? = null,
+    val poster: String? = null,
+    /** Nastavak fajla (mp4, mkv...), potreban za link i za naziv fajla. */
+    val extension: String,
+    /** Pun put fajla na uređaju. */
+    val path: String,
+    /** Koliko je do sada preuzeto. */
+    val sizeBytes: Long = 0,
+    /** Veličina celog fajla; 0 dok server ne javi. */
+    val totalBytes: Long = 0,
+    /** [STATUS_QUEUED], [STATUS_PAUSED], [STATUS_DONE] ili [STATUS_FAILED]. */
+    val status: String,
+    /** Zašto preuzimanje nije uspelo ([ERROR_SPACE] ili [ERROR_SOURCE]), ili null. */
+    val error: String? = null,
+    val createdAt: Long,
+) {
+    companion object {
+        const val KIND_MOVIE = "movie"
+        const val KIND_EPISODE = "episode"
+
+        /** Čeka na red ili se upravo preuzima. */
+        const val STATUS_QUEUED = "queued"
+
+        /** Korisnik ga je pauzirao; ne kreće dok ga sam ne nastavi. */
+        const val STATUS_PAUSED = "paused"
+        const val STATUS_DONE = "done"
+        const val STATUS_FAILED = "failed"
+        const val ERROR_SPACE = "space"
+        const val ERROR_SOURCE = "source"
+    }
+}

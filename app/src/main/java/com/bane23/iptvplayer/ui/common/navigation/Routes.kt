@@ -120,6 +120,17 @@ data object CastPlayback : NavKey
 @Serializable
 data object Recordings : NavKey
 
+/** Filmovi i epizode preuzeti na telefon. */
+@Serializable
+data object Downloads : NavKey
+
+/**
+ * Plejer za preuzeti film ili epizodu. [series] i [lockId] (ID serije, odnosno filma) služe za
+ * proveru zaključavanja pre puštanja.
+ */
+@Serializable
+data class PlayDownload(val downloadId: Long, val series: Boolean, val lockId: Long) : NavKey
+
 /** Plejer za snimak sa uređaja. */
 @Serializable
 data class PlayRecording(val recordingId: Long) : NavKey

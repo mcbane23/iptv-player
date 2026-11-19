@@ -621,6 +621,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       a istim potezom na listi se ona preimenuje ili briše. „Omiljeni” ostaju spisak svih omiljenih: kanal
       u nekoj listi je uvek i tamo, brisanje liste ga ne uklanja. Baza v16: `favorite_lists` i
       `favorite_list_items`. Liste se još ne šalju u prenosu sa telefona na TV
+- [x] Preuzimanje filmova i epizoda na telefon (Bane, 19. 11. 2026, četvrti krug predloga; samo telefon).
+      Dugme „Preuzmi” u detaljima filma i strelica pored svake epizode; spisak je u Podešavanja → „Preuzeto”
+      (napredak, veličina, pauza, nastavak, brisanje, zauzeće). Preuzima se jedno po jedno, u folder aplikacije
+      u memoriji telefona. Po Banetovom izboru preuzimanje staje dok se nešto gleda (nalog sa jednom vezom) i
+      samo se nastavlja kad se plejer zatvori, i ide samo preko Wi-Fi mreže dok se u Podešavanjima ne uključi
+      „Preuzimanje preko mobilnih podataka”. Prekinuto preuzimanje se nastavlja tamo gde je stalo. Preuzeto se
+      pušta sa uređaja, bez interneta, i iz „Preuzeto” i iz detalja filma ili serije. Baza v17 (`downloads`).
 - [x] Ekran pauze sa opisom (Bane, 19. 11. 2026, četvrti krug predloga; telefon i TV, filmovi, serije i
       kanali uživo, Banetov izbor): posle 5 sekundi pauze kontrole ustupe mesto naslovu, oznakama (ocena,
       godina, žanr), opisu, tome koliko je ostalo do kraja i satu; za kanal emisija iz vodiča sa opisom i

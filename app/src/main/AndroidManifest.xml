@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Preuzimanje na telefon ide samo preko Wi-Fi mreže, pa aplikacija mora da zna na kojoj je mreži. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- TV: upis započetih filmova i serija u red „Nastavite sa gledanjem” na početnom ekranu uređaja. -->
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
     <!-- Android 17+: pristup uređajima u kućnoj mreži (cast, dodavanje liste sa telefona). -->
@@ -86,6 +88,15 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Recording a live TV stream chosen by the user to a local file" />
+        </service>
+
+        <service
+            android:name=".data.download.DownloadService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Downloading a movie or episode chosen by the user to a local file for offline viewing" />
         </service>
 
         <service

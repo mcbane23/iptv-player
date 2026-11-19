@@ -362,6 +362,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setMatchFrameRate(enabled) }
     }
 
+    val downloadOnMobile: StateFlow<Boolean> = settings.downloadOnMobile
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setDownloadOnMobile(enabled: Boolean) {
+        viewModelScope.launch { settings.setDownloadOnMobile(enabled) }
+    }
+
     val pauseInfo: StateFlow<Boolean> = settings.pauseInfo
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 

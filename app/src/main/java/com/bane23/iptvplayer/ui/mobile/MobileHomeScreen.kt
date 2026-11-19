@@ -92,6 +92,7 @@ fun MobileHomeScreen(
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
     onRecordings: () -> Unit,
+    onDownloads: () -> Unit,
     onTransfer: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
@@ -158,6 +159,7 @@ fun MobileHomeScreen(
                     onTrakt = onTrakt.takeIf { isTraktConfigured },
                     onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
                     onRecordings = onRecordings,
+                    onDownloads = onDownloads,
                     onTransfer = onTransfer,
                 )
             }

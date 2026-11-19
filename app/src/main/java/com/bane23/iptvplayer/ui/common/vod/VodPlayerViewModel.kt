@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.cast.CastMedia
 import com.bane23.iptvplayer.cast.CastVodItem
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.db.DownloadEntity
+import com.bane23.iptvplayer.data.download.DownloadRepository
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.repo.ArchiveRepository
 import com.bane23.iptvplayer.data.repo.VodRepository
@@ -119,6 +121,7 @@ class VodPlayerViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val archive: ArchiveRepository,
     private val recordings: RecordingRepository,
+    private val downloads: DownloadRepository,
     private val subtitles: OpenSubtitlesRepository,
     private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
 ) : ViewModel() {
@@ -213,7 +216,8 @@ class VodPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             play(startOver) {
                 val start = repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs
-                repository.movieSource(movieId, extension) to start
+                // Film preuzet na telefon se pušta sa uređaja, bez interneta.
+                (downloads.localSource(episode = false, movieId) ?: repository.movieSource(movieId, extension)) to start
             }
         }
     }
@@ -242,6 +246,61 @@ class VodPlayerViewModel @Inject constructor(
                 val file = java.io.File(recording.path)
                 if (!file.exists()) throw java.io.IOException("No file")
                 StreamSource(listOf(android.net.Uri.fromFile(file).toString()), null, null) to null
+            }
+        }
+    }
+
+    /**
+     * Film ili epizoda preuzeti na telefon, sa ekrana „Preuzeto”; radi i bez interneta. Pozicija se
+     * pamti kao i inače kad preuzimanje pripada aktivnoj listi. Za epizodu se spisak ostalih epizoda
+     * traži sa interneta, pa sledeća epizoda postoji samo kad se on učita.
+     */
+    fun startDownload(downloadId: Long) {
+        if (started) return
+        started = true
+        viewModelScope.launch {
+            val row = downloads.get(downloadId)
+            val file = row?.let(downloads::fileSource)
+            if (row == null || file == null) {
+                _ui.update { it.copy(sourceMissing = true) }
+                return@launch
+            }
+            val ownList = repository.activePlaylistId.first() == row.playlistId
+            val episode = row.kind == DownloadEntity.KIND_EPISODE
+            if (ownList) {
+                item = Item(row.itemId, row.seriesId.takeIf { episode }, row.title, row.poster, row.extension.takeUnless { episode })
+            }
+            _ui.update {
+                it.copy(
+                    title = listOfNotNull(row.title, row.subtitle).joinToString(" · "),
+                    onlineSubtitles = ownList && subtitles.isAvailable,
+                )
+            }
+            val seriesId = row.seriesId
+            if (ownList && episode && seriesId != null) {
+                // Ne čeka se: bez interneta ovo ne uspe, a epizoda sa uređaja svejedno kreće.
+                launch {
+                    val details = runCatching { repository.series(seriesId) }.getOrNull() ?: return@launch
+                    val current = details.episodes.firstOrNull { it.id == row.itemId } ?: return@launch
+                    series = details
+                    _ui.update {
+                        it.copy(
+                            season = current.season,
+                            episode = current.number,
+                            description = (current.plot ?: details.plot)?.takeIf(String::isNotBlank),
+                            meta = listOf("S${current.season} E${current.number}") + pauseMeta(null, null, details.genre),
+                            hasNext = details.episodeAfter(current.id) != null,
+                        )
+                    }
+                }
+            }
+            play(startOver = false) {
+                val saved = when {
+                    !ownList -> null
+                    episode -> repository.episodeProgress(row.itemId)
+                    else -> repository.movieProgress(row.itemId)
+                }
+                file to saved?.takeIf { it.resumable }?.positionMs
             }
         }
     }
@@ -548,7 +607,7 @@ class VodPlayerViewModel @Inject constructor(
         }
         play(startOver) {
             val start = repository.episodeProgress(episode.id)?.takeIf { it.resumable }?.positionMs
-            repository.episodeSource(episode.id, episode.extension) to start
+            (downloads.localSource(episode = true, episode.id) ?: repository.episodeSource(episode.id, episode.extension)) to start
         }
     }
 
