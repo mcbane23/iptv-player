@@ -120,6 +120,8 @@ fun TvLiveTvScreen(
     val topChannelFocus = remember { FocusRequester() }
     val channelListState = rememberLazyListState()
     val categoryListState = rememberLazyListState()
+    // Tekst za traženje kategorije (polje iznad kategorija, kao kod filmova i serija).
+    var categoryFilter by rememberSaveable(playlistId) { mutableStateOf("") }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
     // Kanal na kome je fokus, za logo i naziv u pregledu kad slike nema.
@@ -360,21 +362,21 @@ fun TvLiveTvScreen(
             }
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                LazyColumn(
-                    state = categoryListState,
+                // Levo, kao kod filmova i serija: pretraga i grupe kanala stoje zakačene na vrhu, ispod njih
+                // polje za traženje kategorije i kategorije koje se skroluju. Redovi su pločice.
+                val toChannels = Modifier.onPreviewKeyEvent { event ->
+                    if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
+                    // Ako prvi vidljivi kanal ne može da primi fokus (spisak je prazan ili se
+                    // učitava), Desno radi kao i pre.
+                    event.type == KeyEventType.KeyDown && topChannelFocus.tryRequestFocus()
+                }
+                Column(
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight()
-                        .onPreviewKeyEvent { event ->
-                            if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
-                            // Ako prvi vidljivi kanal ne može da primi fokus (spisak je prazan ili se
-                            // učitava), Desno radi kao i pre.
-                            event.type == KeyEventType.KeyDown && topChannelFocus.tryRequestFocus()
-                        },
-                    // Isti izgled kao spisak levo kod filmova i serija i kao na telefonu: redovi su pločice.
+                        .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    item(key = "search") {
+                    Column(modifier = toChannels, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         TvListRow(onClick = onSearch) { color ->
                             Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                             Text(
@@ -385,58 +387,69 @@ fun TvLiveTvScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(start = 12.dp),
                             )
-                        }
                     }
-                    item(key = ChannelGroups.FAVORITES) {
+                    PinnedRow(
+                        icon = AppIcons.Star,
+                        title = stringResource(R.string.category_favorites),
+                        subtitle = stringResource(R.string.vod_total, state.favoriteCount),
+                        // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
+                        selected = state.isFavoritesGroup(selectedCategory),
+                        onFocused = { lastChannelId = null },
+                        onClick = focusFavorites,
+                        onLongClick = { favoritesMenu = true },
+                        modifier = focusTarget(state.isFavoritesGroup(selectedCategory), firstFocus)
+                            .focusRequester(favoritesFocus),
+                    )
+                    if (state.recentCount > 0) {
                         PinnedRow(
-                            icon = AppIcons.Star,
-                            title = stringResource(R.string.category_favorites),
-                            subtitle = stringResource(R.string.vod_total, state.favoriteCount),
-                            // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
-                            selected = state.isFavoritesGroup(selectedCategory),
+                            icon = AppIcons.History,
+                            title = stringResource(R.string.category_recent),
+                            subtitle = stringResource(R.string.vod_total, state.recentCount),
+                            selected = selectedCategory == ChannelGroups.RECENT,
                             onFocused = { lastChannelId = null },
-                            onClick = focusFavorites,
-                            onLongClick = { favoritesMenu = true },
-                            modifier = focusTarget(state.isFavoritesGroup(selectedCategory), firstFocus)
-                                .focusRequester(favoritesFocus),
+                            onClick = { focusedCategory = ChannelGroups.RECENT },
+                            modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
                         )
                     }
-                    if (state.recentCount > 0) {
-                        item(key = ChannelGroups.RECENT) {
-                            PinnedRow(
-                                icon = AppIcons.History,
-                                title = stringResource(R.string.category_recent),
-                                subtitle = stringResource(R.string.vod_total, state.recentCount),
-                                selected = selectedCategory == ChannelGroups.RECENT,
+                    PinnedRow(
+                        icon = AppIcons.LiveTv,
+                        title = stringResource(R.string.category_all),
+                        subtitle = stringResource(R.string.vod_total, state.totalChannels),
+                        selected = selectedCategory == ALL_CHANNELS,
+                        onFocused = { lastChannelId = null },
+                        onClick = { focusedCategory = ALL_CHANNELS },
+                        modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
+                            .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
+                    )
+                    }
+                    TvFilterField(
+                        value = categoryFilter,
+                        onChange = { categoryFilter = it },
+                        placeholder = stringResource(R.string.search_categories),
+                    )
+                    val shownCategories = remember(state.categories, categoryFilter) {
+                        val text = categoryFilter.trim()
+                        if (text.isEmpty()) state.categories else state.categories.filter { it.name.contains(text, ignoreCase = true) }
+                    }
+                    LazyColumn(
+                        state = categoryListState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .then(toChannels),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        items(shownCategories, key = { it.id }) { category ->
+                            TvTextRow(
+                                text = category.name,
+                                trailing = category.channelCount.toString(),
+                                selected = selectedCategory == category.id,
                                 onFocused = { lastChannelId = null },
-                                onClick = { focusedCategory = ChannelGroups.RECENT },
-                                modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
+                                onClick = { focusedCategory = category.id },
+                                onLongClick = { menuCategory = category },
+                                modifier = focusTarget(selectedCategory == category.id, firstFocus)
+                                    .then(focusTarget(focusTargetId == category.id, moveFocus)),
                             )
                         }
-                    }
-                    item(key = ALL_CHANNELS) {
-                        PinnedRow(
-                            icon = AppIcons.LiveTv,
-                            title = stringResource(R.string.category_all),
-                            subtitle = stringResource(R.string.vod_total, state.totalChannels),
-                            selected = selectedCategory == ALL_CHANNELS,
-                            onFocused = { lastChannelId = null },
-                            onClick = { focusedCategory = ALL_CHANNELS },
-                            modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
-                                .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
-                        )
-                    }
-                    items(state.categories, key = { it.id }) { category ->
-                        TvTextRow(
-                            text = category.name,
-                            trailing = category.channelCount.toString(),
-                            selected = selectedCategory == category.id,
-                            onFocused = { lastChannelId = null },
-                            onClick = { focusedCategory = category.id },
-                            onLongClick = { menuCategory = category },
-                            modifier = focusTarget(selectedCategory == category.id, firstFocus)
-                                .then(focusTarget(focusTargetId == category.id, moveFocus)),
-                        )
                     }
                 }
 
@@ -600,19 +613,15 @@ fun TvLiveTvScreen(
                         }
                     }
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
-                    // Redovi pre kategorija: pretraga, omiljeni (sa svim listama), (nedavno), svi kanali.
-                    val allRow = if (state.recentCount > 0) 3 else 2
-                    val selectedRow = when {
-                        state.isFavoritesGroup(selectedCategory) -> 1
-                        selectedCategory == ChannelGroups.RECENT -> 2
-                        selectedCategory == ALL_CHANNELS -> allRow
-                        else -> allRow + 1 + state.categories.indexOfFirst { it.id == selectedCategory }.coerceAtLeast(0)
-                    }
-                    runCatching { categoryListState.scrollToItem((selectedRow - 3).coerceAtLeast(0)) }
+                    // Zakačeni redovi su uvek na ekranu; skroluje se samo spisak kategorija.
+                    val categoryRow = state.categories.indexOfFirst { it.id == selectedCategory }
+                    if (categoryFilter.isBlank() && categoryRow > 3) runCatching { categoryListState.scrollToItem(categoryRow - 3) }
                     repeat(FOCUS_RESTORE_ATTEMPTS) {
                         if (firstFocus.tryRequestFocus()) return@LaunchedEffect
                         delay(FOCUS_RESTORE_STEP_MS)
                     }
+                    // Izabrana kategorija je sakrivena tekstom za traženje: fokus ide na „Omiljene”.
+                    favoritesFocus.tryRequestFocus()
                 }
             }
         }
