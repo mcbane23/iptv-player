@@ -67,6 +67,7 @@ class PlaylistRepository @Inject constructor(
     private val xtreamApi: XtreamApi,
     private val cipher: PasswordCipher,
     private val epgScheduler: EpgScheduler,
+    private val vodDiskCache: VodDiskCache,
 ) {
     private val playlistDao = db.playlistDao()
     private val categoryDao = db.categoryDao()
@@ -166,6 +167,12 @@ class PlaylistRepository @Inject constructor(
             playlistDao.update(updated)
             importContent(updated)
         }
+        // Drugi server ili nalog: filmovi i serije sačuvani na uređaju više ne važe.
+        if (updated.source != existing.source || updated.username != existing.username ||
+            updated.passwordEncrypted != existing.passwordEncrypted
+        ) {
+            vodDiskCache.clear(id)
+        }
         epgScheduler.refreshNow(id)
     }
 
@@ -216,6 +223,7 @@ class PlaylistRepository @Inject constructor(
                 }
                 playlistDao.deleteById(id)
                 settings.clearPlaylistCategoryPrefs(id)
+                vodDiskCache.clear(id)
                 if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
             } finally {
                 deleting.update { it - id }

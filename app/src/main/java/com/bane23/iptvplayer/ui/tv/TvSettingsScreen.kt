@@ -80,6 +80,7 @@ fun TvSettingsScreen(
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
+    val vodLocalCache by viewModel.vodLocalCache.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
@@ -147,6 +148,9 @@ fun TvSettingsScreen(
             onParental?.let { TvItem(PARENTAL_ROW, stringResource(R.string.parental_title), "›", onClick = it) },
             TvItem(AUTO_REFRESH_ROW, stringResource(R.string.settings_auto_refresh), checked = autoRefreshPlaylists) {
                 viewModel.setAutoRefreshPlaylists(!autoRefreshPlaylists)
+            },
+            TvItem(VOD_CACHE_ROW, stringResource(R.string.settings_vod_cache), checked = vodLocalCache) {
+                viewModel.setVodLocalCache(!vodLocalCache)
             },
         )
 
@@ -469,6 +473,7 @@ private fun FocusedSummary(
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
+        VOD_CACHE_ROW -> stringResource(R.string.settings_vod_cache_summary)
         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
         WATCH_NEXT_ROW -> stringResource(R.string.settings_watch_next_summary)
         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
@@ -516,6 +521,7 @@ private const val WATCH_NEXT_ROW = -18
 private const val BLACK_THEME_ROW = -19
 private const val PAUSE_INFO_ROW = -20
 private const val REMOTE_BUTTONS_ROW = -21
+private const val VOD_CACHE_ROW = -22
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

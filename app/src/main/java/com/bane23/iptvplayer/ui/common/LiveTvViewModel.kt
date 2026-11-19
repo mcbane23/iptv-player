@@ -262,6 +262,7 @@ class SettingsViewModel @Inject constructor(
     private val repository: ChannelRepository,
     private val settings: SettingsStore,
     private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
+    private val vodDiskCache: com.bane23.iptvplayer.data.repo.VodDiskCache,
 ) : ViewModel() {
 
     /** Tajmer gašenja u minutima; 0 dok je isključen. */
@@ -418,6 +419,17 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoRefreshPlaylists(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoRefreshPlaylists(enabled) }
+    }
+
+    val vodLocalCache: StateFlow<Boolean> = settings.vodLocalCache
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    /** Kad se čuvanje isključi, sačuvani spiskovi se brišu sa uređaja. */
+    fun setVodLocalCache(enabled: Boolean) {
+        viewModelScope.launch {
+            settings.setVodLocalCache(enabled)
+            if (!enabled) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { vodDiskCache.clearAll() }
+        }
     }
 
     val tvVodPreview: StateFlow<Boolean> = settings.tvVodPreview
