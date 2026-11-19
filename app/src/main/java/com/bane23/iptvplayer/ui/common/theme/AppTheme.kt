@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -56,12 +57,13 @@ fun Modifier.neonBackdrop(neon: NeonStyle?, active: Boolean): Modifier =
     } else {
         drawWithCache {
             val radius = size.maxDimension * BACKDROP_RADIUS
+            val mid = size.center
             val brush = Brush.radialGradient(
                 colors = listOf(neon.glow.copy(alpha = BACKDROP_ALPHA), Color.Transparent),
-                center = center,
+                center = mid,
                 radius = radius,
             )
-            onDrawBehind { drawCircle(brush, radius = radius, center = center) }
+            onDrawBehind { drawCircle(brush, radius = radius, center = mid) }
         }
     }
 
