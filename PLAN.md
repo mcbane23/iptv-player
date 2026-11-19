@@ -701,6 +701,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   - [x] F4 Obrisi pri učitavanju kanala na telefonu imaju oblik pločice kanala
   - F1 do F3 ostaju kako jesu (Bane): bez Početne na telefonu, isti redosled kartica, grupa
     Podešavanja na TV-u prati fokus
+- [x] Bočni meni na TV-u: strelica na vrhu prebacuje na samo ikonice i nazad; raširen meni pomera sadržaj
+      udesno (bez preslaganja) umesto da ga pokrije. Izbor se pamti, prvi put je meni pun (Bane)
 
 ## 7. Testiranje
 
