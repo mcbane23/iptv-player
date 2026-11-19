@@ -694,6 +694,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
         zakačeni, ispod polje „Traži kategoriju” i kategorije koje se skroluju)
   - [x] V4 Filmovi i serije na telefonu (uspravno): isti red čipova kao u Uživo (zvezdica Omiljeni,
         „Nastavi gledanje”, kategorija), ispod naslov sa brojem stavki
+  - [x] V5 Pretraga izgleda kao ostatak aplikacije: kanali kao pločice iz Uživo, filmovi i serije kao
+        red postera, naslovi grupa sa brojem pogodaka (telefon i TV)
 
 ## 7. Testiranje
 
