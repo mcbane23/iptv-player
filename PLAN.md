@@ -683,6 +683,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
         izbori u plejeru, dijalozi) su pločice kao kategorije, razmak 6 dp; bočni meni počinje u visini naslova
   - [x] V2 Teget tema do kraja: podloga postera i slika epizoda, prelaz iza naziva bez postera, obrisi pri
         učitavanju i inicijali kanala bez logoa prate temu (`PlaceholderColors`); Siva i crna tema bez promene
+  - [x] V3 Uživo na TV-u: levi panel kao kod filmova i serija (pretraga, Omiljeni, Nedavno i Svi kanali stoje
+        zakačeni, ispod polje „Traži kategoriju” i kategorije koje se skroluju)
 
 ## 7. Testiranje
 
