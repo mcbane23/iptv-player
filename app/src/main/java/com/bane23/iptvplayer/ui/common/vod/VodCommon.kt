@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.platform.LocalContext
 import com.bane23.iptvplayer.ui.common.theme.OnBackground
-import com.bane23.iptvplayer.ui.common.theme.SurfaceVariant
+import com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -72,7 +72,7 @@ fun Poster(
         modifier = modifier
             .aspectRatio(POSTER_RATIO)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF22262E)),
+            .background(LocalPlaceholderColors.current.image),
     ) {
         if (!url.isNullOrBlank() && !failed) {
             AsyncImage(
@@ -86,7 +86,7 @@ fun Poster(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0xFF2C323C), Color(0xFF181C22))))
+                    .background(Brush.verticalGradient(listOf(LocalPlaceholderColors.current.gradientTop, LocalPlaceholderColors.current.gradientBottom)))
                     .padding(10.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -173,7 +173,7 @@ fun GenreChips(genre: String?, modifier: Modifier = Modifier) {
                 style = TextStyle(color = OnBackground, fontSize = 12.sp),
                 modifier = Modifier
                     .weight(1f, fill = false)
-                    .background(SurfaceVariant.copy(alpha = 0.9f), RoundedCornerShape(6.dp))
+                    .background(LocalPlaceholderColors.current.logo.copy(alpha = 0.9f), RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             )
         }

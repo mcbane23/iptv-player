@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.ui.common.theme.OnSurfaceVariant
-import com.bane23.iptvplayer.ui.common.theme.SurfaceVariant
+import com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors
 
 /**
  * Logo kanala. Ako ga nema ili ne može da se učita, umesto praznog mesta stoji kratka oznaka
@@ -44,7 +44,7 @@ fun ChannelLogo(url: String?, name: String?, modifier: Modifier = Modifier, size
             Box(
                 modifier = Modifier
                     .size(size)
-                    .background(SurfaceVariant, RoundedCornerShape(size * 0.22f)),
+                    .background(LocalPlaceholderColors.current.logo, RoundedCornerShape(size * 0.22f)),
                 contentAlignment = Alignment.Center,
             ) {
                 BasicText(

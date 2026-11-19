@@ -510,7 +510,7 @@ private fun EpisodeRow(
                 .width(112.dp)
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFF22262E)),
+                .background(com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors.current.image),
         ) {
             val image = episode.image ?: fallbackImage
             if (!image.isNullOrBlank()) {
