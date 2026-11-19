@@ -41,8 +41,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonHalo
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
@@ -81,15 +79,6 @@ import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.flow.first
-import androidx.paging.LoadState
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -121,9 +110,6 @@ fun TvLiveTvScreen(
     var focusedCategory by remember(state.loading, playlistId) { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
     val channelFocus = remember { FocusRequester() }
-    // Prvi kanal na spisku i zahtev da fokus pređe na njega kad se kanali nove kategorije učitaju.
-    val firstChannelFocus = remember { FocusRequester() }
-    var enterChannels by remember { mutableIntStateOf(0) }
     val categoryListState = rememberLazyListState()
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
@@ -151,7 +137,7 @@ fun TvLiveTvScreen(
     LaunchedEffect(selectedCategory) {
         if (state.isFavoritesGroup(selectedCategory)) favoritesTab = selectedCategory
     }
-    // Fokus na redu „Omiljeni” ne menja karticu koja je već otvorena.
+    // OK na redu „Omiljeni” ne menja karticu koja je već otvorena.
     val focusFavorites = {
         if (!state.isFavoritesGroup(focusedCategory)) {
             focusedCategory = favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES
@@ -163,9 +149,9 @@ fun TvLiveTvScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { previewViewModel.stop() }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { lastChannelId?.let(previewViewModel::focus) }
 
-    // Kratka pauza pre učitavanja kanala, da brzo listanje kroz kategorije ne pokreće upit za svaku.
+    // Kategorija se bira tek na OK (Bane), ne dok fokus prolazi preko nje: [focusedCategory] menjaju
+    // samo pritisci, pa se kanali ne menjaju ispod fokusa dok se kreće kroz spisak.
     LaunchedEffect(focusedCategory) {
-        delay(CATEGORY_FOCUS_DELAY_MS)
         selectedCategory = focusedCategory
     }
     LaunchedEffect(playlistId, selectedCategory) {
@@ -369,21 +355,7 @@ fun TvLiveTvScreen(
                     state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight()
-                        // Desno dok kanali fokusirane kategorije još nisu učitani (kratka pauza posle
-                        // pomeranja): kategorija se bira odmah, a fokus prelazi na njen prvi kanal tek kad
-                        // stigne. Inače bi fokus ušao u red stare kategorije koji odmah nestaje, pa bi
-                        // skočio na bočni meni.
-                        .onPreviewKeyEvent { event ->
-                            if (event.key != Key.DirectionRight || focusedCategory == selectedCategory) {
-                                return@onPreviewKeyEvent false
-                            }
-                            if (event.type == KeyEventType.KeyDown) {
-                                selectedCategory = focusedCategory
-                                enterChannels++
-                            }
-                            true
-                        },
+                        .fillMaxHeight(),
                     // Isti izgled kao spisak levo kod filmova i serija i kao na telefonu: redovi su pločice.
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -406,9 +378,8 @@ fun TvLiveTvScreen(
                             title = stringResource(R.string.category_favorites),
                             subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                             // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
-                            // Oznaka izbora prati fokus odmah; kanali se učitavaju posle kratke pauze.
-                            selected = state.isFavoritesGroup(focusedCategory),
-                            onFocused = { focusFavorites(); lastChannelId = null },
+                            selected = state.isFavoritesGroup(selectedCategory),
+                            onFocused = { lastChannelId = null },
                             onClick = focusFavorites,
                             onLongClick = { favoritesMenu = true },
                             modifier = focusTarget(state.isFavoritesGroup(selectedCategory), firstFocus)
@@ -421,8 +392,8 @@ fun TvLiveTvScreen(
                                 icon = AppIcons.History,
                                 title = stringResource(R.string.category_recent),
                                 subtitle = stringResource(R.string.vod_total, state.recentCount),
-                                selected = focusedCategory == ChannelGroups.RECENT,
-                                onFocused = { focusedCategory = ChannelGroups.RECENT; lastChannelId = null },
+                                selected = selectedCategory == ChannelGroups.RECENT,
+                                onFocused = { lastChannelId = null },
                                 onClick = { focusedCategory = ChannelGroups.RECENT },
                                 modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
                             )
@@ -433,8 +404,8 @@ fun TvLiveTvScreen(
                             icon = AppIcons.LiveTv,
                             title = stringResource(R.string.category_all),
                             subtitle = stringResource(R.string.vod_total, state.totalChannels),
-                            selected = focusedCategory == ALL_CHANNELS,
-                            onFocused = { focusedCategory = ALL_CHANNELS; lastChannelId = null },
+                            selected = selectedCategory == ALL_CHANNELS,
+                            onFocused = { lastChannelId = null },
                             onClick = { focusedCategory = ALL_CHANNELS },
                             modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
                                 .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
@@ -444,8 +415,8 @@ fun TvLiveTvScreen(
                         TvTextRow(
                             text = category.name,
                             trailing = category.channelCount.toString(),
-                            selected = focusedCategory == category.id,
-                            onFocused = { focusedCategory = category.id; lastChannelId = null },
+                            selected = selectedCategory == category.id,
+                            onFocused = { lastChannelId = null },
                             onClick = { focusedCategory = category.id },
                             onLongClick = { menuCategory = category },
                             card = true,
@@ -456,23 +427,6 @@ fun TvLiveTvScreen(
                 }
 
                 val channels = channelsViewModel.channels.collectAsLazyPagingItems()
-                val channelListState = rememberLazyListState()
-                // Posle Desno sa kategorije čiji kanali još nisu bili učitani: sačeka se nov spisak, pa
-                // fokus prelazi na prvi kanal. Prazna kategorija zadržava fokus na sebi.
-                LaunchedEffect(enterChannels) {
-                    if (enterChannels == 0) return@LaunchedEffect
-                    delay(ENTER_CHANNELS_SETTLE_MS)
-                    withTimeoutOrNull(ENTER_CHANNELS_TIMEOUT_MS) {
-                        snapshotFlow { channels.loadState.refresh is LoadState.NotLoading && channels.itemCount > 0 }
-                            .first { it }
-                    } ?: return@LaunchedEffect
-                    // Prvi kanal mora biti iscrtan da bi primio fokus.
-                    runCatching { channelListState.scrollToItem(0) }
-                    repeat(FOCUS_RESTORE_ATTEMPTS) {
-                        if (firstChannelFocus.tryRequestFocus()) return@LaunchedEffect
-                        delay(FOCUS_RESTORE_STEP_MS)
-                    }
-                }
                 Column(
                     modifier = Modifier
                         .weight(0.42f)
@@ -511,7 +465,6 @@ fun TvLiveTvScreen(
                 }
                 TvFavoriteHint()
                 LazyColumn(
-                    state = channelListState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
@@ -533,8 +486,7 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus)
-                                .then(focusTarget(index == 0, firstChannelFocus)),
+                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -584,10 +536,7 @@ fun TvLiveTvScreen(
                                         TvProgressBar(
                                             progress = progress,
                                             trackColor = color.copy(alpha = 0.15f),
-                                            // Na redu u fokusu (pun akcentom) traka ostaje u boji teksta.
-                                            barColor = LocalNeon.current?.progress
-                                                ?.takeIf { color != MaterialTheme.colorScheme.onPrimary }
-                                                ?: color.copy(alpha = 0.5f),
+                                            barColor = color.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(top = 3.dp),
                                         )
                                     }
@@ -652,9 +601,6 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 
 private const val SKELETON_ROWS = 8
-private const val CATEGORY_FOCUS_DELAY_MS = 250L
-private const val ENTER_CHANNELS_SETTLE_MS = 120L
-private const val ENTER_CHANNELS_TIMEOUT_MS = 2_000L
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
@@ -801,7 +747,7 @@ private fun ChannelPreviewPane(
                 TvProgressBar(
                     progress = ((now - program.startMs).toFloat() / (program.stopMs - program.startMs)).coerceIn(0f, 1f),
                     trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                    barColor = LocalNeon.current?.progress ?: MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    barColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -939,8 +885,6 @@ private fun TvTabChip(
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .widthIn(max = 200.dp)
-            // Neonska tema: blago svetlo oko izabrane kartice dok nije u fokusu.
-            .neonHalo(LocalNeon.current, selected && !focused)
             .clip(shape)
             .background(
                 when {

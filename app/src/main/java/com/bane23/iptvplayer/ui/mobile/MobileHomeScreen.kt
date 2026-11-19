@@ -55,8 +55,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonBackdrop
 import com.bane23.iptvplayer.data.recording.ActiveRecording
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
@@ -293,7 +291,6 @@ private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onSt
  */
 @Composable
 private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
-    val neon = LocalNeon.current
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
@@ -324,9 +321,7 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
                     Box(
                         modifier = Modifier
                             .size(width = 48.dp, height = 26.dp)
-                            // Neonska tema: blago svetlo iza podloge izabrane ikonice.
-                            .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
-                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuju boja i svetlo.
+                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuje boja.
                             .clip(RoundedCornerShape(13.dp))
                             .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
@@ -353,7 +348,6 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
  */
 @Composable
 private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
-    val neon = LocalNeon.current
     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxHeight()) {
         Column(
             modifier = Modifier
@@ -384,9 +378,7 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
                     Box(
                         modifier = Modifier
                             .size(width = 48.dp, height = 26.dp)
-                            // Neonska tema: blago svetlo iza podloge izabrane ikonice.
-                            .neonBackdrop(neon, isSelected, width = NAV_GLOW_WIDTH, height = NAV_GLOW_HEIGHT)
-                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuju boja i svetlo.
+                            // Bez podloge oko ikonice (Bane): izabranu karticu pokazuje boja.
                             .clip(RoundedCornerShape(13.dp))
                             .indication(interactions, ripple()),
                         contentAlignment = Alignment.Center,
@@ -406,7 +398,3 @@ private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect:
         }
     }
 }
-
-/** Veličina neonskog svetla iza izabrane kartice u donjoj traci i bočnoj traci telefona. */
-private val NAV_GLOW_WIDTH = 110.dp
-private val NAV_GLOW_HEIGHT = 64.dp

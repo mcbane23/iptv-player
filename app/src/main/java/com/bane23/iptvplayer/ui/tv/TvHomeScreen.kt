@@ -53,8 +53,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
-import com.bane23.iptvplayer.ui.common.theme.LocalNeon
-import com.bane23.iptvplayer.ui.common.theme.neonBackdrop
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
@@ -360,17 +358,7 @@ private fun RailItem(
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = content,
-            modifier = Modifier
-                // Neonska tema: blago svetlo iza ikonice izabranog odeljka, samo dok je meni sklopljen
-                // (kao donja traka na telefonu). Dok se kroz meni kreće, izbor pokazuje samo fokus, da
-                // ne budu obeležene dve stavke.
-                .neonBackdrop(LocalNeon.current, selected && !expanded, width = 76.dp, height = 46.dp)
-                .size(24.dp),
-        )
+        Icon(imageVector = icon, contentDescription = label, tint = content, modifier = Modifier.size(24.dp))
         if (expanded) {
             Text(
                 text = label,
