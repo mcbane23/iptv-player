@@ -81,6 +81,15 @@ import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
+import androidx.paging.LoadState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -112,6 +121,9 @@ fun TvLiveTvScreen(
     var focusedCategory by remember(state.loading, playlistId) { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
     val channelFocus = remember { FocusRequester() }
+    // Prvi kanal na spisku i zahtev da fokus pređe na njega kad se kanali nove kategorije učitaju.
+    val firstChannelFocus = remember { FocusRequester() }
+    var enterChannels by remember { mutableIntStateOf(0) }
     val categoryListState = rememberLazyListState()
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
@@ -357,7 +369,21 @@ fun TvLiveTvScreen(
                     state = categoryListState,
                     modifier = Modifier
                         .weight(0.26f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        // Desno dok kanali fokusirane kategorije još nisu učitani (kratka pauza posle
+                        // pomeranja): kategorija se bira odmah, a fokus prelazi na njen prvi kanal tek kad
+                        // stigne. Inače bi fokus ušao u red stare kategorije koji odmah nestaje, pa bi
+                        // skočio na bočni meni.
+                        .onPreviewKeyEvent { event ->
+                            if (event.key != Key.DirectionRight || focusedCategory == selectedCategory) {
+                                return@onPreviewKeyEvent false
+                            }
+                            if (event.type == KeyEventType.KeyDown) {
+                                selectedCategory = focusedCategory
+                                enterChannels++
+                            }
+                            true
+                        },
                     // Isti izgled kao spisak levo kod filmova i serija i kao na telefonu: redovi su pločice.
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -380,7 +406,8 @@ fun TvLiveTvScreen(
                             title = stringResource(R.string.category_favorites),
                             subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                             // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
-                            selected = state.isFavoritesGroup(selectedCategory),
+                            // Oznaka izbora prati fokus odmah; kanali se učitavaju posle kratke pauze.
+                            selected = state.isFavoritesGroup(focusedCategory),
                             onFocused = { focusFavorites(); lastChannelId = null },
                             onClick = focusFavorites,
                             onLongClick = { favoritesMenu = true },
@@ -394,7 +421,7 @@ fun TvLiveTvScreen(
                                 icon = AppIcons.History,
                                 title = stringResource(R.string.category_recent),
                                 subtitle = stringResource(R.string.vod_total, state.recentCount),
-                                selected = selectedCategory == ChannelGroups.RECENT,
+                                selected = focusedCategory == ChannelGroups.RECENT,
                                 onFocused = { focusedCategory = ChannelGroups.RECENT; lastChannelId = null },
                                 onClick = { focusedCategory = ChannelGroups.RECENT },
                                 modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
@@ -406,7 +433,7 @@ fun TvLiveTvScreen(
                             icon = AppIcons.LiveTv,
                             title = stringResource(R.string.category_all),
                             subtitle = stringResource(R.string.vod_total, state.totalChannels),
-                            selected = selectedCategory == ALL_CHANNELS,
+                            selected = focusedCategory == ALL_CHANNELS,
                             onFocused = { focusedCategory = ALL_CHANNELS; lastChannelId = null },
                             onClick = { focusedCategory = ALL_CHANNELS },
                             modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
@@ -417,7 +444,7 @@ fun TvLiveTvScreen(
                         TvTextRow(
                             text = category.name,
                             trailing = category.channelCount.toString(),
-                            selected = selectedCategory == category.id,
+                            selected = focusedCategory == category.id,
                             onFocused = { focusedCategory = category.id; lastChannelId = null },
                             onClick = { focusedCategory = category.id },
                             onLongClick = { menuCategory = category },
@@ -429,6 +456,23 @@ fun TvLiveTvScreen(
                 }
 
                 val channels = channelsViewModel.channels.collectAsLazyPagingItems()
+                val channelListState = rememberLazyListState()
+                // Posle Desno sa kategorije čiji kanali još nisu bili učitani: sačeka se nov spisak, pa
+                // fokus prelazi na prvi kanal. Prazna kategorija zadržava fokus na sebi.
+                LaunchedEffect(enterChannels) {
+                    if (enterChannels == 0) return@LaunchedEffect
+                    delay(ENTER_CHANNELS_SETTLE_MS)
+                    withTimeoutOrNull(ENTER_CHANNELS_TIMEOUT_MS) {
+                        snapshotFlow { channels.loadState.refresh is LoadState.NotLoading && channels.itemCount > 0 }
+                            .first { it }
+                    } ?: return@LaunchedEffect
+                    // Prvi kanal mora biti iscrtan da bi primio fokus.
+                    runCatching { channelListState.scrollToItem(0) }
+                    repeat(FOCUS_RESTORE_ATTEMPTS) {
+                        if (firstChannelFocus.tryRequestFocus()) return@LaunchedEffect
+                        delay(FOCUS_RESTORE_STEP_MS)
+                    }
+                }
                 Column(
                     modifier = Modifier
                         .weight(0.42f)
@@ -467,6 +511,7 @@ fun TvLiveTvScreen(
                 }
                 TvFavoriteHint()
                 LazyColumn(
+                    state = channelListState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
@@ -488,7 +533,8 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus),
+                            modifier = focusTarget(channel != null && channel.id == lastChannelId, channelFocus)
+                                .then(focusTarget(index == 0, firstChannelFocus)),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -607,6 +653,8 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
 
 private const val SKELETON_ROWS = 8
 private const val CATEGORY_FOCUS_DELAY_MS = 250L
+private const val ENTER_CHANNELS_SETTLE_MS = 120L
+private const val ENTER_CHANNELS_TIMEOUT_MS = 2_000L
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
