@@ -49,8 +49,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -120,7 +123,7 @@ fun MobileSettingsScreen(
             } else if (choice.slots.isNotEmpty()) {
                 SettingsSlotsRow(choice.title, choice.summary, choice.value) { openSlots = index }
             } else {
-                SettingsValueRow(choice.title, choice.summary, choice.value) { openChoice = index }
+                SettingsValueRow(choice.title, choice.summary, choice.value, choice.options) { openChoice = index }
             }
         }
     }
@@ -162,6 +165,7 @@ fun MobileSettingsScreen(
                             title = stringResource(R.string.settings_language),
                             summary = languageSummary(),
                             value = language.label(),
+                            options = AppLanguage.entries.map { it.label() },
                             onClick = { languageOpen = true },
                         )
                     }
@@ -273,6 +277,7 @@ fun MobileSettingsScreen(
                                     title = stringResource(R.string.settings_ui_scale),
                                     summary = stringResource(R.string.settings_ui_scale_summary),
                                     value = uiScale.label,
+                                    options = UiScale.choices(isTv = false).map { it.label },
                                     onClick = { viewModel.setUiScale(UiScale.next(uiScale, isTv = false)) },
                                 )
                                 SettingsSwitchRow(
@@ -340,6 +345,7 @@ fun MobileSettingsScreen(
                                     title = stringResource(R.string.update_channel),
                                     summary = stringResource(R.string.update_channel_summary),
                                     value = updateChannel.label(),
+                                    options = UpdateChannel.entries.map { it.label() },
                                     onClick = { channelOpen = true },
                                 )
                             }
@@ -492,9 +498,27 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
-/** Podešavanje sa vrednošću: naziv i opis levo, trenutna vrednost desno. Dodir ga menja ili otvara izbor. */
+/**
+ * Podešavanje sa vrednošću: naziv i opis levo, trenutna vrednost desno. Dodir ga menja ili otvara izbor.
+ *
+ * Vrednost zauzima širinu najduže od ponuđenih vrednosti ([options]), pa se opis uvek isto prelama
+ * i red ne menja visinu kad se izabere duža ili kraća vrednost.
+ */
 @Composable
-private fun SettingsValueRow(title: String, summary: String, value: String, onClick: () -> Unit) {
+private fun SettingsValueRow(
+    title: String,
+    summary: String,
+    value: String,
+    options: List<String> = emptyList(),
+    onClick: () -> Unit,
+) {
+    val valueStyle = MaterialTheme.typography.bodySmall
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val valueWidth = remember(options, valueStyle, density) {
+        val widest = options.maxOfOrNull { measurer.measure(it, valueStyle, maxLines = 1).size.width } ?: 0
+        with(density) { widest.toDp() }.coerceAtMost(VALUE_MAX_WIDTH)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -512,16 +536,20 @@ private fun SettingsValueRow(title: String, summary: String, value: String, onCl
         }
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall,
+            style = valueStyle,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
             modifier = Modifier
                 .padding(start = 12.dp)
-                .widthIn(max = 160.dp),
+                .widthIn(min = valueWidth, max = VALUE_MAX_WIDTH),
         )
     }
 }
+
+/** Najveća širina vrednosti u redu podešavanja; duža vrednost se skraćuje, da ne istisne naziv i opis. */
+private val VALUE_MAX_WIDTH = 160.dp
 
 /** Podešavanje sa više vrednosti po redu (npr. jezici): naziv, opis i ispod njih izabrane vrednosti. Dodir otvara podekran. */
 @Composable
