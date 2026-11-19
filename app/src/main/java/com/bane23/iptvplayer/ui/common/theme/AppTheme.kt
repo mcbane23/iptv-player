@@ -51,8 +51,8 @@ val LocalNeon = staticCompositionLocalOf<NeonStyle?> { null }
 /**
  * Blago neonsko svetlo iza izabranog dugmeta u meniju (donja traka na telefonu, bočni meni na TV-u)
  * kad je [active] i tema je neonska ([neon] nije null). Stavlja se na samu ikonicu (ili njenu
- * podlogu): iz njene sredine se širi mek eliptičan sjaj akcentne boje, širok [width] i visok
- * [height], jak u sredini i bez oštre ivice. Crta se van granica elementa, pa modifikator mora
+ * podlogu): iz njene sredine se širi jedva vidljiv eliptičan sjaj akcentne boje, širok [width] i visok
+ * [height], bez oštre ivice (Bane: upola slabije od test verzije #141). Crta se van granica elementa, pa modifikator mora
  * da stoji pre eventualnog clip-a. Prelaz se pravi jednom po veličini (drawWithCache).
  */
 fun Modifier.neonBackdrop(neon: NeonStyle?, active: Boolean, width: Dp, height: Dp): Modifier =
@@ -79,5 +79,5 @@ fun Modifier.neonBackdrop(neon: NeonStyle?, active: Boolean, width: Dp, height: 
         }
     }
 
-private const val BACKDROP_CORE_ALPHA = 0.6f
-private const val BACKDROP_MID_ALPHA = 0.2f
+private const val BACKDROP_CORE_ALPHA = 0.14f
+private const val BACKDROP_MID_ALPHA = 0.05f
