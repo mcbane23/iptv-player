@@ -685,6 +685,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
         učitavanju i inicijali kanala bez logoa prate temu (`PlaceholderColors`); Siva i crna tema bez promene
   - [x] V3 Uživo na TV-u: levi panel kao kod filmova i serija (pretraga, Omiljeni, Nedavno i Svi kanali stoje
         zakačeni, ispod polje „Traži kategoriju” i kategorije koje se skroluju)
+  - [x] V4 Filmovi i serije na telefonu (uspravno): isti red čipova kao u Uživo (zvezdica Omiljeni,
+        „Nastavi gledanje”, kategorija), ispod naslov sa brojem stavki
 
 ## 7. Testiranje
 
