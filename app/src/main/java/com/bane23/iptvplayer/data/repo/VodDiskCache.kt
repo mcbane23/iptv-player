@@ -68,12 +68,13 @@ class VodDiskCache internal constructor(private val root: File) {
         if (!file.isFile) return null
         return try {
             DataInputStream(BufferedInputStream(file.inputStream())).use { data ->
-                if (data.readInt() != VERSION) return@use null
+                // Drugi zapis (starija verzija aplikacije) ili nešto što nije ovaj fajl.
+                if (data.readInt() != VERSION) throw java.io.IOException("unknown format")
                 val stamp = data.readLong()
                 VodCached(stamp, decode(GZIPInputStream(data)))
             }
         } catch (_: Exception) {
-            // Oštećen ili nedovršen fajl: briše se, a spisak se preuzima sa servera.
+            // Oštećen, nedovršen ili zastareo fajl: briše se, a spisak se preuzima sa servera.
             file.delete()
             null
         }
