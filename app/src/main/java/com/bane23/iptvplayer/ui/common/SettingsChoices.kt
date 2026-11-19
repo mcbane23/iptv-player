@@ -40,9 +40,21 @@ data class SettingChoice(
     val toggle: Boolean = false,
     /** Grupa u Podešavanjima u kojoj se podešavanje prikazuje; null za izbore van Podešavanja (plejer). */
     val group: SettingsGroup? = null,
-    val onSelect: (Int) -> Unit,
+    /**
+     * Mesta po redu važnosti (npr. prvi, drugi i treći jezik): podešavanje je tada jedan red koji
+     * otvara ova mesta, a svako mesto je obično podešavanje sa spiskom vrednosti.
+     */
+    val slots: List<SettingChoice> = emptyList(),
+    val onSelect: (Int) -> Unit = {},
 ) {
-    val value: String get() = options.getOrElse(selected) { "" }
+    /** Trenutna vrednost; za podešavanje sa mestima izabrane vrednosti redom (prva vrednost mesta znači „nije izabrano”). */
+    val value: String
+        get() = if (slots.isEmpty()) {
+            options.getOrElse(selected) { "" }
+        } else {
+            slots.filter { it.selected > 0 }.map { it.value }.distinct().joinToString(", ")
+                .ifEmpty { slots.first().options.firstOrNull().orEmpty() }
+        }
 
     /** Za [toggle]: da li je uključeno. */
     val checked: Boolean get() = selected == 0
@@ -130,22 +142,36 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
             group = SettingsGroup.WATCHING,
             onSelect = { viewModel.setSeekStep(PlayerSettings.SEEK_STEP_OPTIONS[it]) },
         ),
-        *subtitleLanguageTitles.mapIndexed { slot, title ->
-            languageChoice(
-                title = title,
-                summary = stringResource(R.string.settings_subtitle_language_summary),
-                current = settings.subtitleLanguageSlots.getOrElse(slot) { "" },
-                set = { viewModel.setSubtitleLanguage(slot, it) },
-            )
-        }.toTypedArray(),
-        *audioLanguageTitles.mapIndexed { slot, title ->
-            languageChoice(
-                title = title,
-                summary = stringResource(R.string.settings_audio_language_summary),
-                current = settings.audioLanguageSlots.getOrElse(slot) { "" },
-                set = { viewModel.setAudioLanguage(slot, it) },
-            )
-        }.toTypedArray(),
+        SettingChoice(
+            title = stringResource(R.string.settings_subtitle_languages),
+            summary = stringResource(R.string.settings_subtitle_language_summary),
+            options = emptyList(),
+            selected = 0,
+            group = SettingsGroup.SUBTITLES,
+            slots = subtitleLanguageTitles.mapIndexed { slot, title ->
+                languageChoice(
+                    title = title,
+                    summary = stringResource(R.string.settings_subtitle_language_summary),
+                    current = settings.subtitleLanguageSlots.getOrElse(slot) { "" },
+                    set = { viewModel.setSubtitleLanguage(slot, it) },
+                )
+            },
+        ),
+        SettingChoice(
+            title = stringResource(R.string.settings_audio_languages),
+            summary = stringResource(R.string.settings_audio_language_summary),
+            options = emptyList(),
+            selected = 0,
+            group = SettingsGroup.SUBTITLES,
+            slots = audioLanguageTitles.mapIndexed { slot, title ->
+                languageChoice(
+                    title = title,
+                    summary = stringResource(R.string.settings_audio_language_summary),
+                    current = settings.audioLanguageSlots.getOrElse(slot) { "" },
+                    set = { viewModel.setAudioLanguage(slot, it) },
+                )
+            },
+        ),
         SettingChoice(
             title = stringResource(R.string.settings_subtitle_size),
             summary = stringResource(R.string.settings_subtitle_look_summary),

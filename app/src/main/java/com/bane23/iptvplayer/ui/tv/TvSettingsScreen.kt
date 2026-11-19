@@ -111,6 +111,10 @@ fun TvSettingsScreen(
     var inItems by remember { mutableStateOf(false) }
     // Podešavanje čije se vrednosti trenutno biraju, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
+    // Za podešavanje sa mestima (npr. jezici titlova): mesto čije se vrednosti biraju, ili null dok se vide mesta.
+    var openSlot by remember(openChoice) { mutableStateOf<Int?>(null) }
+    // Mesto na koje se fokus vraća posle izbora vrednosti.
+    var lastSlot by remember(openChoice) { androidx.compose.runtime.mutableIntStateOf(0) }
     // Red na kome je fokus, zbog objašnjenja desno; null dok fokus nije ni na jednom.
     var focusedChoice by remember { mutableStateOf<Int?>(null) }
     // Probni titl se vidi dok je fokus na podešavanju izgleda titlova ili se bira njegova vrednost.
@@ -226,7 +230,9 @@ fun TvSettingsScreen(
     // Nazad iz spiska vrednosti vraća na podešavanje, a iz stavki grupe na spisak grupa.
     BackHandler(enabled = inItems || openChoice != null) {
         val open = openChoice
-        if (open != null) {
+        if (open != null && openSlot != null) {
+            openSlot = null
+        } else if (open != null) {
             rowFocus[open].tryRequestFocus()
             openChoice = null
         } else {
@@ -354,29 +360,52 @@ fun TvSettingsScreen(
                         },
                     )
                     if (open != null) {
-                        val choice = choices[open]
+                        val parent = choices[open]
+                        val slot = openSlot?.let { parent.slots.getOrNull(it) }
+                        val choice = slot ?: parent
+                        val change = stringResource(R.string.settings_language_change)
                         LazyColumn(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(2.dp),
                             contentPadding = PaddingValues(bottom = 27.dp),
                         ) {
-                            itemsIndexed(choice.options) { index, option ->
-                                TvTextRow(
-                                    text = option,
-                                    trailing = if (index == choice.selected) "✓" else null,
-                                    selected = index == choice.selected,
-                                    onClick = {
-                                        choice.onSelect(index)
-                                        // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
-                                        rowFocus[open].tryRequestFocus()
-                                        openChoice = null
-                                    },
-                                    modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
-                                )
+                            if (slot == null && parent.slots.isNotEmpty()) {
+                                // Mesta po redu važnosti; OK na mestu otvara spisak vrednosti za to mesto.
+                                itemsIndexed(parent.slots) { index, item ->
+                                    TvTextRow(
+                                        text = "${index + 1}. ${item.value}",
+                                        trailing = change,
+                                        onClick = {
+                                            lastSlot = index
+                                            openSlot = index
+                                        },
+                                        modifier = if (index == lastSlot) Modifier.focusRequester(optionFocus) else Modifier,
+                                    )
+                                }
+                            } else {
+                                itemsIndexed(choice.options) { index, option ->
+                                    TvTextRow(
+                                        text = option,
+                                        trailing = if (index == choice.selected) "✓" else null,
+                                        selected = index == choice.selected,
+                                        onClick = {
+                                            choice.onSelect(index)
+                                            if (slot != null) {
+                                                // Posle izbora se opet vide mesta.
+                                                openSlot = null
+                                            } else {
+                                                // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
+                                                rowFocus[open].tryRequestFocus()
+                                                openChoice = null
+                                            }
+                                        },
+                                        modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
+                                    )
+                                }
                             }
                         }
                         // Fokus prelazi na vrednosti čim se otvore; Nazad ili levo ga vraća na podešavanja.
-                        LaunchedEffect(open) { optionFocus.tryRequestFocus() }
+                        LaunchedEffect(open, openSlot) { optionFocus.tryRequestFocus() }
                     }
                     if (open == null) Spacer(modifier = Modifier.weight(1f))
                     if (showPreview) {

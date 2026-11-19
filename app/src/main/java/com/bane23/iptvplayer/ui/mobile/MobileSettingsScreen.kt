@@ -106,6 +106,10 @@ fun MobileSettingsScreen(
     var group by rememberSaveable { mutableStateOf<SettingsGroup?>(null) }
     val current = group
     BackHandler(enabled = current != null) { group = null }
+    // Podešavanje sa mestima (npr. jezici titlova) čiji je podekran otvoren, i mesto čija se vrednost bira.
+    var openSlots by rememberSaveable { mutableStateOf<Int?>(null) }
+    var openSlot by remember { mutableStateOf<Int?>(null) }
+    BackHandler(enabled = openSlots != null) { openSlots = null }
     val groups = SettingsGroup.entries.filter { it != SettingsGroup.ACCOUNTS || onTrakt != null || onTransfer != null }
     // Podešavanja plejera koja pripadaju otvorenoj grupi.
     val choiceRows: @Composable () -> Unit = {
@@ -113,6 +117,8 @@ fun MobileSettingsScreen(
             if (choice.group != current) return@forEachIndexed
             if (choice.toggle) {
                 SettingsSwitchRow(choice.title, choice.summary, choice.checked) { choice.flip() }
+            } else if (choice.slots.isNotEmpty()) {
+                SettingsSlotsRow(choice.title, choice.summary, choice.value) { openSlots = index }
             } else {
                 SettingsValueRow(choice.title, choice.summary, choice.value) { openChoice = index }
             }
@@ -122,14 +128,33 @@ fun MobileSettingsScreen(
     // Providno: pozadinu sa sjajem crta početni ekran.
     Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) { padding ->
         // Svaki ekran (glavni i svaka grupa) ima svoj položaj pomeranja.
-        key(current) {
+        val slotsChoice = openSlots?.let { choices.getOrNull(it) }
+        key(current, openSlots) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState()),
             ) {
-                if (current == null) {
+                if (slotsChoice != null) {
+                    SectionTopBar(title = slotsChoice.title, onBack = { openSlots = null })
+                    SettingsCard {
+                        slotsChoice.slots.forEachIndexed { index, slot ->
+                            SettingsValueRow(
+                                title = "${index + 1}. ${slot.value}",
+                                summary = slot.title,
+                                value = stringResource(R.string.settings_language_change),
+                                onClick = { openSlot = index },
+                            )
+                        }
+                    }
+                    Text(
+                        text = slotsChoice.summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 8.dp),
+                    )
+                } else if (current == null) {
                     SectionTopBar(title = stringResource(R.string.settings_title), onBack = onBack)
                     // Jezik je prva stavka: ko ne razume trenutni jezik, nalazi ga odmah na vrhu.
                     SettingsCard {
@@ -371,6 +396,19 @@ fun MobileSettingsScreen(
         )
     }
 
+    openSlot?.let { index ->
+        val slot = openSlots?.let { choices.getOrNull(it) }?.slots?.getOrNull(index)
+        if (slot != null) {
+            TrackDialog(
+                title = slot.title,
+                options = slot.options.mapIndexed { option, label -> label to (option == slot.selected) },
+                emptyText = null,
+                onSelect = slot.onSelect,
+                onDismiss = { openSlot = null },
+            )
+        }
+    }
+
     openChoice?.let { index ->
         val choice = choices[index]
         TrackDialog(
@@ -481,6 +519,32 @@ private fun SettingsValueRow(title: String, summary: String, value: String, onCl
             modifier = Modifier
                 .padding(start = 12.dp)
                 .widthIn(max = 160.dp),
+        )
+    }
+}
+
+/** Podešavanje sa više vrednosti po redu (npr. jezici): naziv, opis i ispod njih izabrane vrednosti. Dodir otvara podekran. */
+@Composable
+private fun SettingsSlotsRow(title: String, summary: String, value: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = summary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
         )
     }
 }

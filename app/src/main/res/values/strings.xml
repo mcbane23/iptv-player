@@ -228,6 +228,9 @@
     <string name="settings_subtitle_language_2">Second subtitle language</string>
     <string name="settings_subtitle_language_3">Third subtitle language</string>
     <string name="settings_subtitle_language_summary">The first available subtitle of these three languages turns on by itself. If none is there, subtitles stay off. A choice in the player only applies to what you are watching.</string>
+    <string name="settings_subtitle_languages">Subtitle languages</string>
+    <string name="settings_audio_languages">Audio languages</string>
+    <string name="settings_language_change">Change</string>
     <string name="language_not_chosen">Not set</string>
     <string name="pairing_step_app">Already have this app with your playlists on the phone? Tap “Open the app” on that page to send them all at once.</string>
     <string name="pairing_page_app_heading">Send everything from the app</string>

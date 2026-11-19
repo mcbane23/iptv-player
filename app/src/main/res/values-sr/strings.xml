@@ -227,6 +227,9 @@
     <string name="settings_subtitle_language_2">Drugi jezik titla</string>
     <string name="settings_subtitle_language_3">Treći jezik titla</string>
     <string name="settings_subtitle_language_summary">Sam se uključuje prvi dostupan titl od ova tri jezika. Ako nijednog nema, titl ostaje isključen. Izbor u plejeru važi samo za ono što gledate.</string>
+    <string name="settings_subtitle_languages">Jezici titlova</string>
+    <string name="settings_audio_languages">Jezici zvuka</string>
+    <string name="settings_language_change">Promeni</string>
     <string name="language_not_chosen">Nije izabran</string>
     <string name="pairing_step_app">Već imate ovu aplikaciju sa listama na telefonu? Na toj stranici izaberite „Otvori aplikaciju” i pošaljite sve odjednom.</string>
     <string name="pairing_page_app_heading">Pošalji sve iz aplikacije</string>
