@@ -18,7 +18,46 @@ data class UpdateManifest(
     val sha256: String? = null,
     /** Kratak commit, samo za prikaz. */
     val commit: String? = null,
+    /**
+     * Test buildovi: naslovi poslednjih izmena spojenih u main, najnovija prva. Svaka nosi broj
+     * builda u kom se pojavila, pa aplikacija prikazuje samo ono što je novije od instaliranog.
+     */
+    val changes: List<UpdateChange> = emptyList(),
+    /** Zvanična izdanja: ručno pisan opis novosti po jeziku (`sr`, `en`), jedna stavka po redu. */
+    val notes: Map<String, String> = emptyMap(),
 )
+
+@Serializable
+data class UpdateChange(val code: Long, val title: String)
+
+/** Šta je novo u ponuđenoj verziji, kao spisak kratkih stavki za prozor ažuriranja. */
+object UpdateNotes {
+    private const val MAX_LINES = 40
+    private const val MAX_LINE_LENGTH = 300
+    private val bullet = Regex("^[-*•]\\s+")
+
+    /**
+     * Ručno pisan opis ima prednost (zvanična izdanja); bez njega se nabrajaju izmene novije od
+     * instaliranog builda. [language] je jezik aplikacije: srpski čita `sr`, svi ostali `en`,
+     * a ako tog jezika nema, uzima se onaj koji postoji.
+     */
+    fun lines(manifest: UpdateManifest, installedVersionCode: Long, language: String): List<String> {
+        val preferred = if (language == "sr") "sr" else "en"
+        val text = manifest.notes[preferred]?.takeIf { it.isNotBlank() }
+            ?: manifest.notes.values.firstOrNull { it.isNotBlank() }
+        val raw = text?.lines()
+            ?: manifest.changes
+                .filter { it.code > installedVersionCode }
+                .sortedByDescending { it.code }
+                .map { it.title }
+        return raw.asSequence()
+            .map { it.trim().replace(bullet, "").take(MAX_LINE_LENGTH) }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .take(MAX_LINES)
+            .toList()
+    }
+}
 
 object UpdateManifestParser {
     private val json = Json { ignoreUnknownKeys = true }

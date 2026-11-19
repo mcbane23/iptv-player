@@ -32,6 +32,23 @@ jobs:
           # Cela istorija je potrebna za proveru da li grana sadrži vrh main-a (vidi „Objavi pre-release”).
           fetch-depth: 0
 
+      # Zvanično izdanje u prozoru ažuriranja prikazuje ručno pisane novosti. Grana koja menja verziju
+      # mora da ih donese, inače bi izdanje palo tek posle spajanja (vidi release.yml).
+      - name: Novosti za novo izdanje
+        if: github.ref != 'refs/heads/main'
+        run: |
+          VERSION=$(tr -d '[:space:]' < version.txt)
+          if [ "$VERSION" = "$(git show origin/main:version.txt | tr -d '[:space:]')" ]; then
+            echo "Verzija nije menjana, novosti nisu potrebne."
+            exit 0
+          fi
+          for LANG_CODE in sr en; do
+            if ! grep -q '[^[:space:]]' "novosti/$VERSION.$LANG_CODE.txt" 2>/dev/null; then
+              echo "Nova verzija $VERSION traži fajl novosti/$VERSION.$LANG_CODE.txt (šta je novo, jedna stavka po redu)."
+              exit 1
+            fi
+          done
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -152,8 +169,16 @@ jobs:
           APK="iptv-player-dev-$CODE.apk"
           cp app/build/outputs/apk/dev/app-dev.apk "$APK"
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          # „Šta je novo” u prozoru ažuriranja: naslovi poslednjih izmena u main-u, bez broja PR-a na kraju.
+          # Broj builda je broj commitova, pa svaka izmena unazad ima za jedan manji broj; aplikacija
+          # prikazuje samo one novije od instaliranog builda.
+          git log --first-parent -n 30 --format=%s \
+            | jq -Rn --argjson code "$CODE" \
+              '[inputs] | to_entries | map({code: ($code - .key), title: (.value | sub(" \\(#[0-9]+\\)$"; ""))})' \
+            > changes.json
           jq -n --argjson code "$CODE" --arg name "$NAME" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
-            '{versionCode: $code, versionName: $name, apk: $apk, sha256: $sha, commit: $commit}' \
+            --slurpfile changes changes.json \
+            '{versionCode: $code, versionName: $name, apk: $apk, sha256: $sha, commit: $commit, changes: $changes[0]}' \
             > iptv-player.json
           if ! gh release view "$TAG" -R "$APK_REPO" > /dev/null 2>&1; then
             gh release create "$TAG" -R "$APK_REPO" --prerelease \

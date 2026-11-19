@@ -88,7 +88,7 @@ class AppUpdater @Inject constructor(
     val installedVersionName: String
         get() = runCatching { packageInfo().versionName }.getOrNull().orEmpty()
 
-    private val installedVersionCode: Long
+    val installedVersionCode: Long
         get() = runCatching { PackageInfoCompat.getLongVersionCode(packageInfo()) }.getOrDefault(Long.MAX_VALUE)
 
     @Suppress("DEPRECATION")
