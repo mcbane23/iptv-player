@@ -34,12 +34,12 @@ data class SettingChoice(
     val summary: String,
     val options: List<String>,
     val selected: Int,
-    /** Grupa u Podešavanjima u kojoj se podešavanje prikazuje. */
-    val group: SettingsGroup,
     /** Utiče na izgled titlova, pa se uz njega prikazuje probni titl. */
     val subtitleLook: Boolean = false,
     /** Podešavanje uključeno/isključeno: prikazuje se kao prekidač. Prva vrednost znači uključeno. */
     val toggle: Boolean = false,
+    /** Grupa u Podešavanjima u kojoj se podešavanje prikazuje; null za izbore van Podešavanja (plejer). */
+    val group: SettingsGroup? = null,
     val onSelect: (Int) -> Unit,
 ) {
     val value: String get() = options.getOrElse(selected) { "" }
@@ -78,7 +78,8 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
         val codes = listOf("") + LANGUAGE_CODES + if (extra) listOf(current) else emptyList()
         val names = listOf(first) + languageNames + if (extra) listOf(languageName(current)) else emptyList()
         return SettingChoice(
-            title, summary, names, codes.indexOf(current).coerceAtLeast(0), SettingsGroup.SUBTITLES,
+            title, summary, names, codes.indexOf(current).coerceAtLeast(0),
+            group = SettingsGroup.SUBTITLES,
             onSelect = { set(codes[it]) },
         )
     }
