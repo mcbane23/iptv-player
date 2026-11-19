@@ -153,7 +153,7 @@ fun TvLiveTvScreen(
     val pickCategory: (Long) -> Unit = { id ->
         if (selectedCategory == id) topChannelFocus.tryRequestFocus() else focusedCategory = id
     }
-    val focusFavorites = {
+    val focusFavorites: () -> Unit = {
         // Drugi OK na već izabranoj grupi ide na kanale, kao Desno.
         if (state.isFavoritesGroup(selectedCategory)) {
             topChannelFocus.tryRequestFocus()
