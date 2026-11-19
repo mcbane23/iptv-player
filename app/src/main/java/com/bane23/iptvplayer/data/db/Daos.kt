@@ -701,6 +701,10 @@ interface RecordingDao {
     @Query("UPDATE recordings SET status = :status, error = :error, endedAt = :endedAt, sizeBytes = :sizeBytes WHERE id = :id")
     suspend fun finish(id: Long, status: String, error: String?, endedAt: Long, sizeBytes: Long)
 
+    /** Fajl snimka je premešten. */
+    @Query("UPDATE recordings SET path = :path WHERE id = :id")
+    suspend fun setPath(id: Long, path: String)
+
     @Query("DELETE FROM recordings WHERE id = :id")
     suspend fun delete(id: Long)
 }
@@ -728,6 +732,13 @@ interface DownloadDao {
 
     @Query("UPDATE downloads SET status = :status, error = :error WHERE id = :id")
     suspend fun setStatus(id: Long, status: String, error: String?)
+
+    /** Fajl preuzimanja je premešten. */
+    @Query("UPDATE downloads SET path = :path WHERE id = :id")
+    suspend fun setPath(id: Long, path: String)
+
+    @Query("SELECT * FROM downloads")
+    suspend fun all(): List<DownloadEntity>
 
     @Query("DELETE FROM downloads WHERE id = :id")
     suspend fun delete(id: Long)

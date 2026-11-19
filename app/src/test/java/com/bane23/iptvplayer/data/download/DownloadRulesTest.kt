@@ -82,10 +82,18 @@ class DownloadRulesTest {
     }
 
     @Test
-    fun `file name keeps only a safe extension`() {
-        assertEquals("movie_3_42.mkv", DownloadRules.fileName(DownloadEntity.KIND_MOVIE, 3, 42, "MKV"))
-        assertEquals("episode_3_42.mp4", DownloadRules.fileName(DownloadEntity.KIND_EPISODE, 3, 42, "../"))
-        assertEquals("movie_1_7.mp4", DownloadRules.fileName(DownloadEntity.KIND_MOVIE, 1, 7, ""))
+    fun `extension keeps only letters and digits`() {
+        assertEquals("mkv", DownloadRules.safeExtension("MKV"))
+        assertEquals("mp4", DownloadRules.safeExtension("../"))
+        assertEquals("mp4", DownloadRules.safeExtension(""))
+    }
+
+    @Test
+    fun `readable name is the title with the episode label`() {
+        assertEquals("Izmišljeni film", DownloadRules.readableName("Izmišljeni film", null, DownloadEntity.KIND_MOVIE, 42))
+        assertEquals("Neka serija S1 E3", DownloadRules.readableName("Neka serija", "S1 E3", DownloadEntity.KIND_EPISODE, 7))
+        assertEquals("Šta Ko", DownloadRules.readableName("Šta? / Ko:", null, DownloadEntity.KIND_MOVIE, 1))
+        assertEquals("movie_9", DownloadRules.readableName("???", null, DownloadEntity.KIND_MOVIE, 9))
     }
 
     @Test
