@@ -458,15 +458,17 @@ private fun QuickGroupChips(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            // Bez gornjeg razmaka, da čipovi stoje na istom mestu kao u Filmovima i Serijama.
+            .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Samo zvezdica, kao u Filmovima; naziv čitaju čitači ekrana.
         GroupChip(
             label = stringResource(R.string.category_favorites),
             selected = inFavorites,
             onClick = { onSelect(ChannelGroups.FAVORITES) },
-            leading = AppIcons.Star,
+            iconOnly = AppIcons.Star,
             onLongClick = { onListMenu(null) },
         )
         if (showRecent) {
