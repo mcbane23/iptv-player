@@ -172,9 +172,18 @@ jobs:
           # „Šta je novo” u prozoru ažuriranja: naslovi poslednjih izmena u main-u, bez broja PR-a na kraju.
           # Broj builda je broj commitova, pa svaka izmena unazad ima za jedan manji broj; aplikacija
           # prikazuje samo one novije od instaliranog builda.
-          git log --first-parent -n 30 --format=%s \
-            | jq -Rn --argjson code "$CODE" \
-              '[inputs] | to_entries | map({code: ($code - .key), title: (.value | sub(" \\(#[0-9]+\\)$"; ""))})' \
+          # Naslov commita je na srpskom. Prevod je red „EN: ...” u opisu commita i ide u „titles”,
+          # pa spisak prati jezik aplikacije; izmena bez tog reda prikazuje se na srpskom.
+          git log --first-parent -n 30 --format='%s%x1f%b%x1e' \
+            | jq -Rs --argjson code "$CODE" '
+                split("\u001e") | map(ltrimstr("\n")) | map(select(length > 0)) | to_entries
+                | map((.value | split("\u001f")) as $p | {
+                    code: ($code - .key),
+                    title: ($p[0] | sub(" \\(#[0-9]+\\)$"; "")),
+                    titles: ([($p[1] // "") | split("\n")[]
+                        | capture("^(?<lang>EN): *(?<text>.*[^ \t\r])[ \t\r]*$")]
+                      | map({key: (.lang | ascii_downcase), value: .text}) | from_entries)
+                  })' \
             > changes.json
           jq -n --argjson code "$CODE" --arg name "$NAME" --arg apk "$APK" --arg sha "$SHA" --arg commit "${GITHUB_SHA::7}" \
             --slurpfile changes changes.json \

@@ -150,3 +150,13 @@ fun AppLanguage.label(): String = stringResource(
         AppLanguage.ENGLISH -> R.string.settings_language_english
     },
 )
+
+/**
+ * Objašnjenje uz izbor jezika: nabraja dostupne jezike, svaki na svom jeziku. Spisak se pravi iz
+ * [AppLanguage], pa novi jezik sam ulazi u objašnjenje.
+ */
+@Composable
+fun languageSummary(): String {
+    val names = AppLanguage.entries.filter { it.tag != null }.map { it.label() }
+    return stringResource(R.string.settings_language_summary, names.joinToString(", "))
+}

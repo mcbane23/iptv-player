@@ -271,7 +271,7 @@
 
     <!-- Novi izgled: navigacija -->
     <string name="settings_general_header">Opšte</string>
-    <string name="settings_language">Jezik (Language)</string>
+    <string name="settings_language">Jezik</string>
     <string name="settings_language_system">Kao uređaj</string>
     <string name="settings_language_tv_summary">Pritisni OK za sledeći jezik.</string>
     <string name="settings_accent_color">Boja aplikacije</string>
@@ -616,7 +616,7 @@
     <string name="settings_recordings_summary">Snimljeni kanali i zakazana snimanja</string>
     <string name="settings_tv_preview_summary">U spisku kanala se desno, bez zvuka, pušta kanal na kome je fokus, uz ono što je na njemu sada i sledeće.</string>
     <string name="settings_tv_vod_preview_summary">Iznad postera se vide naziv, podaci i opis filma ili serije na kojoj je fokus.</string>
-    <string name="settings_language_summary">Jezik menija i poruka u aplikaciji</string>
+    <string name="settings_language_summary">Jezik menija i poruka. Dostupni jezici: %1$s.</string>
     <string name="settings_accent_color_summary">Boja dugmadi, oznaka i sjaja u pozadini</string>
     <string name="update_check_summary">Traži noviju verziju i nudi da je instalira. Liste i podešavanja ostaju.</string>
     <string name="settings_black_theme">Crna tema</string>
