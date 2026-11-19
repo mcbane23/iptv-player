@@ -94,6 +94,7 @@ fun TvHomeScreen(
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
     onRecordings: () -> Unit,
+    onRemoteButtons: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
 ) {
@@ -197,6 +198,7 @@ fun TvHomeScreen(
                         onTrakt = onTrakt.takeIf { isTraktConfigured },
                         onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
                         onRecordings = onRecordings,
+                        onRemoteButtons = onRemoteButtons,
                     )
                 }
             }

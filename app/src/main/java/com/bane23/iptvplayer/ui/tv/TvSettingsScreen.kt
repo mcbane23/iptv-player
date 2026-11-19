@@ -62,6 +62,7 @@ fun TvSettingsScreen(
     onTrakt: (() -> Unit)? = null,
     onOpenSubtitles: (() -> Unit)? = null,
     onRecordings: (() -> Unit)? = null,
+    onRemoteButtons: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -169,6 +170,17 @@ fun TvSettingsScreen(
                             onClick = onRecordings,
                             onFocused = {
                                 focusedChoice = RECORDINGS_ROW
+                                openChoice = null
+                            },
+                        )
+                    }
+                    if (onRemoteButtons != null) {
+                        TvTextRow(
+                            text = stringResource(R.string.remote_buttons_title),
+                            trailing = "›",
+                            onClick = onRemoteButtons,
+                            onFocused = {
+                                focusedChoice = REMOTE_BUTTONS_ROW
                                 openChoice = null
                             },
                         )
@@ -445,6 +457,7 @@ private fun FocusedSummary(
         TRAKT_ROW -> stringResource(R.string.settings_trakt_summary)
         OPENSUBTITLES_ROW -> stringResource(R.string.settings_opensubtitles_summary)
         RECORDINGS_ROW -> stringResource(R.string.settings_recordings_summary)
+        REMOTE_BUTTONS_ROW -> stringResource(R.string.settings_remote_buttons_summary)
         TV_PREVIEW_ROW -> stringResource(R.string.settings_tv_preview_summary)
         VOD_PREVIEW_ROW -> stringResource(R.string.settings_tv_vod_preview_summary)
         UPDATE_CHECK_ROW -> stringResource(R.string.update_check_summary)
@@ -501,6 +514,7 @@ private const val UPDATE_CHECK_ROW = -17
 private const val WATCH_NEXT_ROW = -18
 private const val BLACK_THEME_ROW = -19
 private const val PAUSE_INFO_ROW = -20
+private const val REMOTE_BUTTONS_ROW = -21
 
 /** Tipografija Podešavanja: tekst redova, vrednosti i naslovi grupa su za jedan stepen sitniji. */
 @Composable

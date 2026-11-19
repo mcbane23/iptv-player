@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.bane23.iptvplayer.domain.RemoteAction
+import com.bane23.iptvplayer.domain.RemoteButton
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
@@ -323,6 +325,17 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     suspend fun setDownloadOnMobile(enabled: Boolean) {
         dataStore.edit { it[DOWNLOAD_ON_MOBILE] = enabled }
     }
+
+    /** Šta koje dugme daljinskog radi u plejeru kanala na TV-u; nepodešena dugmad imaju podrazumevanu radnju. */
+    val remoteButtons: Flow<Map<RemoteButton, RemoteAction>> = dataStore.data.map { prefs ->
+        RemoteButton.entries.associateWith { RemoteAction.of(prefs[remoteButtonKey(it)], it) }
+    }.distinctUntilChanged()
+
+    suspend fun setRemoteButton(button: RemoteButton, action: RemoteAction) {
+        dataStore.edit { it[remoteButtonKey(button)] = action.name }
+    }
+
+    private fun remoteButtonKey(button: RemoteButton) = stringPreferencesKey("remote_button_${button.name.lowercase()}")
 
     /** Ekran pauze: posle nekoliko sekundi pauze naslov, opis i sat umesto kontrola. */
     val pauseInfo: Flow<Boolean> = dataStore.data.map { it[PAUSE_INFO] ?: true }.distinctUntilChanged()

@@ -120,6 +120,10 @@ data object CastPlayback : NavKey
 @Serializable
 data object Recordings : NavKey
 
+/** Podešavanje šta koje dugme daljinskog radi u plejeru kanala (TV). */
+@Serializable
+data object RemoteButtons : NavKey
+
 /** Filmovi i epizode preuzeti na telefon. */
 @Serializable
 data object Downloads : NavKey
