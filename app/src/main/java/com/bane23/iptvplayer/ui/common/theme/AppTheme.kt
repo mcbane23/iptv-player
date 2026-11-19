@@ -10,6 +10,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import com.bane23.iptvplayer.R
 
 /**
@@ -78,6 +82,41 @@ fun Modifier.neonBackdrop(neon: NeonStyle?, active: Boolean, width: Dp, height: 
             }
         }
     }
+
+/**
+ * Blago neonsko svetlo oko izabranog čipa kad je [active] i tema je neonska: nekoliko providnih
+ * zaobljenih slojeva akcentne boje koji se šire od ivice čipa i bledi ka spolja, bez okvira.
+ * [corner] je zaobljenje samog čipa (null = poluvisina, za čip u obliku pilule). [height] je
+ * visina vidljivog čipa kad je element viši od njega (Material čip dobija 48 dp za dodir), pa se
+ * svetlo centrira po visini. Stoji pre clip-a.
+ */
+fun Modifier.neonHalo(neon: NeonStyle?, active: Boolean, corner: Dp? = null, height: Dp? = null): Modifier =
+    if (neon == null || !active) {
+        this
+    } else {
+        drawWithCache {
+            val step = HALO_STEP.toPx()
+            val color = neon.glow.copy(alpha = HALO_LAYER_ALPHA)
+            val chipHeight = height?.toPx()?.coerceAtMost(size.height) ?: size.height
+            val top = (size.height - chipHeight) / 2f
+            val baseCorner = corner?.toPx() ?: (chipHeight / 2f)
+            onDrawBehind {
+                for (i in HALO_LAYERS downTo 1) {
+                    val grow = step * i
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(-grow, top - grow),
+                        size = Size(size.width + grow * 2, chipHeight + grow * 2),
+                        cornerRadius = CornerRadius(baseCorner + grow),
+                    )
+                }
+            }
+        }
+    }
+
+private const val HALO_LAYERS = 6
+private val HALO_STEP = 2.5.dp
+private const val HALO_LAYER_ALPHA = 0.022f
 
 private const val BACKDROP_CORE_ALPHA = 0.14f
 private const val BACKDROP_MID_ALPHA = 0.05f
