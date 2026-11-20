@@ -744,6 +744,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       profil za kod same aplikacije (`app/src/main/baseline-prof.txt`, jedno pravilo za ceo paket). Android ga
       prevodi u pozadini dok uređaj miruje, pa se razlika vidi tek posle toga. Snimanje profila na emulatoru u
       CI nije rađeno (produžava svaki build)
+- [x] Telefon nalazi TV i bez oglašavanja u mreži (Bane, 20. 11. 2026; prenos na TV i slanje na TV): TV sluša
+      na stalnom portu kad je slobodan, a telefon uz mDNS pita i adrese u svom delu kućne mreže (`LanScan`).
+      Radi kad su i telefon i TV na ovoj verziji
+- [x] Meni posle dugog OK na TV-u ne bira prvu stavku kad se taster pusti (OK važi tek od novog pritiska)
 
 ## 7. Testiranje
 

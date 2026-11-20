@@ -43,11 +43,18 @@ class CastServer(private val handler: CastHandler) {
     private var serverSocket: ServerSocket? = null
     private var executor: ExecutorService? = null
 
-    /** Pokreće server na slobodnom portu i vraća taj port. */
+    /**
+     * Pokreće server i vraća njegov port. Prvo se proba stalni port [LanScan.PORT], da telefon nađe TV
+     * i u mreži koja ne propušta oglašavanje; ako je zauzet, uzima se bilo koji slobodan.
+     */
     @Synchronized
     fun start(): Int {
         serverSocket?.let { return it.localPort }
-        val socket = ServerSocket(0)
+        val socket = try {
+            ServerSocket(LanScan.PORT)
+        } catch (_: IOException) {
+            ServerSocket(0)
+        }
         val pool = Executors.newCachedThreadPool { task -> Thread(task, "cast-http").apply { isDaemon = true } }
         serverSocket = socket
         executor = pool
