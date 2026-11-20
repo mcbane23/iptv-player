@@ -1,0 +1,9 @@
+Kanal može da se sakrije dugim pritiskom, a vraća se u Podešavanjima > Sakriveni kanali
+PIN sada štiti i zaključane kategorije i snimke
+Glasovna pretraga na TV-u i spisak nedavnih pretraga
+Prenos sa telefona na TV nosi i imenovane liste favorita, a telefon pouzdanije nalazi TV
+Preuzete epizode idu jedna za drugom i bez interneta
+Multi view: favoriti su na vrhu izbora kanala, a izabrano polje ima samo okvir, bez zatamnjenja
+Lista kanala na TV-u više ne zastaje dok se drži Dole ili Gore
+Brži prelazi između ekrana na telefonu i brže pokretanje aplikacije
+Izveštaj o grešci: ako se aplikacija neočekivano zatvori, zapis ostaje na uređaju i možete ga podeliti
