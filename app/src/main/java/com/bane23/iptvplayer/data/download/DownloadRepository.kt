@@ -12,6 +12,7 @@ import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.storage.PublicFolder
 import com.bane23.iptvplayer.data.xtream.Episode
+import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.domain.StreamSource
 import com.bane23.iptvplayer.player.PlaybackActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -333,6 +334,14 @@ class DownloadRepository @Inject constructor(
         val playlistId = settings.activePlaylistId.first() ?: return@withContext null
         val kind = if (episode) DownloadEntity.KIND_EPISODE else DownloadEntity.KIND_MOVIE
         dao.find(playlistId, kind, itemId)?.let(::fileSource)
+    }
+
+    /**
+     * Serija sastavljena od epizoda koje su preuzete i čiji fajl još postoji, za nastavak gledanja bez
+     * interneta; null kad takvih nema.
+     */
+    suspend fun offlineSeries(playlistId: Long, seriesId: Long): SeriesDetails? = withContext(Dispatchers.IO) {
+        DownloadRules.offlineSeries(dao.doneEpisodes(playlistId, seriesId).filter { fileSource(it) != null })
     }
 
     /** Izvor za puštanje preuzetog fajla, ili null kad nije ceo ili ga više nema. */

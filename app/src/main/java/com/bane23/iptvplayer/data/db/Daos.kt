@@ -777,6 +777,10 @@ interface DownloadDao {
     @Query("SELECT * FROM downloads WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun find(playlistId: Long, kind: String, itemId: Long): DownloadEntity?
 
+    /** Do kraja preuzete epizode jedne serije. */
+    @Query("SELECT * FROM downloads WHERE playlistId = :playlistId AND kind = 'episode' AND seriesId = :seriesId AND status = 'done'")
+    suspend fun doneEpisodes(playlistId: Long, seriesId: Long): List<DownloadEntity>
+
     /** Sledeće na redu: najstarije koje čeka. */
     @Query("SELECT * FROM downloads WHERE status = 'queued' ORDER BY createdAt, id LIMIT 1")
     suspend fun nextQueued(): DownloadEntity?

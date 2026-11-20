@@ -280,7 +280,11 @@ class VodPlayerViewModel @Inject constructor(
             if (ownList && episode && seriesId != null) {
                 // Ne čeka se: bez interneta ovo ne uspe, a epizoda sa uređaja svejedno kreće.
                 launch {
-                    val details = runCatching { repository.series(seriesId) }.getOrNull() ?: return@launch
+                    // Bez interneta se spisak epizoda sastavlja od preuzetih, da „Sledeća” i kartica na kraju
+                    // epizode rade i tada. Ništa se ne preuzima samo od sebe.
+                    val details = runCatching { repository.series(seriesId) }.getOrNull()
+                        ?: downloads.offlineSeries(row.playlistId, seriesId)
+                        ?: return@launch
                     val current = details.episodes.firstOrNull { it.id == row.itemId } ?: return@launch
                     series = details
                     _ui.update {
