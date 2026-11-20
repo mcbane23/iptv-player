@@ -70,6 +70,8 @@ fun TvStartScreen(
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val channelRow by viewModel.channelRow.collectAsStateWithLifecycle()
     val added by viewModel.added.collectAsStateWithLifecycle()
+    val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
+    val favoriteSeries by viewModel.favoriteSeries.collectAsStateWithLifecycle()
     val now by rememberNow()
     var menuContinue by remember { mutableStateOf<ContinueItem?>(null) }
     // Posle sklanjanja stavke fokus se vraća u redove, da ne ode u bočni meni.
@@ -166,6 +168,8 @@ fun TvStartScreen(
                                 poster = item.poster,
                                 onClick = { onOpenVod(item, false) },
                                 onFocused = {},
+                                favorite = item.id in favoriteMovies,
+                                onToggleFavorite = { viewModel.toggleFavorite(item, series = false) },
                                 modifier = Modifier.width(POSTER_WIDTH),
                             )
                         }
@@ -181,6 +185,8 @@ fun TvStartScreen(
                                 poster = item.poster,
                                 onClick = { onOpenVod(item, true) },
                                 onFocused = {},
+                                favorite = item.id in favoriteSeries,
+                                onToggleFavorite = { viewModel.toggleFavorite(item, series = true) },
                                 modifier = Modifier.width(POSTER_WIDTH),
                             )
                         }

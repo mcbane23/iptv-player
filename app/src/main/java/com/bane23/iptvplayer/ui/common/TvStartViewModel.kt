@@ -10,6 +10,7 @@ import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.repo.mergeContinue
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.ui.common.vod.vodFavoriteIds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -150,6 +151,18 @@ class TvStartViewModel @Inject constructor(
         throw e
     } catch (_: Exception) {
         null
+    }
+
+    /** Omiljeni filmovi i serije, za zvezdicu na posteru. */
+    val favoriteMovies: StateFlow<Set<Long>> = vodFavoriteIds(vod, VodKind.MOVIES)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    val favoriteSeries: StateFlow<Set<Long>> = vodFavoriteIds(vod, VodKind.SERIES)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** Dodaje film ili seriju u omiljene, odnosno uklanja (dugi OK na posteru). */
+    fun toggleFavorite(item: VodItem, series: Boolean) {
+        val favorite = item.id in (if (series) favoriteSeries else favoriteMovies).value
+        viewModelScope.launch { vod.toggleFavorite(if (series) VodKind.SERIES else VodKind.MOVIES, item, favorite) }
     }
 
     fun dismissContinue(item: ContinueItem) {

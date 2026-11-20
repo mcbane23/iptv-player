@@ -116,6 +116,8 @@ fun TvVodScreen(
     // Stavka koja čeka sklanjanje i poster na koji fokus prelazi pre nego što njen poster nestane.
     var pendingDismiss by remember { mutableStateOf<ContinueItem?>(null) }
     var dismissFocusId by remember { mutableStateOf<Long?>(null) }
+    // Film ili serija koja čeka uklanjanje iz Favorita dok fokus ne pređe na susedni poster.
+    var pendingUnfavorite by remember { mutableStateOf<VodItem?>(null) }
 
     LaunchedEffect(pendingDismiss) {
         val item = pendingDismiss ?: return@LaunchedEffect
@@ -130,6 +132,37 @@ fun TvVodScreen(
         dismissFocusId = null
         focusTargetId = null
         pendingDismiss = null
+    }
+    // Uklanjanje iz Favorita dugim OK: fokus prvo pređe na sledeći poster (ako on nije na ekranu, na
+    // prethodni), a kad je poster jedini, na red „Favoriti”; tek onda poster nestane.
+    LaunchedEffect(pendingUnfavorite) {
+        val item = pendingUnfavorite ?: return@LaunchedEffect
+        val index = favorites.indexOfFirst { it.id == item.id }
+        val neighbors = listOfNotNull(favorites.getOrNull(index + 1), favorites.getOrNull(index - 1))
+        var moved = false
+        for (neighbor in neighbors) {
+            dismissFocusId = neighbor.id
+            var attempts = 0
+            while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+                delay(FOCUS_RESTORE_STEP_MS)
+                moved = moveFocus.tryRequestFocus()
+                attempts++
+            }
+            if (moved) break
+        }
+        dismissFocusId = null
+        if (!moved) {
+            focusTargetId = FAVORITES_ID
+            var attempts = 0
+            while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+                delay(FOCUS_RESTORE_STEP_MS)
+                moved = moveFocus.tryRequestFocus()
+                attempts++
+            }
+            focusTargetId = null
+        }
+        viewModel.toggleFavorite(item)
+        pendingUnfavorite = null
     }
     menuContinue?.let { item ->
         TvActionDialog(
@@ -378,15 +411,19 @@ fun TvVodScreen(
                                 PosterCard(
                                     name = item.name,
                                     poster = item.poster,
-                                    // Odavde se ne uklanja dugim pritiskom: poster bi nestao zajedno sa fokusom.
                                     favorite = true,
                                     watched = watched.of(item),
+                                    onLongClick = { if (pendingUnfavorite == null) pendingUnfavorite = item },
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
-                                    modifier = if (isLastItem(item.id) { lastItemId }) Modifier.focusRequester(posterFocus) else Modifier,
+                                    modifier = when {
+                                        item.id == dismissFocusId -> Modifier.focusRequester(moveFocus)
+                                        isLastItem(item.id) { lastItemId } -> Modifier.focusRequester(posterFocus)
+                                        else -> Modifier
+                                    },
                                 )
                             }
                         }
