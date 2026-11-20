@@ -97,7 +97,12 @@ fun MobileSendToTvScreen(
                 state.error == SendError.BAD_TARGET -> Body(stringResource(R.string.transfer_bad_target))
 
                 result != null -> {
-                    Body(stringResource(R.string.transfer_summary, result.added, result.existing, result.failed))
+                    if (result.loading > 0) {
+                        // TV je odmah potvrdio prijem; nove liste učitava sam, pa se ishod vidi na njemu.
+                        Body(stringResource(R.string.transfer_tv_loading, result.loading))
+                    } else {
+                        Body(stringResource(R.string.transfer_summary, result.added, result.existing, result.failed))
+                    }
                     result.openSubtitles?.let { ok ->
                         Body(stringResource(if (ok) R.string.transfer_opensubtitles_ok else R.string.transfer_opensubtitles_failed))
                     }

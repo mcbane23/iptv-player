@@ -11,7 +11,7 @@ import com.bane23.iptvplayer.data.lan.PairingTexts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferResult
 import com.bane23.iptvplayer.data.repo.PlaylistRepository
-import com.bane23.iptvplayer.data.repo.TransferRepository
+import com.bane23.iptvplayer.cast.CastReceiver
 import com.bane23.iptvplayer.domain.PlaylistDraft
 import com.bane23.iptvplayer.domain.PlaylistError
 import com.bane23.iptvplayer.domain.PlaylistError.Kind
@@ -54,7 +54,7 @@ data class PairingUiState(
 class PairingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: PlaylistRepository,
-    private val transfers: TransferRepository,
+    private val castReceiver: CastReceiver,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PairingUiState())
     val state: StateFlow<PairingUiState> = _state.asStateFlow()
@@ -119,22 +119,14 @@ class PairingViewModel @Inject constructor(
         }
     }
 
-    /** Paket sa svim listama iz aplikacije na telefonu. Poziva ga server na svojoj niti. */
+    /**
+     * Paket sa svim listama iz aplikacije na telefonu. Poziva ga server na svojoj niti. Ide istim
+     * putem kao prenos iz podešavanja telefona: telefonu se odgovara odmah, a nove liste TV učitava
+     * u pozadini i napredak pokazuje preko cele aplikacije, i kad se ovaj ekran zatvori.
+     */
     private fun receive(bundle: TransferBundle): TransferResult {
-        _state.update {
-            it.copy(working = true, addedName = null, transferResult = null, transferTotal = bundle.playlists.size)
-        }
-        return try {
-            val result = runBlocking {
-                transfers.importBundle(bundle) { step, total ->
-                    _state.update { it.copy(transferStep = step, transferTotal = total) }
-                }
-            }
-            _state.update { it.copy(transferResult = result) }
-            result
-        } finally {
-            _state.update { it.copy(working = false, transferStep = 0, transferTotal = 0) }
-        }
+        _state.update { it.copy(addedName = null, transferResult = null) }
+        return castReceiver.transfer(bundle)
     }
 
     override fun onCleared() {

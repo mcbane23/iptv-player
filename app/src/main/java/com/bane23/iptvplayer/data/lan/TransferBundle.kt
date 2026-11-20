@@ -164,6 +164,8 @@ data class TransferResult(
     /** Da li je nalog na TV-u povezan; null ako nije ni poslat (ili je na TV-u starija verzija). */
     val openSubtitles: Boolean? = null,
     val trakt: Boolean? = null,
+    /** Nove liste koje je TV primio i tek ih učitava u pozadini; ishod se vidi na TV-u. */
+    val loading: Int = 0,
 )
 
 object TransferCodec {

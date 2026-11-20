@@ -30,6 +30,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 
 /** Jedan zahtev za puštanje sa telefona; [id] raste, da se i isti sadržaj pusti ponovo. */
@@ -55,6 +61,8 @@ class CastReceiver @Inject constructor(
     private val nsd = context.getSystemService(Context.NSD_SERVICE) as? NsdManager
     private var registration: NsdManager.RegistrationListener? = null
     private var cachedKey: String? = null
+    private val importScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var loading: Job? = null
     private var nextId = 0
 
     private val _pairingCode = MutableStateFlow<String?>(null)
@@ -156,18 +164,38 @@ class CastReceiver @Inject constructor(
 
     override fun status(): CastStatus = status.value
 
-    /** Jedan po jedan: drugi paket čeka da se prvi primeni. */
+    /**
+     * Telefonu se odgovara čim je paket primljen i primenjeno sve što ne traži preuzimanje. Nove
+     * liste TV zatim učitava sam, u pozadini, a napredak i ishod pokazuje na svom ekranu. Jedan po
+     * jedan: drugi paket čeka da se prvi učita do kraja.
+     */
     @Synchronized
     override fun transfer(bundle: TransferBundle): TransferResult {
-        _transfer.value = IncomingTransfer(total = bundle.playlists.size)
-        return try {
-            runBlocking {
-                transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) }
-            }.also { _transfer.value = IncomingTransfer(result = it) }
+        runBlocking { loading?.join() }
+        _transfer.value = IncomingTransfer()
+        val pending = try {
+            runBlocking { transfers.beginImport(bundle) }
         } catch (e: Exception) {
             _transfer.value = null
             throw e
         }
+        if (pending.queued == 0) {
+            _transfer.value = IncomingTransfer(result = pending.result)
+        } else {
+            _transfer.value = IncomingTransfer(step = 1, total = pending.queued)
+            loading = importScope.launch {
+                val final = try {
+                    pending.finish { step, total -> _transfer.value = IncomingTransfer(step, total) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Ishod nije poznat; poruka se sklanja, a ono što je učitano ostaje.
+                    null
+                }
+                _transfer.value = final?.let { IncomingTransfer(result = it) }
+            }
+        }
+        return pending.result
     }
 
     /** Ključ ovog TV-a; pravi se jednom i čuva u podešavanjima. */

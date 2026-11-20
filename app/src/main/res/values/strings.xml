@@ -247,6 +247,7 @@
     <string name="transfer_send">Send to TV</string>
     <string name="transfer_sending">Sending… The TV is loading the playlists, which can take a few minutes. Keep this screen open.</string>
     <string name="transfer_summary">New playlists: %1$d · already on the TV: %2$d · failed: %3$d</string>
+    <string name="transfer_tv_loading">The TV has received everything. It is now loading the new playlists (%1$d) by itself; progress and the result are shown on the TV.</string>
     <string name="transfer_done_hint">You can continue on the TV.</string>
     <string name="transfer_nothing">There are no playlists on this phone that can be sent.</string>
     <string name="transfer_bad_target">This link is not valid. Scan the code on the TV again.</string>
