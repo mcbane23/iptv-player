@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +46,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Category
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.FavoriteList
@@ -144,6 +146,11 @@ fun TvLiveTvScreen(
     var favoritesMenu by remember { mutableStateOf(false) }
     var menuList by remember { mutableStateOf<FavoriteList?>(null) }
     var menuChannel by remember { mutableStateOf<Channel?>(null) }
+    // Sused kanala kome je otvoren meni: sledeći ispod, a za poslednji kanal onaj iznad njega.
+    var menuNeighbor by remember { mutableStateOf<ChannelNeighbor?>(null) }
+    // Kanal koji se vadi iz otvorene liste omiljenih; fokus prelazi na suseda umesto da se izgubi sa redom.
+    var pendingRemoval by remember { mutableStateOf<ChannelRemoval?>(null) }
+    val focusManager = LocalFocusManager.current
     var hiddenCount by remember { mutableStateOf(0) }
     val hiddenChannels: HiddenChannelsViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -257,7 +264,15 @@ fun TvLiveTvScreen(
             ),
             onSelect = { option ->
                 if (option == 0) {
-                    favoriteLists.favoriteAction(channel.id)
+                    if (state.isFavoritesGroup(selectedCategory)) {
+                        // Bez imenovanih lista kanal odmah izlazi iz „Omiljenih”: fokus se prvo pomeri,
+                        // pa se kanal tek onda ukloni. Sa listama se otvara izbor i čeka se šta će biti.
+                        val direct = state.favoriteLists.isEmpty()
+                        pendingRemoval = ChannelRemoval(channel.id, menuNeighbor, direct)
+                        if (!direct) favoriteLists.favoriteAction(channel.id)
+                    } else {
+                        favoriteLists.favoriteAction(channel.id)
+                    }
                 } else {
                     hiddenChannels.hide(channel.id)
                     hiddenCount++
@@ -578,7 +593,15 @@ fun TvLiveTvScreen(
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
-                            onLongClick = { channel?.let { menuChannel = it } },
+                            onLongClick = {
+                                channel?.let {
+                                    val below = if (index + 1 < channels.itemCount) channels.peek(index + 1) else null
+                                    val above = if (index > 0) channels.peek(index - 1) else null
+                                    menuNeighbor = below?.let { next -> ChannelNeighbor(next.id, below = true) }
+                                        ?: above?.let { previous -> ChannelNeighbor(previous.id, below = false) }
+                                    menuChannel = it
+                                }
+                            },
                             onFocused = {
                                 focusedRow[0] = index
                                 channel?.let {
@@ -676,6 +699,41 @@ fun TvLiveTvScreen(
                         .weight(0.32f)
                         .fillMaxHeight(),
                 )
+                // Kanal izvađen iz otvorene liste omiljenih: fokus ostaje među kanalima, na sledećem ispod
+                // (za poslednji kanal na onom iznad), a kad lista ostane prazna ide na red „Omiljeni”.
+                val pick by favoriteLists.pick.collectAsStateWithLifecycle()
+                val pickOpen = pick != null
+                val menuOpen = menuChannel != null
+                val removal = pendingRemoval
+                val removalGone = removal != null && channels.itemSnapshotList.none { it?.id == removal.channelId }
+                LaunchedEffect(removal, removalGone, pickOpen, menuOpen) {
+                    if (removal == null || menuOpen) return@LaunchedEffect
+                    val neighbor = removal.neighbor
+                    if (removal.direct) {
+                        val moved = neighbor != null &&
+                            focusManager.moveFocus(if (neighbor.below) FocusDirection.Down else FocusDirection.Up)
+                        if (!moved) firstFocus.tryRequestFocus()
+                        favoriteLists.favoriteAction(removal.channelId)
+                        pendingRemoval = null
+                    } else if (removalGone) {
+                        // Red je nestao dok je izbor liste otvoren. Fokus se vraća odmah, i još jednom kad
+                        // se izbor zatvori, jer prozor tada ponovo traži fokus.
+                        lastChannelId = neighbor?.id
+                        var moved = false
+                        var attempts = 0
+                        while (neighbor != null && !moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+                            moved = channelFocus.tryRequestFocus()
+                            if (!moved) delay(FOCUS_RESTORE_STEP_MS)
+                            attempts++
+                        }
+                        if (!moved) firstFocus.tryRequestFocus()
+                        if (!pickOpen) pendingRemoval = null
+                    } else if (!pickOpen) {
+                        // Izbor se još nije otvorio, ili je zatvoren a kanal je ostao u listi.
+                        delay(REMOVAL_WAIT_MS)
+                        pendingRemoval = null
+                    }
+                }
                 // Posle povratka iz plejera fokus ide na kanal koji je gledan, inače na izabranu kategoriju.
                 LaunchedEffect(Unit) {
                     if (lastChannelId != null) {
@@ -705,6 +763,12 @@ fun TvLiveTvScreen(
 /** Zahtev za prozor sa imenom liste: [list] je null za novu listu. */
 private data class ListNameRequest(val list: FavoriteList?)
 
+/** Kanal [id] pored kanala kome je otvoren meni; [below] kaže da je ispod njega. */
+private data class ChannelNeighbor(val id: Long, val below: Boolean)
+
+/** Kanal [channelId] koji izlazi iz otvorene liste omiljenih; [direct] kad izlazi odmah, bez izbora liste. */
+private data class ChannelRemoval(val channelId: Long, val neighbor: ChannelNeighbor?, val direct: Boolean)
+
 private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 
@@ -713,6 +777,7 @@ private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
 private const val MOVE_SETTLE_MS = 150L
+private const val REMOVAL_WAIT_MS = 1500L
 
 /** Prigušen program dok se učitava program novog kanala. */
 private const val STALE_ALPHA = 0.4f

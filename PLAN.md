@@ -731,6 +731,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       na TV-u) otvara meni sa stavkom „Sakrij kanal”; na TV-u je to isti meni kao za omiljene. Sakriven kanal se
       ne vidi nigde (kategorija, Svi, Omiljeni, pretraga, vodič, prebacivanje kanala), a vraća se iz Podešavanja,
       stavka „Sakriveni kanali”. Baza v19: tabela `hidden_channels`, po stalnom ključu kanala
+- [x] TV, Uživo: kad se kanal izvadi iz otvorene liste omiljenih, fokus ostaje među kanalima (Bane, 20. 11.
+      2026): prelazi na sledeći kanal ispod, za poslednji u listi na onaj iznad, a kad lista ostane prazna na red
+      „Omiljeni”. Ranije je fokus odlazio na bočni meni
 - [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
       pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
       preuzima samo od sebe
