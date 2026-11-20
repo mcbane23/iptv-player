@@ -147,6 +147,7 @@ object AppIcons {
             "11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z",
     )
     val Add by icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
+    val Remove by icon("M19 13H5v-2h14v2z")
     val ArrowDown by icon("M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z")
     val ArrowUp by icon("M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z")
     val DragHandle by icon("M20 9H4v2h16V9zM4 15h16v-2H4v2z")

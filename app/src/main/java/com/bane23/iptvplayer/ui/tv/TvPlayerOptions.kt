@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +23,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
@@ -28,9 +31,12 @@ import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.TrackOption
 import com.bane23.iptvplayer.data.subtitles.SubtitleResult
 import com.bane23.iptvplayer.ui.common.SettingChoice
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.StepChoice
 import com.bane23.iptvplayer.ui.common.subtitles.details
 import com.bane23.iptvplayer.ui.common.subtitles.message
 import com.bane23.iptvplayer.ui.common.vod.OnlineSubtitlesState
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 
 /** Koji spisak zapisa je otvoren preko slike. */
@@ -50,6 +56,8 @@ fun TvTrackPanel(
     modifier: Modifier = Modifier,
     /** Kad je zadato, spisak titlova na dnu ima stavku „Potraži online”. */
     onSearchOnline: (() -> Unit)? = null,
+    /** Redovi ispod spiska titlova čija se vrednost menja strelicama levo i desno (veličina, pomeranje). */
+    steps: List<StepChoice> = emptyList(),
 ) {
     val selectedFocus = remember { FocusRequester() }
     // Za titlove je prva stavka „Isključeno”, pa se ostale pomeraju za jedan.
@@ -111,9 +119,64 @@ fun TvTrackPanel(
                 )
             }
         }
+        if (kind == TvTrackKind.SUBTITLES) {
+            items(steps.size) { index ->
+                TvStepRow(steps[index], modifier = if (index == 0) Modifier.padding(top = 10.dp) else Modifier)
+            }
+        }
     }
     // Prazan spisak nema šta da primi fokus; zatvara se tasterom Nazad.
     LaunchedEffect(kind) { selectedFocus.tryRequestFocus() }
+}
+
+/**
+ * Red sa jednom vrednošću: dok je u fokusu, strelica levo je korak naniže, a desno korak naviše.
+ * OK ne radi ništa, da se vrednost ne promeni slučajno. Strelica je bleda kad dalje ne može.
+ */
+@Composable
+private fun TvStepRow(choice: StepChoice, modifier: Modifier = Modifier) {
+    TvListRow(
+        onClick = {},
+        modifier = modifier.onPreviewKeyEvent { event ->
+            val native = event.nativeKeyEvent
+            val delta = when (native.keyCode) {
+                AndroidKeyEvent.KEYCODE_DPAD_LEFT -> -1
+                AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> 1
+                else -> return@onPreviewKeyEvent false
+            }
+            if (native.action == AndroidKeyEvent.ACTION_DOWN) choice.onStep(delta)
+            true
+        },
+    ) { color ->
+        Text(
+            text = choice.title,
+            color = color,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = AppIcons.ChevronLeft,
+            contentDescription = null,
+            tint = color.copy(alpha = if (choice.canDecrease) 1f else 0.3f),
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = choice.value,
+            color = color,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            modifier = Modifier.widthIn(min = 84.dp),
+        )
+        Icon(
+            imageVector = AppIcons.ChevronRight,
+            contentDescription = null,
+            tint = color.copy(alpha = if (choice.canIncrease) 1f else 0.3f),
+            modifier = Modifier.size(18.dp),
+        )
+    }
 }
 
 /** Kratak spisak izbora preko slike (npr. trajanje snimanja). OK bira i zatvara, Nazad samo zatvara. */

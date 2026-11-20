@@ -59,6 +59,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
+import com.bane23.iptvplayer.ui.common.player.subtitleStepChoices
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
@@ -477,6 +478,11 @@ fun TvVodPlayerScreen(
                     } else {
                         null
                     },
+                    steps = if (kind == TvTrackKind.SUBTITLES) {
+                        subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle)
+                    } else {
+                        emptyList()
+                    },
                 )
             }
             if (settingsOpen) {
@@ -489,8 +495,6 @@ fun TvVodPlayerScreen(
                         onDecoder = viewModel::setDecoder,
                         speed = ui.speed,
                         onSpeed = viewModel::setSpeed,
-                        subtitleOffsetMs = ui.subtitleOffsetMs,
-                        onShiftSubtitle = viewModel::shiftSubtitle,
                     ),
                     modifier = Modifier.align(Alignment.CenterEnd),
                 )

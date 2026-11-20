@@ -616,8 +616,10 @@
     <string name="search_recent_clear_all">Obriši nedavne pretrage</string>
     <string name="search_voice">Glasom</string>
     <string name="search_on_air">u toku, do %1$s</string>
-    <string name="subtitle_shift_earlier">Titl ranije</string>
-    <string name="subtitle_shift_later">Titl kasnije</string>
+    <string name="subtitle_step_size">Veličina</string>
+    <string name="subtitle_step_shift">Pomeranje</string>
+    <string name="step_decrease">Smanji: %1$s</string>
+    <string name="step_increase">Povećaj: %1$s</string>
     <string name="subtitle_shift_value">%1$s s</string>
     <string name="live_preview_hint">Dodirni kanal da ga vidiš u pregledu.</string>
     <string name="live_preview_hint_tv">Izaberi kanal da ga vidiš u pregledu.</string>
