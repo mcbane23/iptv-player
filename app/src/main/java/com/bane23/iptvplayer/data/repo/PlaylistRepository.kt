@@ -73,7 +73,10 @@ class PlaylistRepository @Inject constructor(
     private val categoryDao = db.categoryDao()
     private val channelDao = db.channelDao()
 
-    /** Liste čije je brisanje u toku. Brisanje velike liste traje, pa se ona odmah sklanja iz prikaza. */
+    /**
+     * Liste čije je brisanje u toku ili završeno. Brisanje velike liste traje, pa se ona odmah sklanja
+     * iz prikaza i više se u njega ne vraća.
+     */
     private val deleting = MutableStateFlow<Set<Long>>(emptySet())
 
     /** Brisanje ne sme da stane na pola kad korisnik napusti ekran, pa ne zavisi od ekrana. */
@@ -225,8 +228,13 @@ class PlaylistRepository @Inject constructor(
                 settings.clearPlaylistCategoryPrefs(id)
                 vodDiskCache.clear(id)
                 if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
-            } finally {
+                // Posle uspešnog brisanja lista ostaje u `deleting`: baza javlja novi spisak sa malim
+                // zakašnjenjem, pa bi se obrisana lista inače na tren vratila u prikaz. Id se ne
+                // dodeljuje ponovo (AUTOINCREMENT), pa ne može da sakrije neku novu listu.
+            } catch (e: Throwable) {
+                // Brisanje nije uspelo: lista i dalje postoji, pa se vraća u prikaz.
                 deleting.update { it - id }
+                throw e
             }
         }.join()
     }
