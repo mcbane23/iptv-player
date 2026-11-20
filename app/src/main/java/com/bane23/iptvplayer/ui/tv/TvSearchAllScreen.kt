@@ -1,6 +1,16 @@
 package com.bane23.iptvplayer.ui.tv
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
@@ -57,8 +67,37 @@ fun TvSearchAllScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.notice)
+    val recent by viewModel.recent.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
+    val listFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
     val now = System.currentTimeMillis()
+    // Posle izabranog nedavnog ili izgovorenog upita fokus prelazi na prvi rezultat čim stigne.
+    var focusResults by remember { mutableStateOf(false) }
+    val showRecent = state.query.isBlank() && recent.isNotEmpty()
+    val play: (Long) -> Unit = { id ->
+        viewModel.remember()
+        onPlay(id)
+    }
+    val openVod: (VodItem, Boolean) -> Unit = { item, series ->
+        viewModel.remember()
+        onOpenVod(item, series)
+    }
+
+    // Glasovna pretraga preko sistemskog prepoznavanja govora; aplikacija sama ništa ne snima.
+    val context = LocalContext.current
+    val voiceIntent = remember {
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    }
+    val canVoice = remember { voiceIntent.resolveActivity(context.packageManager) != null }
+    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()
+        if (result.resultCode == Activity.RESULT_OK && !spoken.isNullOrEmpty()) {
+            focusResults = true
+            viewModel.submit(spoken)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,32 +110,71 @@ fun TvSearchAllScreen(
             title = stringResource(R.string.action_search),
             modifier = Modifier.padding(bottom = 16.dp),
         )
-        OutlinedTextField(
-            value = state.query,
-            onValueChange = viewModel::setQuery,
-            placeholder = { androidx.compose.material3.Text(stringResource(R.string.search_all_hint)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
-                .focusRequester(fieldFocus),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(0.7f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = state.query,
+                onValueChange = viewModel::setQuery,
+                placeholder = { androidx.compose.material3.Text(stringResource(R.string.search_all_hint)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    viewModel.remember()
+                    keyboard?.hide()
+                }),
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(fieldFocus),
+            )
+            if (canVoice) {
+                TvButton(onClick = { runCatching { voice.launch(voiceIntent) } }) {
+                    Icon(AppIcons.Mic, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(text = stringResource(R.string.search_voice), modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
         when {
             state.nothingFound -> TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty_vod))
             state.searching && state.channels.isEmpty() ->
                 TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_all_searching))
-            state.searched.isEmpty() -> TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_all_intro))
+            state.searched.isEmpty() && !showRecent ->
+                TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_all_intro))
         }
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth(0.7f)
-                .padding(top = 12.dp),
+                .padding(top = 12.dp)
+                .focusRequester(listFocus),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            if (showRecent) {
+                item(key = "h-recent") { GroupTitle(stringResource(R.string.search_recent), recent.size) }
+                items(recent, key = { "q$it" }) { query ->
+                    TvListRow(onClick = {
+                        focusResults = true
+                        viewModel.submit(query)
+                    }) { color ->
+                        RowIcon(AppIcons.History, color)
+                        RowText(query, color, Modifier.weight(1f))
+                    }
+                }
+                item(key = "q-clear") {
+                    TvListRow(onClick = {
+                        viewModel.clearRecent()
+                        fieldFocus.tryRequestFocus()
+                    }) { color ->
+                        RowIcon(AppIcons.Delete, color)
+                        RowText(stringResource(R.string.search_recent_clear_all), color, Modifier.weight(1f))
+                    }
+                }
+            }
             if (state.channels.isNotEmpty()) {
                 item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                 items(state.channels, key = { "c${it.id}" }) { channel ->
-                    TvListRow(onClick = { onPlay(channel.id) }) { color ->
+                    TvListRow(onClick = { play(channel.id) }) { color ->
                         ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
                         RowText(channel.name, color, Modifier.weight(1f))
                     }
@@ -107,7 +185,7 @@ fun TvSearchAllScreen(
                 items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
                     val onAir = hit.startMs <= now
                     val reminded = hit.key in reminders
-                    TvListRow(onClick = { if (onAir) onPlay(hit.channelId) else viewModel.toggleReminder(hit) }) { color ->
+                    TvListRow(onClick = { if (onAir) play(hit.channelId) else viewModel.toggleReminder(hit) }) { color ->
                         RowIcon(AppIcons.Guide, color)
                         RowText(if (reminded) "🔔 ${hit.title}" else hit.title, color, Modifier.weight(1f))
                         Text(
@@ -133,15 +211,27 @@ fun TvSearchAllScreen(
             }
             if (state.movies.isNotEmpty()) {
                 item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
-                item(key = "r-movies") { PosterRow(state.movies) { onOpenVod(it, false) } }
+                item(key = "r-movies") { PosterRow(state.movies) { openVod(it, false) } }
             }
             if (state.series.isNotEmpty()) {
                 item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
-                item(key = "r-series") { PosterRow(state.series) { onOpenVod(it, true) } }
+                item(key = "r-series") { PosterRow(state.series) { openVod(it, true) } }
             }
         }
     }
     LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
+    val hasResults = state.channels.isNotEmpty() || state.programs.isNotEmpty() ||
+        state.movies.isNotEmpty() || state.series.isNotEmpty()
+    LaunchedEffect(focusResults, hasResults, state.searching) {
+        if (!focusResults) return@LaunchedEffect
+        if (hasResults) {
+            if (listFocus.tryRequestFocus()) focusResults = false
+        } else if (!state.searching && state.searched.isNotEmpty()) {
+            // Ništa nije nađeno: fokus se vraća na polje, da daljinski ne ostane bez fokusa.
+            focusResults = false
+            fieldFocus.tryRequestFocus()
+        }
+    }
 }
 
 /** Naslov grupe sa brojem pogodaka, kao naslov nad kanalima u Uživo. */

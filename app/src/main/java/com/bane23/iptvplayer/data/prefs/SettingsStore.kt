@@ -387,6 +387,18 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[TV_RAIL_ICONS_ONLY] = enabled }
     }
 
+    /** Nedavni upiti zajedničke pretrage, najnoviji prvi (vidi [RecentSearches]). */
+    val recentSearches: Flow<List<String>> =
+        dataStore.data.map { RecentSearches.decode(it[RECENT_SEARCHES]) }.distinctUntilChanged()
+
+    suspend fun addRecentSearch(query: String) {
+        dataStore.edit { it[RECENT_SEARCHES] = RecentSearches.encode(RecentSearches.add(RecentSearches.decode(it[RECENT_SEARCHES]), query)) }
+    }
+
+    suspend fun clearRecentSearches() {
+        dataStore.edit { it.remove(RECENT_SEARCHES) }
+    }
+
     /** Ime akcentne boje koju je korisnik izabrao (vidi `AccentColor`), ili null za podrazumevanu. */
     val accentColor: Flow<String?> = dataStore.data.map { it[ACCENT_COLOR] }.distinctUntilChanged()
 
@@ -506,6 +518,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val BLACK_THEME = booleanPreferencesKey("black_theme")
         val APP_THEME = stringPreferencesKey("app_theme")
         val TV_RAIL_ICONS_ONLY = booleanPreferencesKey("tv_rail_icons_only")
+        val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")

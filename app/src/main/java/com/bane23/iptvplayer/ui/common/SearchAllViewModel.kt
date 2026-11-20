@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.db.ChannelHit
 import com.bane23.iptvplayer.data.db.ProgramHit
+import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.reminder.Reminder
 import com.bane23.iptvplayer.data.reminder.ReminderRepository
 import com.bane23.iptvplayer.data.repo.ChannelRepository
@@ -55,7 +56,12 @@ class SearchAllViewModel @Inject constructor(
     private val channels: ChannelRepository,
     private val vod: VodRepository,
     private val reminderRepository: ReminderRepository,
+    private val settings: SettingsStore,
 ) : ViewModel() {
+
+    /** Nedavni upiti, najnoviji prvi; prikazuju se dok je polje prazno. */
+    val recent: StateFlow<List<String>> = settings.recentSearches
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _state = MutableStateFlow(SearchAllUiState())
     val state: StateFlow<SearchAllUiState> = _state.asStateFlow()
@@ -75,11 +81,33 @@ class SearchAllViewModel @Inject constructor(
     /** Spiskovi filmova i serija sa nazivima spremnim za poređenje; učitavaju se pri prvoj pretrazi. */
     private val vodLists = HashMap<VodKind, List<Pair<String, VodItem>>>()
 
-    fun setQuery(text: String) {
+    /**
+     * Pamti trenutni upit među nedavnim. Poziva se kad korisnik potvrdi pretragu (taster na
+     * tastaturi, izgovoren upit) ili otvori neki rezultat, a ne pri svakom otkucanom slovu.
+     */
+    fun remember() {
+        val query = _state.value.query.trim()
+        if (query.length < MIN_QUERY) return
+        viewModelScope.launch { settings.addRecentSearch(query) }
+    }
+
+    fun clearRecent() {
+        viewModelScope.launch { settings.clearRecentSearches() }
+    }
+
+    /** Gotov upit (izabran među nedavnim ili izgovoren): traži odmah, bez čekanja na kucanje. */
+    fun submit(text: String) {
+        setQuery(text, wait = false)
+        remember()
+    }
+
+    fun setQuery(text: String) = setQuery(text, wait = true)
+
+    private fun setQuery(text: String, wait: Boolean) {
         _state.update { it.copy(query = text) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(SEARCH_DELAY_MS)
+            if (wait) delay(SEARCH_DELAY_MS)
             val query = text.trim()
             if (query.length < MIN_QUERY) {
                 _state.update { SearchAllUiState(query = it.query) }

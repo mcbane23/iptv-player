@@ -5,6 +5,11 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import com.bane23.iptvplayer.data.cast.CastCodec
 import com.bane23.iptvplayer.data.cast.CastCommand
+import com.bane23.iptvplayer.data.cast.CastInfo
+import com.bane23.iptvplayer.data.cast.LanScan
+import com.bane23.iptvplayer.data.lan.PairingServer
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import com.bane23.iptvplayer.data.cast.CastPairConfirm
 import com.bane23.iptvplayer.data.cast.CastPairResult
 import com.bane23.iptvplayer.data.cast.CastPlayRequest
@@ -67,6 +72,13 @@ class LanCastSender @Inject constructor(
         .connectTimeout(CONNECT_TIMEOUT_S, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_S, TimeUnit.SECONDS)
         .build()
+    // Kratki rokovi: pri pretrazi mreže većina adresa ne odgovara.
+    private val scanClient = httpClient.newBuilder()
+        .connectTimeout(SCAN_CONNECT_MS, TimeUnit.MILLISECONDS)
+        .readTimeout(SCAN_READ_MS, TimeUnit.MILLISECONDS)
+        .callTimeout(SCAN_CONNECT_MS + SCAN_READ_MS, TimeUnit.MILLISECONDS)
+        .retryOnConnectionFailure(false)
+        .build()
     private val nsd = context.getSystemService(Context.NSD_SERVICE) as? NsdManager
 
     private val _state = MutableStateFlow(CastState())
@@ -80,11 +92,15 @@ class LanCastSender @Inject constructor(
     private var key: String? = null
     private var pending: CastMedia? = null
     private var pollJob: Job? = null
+    private var scanJob: Job? = null
 
     fun startDiscovery() {
+        if (scanJob?.isActive != true) {
+            _picker.update { it.copy(devices = emptyList()) }
+            scanJob = scope.launch { scanLoop() }
+        }
         val manager = nsd ?: return
         if (discovery != null) return
-        _picker.update { it.copy(devices = emptyList()) }
         val listener = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(serviceType: String) = Unit
 
@@ -110,12 +126,57 @@ class LanCastSender @Inject constructor(
     }
 
     fun stopDiscovery() {
+        scanJob?.cancel()
+        scanJob = null
         val listener = discovery ?: return
         discovery = null
         try {
             nsd?.stopServiceDiscovery(listener)
         } catch (_: RuntimeException) {
             // pretraga nije ni krenula
+        }
+    }
+
+    /**
+     * Uz oglašavanje u mreži, telefon i sam pita adrese u svom delu kućne mreže na stalnom portu
+     * ([LanScan]). Tako nalazi TV i kad ruter ne propušta oglašavanje. Ponavlja se dok je spisak
+     * otvoren, sve ređe, jer TV može da se uključi i kasnije.
+     */
+    private suspend fun scanLoop() {
+        var pause = SCAN_FIRST_PAUSE_MS
+        while (true) {
+            val hosts = withContext(Dispatchers.IO) { PairingServer.localAddress() }?.let { LanScan.hosts(it) }.orEmpty()
+            if (hosts.isNotEmpty()) {
+                val limit = Semaphore(SCAN_PARALLEL)
+                kotlinx.coroutines.coroutineScope {
+                    for (host in hosts) {
+                        launch(Dispatchers.IO) { limit.withPermit { probe(host) } }
+                    }
+                }
+            }
+            delay(pause)
+            pause = (pause * 2).coerceAtMost(SCAN_MAX_PAUSE_MS)
+        }
+    }
+
+    /** Pita adresu „ko si”; ako odgovori ova aplikacija na TV-u, TV ide na spisak. */
+    private fun probe(host: String) {
+        val name = try {
+            val request = Request.Builder().url("http://$host:${LanScan.PORT}${CastServer.INFO_PATH}").build()
+            scanClient.newCall(request).execute().use { response ->
+                if (response.code != HTTP_OK) return
+                CastCodec.decode<CastInfo>(response.body.string())?.takeIf { it.app == CastInfo.APP }?.name
+            }
+        } catch (_: IOException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+        if (name.isNullOrBlank()) return
+        val found = LanDevice(name, host, LanScan.PORT)
+        _picker.update { state ->
+            // TV koji je već nađen oglašavanjem ostaje kakav jeste.
+            if (state.devices.any { it.name == found.name }) state else state.copy(devices = state.devices + found)
         }
     }
 
@@ -346,5 +407,10 @@ class LanCastSender @Inject constructor(
         const val MAX_MISSES = 5
         const val MAX_RESOLVE_ATTEMPTS = 10
         const val RESOLVE_RETRY_MS = 400L
+        const val SCAN_CONNECT_MS = 700L
+        const val SCAN_READ_MS = 1_500L
+        const val SCAN_PARALLEL = 32
+        const val SCAN_FIRST_PAUSE_MS = 4_000L
+        const val SCAN_MAX_PAUSE_MS = 20_000L
     }
 }

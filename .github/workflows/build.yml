@@ -103,6 +103,10 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
 
+      # Profil za brži start (biblioteke + app/src/main/baseline-prof.txt) mora da bude u APK-u.
+      - name: Profil u APK-u
+        run: python3 .github/scripts/profil.py app/build/outputs/apk/dev/app-dev.apk
+
       # Objavljen test build mora biti potpisan ključem za izdanja, inače ne bi mogao preko izdanja.
       - name: Provera potpisa
         if: github.ref == 'refs/heads/main'

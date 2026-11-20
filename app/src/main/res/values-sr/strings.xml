@@ -610,6 +610,10 @@
     <string name="search_all_searching">Tražim…</string>
     <string name="search_group_channels">Kanali</string>
     <string name="search_group_programs">U TV vodiču</string>
+    <string name="search_recent">Nedavne pretrage</string>
+    <string name="search_recent_clear">Obriši</string>
+    <string name="search_recent_clear_all">Obriši nedavne pretrage</string>
+    <string name="search_voice">Glasom</string>
     <string name="search_on_air">u toku, do %1$s</string>
     <string name="subtitle_shift_earlier">Titl ranije</string>
     <string name="subtitle_shift_later">Titl kasnije</string>

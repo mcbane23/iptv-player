@@ -734,6 +734,20 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
       pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
       preuzima samo od sebe
+- [x] Glasovna pretraga na TV-u (Bane, 20. 11. 2026; samo zajednička pretraga): dugme „Glasom” pored polja
+      otvara sistemsko prepoznavanje govora, pa odmah traži izgovoreno. Aplikacija ne snima i ne traži dozvolu
+      za mikrofon; na uređaju bez prepoznavanja govora dugmeta nema
+- [x] Nedavne pretrage (Bane, 20. 11. 2026; zajednička pretraga, telefon i TV): dok je polje prazno vidi se
+      poslednjih 8 upita, izbor odmah traži, uz „Obriši”. Upit se pamti kad se potvrdi na tastaturi, izgovori
+      ili kad se otvori neki rezultat. Čuva se samo na uređaju
+- [x] Brži start i prvo listanje (Bane, 20. 11. 2026): uz profile biblioteka, koje je APK već nosio, dodat je
+      profil za kod same aplikacije (`app/src/main/baseline-prof.txt`, jedno pravilo za ceo paket). Android ga
+      prevodi u pozadini dok uređaj miruje, pa se razlika vidi tek posle toga. Snimanje profila na emulatoru u
+      CI nije rađeno (produžava svaki build)
+- [x] Telefon nalazi TV i bez oglašavanja u mreži (Bane, 20. 11. 2026; prenos na TV i slanje na TV): TV sluša
+      na stalnom portu kad je slobodan, a telefon uz mDNS pita i adrese u svom delu kućne mreže (`LanScan`).
+      Radi kad su i telefon i TV na ovoj verziji
+- [x] Meni posle dugog OK na TV-u ne bira prvu stavku kad se taster pusti (OK važi tek od novog pritiska)
 
 ## 7. Testiranje
 

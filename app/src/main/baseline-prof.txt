@@ -1,0 +1,5 @@
+# Profil za kod same aplikacije: Android ga unapred prevede (posle instalacije, dok uređaj miruje),
+# pa prvi ulazak u ekrane i prvo listanje ne čekaju na prevođenje u hodu. Profile biblioteka
+# (Compose, Media3) build dodaje sam.
+HSPLcom/bane23/iptvplayer/**;->**(**)**
+Lcom/bane23/iptvplayer/**;
