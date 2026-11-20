@@ -33,8 +33,12 @@ import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SearchViewModel
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 
-/** Pretraga kanala po nazivu na TV-u: polje za unos gore, rezultati ispod. */
+/**
+ * Pretraga u Uživo na TV-u, po nazivu kanala i po nazivu emisije u vodiču: polje za unos gore,
+ * rezultati ispod (prvo kanali, pa emisije).
+ */
 @Composable
 fun TvSearchScreen(
     onPlay: (Long) -> Unit,
@@ -42,6 +46,10 @@ fun TvSearchScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
+    val programs by viewModel.programs.collectAsStateWithLifecycle()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
+    RecordingNotices(viewModel.notice)
+    val now = System.currentTimeMillis()
     val fieldFocus = remember { FocusRequester() }
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
     TvFavoritePickDialog(favoriteLists)
@@ -68,7 +76,9 @@ fun TvSearchScreen(
                 .fillMaxWidth(0.6f)
                 .focusRequester(fieldFocus),
         )
-        if (state.query.isNotBlank() && results.itemCount == 0 && results.loadState.refresh is LoadState.NotLoading) {
+        if (state.query.isNotBlank() && results.itemCount == 0 && programs.isEmpty() &&
+            results.loadState.refresh is LoadState.NotLoading
+        ) {
             TvEmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty))
         }
         LazyColumn(
@@ -77,6 +87,12 @@ fun TvSearchScreen(
                 .padding(top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            // Naslovi grupa samo kad ima i emisija; bez njih je spisak kanala kao i do sada.
+            if (programs.isNotEmpty() && results.itemCount > 0) {
+                item(key = "h-channels") {
+                    TvSearchGroupTitle(stringResource(R.string.search_group_channels), results.itemCount)
+                }
+            }
             items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
                 val channel = results[index]
                 TvListRow(
@@ -97,6 +113,21 @@ fun TvSearchScreen(
                     if (channel?.favorite == true) {
                         Text(text = "★", color = color, modifier = Modifier.padding(start = 12.dp))
                     }
+                }
+            }
+            if (programs.isNotEmpty()) {
+                item(key = "h-programs") {
+                    TvSearchGroupTitle(stringResource(R.string.search_group_programs), programs.size)
+                }
+                items(count = programs.size, key = { "p${programs[it].channelId}-${programs[it].startMs}" }) { index ->
+                    val hit = programs[index]
+                    TvProgramHitRow(
+                        hit = hit,
+                        now = now,
+                        reminded = hit.key in reminders,
+                        onPlay = { onPlay(hit.channelId) },
+                        onToggleReminder = { viewModel.toggleReminder(hit) },
+                    )
                 }
             }
         }
