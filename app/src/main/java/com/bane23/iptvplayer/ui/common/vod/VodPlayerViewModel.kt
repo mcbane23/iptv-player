@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common.vod
 
+import com.bane23.iptvplayer.ui.common.player.MAX_SUBTITLE_SHIFT_MS
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -670,7 +671,6 @@ class VodPlayerViewModel @Inject constructor(
 
     private companion object {
         const val POSITION_TICK_MS = 500L
-        const val MAX_SUBTITLE_SHIFT_MS = 30_000L
         const val SUBTITLE_SHIFT_DELAY_MS = 800L
         const val SAVE_EVERY_MS = 10_000L
         const val SCRUB_COMMIT_MS = 1_200L

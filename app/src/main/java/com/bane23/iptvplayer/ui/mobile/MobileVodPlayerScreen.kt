@@ -45,6 +45,7 @@ import com.bane23.iptvplayer.ui.common.player.formatDuration
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
+import com.bane23.iptvplayer.ui.common.player.subtitleStepChoices
 import com.bane23.iptvplayer.ui.common.vod.VodPlayerViewModel
 import com.bane23.iptvplayer.ui.common.vod.episodeLabel
 import kotlinx.coroutines.delay
@@ -80,11 +81,13 @@ fun MobileVodPlayerScreen(
     LaunchedEffect(Unit) { start(viewModel) }
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
-    // Izbor zvuka i titlova su zasebni prozori, pa se dodiri u njima ovde ne vide.
+    // Izbor zvuka je zaseban prozor, pa se dodiri u njemu ovde ne vide.
+    // Podešavanja i titlovi su paneli preko slike: dodir pored njih ili Nazad ih zatvara.
+    val sidePanel = panel == VodPanel.SETTINGS || panel == VodPanel.SUBTITLES
     val pauseInfoOn = rememberPauseInfoEnabled()
     val pauseDim = rememberPauseDim(
         status = playback.status,
-        enabled = panel == VodPanel.NONE || panel == VodPanel.SETTINGS,
+        enabled = panel == VodPanel.NONE || sidePanel,
         info = pauseInfoOn && panel == VodPanel.NONE,
         onExit = onClose,
     )
@@ -102,7 +105,7 @@ fun MobileVodPlayerScreen(
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
-    BackHandler(enabled = panel == VodPanel.SETTINGS) { panel = VodPanel.NONE }
+    BackHandler(enabled = sidePanel) { panel = VodPanel.NONE }
 
     LaunchedEffect(controlsVisible, panel, playback.status, activity, preview) {
         if (controlsVisible && panel == VodPanel.NONE && preview == null && playback.status == PlaybackStatus.PLAYING) {
@@ -128,13 +131,13 @@ fun MobileVodPlayerScreen(
                         viewModel.onUserActivity()
                         when {
                             locked -> unlockVisible = !unlockVisible
-                            panel == VodPanel.SETTINGS -> panel = VodPanel.NONE
+                            sidePanel -> panel = VodPanel.NONE
                             else -> controlsVisible = !controlsVisible
                         }
                     },
                     // Dupli tap: leva i desna trećina slike premotavaju, sredina pauzira ili pušta.
                     onDoubleTap = { offset ->
-                        if (!locked && panel != VodPanel.SETTINGS) {
+                        if (!locked && !sidePanel) {
                             when {
                                 offset.x < size.width / 3 -> viewModel.seekBy(-viewModel.seekStepMs)
                                 offset.x > size.width * 2 / 3 -> viewModel.seekBy(viewModel.seekStepMs)
@@ -222,9 +225,26 @@ fun MobileVodPlayerScreen(
                         onDecoder = viewModel::setDecoder,
                         speed = ui.speed,
                         onSpeed = viewModel::setSpeed,
-                        subtitleOffsetMs = ui.subtitleOffsetMs,
-                        onShiftSubtitle = viewModel::shiftSubtitle,
                     ),
+                )
+            } else if (panel == VodPanel.SUBTITLES) {
+                // Kontrole su sklonjene, da se titl vidi dok se podešava.
+                MobileSubtitlesPanel(
+                    options = listOf(stringResource(R.string.player_subtitles_off) to !playback.textEnabled) +
+                        playback.textTracks.map { it.label to it.selected },
+                    onSelect = { index ->
+                        viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
+                        panel = VodPanel.NONE
+                    },
+                    extra = if (ui.onlineSubtitles) {
+                        stringResource(R.string.subtitles_search_online) to {
+                            viewModel.searchOnlineSubtitles()
+                            panel = VodPanel.ONLINE_SUBTITLES
+                        }
+                    } else {
+                        null
+                    },
+                    steps = subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle),
                 )
             } else if (controlsVisible) {
                 PlayerSideSliders(levels) { activity++ }
@@ -340,25 +360,6 @@ fun MobileVodPlayerScreen(
             onDismiss = { panel = VodPanel.NONE },
         )
 
-        VodPanel.SUBTITLES -> TrackDialog(
-            title = stringResource(R.string.player_subtitles),
-            options = listOf(stringResource(R.string.player_subtitles_off) to !playback.textEnabled) +
-                playback.textTracks.map { it.label to it.selected },
-            emptyText = null,
-            onSelect = { index ->
-                viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
-            },
-            onDismiss = { panel = VodPanel.NONE },
-            extra = if (ui.onlineSubtitles) {
-                stringResource(R.string.subtitles_search_online) to {
-                    viewModel.searchOnlineSubtitles()
-                    panel = VodPanel.ONLINE_SUBTITLES
-                }
-            } else {
-                null
-            },
-        )
-
         VodPanel.ONLINE_SUBTITLES -> {
             val online by viewModel.online.collectAsStateWithLifecycle()
             OnlineSubtitlesDialog(
@@ -371,7 +372,7 @@ fun MobileVodPlayerScreen(
             )
         }
 
-        VodPanel.NONE, VodPanel.SETTINGS -> Unit
+        VodPanel.NONE, VodPanel.SETTINGS, VodPanel.SUBTITLES -> Unit
     }
 }
 

@@ -9,16 +9,12 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.SleepTimer
-import com.bane23.iptvplayer.player.SubtitleSize
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import java.text.DecimalFormat
 
 /** Brzine puštanja koje se nude za filmove i epizode. */
 val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
-
-/** Korak pomeranja titla. */
-const val SUBTITLE_SHIFT_STEP_MS = 500L
 
 /** Brzina kao tekst, npr. „1,25×”. */
 fun speedLabel(speed: Float): String = DecimalFormat("0.##").format(speed.toDouble()) + "×"
@@ -38,8 +34,6 @@ fun quickSettingChoices(
     onDecoder: (DecoderMode) -> Unit,
     speed: Float? = null,
     onSpeed: (Float) -> Unit = {},
-    subtitleOffsetMs: Long? = null,
-    onShiftSubtitle: (Long) -> Unit = {},
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ): List<SettingChoice> {
     val settings by settingsViewModel.playerSettings.collectAsStateWithLifecycle()
@@ -87,40 +81,6 @@ fun quickSettingChoices(
             onSelect = { onSpeed(PLAYBACK_SPEEDS[it]) },
         )
     }
-    val subtitleSizeChoice = SettingChoice(
-        title = stringResource(R.string.settings_subtitle_size),
-        summary = "",
-        options = listOf(
-            stringResource(R.string.subtitle_size_small),
-            stringResource(R.string.subtitle_size_normal),
-            stringResource(R.string.subtitle_size_large),
-            stringResource(R.string.subtitle_size_xlarge),
-        ),
-        selected = SubtitleSize.entries.indexOf(settings.subtitleSize),
-        onSelect = { settingsViewModel.setSubtitleSize(SubtitleSize.entries[it]) },
-    )
-
-    // Dve stavke umesto spiska vrednosti: svaki dodir (OK) pomera titl za pola sekunde.
-    val subtitleShiftChoices = subtitleOffsetMs?.let { offset ->
-        val value = listOf(stringResource(R.string.subtitle_shift_value, DecimalFormat("+0.0;-0.0").format(offset / 1000.0)))
-        listOf(
-            SettingChoice(
-                title = stringResource(R.string.subtitle_shift_earlier),
-                summary = "",
-                options = value,
-                selected = 0,
-                onSelect = { onShiftSubtitle(-SUBTITLE_SHIFT_STEP_MS) },
-            ),
-            SettingChoice(
-                title = stringResource(R.string.subtitle_shift_later),
-                summary = "",
-                options = value,
-                selected = 0,
-                onSelect = { onShiftSubtitle(SUBTITLE_SHIFT_STEP_MS) },
-            ),
-        )
-    }.orEmpty()
-
     val aspectChoice = SettingChoice(
         title = stringResource(R.string.player_aspect),
         summary = "",
@@ -141,13 +101,10 @@ fun quickSettingChoices(
         selected = BufferSize.entries.indexOf(settings.buffer),
         onSelect = { settingsViewModel.setBuffer(BufferSize.entries[it]) },
     )
-    // Isti redosled na telefonu i na TV-u; plejer kanala nema titlove, pa su stavke o titlu samo uz
-    // filmove i epizode.
+    // Isti redosled na telefonu i na TV-u. Veličina i pomeranje titla su u meniju „Titlovi”.
     val shared = listOfNotNull(
         aspectChoice,
         decoderChoice,
-        subtitleSizeChoice.takeIf { speed != null },
-        *subtitleShiftChoices.toTypedArray(),
         sleepChoice,
         speedChoice,
         bufferChoice,

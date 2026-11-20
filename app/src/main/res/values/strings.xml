@@ -616,8 +616,10 @@
     <string name="search_recent_clear_all">Clear recent searches</string>
     <string name="search_voice">Voice</string>
     <string name="search_on_air">on now, until %1$s</string>
-    <string name="subtitle_shift_earlier">Subtitles earlier</string>
-    <string name="subtitle_shift_later">Subtitles later</string>
+    <string name="subtitle_step_size">Size</string>
+    <string name="subtitle_step_shift">Timing</string>
+    <string name="step_decrease">Decrease: %1$s</string>
+    <string name="step_increase">Increase: %1$s</string>
     <string name="subtitle_shift_value">%1$s s</string>
     <string name="live_preview_hint">Tap a channel to preview it.</string>
     <string name="live_preview_hint_tv">Select a channel to preview it.</string>
