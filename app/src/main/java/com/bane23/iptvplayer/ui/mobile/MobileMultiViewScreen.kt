@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
@@ -246,7 +247,8 @@ private fun Tile(
                 width = 2.dp,
                 color = if (active) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.15f),
             )
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            // Bez talasa pritiska preko slike: aktivno polje pokazuje samo okvir, slika ostaje ista.
+            .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick)
             .padding(2.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -301,6 +303,9 @@ private fun Tile(
 @Composable
 private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val favoriteCount by viewModel.favoriteCount.collectAsStateWithLifecycle()
+    val favoriteLists by viewModel.favoriteLists.collectAsStateWithLifecycle()
+    val favoritesName = stringResource(R.string.category_favorites)
     val channels = viewModel.pickerChannels.collectAsLazyPagingItems()
     Scaffold { padding ->
         Column(
@@ -314,6 +319,15 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
             )
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (picker.categoryId == null) {
+                    // Omiljeni i imenovane liste omiljenih stoje na vrhu, pre kategorija.
+                    item(key = ChannelGroups.FAVORITES) {
+                        PickerRow(favoritesName, favoriteCount.toString()) {
+                            viewModel.pickGroup(ChannelGroups.FAVORITES, favoritesName)
+                        }
+                    }
+                    items(favoriteLists, key = { it.groupId }) { list ->
+                        PickerRow(list.name, list.channelCount.toString()) { viewModel.pickGroup(list.groupId, list.name) }
+                    }
                     items(categories, key = { it.id }) { category ->
                         PickerRow(category.name, category.channelCount.toString()) { viewModel.pickCategory(category) }
                     }

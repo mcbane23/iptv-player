@@ -44,6 +44,7 @@ import androidx.paging.compose.itemKey
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.ui.common.multiview.MultiPicker
 import com.bane23.iptvplayer.ui.common.multiview.MultiTile
@@ -243,7 +244,8 @@ private fun TileMenu(
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: (() -> Unit)? = null): Modifier =
-    combinedClickable(onClick = onClick, onLongClick = onLongClick)
+    // Bez oznake pritiska i fokusa preko slike: izabrano polje pokazuje samo okvir, slika ostaje ista.
+    combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick)
 
 @Composable
 private fun Tile(
@@ -322,6 +324,9 @@ private fun Tile(
 @Composable
 private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val favoriteCount by viewModel.favoriteCount.collectAsStateWithLifecycle()
+    val favoriteLists by viewModel.favoriteLists.collectAsStateWithLifecycle()
+    val favoritesName = stringResource(R.string.category_favorites)
     val channels = viewModel.pickerChannels.collectAsLazyPagingItems()
     val firstRow = remember { FocusRequester() }
     Column(
@@ -338,16 +343,31 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
         )
         if (picker.categoryId == null) {
             LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Omiljeni i imenovane liste omiljenih stoje na vrhu, pre kategorija.
+                item(key = ChannelGroups.FAVORITES) {
+                    TvTextRow(
+                        text = favoritesName,
+                        trailing = favoriteCount.toString(),
+                        onClick = { viewModel.pickGroup(ChannelGroups.FAVORITES, favoritesName) },
+                        modifier = Modifier.focusRequester(firstRow),
+                    )
+                }
+                items(favoriteLists, key = { it.groupId }) { list ->
+                    TvTextRow(
+                        text = list.name,
+                        trailing = list.channelCount.toString(),
+                        onClick = { viewModel.pickGroup(list.groupId, list.name) },
+                    )
+                }
                 items(categories, key = { it.id }) { category ->
                     TvTextRow(
                         text = category.name,
                         trailing = category.channelCount.toString(),
                         onClick = { viewModel.pickCategory(category) },
-                        modifier = if (category === categories.firstOrNull()) Modifier.focusRequester(firstRow) else Modifier,
                     )
                 }
             }
-            LaunchedEffect(categories.isEmpty()) { firstRow.tryRequestFocus() }
+            LaunchedEffect(Unit) { firstRow.tryRequestFocus() }
         } else {
             LazyColumn(modifier = Modifier.fillMaxWidth(0.6f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
