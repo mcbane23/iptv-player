@@ -77,12 +77,36 @@ class TransferTest {
     }
 
     @Test
+    fun `named favorite lists and merged playlists travel with the bundle`() {
+        val full = bundle.copy(
+            playlists = listOf(
+                bundle.playlists[0].copy(
+                    merged = true,
+                    favoriteLists = listOf(
+                        TransferFavoriteList(name = "Sport", channels = listOf("x:101", "x:303")),
+                        TransferFavoriteList(name = "Deca"),
+                    ),
+                ),
+                bundle.playlists[1].copy(merged = false),
+            ),
+        )
+        val decoded = TransferCodec.decode(TransferCodec.encode(full))!!
+        assertEquals(full, decoded)
+        assertEquals(listOf("x:101", "x:303"), decoded.playlists[0].favoriteLists[0].channels)
+        assertEquals(true, decoded.playlists[0].merged)
+        // Starija verzija ne šalje podatak o spajanju, pa na TV-u ostaje kako jeste.
+        assertNull(TransferCodec.decode(TransferCodec.encode(bundle))!!.playlists[0].merged)
+    }
+
+    @Test
     fun `decoding ignores unknown fields and fills defaults`() {
         val decoded = TransferCodec.decode(
             """{"version":1,"future":true,"playlists":[{"type":"m3u","name":"A","source":"http://example.invalid/a.m3u","x":1}]}""",
         )!!
         assertEquals(1, decoded.playlists.size)
         assertTrue(decoded.playlists[0].favorites.isEmpty())
+        assertTrue(decoded.playlists[0].favoriteLists.isEmpty())
+        assertNull(decoded.playlists[0].merged)
         assertNull(decoded.settings)
     }
 

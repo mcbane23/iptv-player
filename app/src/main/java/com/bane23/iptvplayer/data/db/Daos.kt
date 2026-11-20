@@ -97,6 +97,9 @@ private const val NOT_HIDDEN =
 private const val CATEGORY_COUNT =
     "(SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = cat.playlistId AND ch.categoryId = cat.id) AS channelCount"
 
+/** Kanal u imenovanoj listi omiljenih, sa nazivom te liste. */
+data class FavoriteListNamedItem(val listName: String, val channelKey: String)
+
 /** Kanal u rezultatima zajedničke pretrage. */
 data class ChannelHit(val id: Long, val name: String, val logo: String?)
 
@@ -499,6 +502,17 @@ interface FavoriteListDao {
 
     @Query("SELECT * FROM favorite_lists ORDER BY position, id")
     suspend fun all(): List<FavoriteListEntity>
+
+    @Query("SELECT * FROM favorite_lists WHERE name = :name COLLATE NOCASE LIMIT 1")
+    suspend fun byName(name: String): FavoriteListEntity?
+
+    /** Kanali liste kanala `:playlistId` u imenovanim listama, za prenos na drugi uređaj. */
+    @Query(
+        "SELECT fl.name AS listName, li.channelKey AS channelKey FROM favorite_list_items li " +
+            "JOIN favorite_lists fl ON fl.id = li.listId WHERE li.playlistId = :playlistId " +
+            "ORDER BY fl.position, fl.id, li.addedAt",
+    )
+    suspend fun namedItems(playlistId: Long): List<FavoriteListNamedItem>
 
     /** Sve liste, sa brojem kanala koji se iz svake vide u listi kanala [playlistId] i spojenima sa njom. */
     @Query(
