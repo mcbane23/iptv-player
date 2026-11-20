@@ -15,6 +15,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -79,6 +83,10 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             // ViewModel živi koliko i ekran na steku, ne koliko cela aplikacija.
             rememberViewModelStoreNavEntryDecorator(),
         ),
+        // Kratko pretapanje umesto podrazumevanog od 700 ms, posle kog je svaki ekran kasnio.
+        transitionSpec = { QuickFade },
+        popTransitionSpec = { QuickFade },
+        predictivePopTransitionSpec = { QuickFade },
         entryProvider = entryProvider {
             entry<LiveTv> {
                 val liveTvViewModel: LiveTvViewModel = hiltViewModel()
@@ -326,3 +334,8 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
         )
     }
 }
+
+/** Prelaz između ekrana na telefonu: kratko pretapanje. */
+private val QuickFade = ContentTransform(fadeIn(tween(FADE_MS)), fadeOut(tween(FADE_MS)))
+
+private const val FADE_MS = 150
