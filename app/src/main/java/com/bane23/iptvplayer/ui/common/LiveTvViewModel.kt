@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.bane23.iptvplayer.R
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -224,10 +226,11 @@ class ChannelListViewModel @Inject constructor(
 
 data class SearchUiState(val playlistId: Long? = null, val query: String = "")
 
-/** Pretraga kanala po nazivu kroz celu aktivnu listu. */
+/** Pretraga u Uživo kroz celu aktivnu listu: po nazivu kanala i po nazivu emisije u vodiču. */
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: ChannelRepository,
+    private val reminderRepository: com.bane23.iptvplayer.data.reminder.ReminderRepository,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -247,12 +250,55 @@ class SearchViewModel @Inject constructor(
         }
         .cachedIn(viewModelScope)
 
+    /**
+     * Emisije iz vodiča (u toku ili buduće) čiji naslov sadrži upit, kao u zajedničkoj pretrazi;
+     * najviše [PROGRAM_LIMIT], najskorije prve.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val programs: StateFlow<List<com.bane23.iptvplayer.data.db.ProgramHit>> = combine(
+        repository.activePlaylistId,
+        query.debounce(SEARCH_DELAY_MS),
+    ) { playlistId, text -> playlistId to text.trim() }
+        .mapLatest { (playlistId, text) ->
+            if (playlistId == null || text.length < MIN_PROGRAM_QUERY) {
+                emptyList()
+            } else {
+                repository.searchPrograms(playlistId, text, PROGRAM_LIMIT)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Ključevi emisija koje imaju podsetnik, za zvonce pored rezultata. */
+    val reminders: StateFlow<Set<String>> = reminderRepository.reminders
+        .map { list -> list.mapTo(HashSet<String>()) { it.key } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    private val _notice = kotlinx.coroutines.flow.MutableSharedFlow<Int>(extraBufferCapacity = 1)
+
+    /** Kratka poruka (tekst iz `strings.xml`). */
+    val notice: Flow<Int> = _notice
+
+    /** Podsetnik za emisiju koja još nije počela: uključuje ga, odnosno uklanja. */
+    fun toggleReminder(hit: com.bane23.iptvplayer.data.db.ProgramHit) {
+        val reminder = com.bane23.iptvplayer.data.reminder.Reminder(
+            hit.playlistId, hit.stableKey, hit.startMs, hit.channelName, hit.title,
+        )
+        val exists = reminder.key in reminders.value
+        if (!exists && hit.startMs <= System.currentTimeMillis()) return
+        viewModelScope.launch {
+            if (exists) reminderRepository.remove(reminder) else reminderRepository.add(reminder)
+            _notice.tryEmit(if (exists) R.string.reminder_removed else R.string.reminder_set)
+        }
+    }
+
     fun setQuery(text: String) {
         query.value = text
     }
 
     private companion object {
         const val SEARCH_DELAY_MS = 300L
+        const val MIN_PROGRAM_QUERY = 2
+        const val PROGRAM_LIMIT = 30
     }
 }
 

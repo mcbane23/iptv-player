@@ -115,9 +115,9 @@
     <string name="channels_empty">Ovde nema kanala.</string>
     <string name="action_search">Pretraga</string>
     <string name="action_menu">Meni</string>
-    <string name="search_title">Pretraga kanala</string>
-    <string name="search_hint">Naziv kanala</string>
-    <string name="search_empty">Nijedan kanal ne odgovara.</string>
+    <string name="search_title">Pretraga u Uživo</string>
+    <string name="search_hint">Kanal ili emisija</string>
+    <string name="search_empty">Nijedan kanal ni emisija ne odgovara.</string>
 
     <!-- Kategorije -->
     <string name="categories_manage_title">Kategorije</string>
@@ -297,7 +297,7 @@
     <string name="home_added_series">Nedavno dodate serije</string>
     <string name="home_empty">Ovde će stajati omiljeni kanali i ono što ste počeli da gledate.</string>
     <string name="nav_live">Uživo</string>
-    <string name="search_channels">Pretraga kanala</string>
+    <string name="search_channels">Kanali i emisije</string>
     <string name="settings_tv_preview">Pregled kanala</string>
     <string name="settings_brightness_slider">Traka za osvetljenje</string>
     <string name="settings_brightness_slider_summary">U plejeru, uz levu ivicu ekrana, traka kojom se menja osvetljenje</string>

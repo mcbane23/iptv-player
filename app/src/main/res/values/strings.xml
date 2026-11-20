@@ -116,9 +116,9 @@
     <string name="channels_empty">No channels here.</string>
     <string name="action_search">Search</string>
     <string name="action_menu">Menu</string>
-    <string name="search_title">Search channels</string>
-    <string name="search_hint">Channel name</string>
-    <string name="search_empty">No channels match.</string>
+    <string name="search_title">Search Live TV</string>
+    <string name="search_hint">Channel or programme</string>
+    <string name="search_empty">No channels or programmes match.</string>
 
     <!-- Categories -->
     <string name="categories_manage_title">Categories</string>
@@ -299,7 +299,7 @@
     <string name="home_added_series">Recently added series</string>
     <string name="home_empty">Your favorite channels and what you started watching will show up here.</string>
     <string name="nav_live">Live</string>
-    <string name="search_channels">Search channels</string>
+    <string name="search_channels">Channels and programmes</string>
     <string name="settings_tv_preview">Channel preview</string>
     <string name="settings_brightness_slider">Brightness bar</string>
     <string name="settings_brightness_slider_summary">In the player, a bar along the left screen edge that changes brightness</string>

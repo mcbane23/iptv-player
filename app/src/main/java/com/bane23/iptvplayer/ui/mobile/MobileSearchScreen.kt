@@ -33,9 +33,10 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.SearchViewModel
+import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
-/** Pretraga kanala po nazivu na telefonu. */
+/** Pretraga u Uživo na telefonu: po nazivu kanala i po nazivu emisije u vodiču. */
 @Composable
 fun MobileSearchScreen(
     onPlay: (Long) -> Unit,
@@ -44,6 +45,10 @@ fun MobileSearchScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
+    val programs by viewModel.programs.collectAsStateWithLifecycle()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
+    RecordingNotices(viewModel.notice)
+    val now = System.currentTimeMillis()
     val fieldFocus = remember { FocusRequester() }
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
     MobileFavoritePickDialog(favoriteLists)
@@ -74,7 +79,9 @@ fun MobileSearchScreen(
                         .focusRequester(fieldFocus),
                 )
             }
-            if (state.query.isNotBlank() && results.itemCount == 0 && results.loadState.refresh is LoadState.NotLoading) {
+            if (state.query.isNotBlank() && results.itemCount == 0 && programs.isEmpty() &&
+                results.loadState.refresh is LoadState.NotLoading
+            ) {
                 EmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty))
             }
             // Isti red kanala kao u Uživo (pločica), da pretraga ne izgleda kao drugi deo aplikacije.
@@ -82,12 +89,34 @@ fun MobileSearchScreen(
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
+                // Naslovi grupa samo kad ima i emisija; bez njih je spisak kanala kao i do sada.
+                if (programs.isNotEmpty() && results.itemCount > 0) {
+                    item(key = "h-channels") {
+                        MobileSearchGroupTitle(stringResource(R.string.search_group_channels), results.itemCount)
+                    }
+                }
                 items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
                     MobileChannelCard(
                         channel = results[index],
                         onClick = { onPlay(it.id) },
                         onToggleFavorite = favoriteLists::favoriteAction,
                     )
+                }
+                if (programs.isNotEmpty()) {
+                    item(key = "h-programs") {
+                        MobileSearchGroupTitle(stringResource(R.string.search_group_programs), programs.size)
+                    }
+                    items(count = programs.size, key = { "p${programs[it].channelId}-${programs[it].startMs}" }) { index ->
+                        val hit = programs[index]
+                        MobileProgramHitRow(
+                            hit = hit,
+                            now = now,
+                            reminded = hit.key in reminders,
+                            onPlay = { onPlay(hit.channelId) },
+                            onToggleReminder = { viewModel.toggleReminder(hit) },
+                            sidePadding = 0.dp,
+                        )
+                    }
                 }
             }
         }
