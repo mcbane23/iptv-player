@@ -138,95 +138,131 @@ class TransferRepository @Inject constructor(
     }
 
     /** [onProgress] javlja koja se lista upravo učitava (redni broj od 1, ukupno). */
-    suspend fun importBundle(bundle: TransferBundle, onProgress: (Int, Int) -> Unit = { _, _ -> }): TransferResult =
-        withContext(Dispatchers.IO) {
-            var added = 0
-            var existing = 0
-            var failed = 0
-            bundle.playlists.forEachIndexed { index, item ->
-                onProgress(index + 1, bundle.playlists.size)
-                val type = when (item.type) {
-                    TransferPlaylist.TYPE_XTREAM -> PlaylistType.XTREAM
-                    TransferPlaylist.TYPE_M3U -> PlaylistType.M3U_URL
-                    else -> null
-                }
-                if (type == null) {
-                    failed++
-                    return@forEachIndexed
-                }
-                // Čita se svaki put iznova, da se ista lista dvaput u paketu ne doda dvaput.
-                val match = db.playlistDao().getAll().firstOrNull { it.matches(type, item) }
-                val playlistId = if (match != null) {
-                    existing++
-                    match.id
-                } else {
-                    try {
-                        playlists.addPlaylist(item.toDraft(type)).also { added++ }
-                    } catch (_: PlaylistException) {
-                        failed++
-                        return@forEachIndexed
-                    }
-                }
-                val now = System.currentTimeMillis()
-                item.favorites.take(MAX_FAVORITES).forEachIndexed { position, key ->
-                    // Redosled dodavanja se čuva kroz vreme upisa.
-                    db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
-                }
-                importFavoriteLists(playlistId, item.favoriteLists, now)
-                // Sakriveni kanali se samo dodaju; ono što je na TV-u već sakriveno ostaje sakriveno.
-                item.hiddenChannels.asSequence()
-                    .filter { it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.name.length <= MAX_TEXT }
-                    .take(MAX_FAVORITES)
-                    .forEachIndexed { position, hidden ->
-                        db.hiddenChannelDao().insert(HiddenChannelEntity(playlistId, hidden.key, hidden.name, now + position))
-                    }
-                // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu.
-                item.merged?.let { db.playlistDao().setMerged(playlistId, it) }
-                db.vodFavoriteDao().insertMissing(
-                    item.vodFavorites.asSequence()
-                        .filter { it.kind in VOD_KINDS && it.name.length <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
-                        .take(MAX_FAVORITES)
-                        .mapIndexed { position, favorite ->
-                            VodFavoriteEntity(
-                                playlistId = playlistId,
-                                kind = favorite.kind,
-                                itemId = favorite.itemId,
-                                name = favorite.name,
-                                poster = favorite.poster,
-                                extension = favorite.extension?.take(MAX_LANGUAGE_LENGTH),
-                                addedAt = now + position,
-                            )
-                        }
-                        .toList(),
-                )
-                // Telefon je glavni: i na listi koju TV već ima važi uređenje kategorija sa telefona.
-                if (match != null) db.categoryDao().resetUserChanges(playlistId)
-                applyCategories(playlistId, item.categories)
-                item.vodCategories?.let { settings.replaceVodCategoryPrefs(playlistId, it.toPrefs()) }
-                // Zaključavanja se samo dodaju, da prenos ne može da otključa nešto na TV-u.
-                item.locked?.let { locks ->
-                    fun clean(names: List<String>) =
-                        names.asSequence().filter { it.isNotEmpty() && it.length <= MAX_TEXT }.take(MAX_FAVORITES).toList()
-                    settings.addLockedCategories(
-                        playlistId,
-                        mapOf("live" to clean(locks.live), "movies" to clean(locks.movies), "series" to clean(locks.series)),
-                    )
-                }
-                if (match == null && item.active) settings.setActivePlaylistId(playlistId)
+    suspend fun importBundle(bundle: TransferBundle, onProgress: (Int, Int) -> Unit = { _, _ -> }): TransferResult {
+        val pending = beginImport(bundle)
+        return pending.finish(onProgress)
+    }
+
+    /**
+     * Brzi deo prijema: sve što ne traži preuzimanje sa interneta (podešavanja, nalozi, liste koje TV
+     * već ima) primenjuje se odmah. Nove liste se samo stavljaju u red; preuzima ih
+     * [PendingImport.finish], što ume da traje minutima, pa pošiljalac na to ne čeka.
+     */
+    suspend fun beginImport(bundle: TransferBundle): PendingImport = withContext(Dispatchers.IO) {
+        var existing = 0
+        var failed = 0
+        val queued = ArrayList<Pair<PlaylistType, TransferPlaylist>>()
+        for (item in bundle.playlists) {
+            val type = item.playlistType()
+            if (type == null) {
+                failed++
+                continue
             }
-            bundle.settings?.let { applySettings(it) }
-            // PIN koji TV već ima se ne menja.
-            val pin = bundle.pinRecord
-            if (pin != null && PIN_RECORD.matches(pin) && settings.pinRecord.first() == null) settings.setPinRecord(pin)
-            val accounts = bundle.accounts
-            TransferResult(
-                added = added,
-                existing = existing,
-                failed = failed,
-                openSubtitles = accounts?.openSubtitles?.let { adoptOpenSubtitles(it) },
-                trakt = accounts?.trakt?.let { adoptTrakt(it) },
-            )
+            val match = db.playlistDao().getAll().firstOrNull { it.matches(type, item) }
+            // Ista lista dvaput u paketu se računa jednom.
+            val repeated = queued.any { (queuedType, other) -> queuedType == type && other.sameSource(item) }
+            when {
+                match != null -> {
+                    existing++
+                    applyItem(match.id, item, existed = true)
+                }
+
+                repeated -> existing++
+
+                else -> queued += type to item
+            }
         }
+        bundle.settings?.let { applySettings(it) }
+        // PIN koji TV već ima se ne menja.
+        val pin = bundle.pinRecord
+        if (pin != null && PIN_RECORD.matches(pin) && settings.pinRecord.first() == null) settings.setPinRecord(pin)
+        val accounts = bundle.accounts
+        val base = TransferResult(
+            existing = existing,
+            failed = failed,
+            openSubtitles = accounts?.openSubtitles?.let { adoptOpenSubtitles(it) },
+            trakt = accounts?.trakt?.let { adoptTrakt(it) },
+        )
+        PendingImport(queued.size, base) { onProgress -> loadQueued(queued, base, onProgress) }
+    }
+
+    /** Preuzima nove liste jednu po jednu i na svaku primenjuje omiljene, kategorije i ostalo iz paketa. */
+    private suspend fun loadQueued(
+        queued: List<Pair<PlaylistType, TransferPlaylist>>,
+        base: TransferResult,
+        onProgress: (Int, Int) -> Unit,
+    ): TransferResult = withContext(Dispatchers.IO) {
+        var added = 0
+        var failed = base.failed
+        queued.forEachIndexed { index, (type, item) ->
+            onProgress(index + 1, queued.size)
+            val playlistId = try {
+                playlists.addPlaylist(item.toDraft(type))
+            } catch (_: PlaylistException) {
+                failed++
+                return@forEachIndexed
+            }
+            added++
+            applyItem(playlistId, item, existed = false)
+            if (item.active) settings.setActivePlaylistId(playlistId)
+        }
+        base.copy(added = added, failed = failed)
+    }
+
+    private fun TransferPlaylist.playlistType(): PlaylistType? = when (type) {
+        TransferPlaylist.TYPE_XTREAM -> PlaylistType.XTREAM
+        TransferPlaylist.TYPE_M3U -> PlaylistType.M3U_URL
+        else -> null
+    }
+
+    /** Omiljeni, liste omiljenih, sakriveni kanali, kategorije i zaključavanja jedne liste iz paketa. */
+    private suspend fun applyItem(playlistId: Long, item: TransferPlaylist, existed: Boolean) {
+            val now = System.currentTimeMillis()
+            item.favorites.take(MAX_FAVORITES).forEachIndexed { position, key ->
+                // Redosled dodavanja se čuva kroz vreme upisa.
+                db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
+            }
+            importFavoriteLists(playlistId, item.favoriteLists, now)
+            // Sakriveni kanali se samo dodaju; ono što je na TV-u već sakriveno ostaje sakriveno.
+            item.hiddenChannels.asSequence()
+                .filter { it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.name.length <= MAX_TEXT }
+                .take(MAX_FAVORITES)
+                .forEachIndexed { position, hidden ->
+                    db.hiddenChannelDao().insert(HiddenChannelEntity(playlistId, hidden.key, hidden.name, now + position))
+                }
+            // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu.
+            item.merged?.let { db.playlistDao().setMerged(playlistId, it) }
+            db.vodFavoriteDao().insertMissing(
+                item.vodFavorites.asSequence()
+                    .filter { it.kind in VOD_KINDS && it.name.length <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
+                    .take(MAX_FAVORITES)
+                    .mapIndexed { position, favorite ->
+                        VodFavoriteEntity(
+                            playlistId = playlistId,
+                            kind = favorite.kind,
+                            itemId = favorite.itemId,
+                            name = favorite.name,
+                            poster = favorite.poster,
+                            extension = favorite.extension?.take(MAX_LANGUAGE_LENGTH),
+                            addedAt = now + position,
+                        )
+                    }
+                    .toList(),
+            )
+            // Telefon je glavni: i na listi koju TV već ima važi uređenje kategorija sa telefona.
+            if (existed) db.categoryDao().resetUserChanges(playlistId)
+            applyCategories(playlistId, item.categories)
+            item.vodCategories?.let { settings.replaceVodCategoryPrefs(playlistId, it.toPrefs()) }
+            // Zaključavanja se samo dodaju, da prenos ne može da otključa nešto na TV-u.
+            item.locked?.let { locks ->
+                fun clean(names: List<String>) =
+                    names.asSequence().filter { it.isNotEmpty() && it.length <= MAX_TEXT }.take(MAX_FAVORITES).toList()
+                settings.addLockedCategories(
+                    playlistId,
+                    mapOf("live" to clean(locks.live), "movies" to clean(locks.movies), "series" to clean(locks.series)),
+                )
+            }
+    }
 
     /**
      * Imenovane liste omiljenih. Lista sa istim nazivom se na TV-u dopunjuje, nova se pravi; ništa se ne briše.
@@ -270,6 +306,10 @@ class TransferRepository @Inject constructor(
         this.type == type &&
             source.trimEnd('/').equals(item.source.trim().trimEnd('/'), ignoreCase = true) &&
             username.orEmpty() == item.username.trim()
+
+    private fun TransferPlaylist.sameSource(other: TransferPlaylist): Boolean =
+        source.trim().trimEnd('/').equals(other.source.trim().trimEnd('/'), ignoreCase = true) &&
+            username.trim() == other.username.trim()
 
     private fun TransferPlaylist.toDraft(type: PlaylistType) = PlaylistDraft(
         type = type,
@@ -330,4 +370,19 @@ class TransferRepository @Inject constructor(
         /** Oblik zapisa iz `Pin.hash`: dodatak i otisak, oba heksadecimalno. */
         val PIN_RECORD = Regex("[0-9a-f]{1,64}:[0-9a-f]{64}")
     }
+}
+
+/**
+ * Prijem čiji je brzi deo gotov. [result] je ono što se odmah javlja pošiljaocu ([queued] novih
+ * lista se tek učitava), a [finish] ih preuzima i vraća konačan ishod.
+ */
+class PendingImport(
+    val queued: Int,
+    private val base: TransferResult,
+    private val load: suspend (onProgress: (Int, Int) -> Unit) -> TransferResult,
+) {
+    val result: TransferResult get() = base.copy(loading = queued)
+
+    suspend fun finish(onProgress: (Int, Int) -> Unit = { _, _ -> }): TransferResult =
+        if (queued == 0) base else load(onProgress)
 }

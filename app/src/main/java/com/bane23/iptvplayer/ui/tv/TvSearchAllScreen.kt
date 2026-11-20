@@ -69,6 +69,8 @@ fun TvSearchAllScreen(
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.notice)
     val recent by viewModel.recent.collectAsStateWithLifecycle()
+    val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
+    val favoriteSeries by viewModel.favoriteSeries.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
     val listFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -195,11 +197,11 @@ fun TvSearchAllScreen(
             }
             if (state.movies.isNotEmpty()) {
                 item(key = "h-movies") { TvSearchGroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
-                item(key = "r-movies") { PosterRow(state.movies) { openVod(it, false) } }
+                item(key = "r-movies") { PosterRow(state.movies, favoriteMovies, { viewModel.toggleFavorite(it, series = false) }) { openVod(it, false) } }
             }
             if (state.series.isNotEmpty()) {
                 item(key = "h-series") { TvSearchGroupTitle(stringResource(R.string.vod_series), state.series.size) }
-                item(key = "r-series") { PosterRow(state.series) { openVod(it, true) } }
+                item(key = "r-series") { PosterRow(state.series, favoriteSeries, { viewModel.toggleFavorite(it, series = true) }) { openVod(it, true) } }
             }
         }
     }
@@ -283,7 +285,12 @@ internal fun TvSearchGroupTitle(text: String, count: Int) {
 
 /** Red postera za filmove ili serije u rezultatima, kao u karticama Filmovi i Serije. */
 @Composable
-private fun PosterRow(list: List<VodItem>, onOpen: (VodItem) -> Unit) {
+private fun PosterRow(
+    list: List<VodItem>,
+    favoriteIds: Set<Long>,
+    onToggleFavorite: (VodItem) -> Unit,
+    onOpen: (VodItem) -> Unit,
+) {
     LazyRow(
         // Mesto za uvećan poster u fokusu, da ga ivica reda ne odseče.
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -295,6 +302,8 @@ private fun PosterRow(list: List<VodItem>, onOpen: (VodItem) -> Unit) {
                 poster = item.poster,
                 onClick = { onOpen(item) },
                 onFocused = {},
+                favorite = item.id in favoriteIds,
+                onToggleFavorite = { onToggleFavorite(item) },
                 modifier = Modifier.width(120.dp),
             )
         }

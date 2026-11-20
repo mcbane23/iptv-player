@@ -48,6 +48,16 @@ class VodDiskCache internal constructor(private val root: File) {
     fun writeItems(playlistId: Long, kind: VodKind, categoryId: String, stamp: Long, items: List<VodItem>) =
         write(file(playlistId, kind, itemsName(categoryId)), stamp) { output -> encodeItems(items, output) }
 
+    /**
+     * Red „nedavno dodato” sa „Početne”: dvadesetak stavki, pa se čita trenutno, dok ceo spisak liste
+     * ima desetine hiljada. [signature] opisuje sakrivene i zaključane kategorije u času upisa.
+     */
+    fun readAdded(playlistId: Long, kind: VodKind): VodCached<List<VodItem>>? =
+        read(file(playlistId, kind, ADDED)) { input -> decodeItems(input) }
+
+    fun writeAdded(playlistId: Long, kind: VodKind, signature: Long, items: List<VodItem>) =
+        write(file(playlistId, kind, ADDED), signature) { output -> encodeItems(items, output) }
+
     /** Briše sačuvane spiskove jedne liste (lista obrisana ili promenjena). */
     fun clear(playlistId: Long) {
         File(root, playlistId.toString()).deleteRecursively()
@@ -103,6 +113,7 @@ class VodDiskCache internal constructor(private val root: File) {
     internal companion object {
         const val DIR = "vod-cache"
         const val CATEGORIES = "categories"
+        const val ADDED = "added"
 
         /** Menja se kad se promeni zapis, pa se stari fajlovi samo zanemare. */
         const val VERSION = 1

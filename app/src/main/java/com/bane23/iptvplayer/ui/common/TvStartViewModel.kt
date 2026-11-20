@@ -10,6 +10,7 @@ import com.bane23.iptvplayer.data.repo.VodRepository
 import com.bane23.iptvplayer.data.repo.mergeContinue
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.ui.common.vod.vodFavoriteIds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -18,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -26,15 +28,21 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Kanali za red na „Početnoj”: [group] je grupa iz [ChannelGroups] (omiljeni ili nedavno gledani). */
 data class StartChannels(val group: Long = ChannelGroups.FAVORITES, val channels: List<Channel> = emptyList())
 
-/** Nedavno dodati filmovi i serije; [loaded] je false dok se spisak još preuzima. */
+/**
+ * Nedavno dodati filmovi i serije. [loaded] je false dok se spisak još čita; [loading] je vrsta koja
+ * se upravo preuzima prvi put (na uređaju još nema sačuvanog reda), za poruku na ekranu.
+ */
 data class StartAdded(
     val movies: List<VodItem> = emptyList(),
     val series: List<VodItem> = emptyList(),
     val loaded: Boolean = false,
+    val loading: VodKind? = null,
 )
 
 /** Redovi „Početne” na TV-u za aktivnu listu: nastavak gledanja, kanali i nedavno dodato. */
@@ -91,23 +99,70 @@ class TvStartViewModel @Inject constructor(
             if (!xtream) {
                 flowOf(StartAdded(loaded = true))
             } else {
-                flow {
-                    emit(StartAdded())
-                    val movies = load(VodKind.MOVIES)
-                    emit(StartAdded(movies = movies))
-                    emit(StartAdded(movies = movies, series = load(VodKind.SERIES), loaded = true))
+                channelFlow {
+                    // Redovi sačuvani pri prošlom pokretanju se prikazuju odmah; ceo spisak liste se
+                    // za to vreme čita u pozadini i redovi se tiho zamene ako ima novijeg sadržaja.
+                    val storedMovies = stored(VodKind.MOVIES)
+                    val storedSeries = stored(VodKind.SERIES)
+                    var state = StartAdded(
+                        movies = storedMovies.orEmpty(),
+                        series = storedSeries.orEmpty(),
+                        loaded = storedMovies != null && storedSeries != null,
+                    )
+                    val lock = Mutex()
+                    suspend fun refresh(kind: VodKind, first: Boolean) = lock.withLock {
+                        val had = if (kind == VodKind.MOVIES) storedMovies != null else storedSeries != null
+                        if (first && !had) {
+                            state = state.copy(loading = kind)
+                            send(state)
+                        }
+                        // Bez mreže ostaje red koji je već prikazan.
+                        val fresh = load(kind)
+                        state = when {
+                            fresh == null -> state
+                            kind == VodKind.MOVIES -> state.copy(movies = fresh)
+                            else -> state.copy(series = fresh)
+                        }
+                        if (first) state = state.copy(loading = null, loaded = state.loaded || kind == VodKind.SERIES)
+                        send(state)
+                    }
+                    send(state)
+                    // Lista je osvežena (dnevno ili ručno) i noviji spisak je stigao u pozadini.
+                    launch { vod.updates.collect { kind -> refresh(kind, first = false) } }
+                    refresh(VodKind.MOVIES, first = true)
+                    refresh(VodKind.SERIES, first = true)
                 }
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, StartAdded())
 
-    /** Bez mreže ili kad panel ne šalje spisak, red jednostavno izostaje. */
-    private suspend fun load(kind: VodKind): List<VodItem> = try {
+    private suspend fun stored(kind: VodKind): List<VodItem>? = try {
+        vod.storedRecentlyAdded(kind, ADDED_LIMIT)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
+    /** Null kad spisak nije stigao (bez mreže ili ga panel ne šalje); red tada ostaje kakav je bio. */
+    private suspend fun load(kind: VodKind): List<VodItem>? = try {
         vod.recentlyAdded(kind, ADDED_LIMIT)
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {
-        emptyList()
+        null
+    }
+
+    /** Omiljeni filmovi i serije, za zvezdicu na posteru. */
+    val favoriteMovies: StateFlow<Set<Long>> = vodFavoriteIds(vod, VodKind.MOVIES)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    val favoriteSeries: StateFlow<Set<Long>> = vodFavoriteIds(vod, VodKind.SERIES)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** Dodaje film ili seriju u omiljene, odnosno uklanja (dugi OK na posteru). */
+    fun toggleFavorite(item: VodItem, series: Boolean) {
+        val favorite = item.id in (if (series) favoriteSeries else favoriteMovies).value
+        viewModelScope.launch { vod.toggleFavorite(if (series) VodKind.SERIES else VodKind.MOVIES, item, favorite) }
     }
 
     fun dismissContinue(item: ContinueItem) {

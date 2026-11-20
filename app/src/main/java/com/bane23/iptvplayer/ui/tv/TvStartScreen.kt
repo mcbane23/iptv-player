@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,12 +45,14 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.TvStartViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
+import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
 
@@ -66,6 +70,8 @@ fun TvStartScreen(
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val channelRow by viewModel.channelRow.collectAsStateWithLifecycle()
     val added by viewModel.added.collectAsStateWithLifecycle()
+    val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
+    val favoriteSeries by viewModel.favoriteSeries.collectAsStateWithLifecycle()
     val now by rememberNow()
     var menuContinue by remember { mutableStateOf<ContinueItem?>(null) }
     // Posle sklanjanja stavke fokus se vraća u redove, da ne ode u bočni meni.
@@ -89,8 +95,14 @@ fun TvStartScreen(
     }
 
     val channels = channelRow?.channels.orEmpty()
-    val empty = channelRow != null && channels.isEmpty() && continueItems.isEmpty() &&
-        added.loaded && added.movies.isEmpty() && added.series.isEmpty()
+    val nothing = channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty()
+    val empty = channelRow != null && nothing && added.loaded
+    // Poruka o učitavanju tek posle kratkog čekanja, da ne zatreperi kad redovi stignu odmah.
+    var waited by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(LOADING_DELAY_MS)
+        waited = true
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 27.dp)) {
         TvHeader(
@@ -103,6 +115,16 @@ fun TvStartScreen(
                 text = stringResource(R.string.home_empty),
                 modifier = Modifier.padding(horizontal = 48.dp),
             )
+            return@Column
+        }
+        if (nothing) {
+            if (waited) {
+                VodLoading(
+                    series = added.loading == VodKind.SERIES,
+                    accent = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             return@Column
         }
         LazyColumn(
@@ -146,6 +168,8 @@ fun TvStartScreen(
                                 poster = item.poster,
                                 onClick = { onOpenVod(item, false) },
                                 onFocused = {},
+                                favorite = item.id in favoriteMovies,
+                                onToggleFavorite = { viewModel.toggleFavorite(item, series = false) },
                                 modifier = Modifier.width(POSTER_WIDTH),
                             )
                         }
@@ -161,13 +185,42 @@ fun TvStartScreen(
                                 poster = item.poster,
                                 onClick = { onOpenVod(item, true) },
                                 onFocused = {},
+                                favorite = item.id in favoriteSeries,
+                                onToggleFavorite = { viewModel.toggleFavorite(item, series = true) },
                                 modifier = Modifier.width(POSTER_WIDTH),
                             )
                         }
                     }
                 }
             }
+            // Prvo preuzimanje spiska sa servera (na uređaju još nema sačuvanog reda).
+            added.loading?.let { kind ->
+                item(key = "loading") { LoadingRow(series = kind == VodKind.SERIES) }
+            }
         }
+    }
+}
+
+/** Mala poruka ispod redova dok se red „nedavno dodato” prvi put preuzima. */
+@Composable
+private fun LoadingRow(series: Boolean) {
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier.padding(start = 48.dp, end = 48.dp, top = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(
+            color = accent,
+            trackColor = accent.copy(alpha = 0.18f),
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(22.dp),
+        )
+        Text(
+            text = stringResource(if (series) R.string.vod_loading_series else R.string.vod_loading_movies),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp),
+        )
     }
 }
 
@@ -253,3 +306,4 @@ private val POSTER_WIDTH = 132.dp
 private val CHANNEL_WIDTH = 240.dp
 private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L
+private const val LOADING_DELAY_MS = 300L
