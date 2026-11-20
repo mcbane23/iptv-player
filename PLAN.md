@@ -755,6 +755,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       adrese i naloge, ali je TV odgovarao tek kad preuzme svaku listu (minuti). Sada TV odmah potvrdi prijem
       i primeni sve što ne traži preuzimanje, a nove liste učitava sam u pozadini; napredak i ishod pokazuje
       na svom ekranu. Važi i za prenos iz Podešavanja (izbor TV-a sa spiska) i za put preko QR koda
+- [x] Brža „Početna” na TV-u (Bane, 20. 11. 2026): redovi „nedavno dodato” se čuvaju na uređaju (ista opcija
+      „Čuvaj filmove i serije na uređaju”) i prikazuju odmah po pokretanju, a ceo spisak liste se čita u
+      pozadini i redovi se tiho zamene. Sačuvan red se ne koristi ako su se promenile sakrivene ili zaključane
+      kategorije. Pri prvom preuzimanju stoji poruka „Učitavam filmove…”, kao u Filmovima i Serijama
 
 ## 7. Testiranje
 

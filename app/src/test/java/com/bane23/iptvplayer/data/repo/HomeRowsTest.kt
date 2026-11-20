@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.data.repo
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class HomeRowsTest {
@@ -32,6 +33,17 @@ class HomeRowsTest {
     fun `versions of the same title appear once`() {
         val items = listOf(item(1, 100, tmdb = 7), item(2, 300, tmdb = 7), item(3, 200))
         assertEquals(listOf(2L, 3L), recentlyAdded(items, emptySet(), 10).map { it.id })
+    }
+
+    @Test
+    fun `stored row signature ignores set order and changes with hidden, locked and length`() {
+        val base = addedSignature(linkedSetOf("a", "b"), linkedSetOf("x", "y"), 20)
+        assertEquals(base, addedSignature(linkedSetOf("b", "a"), linkedSetOf("y", "x"), 20))
+        assertNotEquals(base, addedSignature(setOf("a"), setOf("x", "y"), 20))
+        assertNotEquals(base, addedSignature(setOf("a", "b"), setOf("x"), 20))
+        assertNotEquals(base, addedSignature(setOf("a", "b"), setOf("x", "y"), 10))
+        // Sakrivena kategorija nije isto što i zaključana sa istim nazivom.
+        assertNotEquals(addedSignature(setOf("a"), emptySet(), 20), addedSignature(emptySet(), setOf("a"), 20))
     }
 
     @Test

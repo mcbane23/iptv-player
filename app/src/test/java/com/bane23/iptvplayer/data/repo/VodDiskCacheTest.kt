@@ -28,6 +28,19 @@ class VodDiskCacheTest {
     }
 
     @Test
+    fun `home row is kept apart from the lists and per kind`() {
+        val cache = cache()
+        cache.writeItems(7, VodKind.MOVIES, "", stamp = 1, items = items)
+        cache.writeAdded(7, VodKind.MOVIES, signature = 42, items = items.take(1))
+        val stored = cache.readAdded(7, VodKind.MOVIES)!!
+        assertEquals(42L, stored.stamp)
+        assertEquals(items.take(1), stored.value)
+        assertEquals(items, cache.readItems(7, VodKind.MOVIES, "")!!.value)
+        assertNull(cache.readAdded(7, VodKind.SERIES))
+        assertNull(cache.readAdded(8, VodKind.MOVIES))
+    }
+
+    @Test
     fun `all list, other category, kind and playlist are kept apart`() {
         val cache = cache()
         cache.writeItems(7, VodKind.MOVIES, "", stamp = 1, items = items)

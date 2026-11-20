@@ -142,6 +142,13 @@ internal fun recentlyAdded(items: List<VodItem>, hidden: Set<String>, limit: Int
         .take(limit)
         .toList()
 
+/**
+ * Otisak onoga od čega zavisi sačuvan red „nedavno dodato”: sakrivene i zaključane kategorije i
+ * dužina reda. Isti je posle ponovnog pokretanja aplikacije (ne zavisi od redosleda u skupu).
+ */
+internal fun addedSignature(hidden: Set<String>, locked: Set<String>, limit: Int): Long =
+    listOf(hidden.sorted(), locked.sorted(), limit).hashCode().toLong()
+
 /** Filmovi i serije iz „Nastavi gledanje” u jednom redu, poslednje gledano prvo. */
 internal fun mergeContinue(movies: List<ContinueItem>, series: List<ContinueItem>, limit: Int): List<ContinueItem> =
     (movies + series).sortedByDescending { it.updatedAt }.take(limit)
@@ -552,13 +559,32 @@ class VodRepository @Inject constructor(
 
     /**
      * Najskorije dodati filmovi, odnosno serije, aktivne liste, bez sakrivenih i zaključanih
-     * kategorija. Čita ceo spisak liste (isti koji koristi pretraga), pa prvi poziv može da potraje.
+     * kategorija. Čita ceo spisak liste (isti koji koristi pretraga), pa prvi poziv može da potraje;
+     * zato se ishod čuva na uređaju, vidi [storedRecentlyAdded].
      */
     suspend fun recentlyAdded(kind: VodKind, limit: Int): List<VodItem> {
         val playlistId = settings.activePlaylistId.first() ?: return emptyList()
         val hidden = observeCategoryPrefs(playlistId, kind).first().hidden
+        val signature = addedSignature(hidden, locks.activeKeysNow(), limit)
         val all = allItems(kind)
-        return withContext(Dispatchers.Default) { recentlyAdded(all, hidden, limit) }
+        val result = withContext(Dispatchers.Default) { recentlyAdded(all, hidden, limit) }
+        if (settings.vodLocalCache.first()) {
+            withContext(Dispatchers.IO) { disk.writeAdded(playlistId, kind, signature, result) }
+        }
+        return result
+    }
+
+    /**
+     * Red „nedavno dodato” sačuvan pri prošlom čitanju, da se „Početna” prikaže odmah po pokretanju.
+     * Null kad ga nema, kad je čuvanje na uređaju isključeno ili kad su se u međuvremenu promenile
+     * sakrivene, odnosno zaključane kategorije (da zaključan sadržaj ne bude prikazan ni na tren).
+     */
+    suspend fun storedRecentlyAdded(kind: VodKind, limit: Int): List<VodItem>? = withContext(Dispatchers.IO) {
+        if (!settings.vodLocalCache.first()) return@withContext null
+        val playlistId = settings.activePlaylistId.first() ?: return@withContext null
+        val stored = disk.readAdded(playlistId, kind) ?: return@withContext null
+        val hidden = observeCategoryPrefs(playlistId, kind).first().hidden
+        stored.value.takeIf { stored.stamp == addedSignature(hidden, locks.activeKeysNow(), limit) }
     }
 
     /**
