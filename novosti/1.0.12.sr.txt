@@ -1,0 +1,8 @@
+Ceo ekran na telefonu: sadržaj ide do vrha, odmah ispod kamere (isključuje se u Podešavanja > Izgled)
+Filmovi i Serije se otvaraju odmah, jer se spiskovi čuvaju na uređaju
+Ujednačen izgled na TV-u: isti redovi svuda, levi panel u Uživo kao u Filmovima, sat na svim ekranima
+Bočni meni na TV-u može da se skupi na samo ikonice, a imaju ga i Vodič i Pretraga
+Brže i mirnije kretanje daljinskim, fokus više ne skače na meni
+Filmovi i Serije na telefonu imaju čipove kategorija kao Uživo
+Uživo se otvara na „Nedavno”, a Podešavanja na celom meniju
+Teme su sada Siva i Teget, neonske teme su uklonjene

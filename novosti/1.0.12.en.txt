@@ -1,0 +1,8 @@
+Full screen on phones: content reaches the top, right below the camera (turn it off in Settings > Appearance)
+Movies and Series open instantly, because the lists are stored on the device
+Consistent look on TV: the same rows everywhere, a left panel in Live like in Movies, a clock on every screen
+The TV side menu can collapse to icons only, and Guide and Search now have it too
+Faster, steadier remote navigation, focus no longer jumps to the menu
+Movies and Series on phones use category chips like Live
+Live opens on "Recent", and Settings on the full menu
+Themes are now Gray and Navy, the neon themes were removed
