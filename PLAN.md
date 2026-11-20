@@ -737,6 +737,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] TV, Filmovi i Serije: dugi OK na posteru u grupi „Favoriti” uklanja film ili seriju iz favorita (Bane,
       20. 11. 2026); fokus prelazi na sledeći poster, a kad je poslednji, na prethodni ili na red „Favoriti”.
       Ranije je dugi OK radio samo u kategorijama i u pretrazi
+- [x] TV: dugi OK dodaje u favorite i uklanja iz njih na svakom posteru filma ili serije (Bane, 20. 11. 2026):
+      i na „Početnoj” (nedavno dodati filmovi i serije) i u zajedničkoj pretrazi, sa zvezdicom na posteru. Red
+      „Nastavi gledanje” zadržava svoj meni na dugi OK
 - [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
       pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
       preuzima samo od sebe
