@@ -734,6 +734,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
       pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
       preuzima samo od sebe
+- [x] Glasovna pretraga na TV-u (Bane, 20. 11. 2026; samo zajednička pretraga): dugme „Glasom” pored polja
+      otvara sistemsko prepoznavanje govora, pa odmah traži izgovoreno. Aplikacija ne snima i ne traži dozvolu
+      za mikrofon; na uređaju bez prepoznavanja govora dugmeta nema
+- [x] Nedavne pretrage (Bane, 20. 11. 2026; zajednička pretraga, telefon i TV): dok je polje prazno vidi se
+      poslednjih 8 upita, izbor odmah traži, uz „Obriši”. Upit se pamti kad se potvrdi na tastaturi, izgovori
+      ili kad se otvori neki rezultat. Čuva se samo na uređaju
 
 ## 7. Testiranje
 

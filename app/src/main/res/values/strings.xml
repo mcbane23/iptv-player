@@ -609,6 +609,10 @@
     <string name="search_all_searching">Searching…</string>
     <string name="search_group_channels">Channels</string>
     <string name="search_group_programs">In the TV guide</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_recent_clear">Clear</string>
+    <string name="search_recent_clear_all">Clear recent searches</string>
+    <string name="search_voice">Voice</string>
     <string name="search_on_air">on now, until %1$s</string>
     <string name="subtitle_shift_earlier">Subtitles earlier</string>
     <string name="subtitle_shift_later">Subtitles later</string>

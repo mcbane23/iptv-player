@@ -16,7 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -57,7 +60,18 @@ fun MobileSearchAllScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.notice)
+    val recent by viewModel.recent.collectAsStateWithLifecycle()
+    val keyboard = LocalSoftwareKeyboardController.current
     val now = System.currentTimeMillis()
+    val showRecent = state.query.isBlank() && recent.isNotEmpty()
+    val play: (Long) -> Unit = { id ->
+        viewModel.remember()
+        onPlay(id)
+    }
+    val openVod: (VodItem, Boolean) -> Unit = { item, series ->
+        viewModel.remember()
+        onOpenVod(item, series)
+    }
 
     // Providno: pozadinu sa sjajem crta početni ekran.
     Scaffold(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) { padding ->
@@ -73,6 +87,10 @@ fun MobileSearchAllScreen(
                 leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    viewModel.remember()
+                    keyboard?.hide()
+                }),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -80,14 +98,30 @@ fun MobileSearchAllScreen(
             if (state.searching) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             when {
                 state.nothingFound -> EmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_empty_vod))
-                state.searched.isEmpty() && !state.searching ->
+                state.searched.isEmpty() && !state.searching && !showRecent ->
                     EmptyState(icon = AppIcons.Search, text = stringResource(R.string.search_all_intro))
             }
             LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+                if (showRecent) {
+                    item(key = "h-recent") {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) { GroupTitle(stringResource(R.string.search_recent), recent.size) }
+                            TextButton(onClick = viewModel::clearRecent, modifier = Modifier.padding(end = 8.dp)) {
+                                Text(stringResource(R.string.search_recent_clear))
+                            }
+                        }
+                    }
+                    items(recent, key = { "q$it" }) { query ->
+                        ResultRow(title = query, onClick = {
+                            keyboard?.hide()
+                            viewModel.submit(query)
+                        }) { GroupIcon(AppIcons.History) }
+                    }
+                }
                 if (state.channels.isNotEmpty()) {
                     item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                     items(state.channels, key = { "c${it.id}" }) { channel ->
-                        ResultRow(title = channel.name, onClick = { onPlay(channel.id) }) {
+                        ResultRow(title = channel.name, onClick = { play(channel.id) }) {
                             ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
                         }
                     }
@@ -108,18 +142,18 @@ fun MobileSearchAllScreen(
                                 reminded -> stringResource(R.string.reminder_remove)
                                 else -> stringResource(R.string.reminder_add)
                             },
-                            onClick = { if (onAir) onPlay(hit.channelId) else viewModel.toggleReminder(hit) },
+                            onClick = { if (onAir) play(hit.channelId) else viewModel.toggleReminder(hit) },
                         ) { GroupIcon(AppIcons.Guide) }
                     }
                 }
                 // Filmovi i serije kao red postera, kao u svojim karticama.
                 if (state.movies.isNotEmpty()) {
                     item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
-                    item(key = "r-movies") { PosterRow(state.movies) { onOpenVod(it, false) } }
+                    item(key = "r-movies") { PosterRow(state.movies) { openVod(it, false) } }
                 }
                 if (state.series.isNotEmpty()) {
                     item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
-                    item(key = "r-series") { PosterRow(state.series) { onOpenVod(it, true) } }
+                    item(key = "r-series") { PosterRow(state.series) { openVod(it, true) } }
                 }
             }
         }

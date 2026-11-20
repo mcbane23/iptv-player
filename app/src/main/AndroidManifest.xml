@@ -44,6 +44,13 @@
         android:name="android.software.leanback"
         android:required="false" />
 
+    <!-- Glasovna pretraga na TV-u: da se vidi da li uređaj ima sistemsko prepoznavanje govora. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
     <!-- Mnogi IPTV provajderi rade samo preko običnog HTTP-a, zato je cleartext dozvoljen. -->
     <application
         android:name=".IptvApplication"
