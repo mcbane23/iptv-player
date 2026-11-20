@@ -12,6 +12,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,7 +26,8 @@ internal val LocalAppFullScreen = staticCompositionLocalOf { false }
 /**
  * Po izboru u podešavanjima sakriva gornju i donju sistemsku traku na svim ekranima telefona.
  * Prevlačenjem od ivice trake se privremeno pojave i same se ponovo sakriju.
- * Bez gornje trake sadržaj se penje do vrha ekrana: mesto za kameru na vrhu se više ne čuva.
+ * Bez gornje trake sadržaj se penje bliže vrhu: počinje malo ispod donje ivice kamere, umesto
+ * ispod cele visine mesta za kameru, pa kamera ne preklapa gornji red.
  * Kamera sa strane (položen telefon) i dalje zavisi od izbora „Cela širina ekrana”.
  */
 @Composable
@@ -40,13 +44,24 @@ fun AppFullScreen(enabled: Boolean, content: @Composable () -> Unit) {
         }
         onDispose { }
     }
+    // Troši se samo deo umetka za kameru ispod njene donje ivice; ostatak ekrani poštuju kao razmak.
+    // Umetak se čita u kompoziciji, pa se posle okretanja telefona ovo ponovo računa.
+    val density = LocalDensity.current
+    val cutoutTop = WindowInsets.displayCutout.only(WindowInsetsSides.Top).getTop(density)
+    val cameraBottom = ViewCompat.getRootWindowInsets(view)?.displayCutout
+        ?.boundingRects?.filter { it.top < cutoutTop }?.maxOfOrNull { it.bottom } ?: cutoutTop
+    val keep = (cameraBottom + with(density) { CAMERA_MARGIN.roundToPx() }).coerceAtMost(cutoutTop)
+    val released = WindowInsets(top = (cutoutTop - keep).coerceAtLeast(0))
     CompositionLocalProvider(LocalAppFullScreen provides enabled) {
         Box(
             modifier = if (enabled) {
-                Modifier.consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Top))
+                Modifier.consumeWindowInsets(released)
             } else {
                 Modifier
             },
         ) { content() }
     }
 }
+
+/** Razmak između donje ivice kamere i sadržaja kad je ceo ekran uključen. */
+private val CAMERA_MARGIN = 6.dp
