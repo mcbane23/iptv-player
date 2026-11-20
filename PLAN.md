@@ -751,6 +751,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Pretraga u Uživo traži i po emisijama iz vodiča (Bane, 20. 11. 2026; TV i telefon): ispod kanala je
       grupa „U TV vodiču” sa emisijama koje traju ili tek počinju. Emisija koja traje pušta kanal, a buduća
       dobija podsetnik, kao u zajedničkoj pretrazi
+- [x] Prenos sa telefona na TV ne čeka učitavanje lista (Bane, 20. 11. 2026): telefon je i do sada slao samo
+      adrese i naloge, ali je TV odgovarao tek kad preuzme svaku listu (minuti). Sada TV odmah potvrdi prijem
+      i primeni sve što ne traži preuzimanje, a nove liste učitava sam u pozadini; napredak i ishod pokazuje
+      na svom ekranu. Važi za prenos iz Podešavanja (izbor TV-a sa spiska); put preko QR koda je ostao isti
 
 ## 7. Testiranje
 
