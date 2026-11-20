@@ -740,6 +740,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Nedavne pretrage (Bane, 20. 11. 2026; zajednička pretraga, telefon i TV): dok je polje prazno vidi se
       poslednjih 8 upita, izbor odmah traži, uz „Obriši”. Upit se pamti kad se potvrdi na tastaturi, izgovori
       ili kad se otvori neki rezultat. Čuva se samo na uređaju
+- [x] Brži start i prvo listanje (Bane, 20. 11. 2026): uz profile biblioteka, koje je APK već nosio, dodat je
+      profil za kod same aplikacije (`app/src/main/baseline-prof.txt`, jedno pravilo za ceo paket). Android ga
+      prevodi u pozadini dok uređaj miruje, pa se razlika vidi tek posle toga. Snimanje profila na emulatoru u
+      CI nije rađeno (produžava svaki build)
 
 ## 7. Testiranje
 
