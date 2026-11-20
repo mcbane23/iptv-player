@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -557,9 +558,14 @@ fun TvLiveTvScreen(
                 TvFavoriteHint()
                 // Zaključana kategorija može da ostane izabrana od ranije; kanali joj se ne vide bez PIN-a.
                 if (selectedLocked) TvEmptyState(icon = AppIcons.Lock, text = stringResource(R.string.category_locked_tv))
+                // Redni broj reda sa fokusom; nije stanje, da korak kroz kanale ništa ne crta iznova.
+                val focusedRow = remember { IntArray(1) { -1 } }
+                val edgeMargin = with(LocalDensity.current) { EDGE_MARGIN.toPx() }
                 LazyColumn(
                     state = channelListState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .tvHeldKeyScroll(channelListState, edgeMargin) { focusedRow[0] },
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
@@ -574,6 +580,7 @@ fun TvLiveTvScreen(
                             },
                             onLongClick = { channel?.let { menuChannel = it } },
                             onFocused = {
+                                focusedRow[0] = index
                                 channel?.let {
                                     lastChannelId = it.id
                                     focusedChannel = it
