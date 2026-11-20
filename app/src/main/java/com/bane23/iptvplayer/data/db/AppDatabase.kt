@@ -22,8 +22,9 @@ import androidx.room.RoomDatabase
         FavoriteListEntity::class,
         FavoriteListItemEntity::class,
         DownloadEntity::class,
+        HiddenChannelEntity::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun channelDao(): ChannelDao
     abstract fun favoriteDao(): FavoriteDao
+    abstract fun hiddenChannelDao(): HiddenChannelDao
     abstract fun favoriteListDao(): FavoriteListDao
     abstract fun historyDao(): HistoryDao
     abstract fun epgDao(): EpgDao

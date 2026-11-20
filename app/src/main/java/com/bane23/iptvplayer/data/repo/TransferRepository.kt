@@ -5,12 +5,14 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.FavoriteEntity
 import com.bane23.iptvplayer.data.db.FavoriteListEntity
 import com.bane23.iptvplayer.data.db.FavoriteListItemEntity
+import com.bane23.iptvplayer.data.db.HiddenChannelEntity
 import com.bane23.iptvplayer.data.db.PlaylistEntity
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCategory
 import com.bane23.iptvplayer.data.lan.TransferFavoriteList
+import com.bane23.iptvplayer.data.lan.TransferHiddenChannel
 import com.bane23.iptvplayer.data.lan.TransferLocks
 import com.bane23.iptvplayer.data.lan.TransferLogin
 import com.bane23.iptvplayer.data.lan.TransferPlaylist
@@ -121,6 +123,7 @@ class TransferRepository @Inject constructor(
             favoriteLists = db.favoriteListDao().namedItems(id).groupBy({ it.listName }, { it.channelKey })
                 .map { (listName, keys) -> TransferFavoriteList(listName, keys) },
             merged = merged,
+            hiddenChannels = db.hiddenChannelDao().byPlaylist(id).map { TransferHiddenChannel(it.channelKey, it.name) },
             categories = categories,
             vodFavorites = db.vodFavoriteDao().getByPlaylist(id).map {
                 TransferVodFavorite(kind = it.kind, itemId = it.itemId, name = it.name, poster = it.poster, extension = it.extension)
@@ -170,6 +173,13 @@ class TransferRepository @Inject constructor(
                     db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
                 }
                 importFavoriteLists(playlistId, item.favoriteLists, now)
+                // Sakriveni kanali se samo dodaju; ono što je na TV-u već sakriveno ostaje sakriveno.
+                item.hiddenChannels.asSequence()
+                    .filter { it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.name.length <= MAX_TEXT }
+                    .take(MAX_FAVORITES)
+                    .forEachIndexed { position, hidden ->
+                        db.hiddenChannelDao().insert(HiddenChannelEntity(playlistId, hidden.key, hidden.name, now + position))
+                    }
                 // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu.
                 item.merged?.let { db.playlistDao().setMerged(playlistId, it) }
                 db.vodFavoriteDao().insertMissing(

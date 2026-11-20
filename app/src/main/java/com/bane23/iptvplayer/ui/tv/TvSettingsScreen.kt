@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -56,6 +57,7 @@ import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
+import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
 import com.bane23.iptvplayer.ui.common.crashReportValue
 import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
@@ -79,6 +81,7 @@ fun TvSettingsScreen(
     onRemoteButtons: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
+    hiddenViewModel: HiddenChannelsViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
@@ -143,11 +146,29 @@ fun TvSettingsScreen(
     // Uključeno je tek kad postoji i dozvola; bez nje sistem ne da aplikaciji da se sama otvori.
     val reopens = reopenAfterUpdate && autostartAllowed
     val crashReport = crashReportValue()
+    val hiddenChannels by hiddenViewModel.hidden.collectAsStateWithLifecycle()
+    var hiddenOpen by remember { mutableStateOf(false) }
+    if (hiddenOpen) {
+        // OK na kanalu ga vraća u spiskove.
+        TvActionDialog(
+            title = stringResource(R.string.hidden_channels_title),
+            options = hiddenChannels.map { it.name },
+            onSelect = { index -> hiddenChannels.getOrNull(index)?.let(hiddenViewModel::show) },
+            onClose = { hiddenOpen = false },
+        )
+    }
     val items: List<TvItem> = when (currentGroup) {
         null -> emptyList()
 
         SettingsGroup.CONTENT -> listOfNotNull(
             onCategories?.let { TvItem(CATEGORIES_ROW, stringResource(R.string.categories_manage_title), "›", onClick = it) },
+            TvItem(HIDDEN_CHANNELS_ROW, stringResource(R.string.hidden_channels_title), hiddenChannels.size.toString()) {
+                if (hiddenChannels.isEmpty()) {
+                    Toast.makeText(context, R.string.hidden_channels_empty, Toast.LENGTH_SHORT).show()
+                } else {
+                    hiddenOpen = true
+                }
+            },
             onParental?.let { TvItem(PARENTAL_ROW, stringResource(R.string.parental_title), "›", onClick = it) },
             TvItem(AUTO_REFRESH_ROW, stringResource(R.string.settings_auto_refresh), checked = autoRefreshPlaylists) {
                 viewModel.setAutoRefreshPlaylists(!autoRefreshPlaylists)
@@ -484,6 +505,7 @@ private fun FocusedSummary(
         WATCH_NEXT_ROW -> stringResource(R.string.settings_watch_next_summary)
         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
         CRASH_REPORT_ROW -> stringResource(R.string.crash_report_summary_tv)
+        HIDDEN_CHANNELS_ROW -> stringResource(R.string.hidden_channels_summary_tv)
         AUTOSTART_ROW -> stringResource(autostartSummary)
         REOPEN_ROW -> stringResource(reopenSummary)
         else -> choices.getOrNull(focused)?.summary.orEmpty()
@@ -530,6 +552,7 @@ private const val PAUSE_INFO_ROW = -20
 private const val REMOTE_BUTTONS_ROW = -21
 private const val VOD_CACHE_ROW = -22
 private const val CRASH_REPORT_ROW = -23
+private const val HIDDEN_CHANNELS_ROW = -24
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

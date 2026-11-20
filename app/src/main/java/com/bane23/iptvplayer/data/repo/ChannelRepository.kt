@@ -10,6 +10,7 @@ import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.db.ChannelEntity
+import com.bane23.iptvplayer.data.db.HiddenChannelEntity
 import com.bane23.iptvplayer.data.db.ChannelWithFavorite
 import com.bane23.iptvplayer.data.db.FavoriteEntity
 import com.bane23.iptvplayer.data.db.FavoriteListEntity
@@ -52,6 +53,7 @@ class ChannelRepository @Inject constructor(
     private val categoryDao = db.categoryDao()
     private val channelDao = db.channelDao()
     private val favoriteDao = db.favoriteDao()
+    private val hiddenChannelDao = db.hiddenChannelDao()
     private val favoriteListDao = db.favoriteListDao()
     private val historyDao = db.historyDao()
 
@@ -251,6 +253,19 @@ class ChannelRepository @Inject constructor(
             favoriteDao.insert(FavoriteEntity(channel.playlistId, channel.stableKey, System.currentTimeMillis()))
         }
     }
+
+    /** Sakriva kanal iz svih spiskova; vraća se iz podešavanja ([showChannel]). */
+    suspend fun hideChannel(channelId: Long) {
+        val channel = channelDao.getById(channelId) ?: return
+        hiddenChannelDao.insert(
+            HiddenChannelEntity(channel.playlistId, channel.stableKey, channel.name, System.currentTimeMillis()),
+        )
+    }
+
+    suspend fun showChannel(playlistId: Long, channelKey: String) = hiddenChannelDao.delete(playlistId, channelKey)
+
+    /** Sakriveni kanali liste (i lista spojenih sa njom), za spisak u podešavanjima. */
+    fun observeHiddenChannels(playlistId: Long): Flow<List<HiddenChannelEntity>> = hiddenChannelDao.observe(playlistId)
 
     /** Beleži da je kanal upravo gledan. */
     suspend fun markWatched(channelId: Long) = db.withTransaction {
