@@ -35,10 +35,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.db.ProgramHit
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SearchAllViewModel
@@ -105,7 +107,7 @@ fun MobileSearchAllScreen(
                 if (showRecent) {
                     item(key = "h-recent") {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) { GroupTitle(stringResource(R.string.search_recent), recent.size) }
+                            Column(modifier = Modifier.weight(1f)) { MobileSearchGroupTitle(stringResource(R.string.search_recent), recent.size) }
                             TextButton(onClick = viewModel::clearRecent, modifier = Modifier.padding(end = 8.dp)) {
                                 Text(stringResource(R.string.search_recent_clear))
                             }
@@ -119,7 +121,7 @@ fun MobileSearchAllScreen(
                     }
                 }
                 if (state.channels.isNotEmpty()) {
-                    item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
+                    item(key = "h-channels") { MobileSearchGroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                     items(state.channels, key = { "c${it.id}" }) { channel ->
                         ResultRow(title = channel.name, onClick = { play(channel.id) }) {
                             ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
@@ -127,32 +129,24 @@ fun MobileSearchAllScreen(
                     }
                 }
                 if (state.programs.isNotEmpty()) {
-                    item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
+                    item(key = "h-programs") { MobileSearchGroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
                     items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
-                        val onAir = hit.startMs <= now
-                        val reminded = hit.key in reminders
-                        ResultRow(
-                            title = if (reminded) "🔔 ${hit.title}" else hit.title,
-                            subtitle = listOf(
-                                hit.channelName,
-                                if (onAir) stringResource(R.string.search_on_air, formatTime(hit.stopMs)) else formatDayTime(hit.startMs),
-                            ).joinToString(" · "),
-                            trailing = when {
-                                onAir -> stringResource(R.string.guide_watch)
-                                reminded -> stringResource(R.string.reminder_remove)
-                                else -> stringResource(R.string.reminder_add)
-                            },
-                            onClick = { if (onAir) play(hit.channelId) else viewModel.toggleReminder(hit) },
-                        ) { GroupIcon(AppIcons.Guide) }
+                        MobileProgramHitRow(
+                            hit = hit,
+                            now = now,
+                            reminded = hit.key in reminders,
+                            onPlay = { play(hit.channelId) },
+                            onToggleReminder = { viewModel.toggleReminder(hit) },
+                        )
                     }
                 }
                 // Filmovi i serije kao red postera, kao u svojim karticama.
                 if (state.movies.isNotEmpty()) {
-                    item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
+                    item(key = "h-movies") { MobileSearchGroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
                     item(key = "r-movies") { PosterRow(state.movies) { openVod(it, false) } }
                 }
                 if (state.series.isNotEmpty()) {
-                    item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
+                    item(key = "h-series") { MobileSearchGroupTitle(stringResource(R.string.vod_series), state.series.size) }
                     item(key = "r-series") { PosterRow(state.series) { openVod(it, true) } }
                 }
             }
@@ -160,9 +154,40 @@ fun MobileSearchAllScreen(
     }
 }
 
+/**
+ * Emisija iz vodiča u rezultatima pretrage. Dodir na emisiju koja traje pušta kanal, a na buduću
+ * uključuje ili uklanja podsetnik.
+ */
+@Composable
+internal fun MobileProgramHitRow(
+    hit: ProgramHit,
+    now: Long,
+    reminded: Boolean,
+    onPlay: () -> Unit,
+    onToggleReminder: () -> Unit,
+    /** Bočni razmak reda; 0 kad ga spisak već ima. */
+    sidePadding: Dp = 12.dp,
+) {
+    val onAir = hit.startMs <= now
+    ResultRow(
+        sidePadding = sidePadding,
+        title = if (reminded) "🔔 ${hit.title}" else hit.title,
+        subtitle = listOf(
+            hit.channelName,
+            if (onAir) stringResource(R.string.search_on_air, formatTime(hit.stopMs)) else formatDayTime(hit.startMs),
+        ).joinToString(" · "),
+        trailing = when {
+            onAir -> stringResource(R.string.guide_watch)
+            reminded -> stringResource(R.string.reminder_remove)
+            else -> stringResource(R.string.reminder_add)
+        },
+        onClick = { if (onAir) onPlay() else onToggleReminder() },
+    ) { GroupIcon(AppIcons.Guide) }
+}
+
 /** Naslov grupe sa brojem pogodaka, kao naslov nad kanalima u Uživo. */
 @Composable
-private fun GroupTitle(text: String, count: Int) {
+internal fun MobileSearchGroupTitle(text: String, count: Int) {
     Row(
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -210,12 +235,13 @@ private fun ResultRow(
     onClick: () -> Unit,
     subtitle: String? = null,
     trailing: String? = null,
+    sidePadding: Dp = 12.dp,
     leading: @Composable () -> Unit,
 ) {
     // Pločica kao red kanala u Uživo.
     Row(
         modifier = Modifier
-            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .padding(horizontal = sidePadding, vertical = 2.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))

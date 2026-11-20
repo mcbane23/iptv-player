@@ -46,6 +46,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.db.ProgramHit
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SearchAllViewModel
@@ -151,7 +152,7 @@ fun TvSearchAllScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (showRecent) {
-                item(key = "h-recent") { GroupTitle(stringResource(R.string.search_recent), recent.size) }
+                item(key = "h-recent") { TvSearchGroupTitle(stringResource(R.string.search_recent), recent.size) }
                 items(recent, key = { "q$it" }) { query ->
                     TvListRow(onClick = {
                         focusResults = true
@@ -172,7 +173,7 @@ fun TvSearchAllScreen(
                 }
             }
             if (state.channels.isNotEmpty()) {
-                item(key = "h-channels") { GroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
+                item(key = "h-channels") { TvSearchGroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                 items(state.channels, key = { "c${it.id}" }) { channel ->
                     TvListRow(onClick = { play(channel.id) }) { color ->
                         ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
@@ -181,40 +182,23 @@ fun TvSearchAllScreen(
                 }
             }
             if (state.programs.isNotEmpty()) {
-                item(key = "h-programs") { GroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
+                item(key = "h-programs") { TvSearchGroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
                 items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
-                    val onAir = hit.startMs <= now
-                    val reminded = hit.key in reminders
-                    TvListRow(onClick = { if (onAir) play(hit.channelId) else viewModel.toggleReminder(hit) }) { color ->
-                        RowIcon(AppIcons.Guide, color)
-                        RowText(if (reminded) "🔔 ${hit.title}" else hit.title, color, Modifier.weight(1f))
-                        Text(
-                            text = listOf(
-                                hit.channelName,
-                                if (onAir) stringResource(R.string.search_on_air, formatTime(hit.stopMs)) else formatDayTime(hit.startMs),
-                                when {
-                                    onAir -> stringResource(R.string.guide_watch)
-                                    reminded -> stringResource(R.string.reminder_remove)
-                                    else -> stringResource(R.string.reminder_add)
-                                },
-                            ).joinToString(" · "),
-                            color = color,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 12.dp),
-                        )
-                    }
+                    TvProgramHitRow(
+                        hit = hit,
+                        now = now,
+                        reminded = hit.key in reminders,
+                        onPlay = { play(hit.channelId) },
+                        onToggleReminder = { viewModel.toggleReminder(hit) },
+                    )
                 }
             }
             if (state.movies.isNotEmpty()) {
-                item(key = "h-movies") { GroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
+                item(key = "h-movies") { TvSearchGroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
                 item(key = "r-movies") { PosterRow(state.movies) { openVod(it, false) } }
             }
             if (state.series.isNotEmpty()) {
-                item(key = "h-series") { GroupTitle(stringResource(R.string.vod_series), state.series.size) }
+                item(key = "h-series") { TvSearchGroupTitle(stringResource(R.string.vod_series), state.series.size) }
                 item(key = "r-series") { PosterRow(state.series) { openVod(it, true) } }
             }
         }
@@ -234,9 +218,46 @@ fun TvSearchAllScreen(
     }
 }
 
+/**
+ * Emisija iz vodiča u rezultatima pretrage. OK na emisiji koja traje pušta kanal, a na budućoj
+ * uključuje ili uklanja podsetnik.
+ */
+@Composable
+internal fun TvProgramHitRow(
+    hit: ProgramHit,
+    now: Long,
+    reminded: Boolean,
+    onPlay: () -> Unit,
+    onToggleReminder: () -> Unit,
+) {
+    val onAir = hit.startMs <= now
+    TvListRow(onClick = { if (onAir) onPlay() else onToggleReminder() }) { color ->
+        RowIcon(AppIcons.Guide, color)
+        RowText(if (reminded) "🔔 ${hit.title}" else hit.title, color, Modifier.weight(1f))
+        Text(
+            text = listOf(
+                hit.channelName,
+                if (onAir) stringResource(R.string.search_on_air, formatTime(hit.stopMs)) else formatDayTime(hit.startMs),
+                when {
+                    onAir -> stringResource(R.string.guide_watch)
+                    reminded -> stringResource(R.string.reminder_remove)
+                    else -> stringResource(R.string.reminder_add)
+                },
+            ).joinToString(" · "),
+            color = color,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        )
+    }
+}
+
 /** Naslov grupe sa brojem pogodaka, kao naslov nad kanalima u Uživo. */
 @Composable
-private fun GroupTitle(text: String, count: Int) {
+internal fun TvSearchGroupTitle(text: String, count: Int) {
     Row(
         modifier = Modifier.padding(start = 16.dp, top = 14.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

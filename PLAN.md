@@ -748,6 +748,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       na stalnom portu kad je slobodan, a telefon uz mDNS pita i adrese u svom delu kućne mreže (`LanScan`).
       Radi kad su i telefon i TV na ovoj verziji
 - [x] Meni posle dugog OK na TV-u ne bira prvu stavku kad se taster pusti (OK važi tek od novog pritiska)
+- [x] Pretraga u Uživo traži i po emisijama iz vodiča (Bane, 20. 11. 2026; TV i telefon): ispod kanala je
+      grupa „U TV vodiču” sa emisijama koje traju ili tek počinju. Emisija koja traje pušta kanal, a buduća
+      dobija podsetnik, kao u zajedničkoj pretrazi
 
 ## 7. Testiranje
 
