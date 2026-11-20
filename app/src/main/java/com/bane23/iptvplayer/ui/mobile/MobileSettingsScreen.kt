@@ -65,6 +65,7 @@ import com.bane23.iptvplayer.ui.common.languageSummary
 import com.bane23.iptvplayer.ui.common.SettingsGroup
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
+import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
 import com.bane23.iptvplayer.ui.common.crashReportValue
 import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
@@ -86,6 +87,7 @@ fun MobileSettingsScreen(
     onTransfer: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
+    hiddenViewModel: HiddenChannelsViewModel = hiltViewModel(),
 ) {
     val resumeLastChannel by viewModel.resumeLastChannel.collectAsStateWithLifecycle()
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
@@ -109,6 +111,8 @@ fun MobileSettingsScreen(
     val language = AppLocale.get(context)
     var languageOpen by remember { mutableStateOf(false) }
     var channelOpen by remember { mutableStateOf(false) }
+    var hiddenOpen by remember { mutableStateOf(false) }
+    val hiddenChannels by hiddenViewModel.hidden.collectAsStateWithLifecycle()
     val updateChannel by updateViewModel.channel.collectAsStateWithLifecycle()
 
     // Otvorena grupa; null je glavni ekran sa spiskom grupa.
@@ -208,6 +212,12 @@ fun MobileSettingsScreen(
                                         onCategories,
                                     )
                                 }
+                                SettingsLinkRow(
+                                    AppIcons.LiveTv,
+                                    stringResource(R.string.hidden_channels_title),
+                                    stringResource(R.string.hidden_channels_summary),
+                                    onClick = { hiddenOpen = true },
+                                )
                                 if (onParental != null) {
                                     SettingsLinkRow(
                                         AppIcons.Lock,
@@ -398,6 +408,17 @@ fun MobileSettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+
+    if (hiddenOpen) {
+        // Dodir vraća kanal u spiskove i zatvara prozor.
+        TrackDialog(
+            title = stringResource(R.string.hidden_channels_title),
+            options = hiddenChannels.map { it.name to false },
+            emptyText = stringResource(R.string.hidden_channels_empty),
+            onSelect = { index -> hiddenChannels.getOrNull(index)?.let(hiddenViewModel::show) },
+            onDismiss = { hiddenOpen = false },
+        )
     }
 
     if (channelOpen) {

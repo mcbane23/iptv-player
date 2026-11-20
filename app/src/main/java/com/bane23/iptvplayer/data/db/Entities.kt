@@ -251,6 +251,29 @@ data class FavoriteEntity(
     val addedAt: Long,
 )
 
+/**
+ * Kanal koji je korisnik sakrio: ne vidi se ni u jednom spisku dok ga ne vrati iz podešavanja. Pamti
+ * se po stalnom ključu, da preživi osvežavanje liste; [name] služi za spisak sakrivenih.
+ */
+@Entity(
+    tableName = "hidden_channels",
+    primaryKeys = ["playlistId", "channelKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class HiddenChannelEntity(
+    val playlistId: Long,
+    val channelKey: String,
+    val name: String,
+    val hiddenAt: Long,
+)
+
 /** Lista omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala. */
 @Entity(tableName = "favorite_lists")
 data class FavoriteListEntity(

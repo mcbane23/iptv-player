@@ -100,4 +100,42 @@ class DownloadRulesTest {
     fun `episode label has season and number`() {
         assertEquals("S1 E3", DownloadRules.episodeLabel(1, 3))
     }
+
+    @Test
+    fun `episode label is read back`() {
+        assertEquals(2 to 11, DownloadRules.parseEpisodeLabel(DownloadRules.episodeLabel(2, 11)))
+        assertNull(DownloadRules.parseEpisodeLabel("Izmišljena epizoda"))
+        assertNull(DownloadRules.parseEpisodeLabel(null))
+    }
+
+    private fun episode(id: Long, label: String?) = DownloadEntity(
+        playlistId = 1,
+        kind = DownloadEntity.KIND_EPISODE,
+        itemId = id,
+        seriesId = 9,
+        title = "Izmišljena serija",
+        subtitle = label,
+        extension = "mkv",
+        path = "/izmisljeno/$id.mkv",
+        status = DownloadEntity.STATUS_DONE,
+        createdAt = id,
+    )
+
+    @Test
+    fun `offline series orders downloaded episodes by season and number`() {
+        val series = DownloadRules.offlineSeries(
+            listOf(episode(30, "S2 E1"), episode(12, "S1 E10"), episode(11, "S1 E2"), episode(40, "bez oznake")),
+        )!!
+        assertEquals("Izmišljena serija", series.name)
+        assertEquals(listOf(11L, 12L, 30L), series.episodes.map { it.id })
+        assertEquals(12L, series.episodeAfter(11)?.id)
+        assertEquals(30L, series.episodeAfter(12)?.id)
+        assertNull(series.episodeAfter(30))
+    }
+
+    @Test
+    fun `offline series needs at least one readable episode`() {
+        assertNull(DownloadRules.offlineSeries(emptyList()))
+        assertNull(DownloadRules.offlineSeries(listOf(episode(1, null))))
+    }
 }

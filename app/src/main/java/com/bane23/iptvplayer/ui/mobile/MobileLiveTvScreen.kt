@@ -68,6 +68,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
+import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.rememberUpdatedState
@@ -115,6 +118,8 @@ fun MobileLiveTvScreen(
     var chosen by rememberSaveable { mutableStateOf<Long?>(null) }
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
+    val hiddenChannels: HiddenChannelsViewModel = hiltViewModel()
+    val context = LocalContext.current
     MobileFavoritePickDialog(favoriteLists)
     // Meni posle dugog pritiska na „Omiljene” ili na imenovanu listu omiljenih.
     var listMenu by remember { mutableStateOf<FavoriteListMenu?>(null) }
@@ -315,6 +320,11 @@ fun MobileLiveTvScreen(
                                         },
                                         onToggleFavorite = favoriteLists::favoriteAction,
                                         onGuide = { picked -> onGuide(picked.playlistId, categoryId) },
+                                        onHide = { picked ->
+                                            if (picked.id == previewId) previewId = null
+                                            hiddenChannels.hide(picked.id)
+                                            Toast.makeText(context, R.string.channel_hidden, Toast.LENGTH_LONG).show()
+                                        },
                                     )
                                 }
                             }

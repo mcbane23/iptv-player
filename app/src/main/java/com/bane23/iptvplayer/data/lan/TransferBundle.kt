@@ -53,12 +53,26 @@ data class TransferPlaylist(
     val locked: TransferLocks? = null,
     /** Da li je ovo lista koja je na telefonu izabrana kao aktivna. */
     val active: Boolean = false,
+    /** Kanali ove liste u imenovanim listama omiljenih („Sport”, „Deca”). */
+    val favoriteLists: List<TransferFavoriteList> = emptyList(),
+    /** Lista je spojena sa ostalim spojenim listama; null kad šalje starija verzija, pa na TV-u ostaje kako jeste. */
+    val merged: Boolean? = null,
+    /** Kanali koje je korisnik sakrio. */
+    val hiddenChannels: List<TransferHiddenChannel> = emptyList(),
 ) {
     companion object {
         const val TYPE_XTREAM = "xtream"
         const val TYPE_M3U = "m3u"
     }
 }
+
+/** Imenovana lista omiljenih: naziv i stabilni ključevi kanala jedne liste koji su u njoj, redom dodavanja. */
+@Serializable
+data class TransferFavoriteList(val name: String, val channels: List<String> = emptyList())
+
+/** Sakriven kanal: stabilni ključ i naziv (za spisak sakrivenih u podešavanjima). */
+@Serializable
+data class TransferHiddenChannel(val key: String, val name: String = "")
 
 @Serializable
 data class TransferCategory(

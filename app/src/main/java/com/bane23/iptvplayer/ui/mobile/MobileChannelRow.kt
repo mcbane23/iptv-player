@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -171,6 +172,8 @@ fun MobileChannelCard(
     selected: Boolean = false,
     // Bez vodiča (npr. u pretrazi) meni nudi samo omiljene.
     onGuide: ((Channel) -> Unit)? = null,
+    // Sakrivanje kanala se nudi samo u spisku Uživo.
+    onHide: ((Channel) -> Unit)? = null,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
@@ -281,6 +284,17 @@ fun MobileChannelCard(
                         onClick = {
                             menuOpen = false
                             onGuide(channel)
+                        },
+                    )
+                }
+                if (onHide != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.channel_hide)) },
+                        // Prazno mesto ikonice, da tekst stoji u liniji sa stavkama iznad.
+                        leadingIcon = { Spacer(modifier = Modifier.size(24.dp)) },
+                        onClick = {
+                            menuOpen = false
+                            onHide(channel)
                         },
                     )
                 }

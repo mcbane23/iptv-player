@@ -2,6 +2,9 @@ package com.bane23.iptvplayer.data.download
 
 import com.bane23.iptvplayer.data.db.DownloadEntity
 import com.bane23.iptvplayer.data.storage.PublicFolder
+import com.bane23.iptvplayer.data.xtream.Episode
+import com.bane23.iptvplayer.data.xtream.Season
+import com.bane23.iptvplayer.data.xtream.SeriesDetails
 
 /** Mreža preko koje uređaj trenutno izlazi na internet. Kablovska mreža se računa kao Wi-Fi. */
 enum class NetworkKind { NONE, MOBILE, WIFI }
@@ -97,4 +100,47 @@ object DownloadRules {
 
     /** Oznaka epizode u spisku, npr. „S1 E3”. */
     fun episodeLabel(season: Int, number: Int): String = "S$season E$number"
+
+    private val EPISODE_LABEL = Regex("""^S(\d+) E(\d+)$""")
+
+    /** Sezona i broj epizode iz oznake koju pravi [episodeLabel], ili null kad oznaka nije takva. */
+    fun parseEpisodeLabel(label: String?): Pair<Int, Int>? {
+        val match = EPISODE_LABEL.matchEntire(label ?: return null) ?: return null
+        val season = match.groupValues[1].toIntOrNull() ?: return null
+        val number = match.groupValues[2].toIntOrNull() ?: return null
+        return season to number
+    }
+
+    /**
+     * Serija sastavljena samo od preuzetih epizoda, za gledanje bez interneta: kad spisak epizoda ne
+     * može da se pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz ono što je na
+     * uređaju. [rows] su do kraja preuzete epizode jedne serije; one bez čitljive oznake se preskaču.
+     */
+    fun offlineSeries(rows: List<DownloadEntity>): SeriesDetails? {
+        val episodes = rows.mapNotNull { row ->
+            val (season, number) = parseEpisodeLabel(row.subtitle) ?: return@mapNotNull null
+            Episode(
+                id = row.itemId,
+                season = season,
+                number = number,
+                title = row.subtitle.orEmpty(),
+                extension = row.extension,
+                plot = null,
+                image = null,
+                durationSeconds = null,
+            )
+        }.distinctBy { it.id }.sortedWith(compareBy({ it.season }, { it.number }))
+        if (episodes.isEmpty()) return null
+        val first = rows.first()
+        return SeriesDetails(
+            name = first.title,
+            poster = first.poster,
+            plot = null,
+            genre = null,
+            cast = null,
+            releaseDate = null,
+            rating = null,
+            seasons = episodes.groupBy { it.season }.map { (season, list) -> Season(season, list) },
+        )
+    }
 }

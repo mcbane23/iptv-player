@@ -111,7 +111,7 @@
     <string name="category_chip_more">Categories</string>
     <string name="favorite_add">Add to favorites</string>
     <string name="favorite_remove">Remove from favorites</string>
-    <string name="favorite_tv_hint">Hold OK on a channel to add it to favorites or remove it</string>
+    <string name="favorite_tv_hint">Hold OK on a channel to add it to favorites or hide it</string>
     <string name="favorites_empty">No favorites yet. Tap the star next to a channel to add it.</string>
     <string name="channels_empty">No channels here.</string>
     <string name="action_search">Search</string>
@@ -743,4 +743,10 @@
     <string name="category_locked">This category is locked. Its channels show after you enter the PIN.</string>
     <string name="category_locked_tv">This category is locked. Press OK on it and enter the PIN.</string>
     <string name="category_unlock">Enter PIN</string>
+    <string name="channel_hide">Hide channel</string>
+    <string name="channel_hidden">Channel hidden. Bring it back from Settings, “Hidden channels”.</string>
+    <string name="hidden_channels_title">Hidden channels</string>
+    <string name="hidden_channels_summary">Channels you hid with a long press. Tap a channel to bring it back to the lists.</string>
+    <string name="hidden_channels_summary_tv">Channels you hid with a long press on OK. Press OK on a channel to bring it back to the lists.</string>
+    <string name="hidden_channels_empty">No hidden channels</string>
 </resources>

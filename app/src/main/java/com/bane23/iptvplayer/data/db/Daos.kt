@@ -25,12 +25,16 @@ private const val NOW_COLUMN =
         "(SELECT e.startMs $NOW_PROGRAM) AS nowStartMs, " +
         "(SELECT e.stopMs $NOW_PROGRAM) AS nowStopMs"
 
+/** Korisnik nije sakrio kanal (vidi [HiddenChannelEntity]). */
+private const val NOT_HIDDEN_CHANNEL =
+    "NOT EXISTS(SELECT 1 FROM hidden_channels hx WHERE hx.playlistId = ch.playlistId AND hx.channelKey = ch.stableKey)"
+
 /**
- * Kanal nije u kategoriji koja je sada zaključana roditeljskom zaštitom (vidi [CategoryEntity.locked]).
- * Takvi kanali se ne vide ni u jednom spisku dok se ne unese PIN.
+ * Kanal sme da se vidi u spiskovima: korisnik ga nije sakrio i nije u kategoriji koja je sada zaključana
+ * roditeljskom zaštitom (vidi [CategoryEntity.locked]; takvi kanali se ne vide dok se ne unese PIN).
  */
-private const val NOT_LOCKED =
-    "NOT EXISTS(SELECT 1 FROM categories lc WHERE lc.id = ch.categoryId AND lc.locked = 1)"
+private const val SHOWN =
+    "NOT EXISTS(SELECT 1 FROM categories lc WHERE lc.id = ch.categoryId AND lc.locked = 1) AND $NOT_HIDDEN_CHANNEL"
 
 /**
  * Liste čiji se sadržaj prikazuje zajedno sa listom `:playlistId`: ona sama, a ako je označena kao
@@ -56,18 +60,18 @@ private const val AFTER_CHANNEL =
 /** Kanali koji su u favoritima. Isti strim u više kategorija se računa jednom. */
 private const val FAVORITE_CHANNELS =
     "FROM channels ch JOIN favorites fav ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey " +
-        "WHERE $IN_SCOPE AND $NOT_LOCKED GROUP BY ch.playlistId, ch.stableKey ORDER BY fav.addedAt, ch.playlistId, ch.sortOrder"
+        "WHERE $IN_SCOPE AND $SHOWN GROUP BY ch.playlistId, ch.stableKey ORDER BY fav.addedAt, ch.playlistId, ch.sortOrder"
 
 /** Kanali jedne imenovane liste omiljenih (`:listId`), redom kojim su dodati. */
 private const val LISTED_CHANNELS =
     "FROM channels ch JOIN favorite_list_items li ON li.playlistId = ch.playlistId AND li.channelKey = ch.stableKey " +
-        "WHERE li.listId = :listId AND $IN_SCOPE AND $NOT_LOCKED GROUP BY ch.playlistId, ch.stableKey " +
+        "WHERE li.listId = :listId AND $IN_SCOPE AND $SHOWN GROUP BY ch.playlistId, ch.stableKey " +
         "ORDER BY li.addedAt, ch.playlistId, ch.sortOrder"
 
 /** Nedavno gledani kanali, najskoriji prvi. */
 private const val RECENT_CHANNELS =
     "FROM channels ch JOIN history h ON h.playlistId = ch.playlistId AND h.channelKey = ch.stableKey " +
-        "WHERE $IN_SCOPE AND $NOT_LOCKED GROUP BY ch.playlistId, ch.stableKey ORDER BY h.watchedAt DESC, ch.playlistId, ch.sortOrder"
+        "WHERE $IN_SCOPE AND $SHOWN GROUP BY ch.playlistId, ch.stableKey ORDER BY h.watchedAt DESC, ch.playlistId, ch.sortOrder"
 
 /** Redosled kategorija: prvo ručno raspoređene, pa ostale po redosledu iz liste. */
 private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrder, cat.playlistId, cat.sortOrder"
@@ -80,22 +84,28 @@ private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrde
  */
 private const val DUPLICATE =
     "EXISTS(SELECT 1 FROM channels d WHERE d.playlistId IN $SCOPE_IDS AND d.playlistId < ch.playlistId " +
-        "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND (dc.hidden = 1 OR dc.locked = 1)))"
+        "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND (dc.hidden = 1 OR dc.locked = 1)) " +
+        "AND NOT EXISTS(SELECT 1 FROM hidden_channels dh WHERE dh.playlistId = d.playlistId AND dh.channelKey = d.stableKey))"
 
 /**
  * Uslov koji iz spiska „svi kanali” (`:categoryId` je null) izbacuje kanale sakrivenih kategorija.
  * Kanale zaključanih kategorija izbacuje uvek, i kad je kategorija zadata.
  */
 private const val VISIBLE_IN_ALL =
-    "AND $NOT_LOCKED AND (:categoryId IS NOT NULL OR (NOT EXISTS(SELECT 1 FROM categories hc " +
+    "AND $SHOWN AND (:categoryId IS NOT NULL OR (NOT EXISTS(SELECT 1 FROM categories hc " +
         "WHERE hc.id = ch.categoryId AND hc.hidden = 1) AND NOT $DUPLICATE))"
 
-/** Kanal nije u sakrivenoj ni u zaključanoj kategoriji. */
+/** Kanal nije sakriven i nije u sakrivenoj ni u zaključanoj kategoriji. */
 private const val NOT_HIDDEN =
-    "AND NOT EXISTS(SELECT 1 FROM categories hc WHERE hc.id = ch.categoryId AND (hc.hidden = 1 OR hc.locked = 1))"
+    "AND NOT EXISTS(SELECT 1 FROM categories hc WHERE hc.id = ch.categoryId AND (hc.hidden = 1 OR hc.locked = 1)) " +
+        "AND $NOT_HIDDEN_CHANNEL"
 
 private const val CATEGORY_COUNT =
-    "(SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = cat.playlistId AND ch.categoryId = cat.id) AS channelCount"
+    "(SELECT COUNT(*) FROM channels ch WHERE ch.playlistId = cat.playlistId AND ch.categoryId = cat.id " +
+        "AND $NOT_HIDDEN_CHANNEL) AS channelCount"
+
+/** Kanal u imenovanoj listi omiljenih, sa nazivom te liste. */
+data class FavoriteListNamedItem(val listName: String, val channelKey: String)
 
 /** Kanal u rezultatima zajedničke pretrage. */
 data class ChannelHit(val id: Long, val name: String, val logo: String?)
@@ -296,13 +306,13 @@ interface ChannelDao {
 
     @Query(
         "SELECT COUNT(DISTINCT ch.playlistId || '|' || ch.stableKey) FROM channels ch JOIN favorites fav " +
-            "ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey WHERE $IN_SCOPE AND $NOT_LOCKED",
+            "ON fav.playlistId = ch.playlistId AND fav.channelKey = ch.stableKey WHERE $IN_SCOPE AND $SHOWN",
     )
     fun observeFavoriteCount(playlistId: Long): Flow<Int>
 
     @Query(
         "SELECT COUNT(DISTINCT ch.playlistId || '|' || ch.stableKey) FROM channels ch JOIN history h " +
-            "ON h.playlistId = ch.playlistId AND h.channelKey = ch.stableKey WHERE $IN_SCOPE AND $NOT_LOCKED",
+            "ON h.playlistId = ch.playlistId AND h.channelKey = ch.stableKey WHERE $IN_SCOPE AND $SHOWN",
     )
     fun observeRecentCount(playlistId: Long): Flow<Int>
 
@@ -340,7 +350,7 @@ interface ChannelDao {
     )
     suspend fun last(playlistId: Long, categoryId: Long?): ChannelEntity?
 
-    @Query("SELECT ch.* FROM channels ch WHERE $IN_SCOPE AND ch.number = :number AND $NOT_LOCKED ORDER BY ch.playlistId, ch.sortOrder LIMIT 1")
+    @Query("SELECT ch.* FROM channels ch WHERE $IN_SCOPE AND ch.number = :number AND $SHOWN ORDER BY ch.playlistId, ch.sortOrder LIMIT 1")
     suspend fun byNumber(playlistId: Long, number: Int): ChannelEntity?
 
     @Query("SELECT id, name, tvgId, catchupType, stableKey FROM channels WHERE playlistId = :playlistId")
@@ -373,6 +383,22 @@ interface ChannelDao {
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
+}
+
+@Dao
+interface HiddenChannelDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(channel: HiddenChannelEntity)
+
+    @Query("DELETE FROM hidden_channels WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun delete(playlistId: Long, channelKey: String)
+
+    /** Sakriveni kanali liste `:playlistId` i lista spojenih sa njom, poslednji sakriven prvi. */
+    @Query("SELECT * FROM hidden_channels ch WHERE $IN_SCOPE ORDER BY ch.hiddenAt DESC")
+    fun observe(playlistId: Long): Flow<List<HiddenChannelEntity>>
+
+    @Query("SELECT * FROM hidden_channels WHERE playlistId = :playlistId")
+    suspend fun byPlaylist(playlistId: Long): List<HiddenChannelEntity>
 }
 
 @Dao
@@ -499,6 +525,17 @@ interface FavoriteListDao {
 
     @Query("SELECT * FROM favorite_lists ORDER BY position, id")
     suspend fun all(): List<FavoriteListEntity>
+
+    @Query("SELECT * FROM favorite_lists WHERE name = :name COLLATE NOCASE LIMIT 1")
+    suspend fun byName(name: String): FavoriteListEntity?
+
+    /** Kanali liste kanala `:playlistId` u imenovanim listama, za prenos na drugi uređaj. */
+    @Query(
+        "SELECT fl.name AS listName, li.channelKey AS channelKey FROM favorite_list_items li " +
+            "JOIN favorite_lists fl ON fl.id = li.listId WHERE li.playlistId = :playlistId " +
+            "ORDER BY fl.position, fl.id, li.addedAt",
+    )
+    suspend fun namedItems(playlistId: Long): List<FavoriteListNamedItem>
 
     /** Sve liste, sa brojem kanala koji se iz svake vide u listi kanala [playlistId] i spojenima sa njom. */
     @Query(
@@ -739,6 +776,10 @@ interface DownloadDao {
 
     @Query("SELECT * FROM downloads WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun find(playlistId: Long, kind: String, itemId: Long): DownloadEntity?
+
+    /** Do kraja preuzete epizode jedne serije. */
+    @Query("SELECT * FROM downloads WHERE playlistId = :playlistId AND kind = 'episode' AND seriesId = :seriesId AND status = 'done'")
+    suspend fun doneEpisodes(playlistId: Long, seriesId: Long): List<DownloadEntity>
 
     /** Sledeće na redu: najstarije koje čeka. */
     @Query("SELECT * FROM downloads WHERE status = 'queued' ORDER BY createdAt, id LIMIT 1")

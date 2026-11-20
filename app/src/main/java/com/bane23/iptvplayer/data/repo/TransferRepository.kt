@@ -3,11 +3,16 @@ package com.bane23.iptvplayer.data.repo
 import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.FavoriteEntity
+import com.bane23.iptvplayer.data.db.FavoriteListEntity
+import com.bane23.iptvplayer.data.db.FavoriteListItemEntity
+import com.bane23.iptvplayer.data.db.HiddenChannelEntity
 import com.bane23.iptvplayer.data.db.PlaylistEntity
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.lan.TransferAccounts
 import com.bane23.iptvplayer.data.lan.TransferBundle
 import com.bane23.iptvplayer.data.lan.TransferCategory
+import com.bane23.iptvplayer.data.lan.TransferFavoriteList
+import com.bane23.iptvplayer.data.lan.TransferHiddenChannel
 import com.bane23.iptvplayer.data.lan.TransferLocks
 import com.bane23.iptvplayer.data.lan.TransferLogin
 import com.bane23.iptvplayer.data.lan.TransferPlaylist
@@ -115,6 +120,10 @@ class TransferRepository @Inject constructor(
             epgUrl = epgUrlOverride.orEmpty(),
             epgShiftHours = epgShiftHours,
             favorites = db.favoriteDao().keysByPlaylist(id),
+            favoriteLists = db.favoriteListDao().namedItems(id).groupBy({ it.listName }, { it.channelKey })
+                .map { (listName, keys) -> TransferFavoriteList(listName, keys) },
+            merged = merged,
+            hiddenChannels = db.hiddenChannelDao().byPlaylist(id).map { TransferHiddenChannel(it.channelKey, it.name) },
             categories = categories,
             vodFavorites = db.vodFavoriteDao().getByPlaylist(id).map {
                 TransferVodFavorite(kind = it.kind, itemId = it.itemId, name = it.name, poster = it.poster, extension = it.extension)
@@ -163,6 +172,16 @@ class TransferRepository @Inject constructor(
                     // Redosled dodavanja se čuva kroz vreme upisa.
                     db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
                 }
+                importFavoriteLists(playlistId, item.favoriteLists, now)
+                // Sakriveni kanali se samo dodaju; ono što je na TV-u već sakriveno ostaje sakriveno.
+                item.hiddenChannels.asSequence()
+                    .filter { it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.name.length <= MAX_TEXT }
+                    .take(MAX_FAVORITES)
+                    .forEachIndexed { position, hidden ->
+                        db.hiddenChannelDao().insert(HiddenChannelEntity(playlistId, hidden.key, hidden.name, now + position))
+                    }
+                // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu.
+                item.merged?.let { db.playlistDao().setMerged(playlistId, it) }
                 db.vodFavoriteDao().insertMissing(
                     item.vodFavorites.asSequence()
                         .filter { it.kind in VOD_KINDS && it.name.length <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
@@ -208,6 +227,25 @@ class TransferRepository @Inject constructor(
                 trakt = accounts?.trakt?.let { adoptTrakt(it) },
             )
         }
+
+    /**
+     * Imenovane liste omiljenih. Lista sa istim nazivom se na TV-u dopunjuje, nova se pravi; ništa se ne briše.
+     */
+    private suspend fun importFavoriteLists(playlistId: Long, lists: List<TransferFavoriteList>, now: Long) {
+        val dao = db.favoriteListDao()
+        lists.asSequence()
+            .map { it.copy(name = it.name.trim()) }
+            .filter { it.name.isNotEmpty() && it.name.length <= MAX_LIST_NAME }
+            .take(MAX_FAVORITE_LISTS)
+            .forEach { list ->
+                val listId = dao.byName(list.name)?.id
+                    ?: dao.insert(FavoriteListEntity(name = list.name, position = dao.nextPosition()))
+                list.channels.asSequence().filter { it.isNotEmpty() && it.length <= MAX_TEXT }.take(MAX_FAVORITES)
+                    .forEachIndexed { position, key ->
+                        dao.insertItem(FavoriteListItemEntity(listId, playlistId, key, now + position))
+                    }
+            }
+    }
 
     private suspend fun adoptOpenSubtitles(login: TransferLogin): Boolean {
         if (login.username.isBlank() || login.username.length > MAX_ACCOUNT_FIELD || login.password.length > MAX_ACCOUNT_FIELD) {
@@ -281,6 +319,8 @@ class TransferRepository @Inject constructor(
 
     private companion object {
         const val MAX_FAVORITES = 5_000
+        const val MAX_FAVORITE_LISTS = 100
+        const val MAX_LIST_NAME = 100
         const val MAX_LANGUAGE_LENGTH = 16
         const val MAX_ACCOUNT_FIELD = 2_000
         const val MAX_TEXT = 2_000

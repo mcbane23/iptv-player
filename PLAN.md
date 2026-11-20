@@ -725,6 +725,15 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       (`data/crash/CrashLog.kt`), bez adresa (pa i bez korisničkog imena i lozinke iz adrese strima). Pri sledećem
       pokretanju aplikacija jednom nudi izveštaj, a stavka ostaje u Podešavanja → O aplikaciji. Telefon ga deli
       kroz sistemsko „Podeli”, TV ga čuva kao fajl u Downloads/Glowbox. Ništa se ne šalje samo od sebe
+- [x] Prenos sa telefona na TV je potpun (Bane, 20. 11. 2026): nosi i imenovane liste omiljenih (lista sa istim
+      nazivom se na TV-u dopunjuje), to koje su liste spojene i sakrivene kanale
+- [x] Sakrivanje pojedinačnog kanala (Bane, 20. 11. 2026; telefon i TV): u Uživo dugi pritisak na kanal (dugi OK
+      na TV-u) otvara meni sa stavkom „Sakrij kanal”; na TV-u je to isti meni kao za omiljene. Sakriven kanal se
+      ne vidi nigde (kategorija, Svi, Omiljeni, pretraga, vodič, prebacivanje kanala), a vraća se iz Podešavanja,
+      stavka „Sakriveni kanali”. Baza v19: tabela `hidden_channels`, po stalnom ključu kanala
+- [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
+      pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
+      preuzima samo od sebe
 
 ## 7. Testiranje
 

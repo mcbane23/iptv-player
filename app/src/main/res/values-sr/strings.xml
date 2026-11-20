@@ -110,7 +110,7 @@
     <string name="category_chip_more">Kategorije</string>
     <string name="favorite_add">Dodaj u favorite</string>
     <string name="favorite_remove">Ukloni iz favorita</string>
-    <string name="favorite_tv_hint">Držite OK na kanalu da ga dodate u favorite ili uklonite iz njih</string>
+    <string name="favorite_tv_hint">Držite OK na kanalu da ga dodate u favorite ili da ga sakrijete</string>
     <string name="favorites_empty">Još nema favorita. Dodirnite zvezdicu pored kanala da ga dodate.</string>
     <string name="channels_empty">Ovde nema kanala.</string>
     <string name="action_search">Pretraga</string>
@@ -744,4 +744,10 @@
     <string name="category_locked">Ova kategorija je zaključana. Kanali se vide posle unosa PIN-a.</string>
     <string name="category_locked_tv">Ova kategorija je zaključana. Pritisnite OK na njoj i unesite PIN.</string>
     <string name="category_unlock">Unesi PIN</string>
+    <string name="channel_hide">Sakrij kanal</string>
+    <string name="channel_hidden">Kanal je sakriven. Vraća se iz Podešavanja, stavka „Sakriveni kanali”.</string>
+    <string name="hidden_channels_title">Sakriveni kanali</string>
+    <string name="hidden_channels_summary">Kanali koje ste sakrili dugim pritiskom. Dodir na kanal ga vraća u spiskove.</string>
+    <string name="hidden_channels_summary_tv">Kanali koje ste sakrili dugim pritiskom na OK. OK na kanalu ga vraća u spiskove.</string>
+    <string name="hidden_channels_empty">Nema sakrivenih kanala</string>
 </resources>

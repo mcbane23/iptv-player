@@ -42,10 +42,13 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Category
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
+import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
 import com.bane23.iptvplayer.ui.common.ChannelListViewModel
 import com.bane23.iptvplayer.ui.common.ChannelLogo
 import com.bane23.iptvplayer.ui.common.SkeletonLogo
@@ -139,6 +142,10 @@ fun TvLiveTvScreen(
     // Meni liste omiljenih (dugi OK): za „Omiljene” nova lista, za imenovanu listu ime i brisanje.
     var favoritesMenu by remember { mutableStateOf(false) }
     var menuList by remember { mutableStateOf<FavoriteList?>(null) }
+    var menuChannel by remember { mutableStateOf<Channel?>(null) }
+    var hiddenCount by remember { mutableStateOf(0) }
+    val hiddenChannels: HiddenChannelsViewModel = hiltViewModel()
+    val context = LocalContext.current
     var nameDialog by remember { mutableStateOf<ListNameRequest?>(null) }
     var deleteList by remember { mutableStateOf<FavoriteList?>(null) }
     // Lista koja čeka brisanje dok fokus ne pređe sa njenog reda na „Omiljene”.
@@ -239,6 +246,36 @@ fun TvLiveTvScreen(
             onSelect = { nameDialog = ListNameRequest(null) },
             onClose = { favoritesMenu = false },
         )
+    }
+    menuChannel?.let { channel ->
+        TvActionDialog(
+            title = channel.name,
+            options = listOf(
+                stringResource(R.string.category_favorites),
+                stringResource(R.string.channel_hide),
+            ),
+            onSelect = { option ->
+                if (option == 0) {
+                    favoriteLists.favoriteAction(channel.id)
+                } else {
+                    hiddenChannels.hide(channel.id)
+                    hiddenCount++
+                    Toast.makeText(context, R.string.channel_hidden, Toast.LENGTH_LONG).show()
+                }
+            },
+            onClose = { menuChannel = null },
+        )
+    }
+    // Sakriven kanal nestaje iz spiska zajedno sa fokusom; fokus se vraća na kanal na vrhu vidljivog dela
+    // spiska, a kad kanala više nema, na izabranu kategoriju.
+    LaunchedEffect(hiddenCount) {
+        if (hiddenCount == 0) return@LaunchedEffect
+        delay(MOVE_SETTLE_MS)
+        repeat(FOCUS_RESTORE_ATTEMPTS) {
+            if (topChannelFocus.tryRequestFocus()) return@LaunchedEffect
+            delay(FOCUS_RESTORE_STEP_MS)
+        }
+        firstFocus.tryRequestFocus()
     }
     menuList?.let { list ->
         TvActionDialog(
@@ -535,7 +572,7 @@ fun TvLiveTvScreen(
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
-                            onLongClick = { channel?.let { favoriteLists.favoriteAction(it.id) } },
+                            onLongClick = { channel?.let { menuChannel = it } },
                             onFocused = {
                                 channel?.let {
                                     lastChannelId = it.id
