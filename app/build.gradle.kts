@@ -101,6 +101,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Lint ima svoj posao u CI-ju (lintDebug). Bez ovoga bi svaki optimizovan build (dev, release) uz R8
+    // ponovo pokretao lint („lintVital”), što samo produžava čekanje na APK.
+    lint {
+        checkReleaseBuilds = false
+    }
 }
 
 /**
