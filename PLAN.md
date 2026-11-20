@@ -734,6 +734,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] TV, Uživo: kad se kanal izvadi iz otvorene liste omiljenih, fokus ostaje među kanalima (Bane, 20. 11.
       2026): prelazi na sledeći kanal ispod, za poslednji u listi na onaj iznad, a kad lista ostane prazna na red
       „Omiljeni”. Ranije je fokus odlazio na bočni meni
+- [x] TV, Filmovi i Serije: dugi OK na posteru u grupi „Favoriti” uklanja film ili seriju iz favorita (Bane,
+      20. 11. 2026); fokus prelazi na sledeći poster, a kad je poslednji, na prethodni ili na red „Favoriti”.
+      Ranije je dugi OK radio samo u kategorijama i u pretrazi
 - [x] Preuzete epizode zaredom bez interneta (Bane, 20. 11. 2026; telefon): kad spisak epizoda ne može da se
       pročita sa servera, „Sledeća” i kartica na kraju epizode idu kroz preuzete epizode te serije. Ništa se ne
       preuzima samo od sebe
