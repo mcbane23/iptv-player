@@ -245,7 +245,7 @@
     <string name="transfer_skipped_files">Liste koje ne mogu da se pošalju (učitane iz fajla na ovom telefonu ili sa nečitljivom lozinkom): %1$d</string>
     <string name="transfer_warning">Šalju se i lozinke naloga, pravo na TV kroz kućnu mrežu. Pošaljite samo ako je ovo vaš TV i na njegovom ekranu je QR kod.</string>
     <string name="transfer_send">Pošalji na TV</string>
-    <string name="transfer_sending">Slanje… TV učitava liste, što može da potraje nekoliko minuta. Ostavite ovaj ekran otvoren.</string>
+    <string name="transfer_sending">Slanje… Ovo traje nekoliko sekundi.</string>
     <string name="transfer_summary">Nove liste: %1$d · već postoje na TV-u: %2$d · neuspešno: %3$d</string>
     <string name="transfer_tv_loading">TV je primio sve. Nove liste (%1$d) sada učitava sam, a napredak i ishod se vide na TV-u.</string>
     <string name="transfer_done_hint">Možete da nastavite na TV-u.</string>

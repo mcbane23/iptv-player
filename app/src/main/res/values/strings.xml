@@ -245,7 +245,7 @@
     <string name="transfer_skipped_files">Playlists that cannot be sent (loaded from a file on this phone, or with an unreadable password): %1$d</string>
     <string name="transfer_warning">Account passwords are sent too, straight to the TV over your home network. Send only if this is your TV and its screen is showing the QR code.</string>
     <string name="transfer_send">Send to TV</string>
-    <string name="transfer_sending">Sending… The TV is loading the playlists, which can take a few minutes. Keep this screen open.</string>
+    <string name="transfer_sending">Sending… This takes a few seconds.</string>
     <string name="transfer_summary">New playlists: %1$d · already on the TV: %2$d · failed: %3$d</string>
     <string name="transfer_tv_loading">The TV has received everything. It is now loading the new playlists (%1$d) by itself; progress and the result are shown on the TV.</string>
     <string name="transfer_done_hint">You can continue on the TV.</string>

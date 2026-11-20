@@ -116,7 +116,7 @@ class SendToTvViewModel @Inject constructor(
     private val _state = MutableStateFlow(SendToTvUiState())
     val state: StateFlow<SendToTvUiState> = _state.asStateFlow()
 
-    // TV učitava svaku listu pre nego što odgovori, pa odgovor može da kasni više minuta.
+    // Novija verzija na TV-u odgovara odmah; starija tek kad učita svaku listu, pa odgovor može da kasni.
     private val client = httpClient.newBuilder().readTimeout(READ_TIMEOUT_MINUTES, TimeUnit.MINUTES).build()
     private var target: String? = null
     private var bundle: TransferBundle? = null

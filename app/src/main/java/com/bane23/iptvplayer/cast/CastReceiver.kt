@@ -166,12 +166,19 @@ class CastReceiver @Inject constructor(
 
     /**
      * Telefonu se odgovara čim je paket primljen i primenjeno sve što ne traži preuzimanje. Nove
-     * liste TV zatim učitava sam, u pozadini, a napredak i ishod pokazuje na svom ekranu. Jedan po
-     * jedan: drugi paket čeka da se prvi učita do kraja.
+     * liste TV zatim učitava sam, u pozadini, a napredak i ishod pokazuje na svom ekranu. Dok se
+     * prethodni paket još učitava, novi se samo stavlja u red iza njega: telefon ni tada ne čeka.
      */
     @Synchronized
     override fun transfer(bundle: TransferBundle): TransferResult {
-        runBlocking { loading?.join() }
+        val previous = loading
+        if (previous?.isActive == true) {
+            loading = importScope.launch {
+                previous.join()
+                show { transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) } }
+            }
+            return TransferResult(loading = bundle.playlists.size)
+        }
         _transfer.value = IncomingTransfer()
         val pending = try {
             runBlocking { transfers.beginImport(bundle) }
@@ -184,18 +191,23 @@ class CastReceiver @Inject constructor(
         } else {
             _transfer.value = IncomingTransfer(step = 1, total = pending.queued)
             loading = importScope.launch {
-                val final = try {
-                    pending.finish { step, total -> _transfer.value = IncomingTransfer(step, total) }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Ishod nije poznat; poruka se sklanja, a ono što je učitano ostaje.
-                    null
-                }
-                _transfer.value = final?.let { IncomingTransfer(result = it) }
+                show { pending.finish { step, total -> _transfer.value = IncomingTransfer(step, total) } }
             }
         }
         return pending.result
+    }
+
+    /** Učitava u pozadini i ishod pokazuje na ekranu TV-a. */
+    private suspend fun show(load: suspend () -> TransferResult) {
+        val final = try {
+            load()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Ishod nije poznat; poruka se sklanja, a ono što je učitano ostaje.
+            null
+        }
+        _transfer.value = final?.let { IncomingTransfer(result = it) }
     }
 
     /** Ključ ovog TV-a; pravi se jednom i čuva u podešavanjima. */
