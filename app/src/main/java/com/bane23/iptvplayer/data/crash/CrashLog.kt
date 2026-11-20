@@ -6,9 +6,9 @@ import com.bane23.iptvplayer.BuildConfig
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -90,7 +90,8 @@ object CrashLog {
     /** Tekst izveštaja: vreme, podaci o aplikaciji i uređaju, pa trag steka bez adresa. */
     fun format(timeMs: Long, threadName: String, error: Throwable, info: List<String>): String {
         val trace = StringWriter().also { error.printStackTrace(PrintWriter(it)) }.toString()
-        val time = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(Instant.ofEpochMilli(timeMs).atZone(ZoneId.systemDefault()))
+        // SimpleDateFormat, jer java.time ne postoji na Androidu 7 (minSdk 24).
+        val time = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).format(Date(timeMs))
         return buildString {
             appendLine(time)
             info.forEach { appendLine(it) }
