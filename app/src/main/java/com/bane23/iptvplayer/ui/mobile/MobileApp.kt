@@ -36,6 +36,7 @@ import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.Downloads
 import com.bane23.iptvplayer.ui.common.navigation.PlayDownload
 import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
+import com.bane23.iptvplayer.ui.common.navigation.Unlock
 import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
 import com.bane23.iptvplayer.ui.common.categorySection
@@ -112,6 +113,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onPlaylists = { backStack.add(Playlists) },
                     onCategories = { section -> backStack.add(ManageCategories(section.name)) },
                     onParental = { backStack.add(ParentalControl) },
+                    onUnlock = { backStack.add(Unlock) },
                     onTrakt = { backStack.add(TraktAccount) },
                     onTransfer = { backStack.add(TransferToTv) },
                     onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
@@ -285,6 +287,12 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         start = { it.startDownload(key.downloadId) },
                         onClose = { backStack.removeLastOrNull() },
                     )
+                }
+            }
+            entry<Unlock> {
+                // Tačan PIN otključava sve; ekran se zatvara i vraća na spisak kategorija.
+                MobilePinGate(LockTarget.Everything, onCancel = { backStack.removeLastOrNull() }) {
+                    LaunchedEffect(Unit) { backStack.remove(Unlock) }
                 }
             }
             entry<PlayRecording> { key ->

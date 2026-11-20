@@ -296,9 +296,9 @@ class PlaylistRepository @Inject constructor(
 
     /** Briše stari sadržaj liste i upisuje novi. Poziva se unutar transakcije. */
     private suspend fun importContent(playlist: PlaylistEntity) {
-        // Sakrivene kategorije i njihov redosled se pamte po nazivu, da prežive osvežavanje.
+        // Sakrivene i zaključane kategorije i njihov redosled se pamte po nazivu, da prežive osvežavanje.
         categoryPrefs = categoryDao.getByPlaylist(playlist.id)
-            .filter { it.hidden || it.userOrder != null }
+            .filter { it.hidden || it.userOrder != null || it.locked }
             .associateBy { it.name }
         channelDao.deleteByPlaylist(playlist.id)
         categoryDao.deleteByPlaylist(playlist.id)
@@ -539,6 +539,8 @@ class PlaylistRepository @Inject constructor(
                     sortOrder = categoryIds.size,
                     hidden = categoryPrefs[name]?.hidden ?: false,
                     userOrder = categoryPrefs[name]?.userOrder,
+                    // Zaključana kategorija ostaje zaključana i tokom osvežavanja; dalje je održava LockRepository.
+                    locked = categoryPrefs[name]?.locked ?: false,
                 ),
             )
             categoryIds[key] = id

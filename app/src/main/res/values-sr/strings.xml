@@ -334,7 +334,7 @@
     <string name="archive_hint_tv">OK otvara arhivu</string>
     <string name="parental_title">Roditeljska zaštita</string>
     <string name="parental_intro">Postavi PIN od četiri cifre. Posle toga biraš kategorije koje se otvaraju tek posle unosa PIN-a.</string>
-    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem, a njihov sadržaj traži PIN. Unet PIN važi dok se aplikacija ne zatvori.</string>
+    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Unet PIN važi dok se aplikacija ne zatvori.</string>
     <string name="parental_lock_again">Zaključaj ponovo</string>
     <string name="parental_change_pin">Promeni PIN</string>
     <string name="parental_remove_pin">Ukloni PIN i sva zaključavanja</string>
@@ -741,4 +741,7 @@
     <string name="crash_prompt_share">Podeli izveštaj</string>
     <string name="crash_prompt_save">Sačuvaj izveštaj</string>
     <string name="crash_prompt_later">Ne sada</string>
+    <string name="category_locked">Ova kategorija je zaključana. Kanali se vide posle unosa PIN-a.</string>
+    <string name="category_locked_tv">Ova kategorija je zaključana. Pritisnite OK na njoj i unesite PIN.</string>
+    <string name="category_unlock">Unesi PIN</string>
 </resources>

@@ -61,6 +61,12 @@ data class CategoryEntity(
     val hidden: Boolean = false,
     /** Redosled koji je zadao korisnik; null = kategorija još nije ručno raspoređena. */
     val userOrder: Int? = null,
+    /**
+     * Kategorija je sada zaključana roditeljskom zaštitom: PIN postoji, kategorija je izabrana za
+     * zaključavanje i PIN nije unet u ovom pokretanju. Izvor istine su podešavanja; ovu kolonu
+     * održava `LockRepository`, da upiti mogu da izostave kanale zaključanih kategorija.
+     */
+    val locked: Boolean = false,
 )
 
 @Entity(

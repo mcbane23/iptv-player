@@ -99,6 +99,7 @@ fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
     onSearch: () -> Unit,
+    onUnlock: () -> Unit,
     onCategories: () -> Unit = {},
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
@@ -150,9 +151,28 @@ fun TvLiveTvScreen(
     }
     // OK na redu „Omiljeni” ne menja karticu koja je već otvorena.
     // OK na kategoriji je bira; drugi OK na već izabranoj ide na kanale, kao Desno (Bane).
+    // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
+    var awaitingUnlock by rememberSaveable { mutableStateOf<Long?>(null) }
     val pickCategory: (Long) -> Unit = { id ->
-        if (selectedCategory == id) topChannelFocus.tryRequestFocus() else focusedCategory = id
+        if (state.categories.any { it.id == id && it.locked }) {
+            // Kanali zaključane kategorije se ne vide, pa OK na njoj prvo traži PIN.
+            awaitingUnlock = id
+            onUnlock()
+        } else {
+            awaitingUnlock = null
+            if (selectedCategory == id) topChannelFocus.tryRequestFocus() else focusedCategory = id
+        }
     }
+    LaunchedEffect(awaitingUnlock, state.categories) {
+        val wanted = awaitingUnlock ?: return@LaunchedEffect
+        val category = state.categories.firstOrNull { it.id == wanted }
+        if (category == null) awaitingUnlock = null
+        if (category != null && !category.locked) {
+            awaitingUnlock = null
+            focusedCategory = wanted
+        }
+    }
+    val selectedLocked = state.categories.any { it.id == selectedCategory && it.locked }
     val focusFavorites: () -> Unit = {
         // Drugi OK na već izabranoj grupi ide na kanale, kao Desno.
         if (state.isFavoritesGroup(selectedCategory)) {
@@ -498,6 +518,8 @@ fun TvLiveTvScreen(
                 )
                 }
                 TvFavoriteHint()
+                // Zaključana kategorija može da ostane izabrana od ranije; kanali joj se ne vide bez PIN-a.
+                if (selectedLocked) TvEmptyState(icon = AppIcons.Lock, text = stringResource(R.string.category_locked_tv))
                 LazyColumn(
                     state = channelListState,
                     modifier = Modifier.fillMaxSize(),

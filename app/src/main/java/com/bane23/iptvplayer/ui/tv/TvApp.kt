@@ -40,6 +40,7 @@ import com.bane23.iptvplayer.ui.common.navigation.ChannelArchive
 import com.bane23.iptvplayer.ui.common.navigation.Guide
 import com.bane23.iptvplayer.ui.common.navigation.PlayArchive
 import com.bane23.iptvplayer.ui.common.navigation.PlayRecording
+import com.bane23.iptvplayer.ui.common.navigation.Unlock
 import com.bane23.iptvplayer.ui.common.navigation.RemoteButtons
 import com.bane23.iptvplayer.ui.common.navigation.Recordings
 import com.bane23.iptvplayer.ui.common.navigation.LiveTv
@@ -117,6 +118,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 }
                 TvHomeScreen(
                     liveTvViewModel = liveTvViewModel,
+                    onUnlock = { backStack.add(Unlock) },
                     onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
                     onSearch = { backStack.add(Search) },
                     onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
@@ -265,6 +267,12 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
             entry<RemoteButtons> { TvRemoteButtonsScreen() }
             entry<Recordings> {
                 TvRecordingsScreen(onPlay = { id -> backStack.add(PlayRecording(id)) })
+            }
+            entry<Unlock> {
+                // Tačan PIN otključava sve; ekran se zatvara i vraća na spisak kategorija.
+                TvPinGate(LockTarget.Everything) {
+                    LaunchedEffect(Unit) { backStack.remove(Unlock) }
+                }
             }
             entry<PlayRecording> { key ->
                 TvPinGate(LockTarget.Recording(key.recordingId)) {

@@ -336,7 +336,7 @@
     <string name="archive_hint_tv">OK opens the archive</string>
     <string name="parental_title">Parental control</string>
     <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
-    <string name="parental_hint">Locked categories stay visible with a padlock, and their content asks for the PIN. An entered PIN stays valid until the app is closed.</string>
+    <string name="parental_hint">Locked categories stay visible with a padlock. Channels of a locked category are hidden everywhere until the PIN is entered; movies and series ask for the PIN when opened. An entered PIN stays valid until the app is closed.</string>
     <string name="parental_lock_again">Lock again</string>
     <string name="parental_change_pin">Change PIN</string>
     <string name="parental_remove_pin">Remove PIN and all locks</string>
@@ -740,4 +740,7 @@
     <string name="crash_prompt_share">Share report</string>
     <string name="crash_prompt_save">Save report</string>
     <string name="crash_prompt_later">Not now</string>
+    <string name="category_locked">This category is locked. Its channels show after you enter the PIN.</string>
+    <string name="category_locked_tv">This category is locked. Press OK on it and enter the PIN.</string>
+    <string name="category_unlock">Enter PIN</string>
 </resources>

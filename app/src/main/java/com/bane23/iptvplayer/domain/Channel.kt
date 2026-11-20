@@ -7,6 +7,8 @@ data class Category(
     val hidden: Boolean = false,
     /** Lista kojoj kategorija pripada (kod spojenih lista to ne mora biti aktivna). */
     val playlistId: Long = 0,
+    /** Kategorija je sada zaključana: kanali joj se ne vide dok se ne unese PIN. */
+    val locked: Boolean = false,
 )
 
 /**
