@@ -165,37 +165,32 @@ class CastReceiver @Inject constructor(
     override fun status(): CastStatus = status.value
 
     /**
-     * Telefonu se odgovara čim je paket primljen i primenjeno sve što ne traži preuzimanje. Nove
-     * liste TV zatim učitava sam, u pozadini, a napredak i ishod pokazuje na svom ekranu. Jedan po
-     * jedan: drugi paket čeka da se prvi učita do kraja.
+     * Telefonu se odgovara čim je paket primljen, pre bilo kakvog upisa: baza može da bude zauzeta
+     * (TV baš tada osvežava liste) i telefon bi čekao minutima. Sve ostalo TV radi sam, u pozadini,
+     * a napredak i ishod pokazuje na svom ekranu. Paketi se obrađuju jedan po jedan.
      */
     @Synchronized
     override fun transfer(bundle: TransferBundle): TransferResult {
-        runBlocking { loading?.join() }
-        _transfer.value = IncomingTransfer()
-        val pending = try {
-            runBlocking { transfers.beginImport(bundle) }
-        } catch (e: Exception) {
-            _transfer.value = null
+        val previous = loading
+        if (_transfer.value == null || _transfer.value?.result != null) _transfer.value = IncomingTransfer()
+        loading = importScope.launch {
+            previous?.join()
+            show { transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) } }
+        }
+        return TransferResult(accepted = true, loading = bundle.playlists.size)
+    }
+
+    /** Učitava u pozadini i ishod pokazuje na ekranu TV-a. */
+    private suspend fun show(load: suspend () -> TransferResult) {
+        val final = try {
+            load()
+        } catch (e: CancellationException) {
             throw e
+        } catch (_: Exception) {
+            // Ishod nije poznat; poruka se sklanja, a ono što je učitano ostaje.
+            null
         }
-        if (pending.queued == 0) {
-            _transfer.value = IncomingTransfer(result = pending.result)
-        } else {
-            _transfer.value = IncomingTransfer(step = 1, total = pending.queued)
-            loading = importScope.launch {
-                val final = try {
-                    pending.finish { step, total -> _transfer.value = IncomingTransfer(step, total) }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Ishod nije poznat; poruka se sklanja, a ono što je učitano ostaje.
-                    null
-                }
-                _transfer.value = final?.let { IncomingTransfer(result = it) }
-            }
-        }
-        return pending.result
+        _transfer.value = final?.let { IncomingTransfer(result = it) }
     }
 
     /** Ključ ovog TV-a; pravi se jednom i čuva u podešavanjima. */

@@ -97,8 +97,11 @@ fun MobileSendToTvScreen(
                 state.error == SendError.BAD_TARGET -> Body(stringResource(R.string.transfer_bad_target))
 
                 result != null -> {
-                    if (result.loading > 0) {
-                        // TV je odmah potvrdio prijem; nove liste učitava sam, pa se ishod vidi na njemu.
+                    if (result.accepted) {
+                        // TV je samo potvrdio prijem i sve radi sam; ishod se vidi na njemu.
+                        Body(stringResource(R.string.transfer_tv_accepted))
+                    } else if (result.loading > 0) {
+                        // Verzija 1.0.13 na TV-u: odmah potvrdio prijem; nove liste učitava sam, pa se ishod vidi na njemu.
                         Body(stringResource(R.string.transfer_tv_loading, result.loading))
                     } else {
                         Body(stringResource(R.string.transfer_summary, result.added, result.existing, result.failed))

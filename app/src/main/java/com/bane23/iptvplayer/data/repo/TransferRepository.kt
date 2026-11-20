@@ -39,6 +39,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Paket spreman za slanje i broj lista koje nisu mogle da uđu u njega. */
 data class TransferExport(val bundle: TransferBundle, val skipped: Int)
@@ -287,7 +288,8 @@ class TransferRepository @Inject constructor(
         if (login.username.isBlank() || login.username.length > MAX_ACCOUNT_FIELD || login.password.length > MAX_ACCOUNT_FIELD) {
             return false
         }
-        return openSubtitles.adoptLogin(login.username, login.password)
+        // Prijava ide preko interneta; telefon na nju ne čeka duže od nekoliko sekundi.
+        return withTimeoutOrNull(ACCOUNT_WAIT_MS) { openSubtitles.adoptLogin(login.username, login.password) } ?: false
     }
 
     private suspend fun adoptTrakt(login: TransferTraktLogin): Boolean {
@@ -359,6 +361,7 @@ class TransferRepository @Inject constructor(
 
     private companion object {
         const val MAX_FAVORITES = 5_000
+        const val ACCOUNT_WAIT_MS = 5_000L
         const val MAX_FAVORITE_LISTS = 100
         const val MAX_LIST_NAME = 100
         const val MAX_LANGUAGE_LENGTH = 16
