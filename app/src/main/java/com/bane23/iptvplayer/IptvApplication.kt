@@ -2,6 +2,7 @@ package com.bane23.iptvplayer
 
 import android.app.Application
 import android.content.Context
+import com.bane23.iptvplayer.data.crash.CrashLog
 import com.bane23.iptvplayer.data.download.DownloadRepository
 import com.bane23.iptvplayer.data.recording.RecordingRepository
 import com.bane23.iptvplayer.data.reminder.ReminderRepository
@@ -45,6 +46,8 @@ class IptvApplication : Application() {
 
     /** Jezik izabran u podešavanjima važi i za tekstove van aktivnosti (obaveštenja, kratke poruke). */
     override fun attachBaseContext(base: Context) {
+        // Pre svega ostalog, da se zabeleži i pad pri samom pokretanju.
+        CrashLog.install(base)
         super.attachBaseContext(AppLocale.wrap(base))
     }
 

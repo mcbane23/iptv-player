@@ -280,10 +280,12 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 }
             }
             entry<PlayRecording> { key ->
-                MobileVodPlayerScreen(
-                    start = { it.startRecording(key.recordingId) },
-                    onClose = { backStack.removeLastOrNull() },
-                )
+                MobilePinGate(LockTarget.Recording(key.recordingId), onCancel = { backStack.removeLastOrNull() }) {
+                    MobileVodPlayerScreen(
+                        start = { it.startRecording(key.recordingId) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<Playlists> {
                 MobilePlaylistsScreen(

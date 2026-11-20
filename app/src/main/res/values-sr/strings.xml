@@ -728,4 +728,17 @@
     <string name="settings_group_picture">Slika i veza</string>
     <string name="settings_group_picture_summary">Bafer, dekoder i osvežavanje slike</string>
     <string name="settings_group_about_summary">Verzija aplikacije i ažuriranje</string>
+    <string name="crash_report_title">Izveštaj o grešci</string>
+    <string name="crash_report_summary">Kad se aplikacija neočekivano zatvori, ovde ostaje zapis o grešci, bez adresa i lozinki. Dodir ga deli; ništa se ne šalje samo od sebe.</string>
+    <string name="crash_report_summary_tv">Kad se aplikacija neočekivano zatvori, ovde ostaje zapis o grešci, bez adresa i lozinki. OK ga čuva kao fajl u Downloads/Glowbox; ništa se ne šalje samo od sebe.</string>
+    <string name="crash_report_none">Nema</string>
+    <string name="crash_report_empty">Nema zabeleženih grešaka</string>
+    <string name="crash_report_saved">Izveštaj je sačuvan: %1$s</string>
+    <string name="crash_report_failed">Izveštaj nije mogao da se preda</string>
+    <string name="crash_prompt_title">Aplikacija se prošli put neočekivano zatvorila</string>
+    <string name="crash_prompt_text">Greška je zabeležena samo na ovom uređaju, bez adresa i lozinki. Možete da podelite izveštaj, a ostaje i u Podešavanja → O aplikaciji.</string>
+    <string name="crash_prompt_text_tv">Greška je zabeležena samo na ovom uređaju, bez adresa i lozinki. Možete da je sačuvate kao fajl u Downloads/Glowbox, a ostaje i u Podešavanja → O aplikaciji.</string>
+    <string name="crash_prompt_share">Podeli izveštaj</string>
+    <string name="crash_prompt_save">Sačuvaj izveštaj</string>
+    <string name="crash_prompt_later">Ne sada</string>
 </resources>

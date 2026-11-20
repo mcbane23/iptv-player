@@ -189,7 +189,7 @@ fun UpdateDialog(viewModel: UpdateViewModel = hiltViewModel()) {
     if (content != null) UpdateAlert(content)
 }
 
-private data class AlertContent(
+internal data class AlertContent(
     val title: String,
     val text: String,
     val confirm: Pair<String, () -> Unit>,
@@ -206,7 +206,7 @@ private data class AlertContent(
  * dijaloga koji se širi po sadržaju ume da se pojavi u uglu pa da doklizi do sredine.
  */
 @Composable
-private fun UpdateAlert(content: AlertContent) {
+internal fun UpdateAlert(content: AlertContent) {
     val (title, text, confirm, onDismiss, dismiss, progress, notes) = content
     val confirmFocus = remember { FocusRequester() }
     Dialog(

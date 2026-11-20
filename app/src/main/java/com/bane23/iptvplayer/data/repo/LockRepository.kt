@@ -76,6 +76,15 @@ class LockRepository @Inject constructor(
         return category != null && liveKey(channel.playlistId, category.name) in keys
     }
 
+    /** Snimak kanala iz kategorije koja je sada zaključana pušta se tek posle PIN-a. */
+    suspend fun isRecordingLocked(recordingId: Long): Boolean {
+        if (activeKeysNow().isEmpty()) return false
+        val recording = db.recordingDao().getById(recordingId) ?: return false
+        // Kanal se traži po stalnom ključu: ID se menja pri svakom osvežavanju liste.
+        val channel = db.channelDao().byStableKey(recording.playlistId, recording.channelKey) ?: return false
+        return isChannelLocked(channel.id)
+    }
+
     companion object {
         /** Oznaka ispred naziva kategorije koja je sada zaključana. */
         const val LOCK_MARK = "\uD83D\uDD12 "

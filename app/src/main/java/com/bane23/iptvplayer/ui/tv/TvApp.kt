@@ -267,10 +267,12 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 TvRecordingsScreen(onPlay = { id -> backStack.add(PlayRecording(id)) })
             }
             entry<PlayRecording> { key ->
-                TvVodPlayerScreen(
-                    start = { it.startRecording(key.recordingId) },
-                    onClose = { backStack.removeLastOrNull() },
-                )
+                TvPinGate(LockTarget.Recording(key.recordingId)) {
+                    TvVodPlayerScreen(
+                        start = { it.startRecording(key.recordingId) },
+                        onClose = { backStack.removeLastOrNull() },
+                    )
+                }
             }
             entry<PairPlaylist> {
                 TvPairingScreen(onClose = { backStack.removeLastOrNull() })

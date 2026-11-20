@@ -727,4 +727,17 @@
     <string name="settings_group_picture">Picture and connection</string>
     <string name="settings_group_picture_summary">Buffer, decoder and refresh rate</string>
     <string name="settings_group_about_summary">App version and updates</string>
+    <string name="crash_report_title">Error report</string>
+    <string name="crash_report_summary">When the app closes unexpectedly, a record of the error stays here, without addresses and passwords. Tap to share it; nothing is ever sent on its own.</string>
+    <string name="crash_report_summary_tv">When the app closes unexpectedly, a record of the error stays here, without addresses and passwords. OK saves it as a file in Downloads/Glowbox; nothing is ever sent on its own.</string>
+    <string name="crash_report_none">None</string>
+    <string name="crash_report_empty">No errors recorded</string>
+    <string name="crash_report_saved">Report saved: %1$s</string>
+    <string name="crash_report_failed">The report could not be handed over</string>
+    <string name="crash_prompt_title">The app closed unexpectedly last time</string>
+    <string name="crash_prompt_text">The error was recorded on this device only, without addresses and passwords. You can share the report; it also stays in Settings → About.</string>
+    <string name="crash_prompt_text_tv">The error was recorded on this device only, without addresses and passwords. You can save it as a file in Downloads/Glowbox; it also stays in Settings → About.</string>
+    <string name="crash_prompt_share">Share report</string>
+    <string name="crash_prompt_save">Save report</string>
+    <string name="crash_prompt_later">Not now</string>
 </resources>

@@ -65,6 +65,8 @@ import com.bane23.iptvplayer.ui.common.languageSummary
 import com.bane23.iptvplayer.ui.common.SettingsGroup
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
+import com.bane23.iptvplayer.ui.common.crashReportValue
+import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
@@ -365,6 +367,12 @@ fun MobileSettingsScreen(
                                     value = updateChannel.label(),
                                     options = UpdateChannel.entries.map { it.label() },
                                     onClick = { channelOpen = true },
+                                )
+                                SettingsValueRow(
+                                    title = stringResource(R.string.crash_report_title),
+                                    summary = stringResource(R.string.crash_report_summary),
+                                    value = crashReportValue(),
+                                    onClick = { handOverCrashReport(context) },
                                 )
                             }
                         }
