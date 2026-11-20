@@ -243,7 +243,8 @@ private fun TileMenu(
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: (() -> Unit)? = null): Modifier =
-    combinedClickable(onClick = onClick, onLongClick = onLongClick)
+    // Bez oznake pritiska i fokusa preko slike: izabrano polje pokazuje samo okvir, slika ostaje ista.
+    combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick)
 
 @Composable
 private fun Tile(

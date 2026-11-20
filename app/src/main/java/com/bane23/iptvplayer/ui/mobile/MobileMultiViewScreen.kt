@@ -246,7 +246,8 @@ private fun Tile(
                 width = 2.dp,
                 color = if (active) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.15f),
             )
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            // Bez talasa pritiska preko slike: aktivno polje pokazuje samo okvir, slika ostaje ista.
+            .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick)
             .padding(2.dp),
         contentAlignment = Alignment.Center,
     ) {
