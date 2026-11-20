@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +49,24 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.OutlinedButtonDefaults
 import androidx.tv.material3.Text
+
+/**
+ * Meni preko slike u plejeru (titlovi, zvuk, podešavanja, kanali…) drži fokus dok je otvoren:
+ * strelica sa prve ili poslednje stavke, ili u stranu, ne izlazi iz menija na plejer iza njega.
+ * Nazad i fokus koji ekran sam postavi (kad se meni zatvori) i dalje prolaze. Svaki novi meni u
+ * plejeru treba da ima ovaj modifikator.
+ */
+fun Modifier.tvKeepFocus(): Modifier = this
+    .focusProperties {
+        onExit = {
+            when (requestedFocusDirection) {
+                FocusDirection.Up, FocusDirection.Down, FocusDirection.Left, FocusDirection.Right,
+                FocusDirection.Next, FocusDirection.Previous,
+                -> cancelFocusChange()
+            }
+        }
+    }
+    .focusGroup()
 
 /**
  * Red u listi na TV-u: dobija fokus D-padom, OK ga bira. Fokusiran red je obojen akcentnom bojom,

@@ -635,6 +635,7 @@ private fun ChannelListPanel(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
+            .tvKeepFocus()
             .fillMaxHeight()
             .fillMaxWidth(0.4f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))

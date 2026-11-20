@@ -71,6 +71,7 @@ fun TvTrackPanel(
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
+            .tvKeepFocus()
             .fillMaxHeight()
             .fillMaxWidth(0.32f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
@@ -208,6 +209,7 @@ fun TvChoicePanel(
                     true
                 }
             }
+            .tvKeepFocus()
             .fillMaxHeight()
             .fillMaxWidth(0.32f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
@@ -245,6 +247,7 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
+            .tvKeepFocus()
             .fillMaxHeight()
             .fillMaxWidth(0.4f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
@@ -305,6 +308,7 @@ fun TvOnlineSubtitlesPanel(
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
+            .tvKeepFocus()
             .fillMaxHeight()
             .fillMaxWidth(0.45f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
