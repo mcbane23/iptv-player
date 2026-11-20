@@ -8,3 +8,7 @@ The TV channel list no longer stalls while holding Down or Up
 Faster screen changes on phones and a faster app start
 Error report: if the app closes unexpectedly, a record stays on the device and you can share it
 Live TV search also finds programmes from the TV guide, not just channel names
+Phone-to-TV transfer is faster: the phone no longer waits for the TV to load playlists
+Home on TV shows at once after start
+On TV, a long OK on a movie or series poster works everywhere (Home, search, Favorites), and focus stays in place when a channel is removed from favorites
+A deleted playlist no longer flashes back into the list

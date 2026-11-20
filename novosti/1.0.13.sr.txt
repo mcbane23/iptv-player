@@ -8,3 +8,7 @@ Lista kanala na TV-u više ne zastaje dok se drži Dole ili Gore
 Brži prelazi između ekrana na telefonu i brže pokretanje aplikacije
 Izveštaj o grešci: ako se aplikacija neočekivano zatvori, zapis ostaje na uređaju i možete ga podeliti
 Pretraga u Uživo traži i po emisijama iz TV vodiča, ne samo po nazivu kanala
+Prenos sa telefona na TV je brži: telefon više ne čeka da TV učita liste
+Početna na TV-u se prikazuje odmah po pokretanju
+Na TV-u dugi OK na posteru filma ili serije radi svuda (Početna, pretraga, Favoriti), a fokus ostaje na mestu kad se kanal ukloni iz favorita
+Obrisana plejlista se više ne vraća na tren u spisak
