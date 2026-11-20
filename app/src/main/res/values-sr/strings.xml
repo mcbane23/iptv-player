@@ -248,6 +248,7 @@
     <string name="transfer_sending">Slanje… Ovo traje nekoliko sekundi.</string>
     <string name="transfer_summary">Nove liste: %1$d · već postoje na TV-u: %2$d · neuspešno: %3$d</string>
     <string name="transfer_tv_loading">TV je primio sve. Nove liste (%1$d) sada učitava sam, a napredak i ishod se vide na TV-u.</string>
+    <string name="transfer_tv_accepted">TV je primio sve. Liste, omiljene i podešavanja sada primenjuje sam, a napredak i ishod se vide na TV-u.</string>
     <string name="transfer_done_hint">Možete da nastavite na TV-u.</string>
     <string name="transfer_nothing">Na ovom telefonu nema lista koje mogu da se pošalju.</string>
     <string name="transfer_bad_target">Ovaj link nije ispravan. Ponovo skenirajte kod sa TV-a.</string>

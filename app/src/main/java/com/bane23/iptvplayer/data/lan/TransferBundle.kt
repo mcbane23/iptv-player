@@ -166,6 +166,8 @@ data class TransferResult(
     val trakt: Boolean? = null,
     /** Nove liste koje je TV primio i tek ih učitava u pozadini; ishod se vidi na TV-u. */
     val loading: Int = 0,
+    /** TV je paket samo primio i sve radi sam u pozadini; ostala polja tada ne govore ništa. */
+    val accepted: Boolean = false,
 )
 
 object TransferCodec {

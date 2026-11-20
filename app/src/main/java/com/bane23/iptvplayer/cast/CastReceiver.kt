@@ -165,36 +165,19 @@ class CastReceiver @Inject constructor(
     override fun status(): CastStatus = status.value
 
     /**
-     * Telefonu se odgovara čim je paket primljen i primenjeno sve što ne traži preuzimanje. Nove
-     * liste TV zatim učitava sam, u pozadini, a napredak i ishod pokazuje na svom ekranu. Dok se
-     * prethodni paket još učitava, novi se samo stavlja u red iza njega: telefon ni tada ne čeka.
+     * Telefonu se odgovara čim je paket primljen, pre bilo kakvog upisa: baza može da bude zauzeta
+     * (TV baš tada osvežava liste) i telefon bi čekao minutima. Sve ostalo TV radi sam, u pozadini,
+     * a napredak i ishod pokazuje na svom ekranu. Paketi se obrađuju jedan po jedan.
      */
     @Synchronized
     override fun transfer(bundle: TransferBundle): TransferResult {
         val previous = loading
-        if (previous?.isActive == true) {
-            loading = importScope.launch {
-                previous.join()
-                show { transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) } }
-            }
-            return TransferResult(loading = bundle.playlists.size)
+        if (_transfer.value == null || _transfer.value?.result != null) _transfer.value = IncomingTransfer()
+        loading = importScope.launch {
+            previous?.join()
+            show { transfers.importBundle(bundle) { step, total -> _transfer.value = IncomingTransfer(step, total) } }
         }
-        _transfer.value = IncomingTransfer()
-        val pending = try {
-            runBlocking { transfers.beginImport(bundle) }
-        } catch (e: Exception) {
-            _transfer.value = null
-            throw e
-        }
-        if (pending.queued == 0) {
-            _transfer.value = IncomingTransfer(result = pending.result)
-        } else {
-            _transfer.value = IncomingTransfer(step = 1, total = pending.queued)
-            loading = importScope.launch {
-                show { pending.finish { step, total -> _transfer.value = IncomingTransfer(step, total) } }
-            }
-        }
-        return pending.result
+        return TransferResult(accepted = true, loading = bundle.playlists.size)
     }
 
     /** Učitava u pozadini i ishod pokazuje na ekranu TV-a. */
