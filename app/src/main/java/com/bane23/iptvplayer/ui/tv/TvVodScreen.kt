@@ -42,6 +42,8 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -413,7 +415,7 @@ fun TvVodScreen(
                                     poster = item.poster,
                                     favorite = true,
                                     watched = watched.of(item),
-                                    onLongClick = { if (pendingUnfavorite == null) pendingUnfavorite = item },
+                                    onToggleFavorite = { if (pendingUnfavorite == null) pendingUnfavorite = item },
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         lastItemId = item.id
@@ -546,6 +548,9 @@ private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val MOVE_SETTLE_MS = 150L
+private const val HOLD_PRESSED = 0
+private const val HOLD_LONG_DONE = 1
+private const val HOLD_FOREIGN = 2
 
 /**
  * Poster sa nazivom ispod; fokus se vidi kao okvir u akcentnoj boji, omiljeni imaju zvezdicu
@@ -563,9 +568,24 @@ fun PosterCard(
     favorite: Boolean = false,
     watched: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
-    onLongClick: (() -> Unit)? = onToggleFavorite,
+    onLongClick: (() -> Unit)? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
+    // Uklanjanje iz favorita se prvo potvrđuje (Bane); dodavanje ide odmah.
+    var confirmRemove by remember { mutableStateOf(false) }
+    if (confirmRemove && onToggleFavorite != null) {
+        TvActionDialog(
+            title = name,
+            options = listOf(stringResource(R.string.action_cancel), stringResource(R.string.favorite_remove)),
+            onSelect = { option -> if (option == 1) onToggleFavorite() },
+            onClose = { confirmRemove = false },
+        )
+    }
+    val longAction: (() -> Unit)? = onLongClick
+        ?: onToggleFavorite?.let { toggle -> { if (favorite) confirmRemove = true else toggle() } }
+    // Jedno držanje tastera OK važi kao jedan dugi pritisak. [pressed]: pritisak je počeo na ovom posteru;
+    // [foreignHold]: taster se drži od ranije (fokus je stigao sa drugog postera), pa se ne računa.
+    val hold = remember { BooleanArray(3) }
     val shape = RoundedCornerShape(10.dp)
     Column(
         modifier = modifier
@@ -583,8 +603,48 @@ fun PosterCard(
             }
             .background(if (focused) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, shape)
             .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
-            // Dug pritisak na OK dodaje u omiljene, odnosno uklanja; u „Nastavi gledanje” otvara meni.
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .onPreviewKeyEvent { event ->
+                val native = event.nativeKeyEvent
+                val ok = native.keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
+                    native.keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                    native.keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER
+                if (!ok) return@onPreviewKeyEvent false
+                when {
+                    native.action == android.view.KeyEvent.ACTION_DOWN && native.repeatCount == 0 -> {
+                        hold[HOLD_PRESSED] = true
+                        hold[HOLD_LONG_DONE] = false
+                        hold[HOLD_FOREIGN] = false
+                        false
+                    }
+
+                    native.action == android.view.KeyEvent.ACTION_UP -> {
+                        val own = hold[HOLD_PRESSED]
+                        hold[HOLD_PRESSED] = false
+                        hold[HOLD_LONG_DONE] = false
+                        hold[HOLD_FOREIGN] = false
+                        !own
+                    }
+
+                    // Ponovljen pritisak dok se taster drži: tuđ se guta, da ne pokrene dugi pritisak ovde.
+                    else -> {
+                        if (!hold[HOLD_PRESSED]) hold[HOLD_FOREIGN] = true
+                        !hold[HOLD_PRESSED]
+                    }
+                }
+            }
+            // Dug pritisak na OK dodaje u omiljene, odnosno pita za uklanjanje; u „Nastavi gledanje” otvara meni.
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = longAction?.let { action ->
+                    {
+                        // Dodir nema taster, pa za njega važi svaki dugi pritisak.
+                        if (!hold[HOLD_FOREIGN] && !(hold[HOLD_PRESSED] && hold[HOLD_LONG_DONE])) {
+                            hold[HOLD_LONG_DONE] = true
+                            action()
+                        }
+                    }
+                },
+            )
             .padding(5.dp),
     ) {
         Box {
