@@ -7,3 +7,4 @@ Multi view: favorites are at the top of the channel picker, and the selected til
 The TV channel list no longer stalls while holding Down or Up
 Faster screen changes on phones and a faster app start
 Error report: if the app closes unexpectedly, a record stays on the device and you can share it
+Live TV search also finds programmes from the TV guide, not just channel names

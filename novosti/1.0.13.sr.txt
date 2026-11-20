@@ -7,3 +7,4 @@ Multi view: favoriti su na vrhu izbora kanala, a izabrano polje ima samo okvir, 
 Lista kanala na TV-u više ne zastaje dok se drži Dole ili Gore
 Brži prelazi između ekrana na telefonu i brže pokretanje aplikacije
 Izveštaj o grešci: ako se aplikacija neočekivano zatvori, zapis ostaje na uređaju i možete ga podeliti
+Pretraga u Uživo traži i po emisijama iz TV vodiča, ne samo po nazivu kanala
