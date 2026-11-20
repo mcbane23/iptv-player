@@ -754,7 +754,7 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Prenos sa telefona na TV ne čeka učitavanje lista (Bane, 20. 11. 2026): telefon je i do sada slao samo
       adrese i naloge, ali je TV odgovarao tek kad preuzme svaku listu (minuti). Sada TV odmah potvrdi prijem
       i primeni sve što ne traži preuzimanje, a nove liste učitava sam u pozadini; napredak i ishod pokazuje
-      na svom ekranu. Važi za prenos iz Podešavanja (izbor TV-a sa spiska); put preko QR koda je ostao isti
+      na svom ekranu. Važi i za prenos iz Podešavanja (izbor TV-a sa spiska) i za put preko QR koda
 
 ## 7. Testiranje
 
