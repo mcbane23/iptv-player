@@ -706,7 +706,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Ceo ekran na telefonu: gornja i donja sistemska traka sakrivene na svim ekranima, uspravno i
       položeno; prevlačenje od ivice ih privremeno pokaže. Opcija „Ceo ekran” u Podešavanjima > Izgled,
       uključena podrazumevano (Bane)
-  - [x] Bez gornje trake sadržaj se penje do vrha ekrana (ne čuva se mesto za kameru na vrhu) (Bane)
+  - [x] Bez gornje trake sadržaj se penje bliže vrhu: počinje malo ispod donje ivice kamere, da kamera
+        ne preklopi gornji red (npr. polje za pretragu) (Bane)
 - [x] Vodič na TV-u: desno na poslednjoj emisiji pomera vreme, a fokus ostaje desno na istoj emisiji
       (ranije je skakao na naziv kanala levo)
 - [x] Pretraga i Vodič na TV-u su kartice sa bočnim menijem kao ostale (Bane); levo sa naziva kanala u
