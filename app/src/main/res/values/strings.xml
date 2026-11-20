@@ -336,7 +336,7 @@
     <string name="archive_hint_tv">OK opens the archive</string>
     <string name="parental_title">Parental control</string>
     <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
-    <string name="parental_hint">Locked categories stay visible with a padlock, and their content asks for the PIN. An entered PIN stays valid until the app is closed.</string>
+    <string name="parental_hint">Locked categories stay visible with a padlock. Channels of a locked category are hidden everywhere until the PIN is entered; movies and series ask for the PIN when opened. An entered PIN stays valid until the app is closed.</string>
     <string name="parental_lock_again">Lock again</string>
     <string name="parental_change_pin">Change PIN</string>
     <string name="parental_remove_pin">Remove PIN and all locks</string>
@@ -727,4 +727,20 @@
     <string name="settings_group_picture">Picture and connection</string>
     <string name="settings_group_picture_summary">Buffer, decoder and refresh rate</string>
     <string name="settings_group_about_summary">App version and updates</string>
+    <string name="crash_report_title">Error report</string>
+    <string name="crash_report_summary">When the app closes unexpectedly, a record of the error stays here, without addresses and passwords. Tap to share it; nothing is ever sent on its own.</string>
+    <string name="crash_report_summary_tv">When the app closes unexpectedly, a record of the error stays here, without addresses and passwords. OK saves it as a file in Downloads/Glowbox; nothing is ever sent on its own.</string>
+    <string name="crash_report_none">None</string>
+    <string name="crash_report_empty">No errors recorded</string>
+    <string name="crash_report_saved">Report saved: %1$s</string>
+    <string name="crash_report_failed">The report could not be handed over</string>
+    <string name="crash_prompt_title">The app closed unexpectedly last time</string>
+    <string name="crash_prompt_text">The error was recorded on this device only, without addresses and passwords. You can share the report; it also stays in Settings → About.</string>
+    <string name="crash_prompt_text_tv">The error was recorded on this device only, without addresses and passwords. You can save it as a file in Downloads/Glowbox; it also stays in Settings → About.</string>
+    <string name="crash_prompt_share">Share report</string>
+    <string name="crash_prompt_save">Save report</string>
+    <string name="crash_prompt_later">Not now</string>
+    <string name="category_locked">This category is locked. Its channels show after you enter the PIN.</string>
+    <string name="category_locked_tv">This category is locked. Press OK on it and enter the PIN.</string>
+    <string name="category_unlock">Enter PIN</string>
 </resources>

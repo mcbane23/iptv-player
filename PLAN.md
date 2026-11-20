@@ -714,6 +714,17 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       Vodiču vraća vreme do sadašnjeg, pa ide u meni (ranije emisije dugmetom „Ranije”)
 - [x] TV, Uživo, Filmovi i Serije: drugi OK na već izabranoj kategoriji (i Omiljeni, Nedavno, Svi, Nastavi
       gledanje) prelazi na njene stavke, kao Desno (Bane)
+- [x] Telefon: prelaz između ekrana je kratko pretapanje od 150 ms (Bane, 20. 11. 2026) umesto podrazumevanog
+      od 700 ms; TV ostaje bez prelaza
+- [x] Roditeljska zaštita, kanali (Bane, 20. 11. 2026; telefon i TV): kanali zaključane kategorije se ne vide
+      nigde (kategorija, Svi, Omiljeni, liste omiljenih, Nedavno, pretraga, Početna, broj kanala) dok se ne
+      unese PIN. Kategorija ostaje u spisku sa katancem; dodir ili OK na njoj traži PIN, pa je otvara. Snimak
+      kanala iz zaključane kategorije traži PIN pre puštanja. Baza v18: kolona `categories.locked`, koju
+      `LockRepository` usklađuje sa podešavanjima
+- [x] Izveštaj o grešci (Bane, 20. 11. 2026; telefon i TV): kad aplikacija padne, zapis ostaje samo na uređaju
+      (`data/crash/CrashLog.kt`), bez adresa (pa i bez korisničkog imena i lozinke iz adrese strima). Pri sledećem
+      pokretanju aplikacija jednom nudi izveštaj, a stavka ostaje u Podešavanja → O aplikaciji. Telefon ga deli
+      kroz sistemsko „Podeli”, TV ga čuva kao fajl u Downloads/Glowbox. Ništa se ne šalje samo od sebe
 
 ## 7. Testiranje
 

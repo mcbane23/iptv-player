@@ -56,6 +56,8 @@ import com.bane23.iptvplayer.data.update.UpdateChannel
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UpdateViewModel
+import com.bane23.iptvplayer.ui.common.crashReportValue
+import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.ui.common.themeChoice
@@ -140,6 +142,7 @@ fun TvSettingsScreen(
     }
     // Uključeno je tek kad postoji i dozvola; bez nje sistem ne da aplikaciji da se sama otvori.
     val reopens = reopenAfterUpdate && autostartAllowed
+    val crashReport = crashReportValue()
     val items: List<TvItem> = when (currentGroup) {
         null -> emptyList()
 
@@ -223,6 +226,9 @@ fun TvSettingsScreen(
                 // Svaki pritisak prelazi na drugi kanal i odmah proverava šta on nudi.
                 val channels = UpdateChannel.entries
                 updateViewModel.setChannel(channels[(updateChannel.ordinal + 1) % channels.size])
+            },
+            TvItem(CRASH_REPORT_ROW, stringResource(R.string.crash_report_title), crashReport) {
+                handOverCrashReport(context)
             },
             TvItem(REOPEN_ROW, stringResource(R.string.settings_reopen_after_update), checked = reopens) {
                 viewModel.setReopenAfterUpdate(!reopens)
@@ -477,6 +483,7 @@ private fun FocusedSummary(
         MATCH_FRAME_RATE_ROW -> stringResource(R.string.settings_match_frame_rate_summary)
         WATCH_NEXT_ROW -> stringResource(R.string.settings_watch_next_summary)
         UPDATE_CHANNEL_ROW -> stringResource(R.string.update_channel_summary)
+        CRASH_REPORT_ROW -> stringResource(R.string.crash_report_summary_tv)
         AUTOSTART_ROW -> stringResource(autostartSummary)
         REOPEN_ROW -> stringResource(reopenSummary)
         else -> choices.getOrNull(focused)?.summary.orEmpty()
@@ -522,6 +529,7 @@ private const val BLACK_THEME_ROW = -19
 private const val PAUSE_INFO_ROW = -20
 private const val REMOTE_BUTTONS_ROW = -21
 private const val VOD_CACHE_ROW = -22
+private const val CRASH_REPORT_ROW = -23
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

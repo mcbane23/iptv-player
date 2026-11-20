@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import com.bane23.iptvplayer.data.lan.TransferTarget
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.DeviceType
+import com.bane23.iptvplayer.ui.common.CrashReportPrompt
 import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.watchnext.WatchNextLink
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     UpdateDialog()
+                    CrashReportPrompt()
                 }
             }
         }

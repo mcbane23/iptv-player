@@ -92,6 +92,7 @@ fun MobileHomeScreen(
     onPlaylists: () -> Unit,
     onCategories: (CategorySection) -> Unit,
     onParental: () -> Unit,
+    onUnlock: () -> Unit,
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
     onRecordings: () -> Unit,
@@ -138,6 +139,7 @@ fun MobileHomeScreen(
                     onSearch = onSearch,
                     onGuide = onGuide,
                     onMultiView = onMultiView,
+                    onUnlock = onUnlock,
                     onCategories = { onCategories(CategorySection.LIVE) },
                     viewModel = liveTvViewModel,
                 )

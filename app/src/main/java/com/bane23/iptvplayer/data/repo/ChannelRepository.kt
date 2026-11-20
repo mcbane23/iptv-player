@@ -72,6 +72,7 @@ class ChannelRepository @Inject constructor(
                     name = if (locked) LockRepository.LOCK_MARK + name else name,
                     channelCount = it.channelCount,
                     playlistId = it.category.playlistId,
+                    locked = locked,
                 )
             }
         }

@@ -100,6 +100,7 @@ fun MobileLiveTvScreen(
     onSearch: () -> Unit,
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onMultiView: () -> Unit,
+    onUnlock: () -> Unit,
     onCategories: () -> Unit = {},
     viewModel: LiveTvViewModel = hiltViewModel(),
     channelsViewModel: ChannelListViewModel = hiltViewModel(),
@@ -137,11 +138,34 @@ fun MobileLiveTvScreen(
     LaunchedEffect(selected) { if (inFavorites) favoritesTab = selected }
     // Grupa koja je bila izabrana pre omiljenih, da drugi dodir na zvezdicu vrati na nju.
     var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
-    val choose: (Long) -> Unit = { group ->
+    // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
+    var awaitingUnlock by rememberSaveable { mutableStateOf<Long?>(null) }
+    val pick: (Long) -> Unit = { group ->
         if (state.isFavoritesGroup(group) && !inFavorites) beforeFavorites = selected
         chosen = group
         viewModel.rememberCategory(group)
     }
+    val choose: (Long) -> Unit = { group ->
+        if (state.categories.any { it.id == group && it.locked }) {
+            // Kanali zaključane kategorije se ne vide, pa se prvo traži PIN.
+            awaitingUnlock = group
+            onUnlock()
+        } else {
+            awaitingUnlock = null
+            pick(group)
+        }
+    }
+    LaunchedEffect(awaitingUnlock, state.categories) {
+        val wanted = awaitingUnlock ?: return@LaunchedEffect
+        val category = state.categories.firstOrNull { it.id == wanted }
+        if (category == null) awaitingUnlock = null
+        if (category != null && !category.locked) {
+            awaitingUnlock = null
+            pick(wanted)
+        }
+    }
+    // Zaključana kategorija može da ostane izabrana od ranije (ili posle „Zaključaj ponovo”).
+    val selectedLocked = state.categories.any { it.id == selected && it.locked }
     val openFavorites = { choose(favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES) }
     // Red sa listama omiljenih; postoji tek kad korisnik napravi bar jednu listu.
     val favoriteTabs: @Composable (Modifier) -> Unit = { tabsModifier ->
@@ -258,14 +282,21 @@ fun MobileLiveTvScreen(
                                 val favorites = selected == ChannelGroups.FAVORITES
                                 val namedList = state.favoriteList(selected) != null
                                 EmptyState(
-                                    icon = if (favorites || namedList) AppIcons.StarOutline else AppIcons.LiveTv,
+                                    icon = when {
+                                        favorites || namedList -> AppIcons.StarOutline
+                                        selectedLocked -> AppIcons.Lock
+                                        else -> AppIcons.LiveTv
+                                    },
                                     text = stringResource(
                                         when {
                                             favorites -> R.string.favorites_empty
                                             namedList -> R.string.favorite_list_empty
+                                            selectedLocked -> R.string.category_locked
                                             else -> R.string.channels_empty
                                         },
                                     ),
+                                    actionLabel = if (selectedLocked) stringResource(R.string.category_unlock) else null,
+                                    onAction = if (selectedLocked) ({ choose(selected) }) else null,
                                 )
                             }
                             LazyVerticalGrid(

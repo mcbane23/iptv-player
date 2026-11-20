@@ -94,6 +94,7 @@ fun TvHomeScreen(
     onEditPlaylist: (Long) -> Unit,
     onCategories: (CategorySection) -> Unit,
     onParental: () -> Unit,
+    onUnlock: () -> Unit,
     onTrakt: () -> Unit,
     onOpenSubtitles: () -> Unit,
     onRecordings: () -> Unit,
@@ -185,6 +186,7 @@ fun TvHomeScreen(
                         onPlay = onPlay,
                         onManagePlaylists = { tab = TvTab.PLAYLISTS },
                         onSearch = onSearch,
+                        onUnlock = onUnlock,
                         onCategories = { onCategories(CategorySection.LIVE) },
                         viewModel = liveTvViewModel,
                     )

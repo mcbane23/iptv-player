@@ -5,13 +5,19 @@ import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.domain.Pin
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * Roditeljska zaštita: PIN i zaključane kategorije. Tačan PIN otključava sve do gašenja
@@ -38,6 +44,28 @@ class LockRepository @Inject constructor(
     }
 
     suspend fun activeKeysNow(): Set<String> = activeKeys.first()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        // Kolona `locked` prati podešavanja: menja se kad se unese PIN, kad se ponovo zaključa, kad se
+        // promeni izbor kategorija i kad osvežavanje liste upiše kategorije iznova.
+        scope.launch {
+            combine(activeKeys, db.categoryDao().observeAllLive()) { keys, categories ->
+                categories.filter { (liveKey(it.playlistId, it.name) in keys) != it.locked }
+            }.distinctUntilChanged().collect { wrong ->
+                try {
+                    val (toUnlock, toLock) = wrong.partition { it.locked }
+                    toLock.map { it.id }.chunked(ID_CHUNK).forEach { db.categoryDao().setLocked(it, true) }
+                    toUnlock.map { it.id }.chunked(ID_CHUNK).forEach { db.categoryDao().setLocked(it, false) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Sledeća promena u bazi ili podešavanjima pokušava ponovo.
+                }
+            }
+        }
+    }
 
     /** Proverava PIN; tačan otključava zaključane kategorije. */
     suspend fun unlock(pin: String): Boolean {
@@ -66,6 +94,9 @@ class LockRepository @Inject constructor(
 
     suspend fun setLocked(key: String, locked: Boolean) = settings.setCategoryLocked(key, locked)
 
+    /** Ima li ičeg što je sada zaključano (PIN postoji, nije unet, bar jedna kategorija je zaključana). */
+    suspend fun anythingLocked(): Boolean = activeKeysNow().isNotEmpty()
+
     /** Da li kanal sada sme da se pusti tek posle PIN-a. */
     suspend fun isChannelLocked(channelId: Long): Boolean {
         val keys = activeKeysNow()
@@ -76,8 +107,20 @@ class LockRepository @Inject constructor(
         return category != null && liveKey(channel.playlistId, category.name) in keys
     }
 
+    /** Snimak kanala iz kategorije koja je sada zaključana pušta se tek posle PIN-a. */
+    suspend fun isRecordingLocked(recordingId: Long): Boolean {
+        if (activeKeysNow().isEmpty()) return false
+        val recording = db.recordingDao().getById(recordingId) ?: return false
+        // Kanal se traži po stalnom ključu: ID se menja pri svakom osvežavanju liste.
+        val channel = db.channelDao().byStableKey(recording.playlistId, recording.channelKey) ?: return false
+        return isChannelLocked(channel.id)
+    }
+
     companion object {
         /** Oznaka ispred naziva kategorije koja je sada zaključana. */
+        /** SQLite prima ograničen broj vrednosti u jednom upitu. */
+        private const val ID_CHUNK = 500
+
         const val LOCK_MARK = "\uD83D\uDD12 "
 
         /** Kategorija kanala se pamti po nazivu, jer se njen ID menja kad se lista osveži. */

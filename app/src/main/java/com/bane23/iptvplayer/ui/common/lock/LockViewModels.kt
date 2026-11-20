@@ -29,6 +29,12 @@ sealed interface LockTarget {
 
     /** Film ([series] = false) ili serija. */
     data class Vod(val series: Boolean, val itemId: Long) : LockTarget
+
+    /** Snimak kanala: zaključan je kad je kanal sa kog je snimljen u zaključanoj kategoriji. */
+    data class Recording(val recordingId: Long) : LockTarget
+
+    /** Sve što je sada zaključano: unos PIN-a sa spiska kategorija, pre nego što se išta pusti. */
+    data object Everything : LockTarget
 }
 
 enum class GateStatus { CHECKING, LOCKED, OPEN }
@@ -52,6 +58,8 @@ class PinGateViewModel @Inject constructor(
         viewModelScope.launch {
             val locked = when (target) {
                 is LockTarget.Channel -> locks.isChannelLocked(target.channelId)
+                is LockTarget.Recording -> locks.isRecordingLocked(target.recordingId)
+                LockTarget.Everything -> locks.anythingLocked()
                 is LockTarget.Vod -> try {
                     vod.isLocked(if (target.series) VodKind.SERIES else VodKind.MOVIES, target.itemId)
                 } catch (e: CancellationException) {

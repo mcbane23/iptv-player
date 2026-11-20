@@ -138,3 +138,7 @@ data class PlayDownload(val downloadId: Long, val series: Boolean, val lockId: L
 /** Plejer za snimak sa uređaja. */
 @Serializable
 data class PlayRecording(val recordingId: Long) : NavKey
+
+/** Unos PIN-a koji otključava zaključane kategorije (otvara se sa zaključane kategorije kanala). */
+@Serializable
+data object Unlock : NavKey
