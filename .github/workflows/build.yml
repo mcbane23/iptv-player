@@ -105,7 +105,7 @@ jobs:
 
       # Profil za brži start (biblioteke + app/src/main/baseline-prof.txt) mora da bude u APK-u.
       - name: Profil u APK-u
-        run: unzip -l app/build/outputs/apk/dev/app-dev.apk | grep "assets/dexopt/baseline.prof"
+        run: python3 .github/scripts/profil.py app/build/outputs/apk/dev/app-dev.apk
 
       # Objavljen test build mora biti potpisan ključem za izdanja, inače ne bi mogao preko izdanja.
       - name: Provera potpisa
