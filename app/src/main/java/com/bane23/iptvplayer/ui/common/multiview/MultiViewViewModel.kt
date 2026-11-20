@@ -12,6 +12,7 @@ import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.data.repo.PlaylistRepository
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.PlayerSettings
@@ -99,6 +100,18 @@ class MultiViewViewModel @Inject constructor(
         .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repository.observeCategories(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Broj omiljenih kanala aktivne liste, za red „Omiljeni” na vrhu izbora. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favoriteCount: StateFlow<Int> = repository.activePlaylistId
+        .flatMapLatest { id -> if (id == null) flowOf(0) else repository.observeFavoriteCount(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Imenovane liste omiljenih; u izboru stoje odmah ispod reda „Omiljeni”. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favoriteLists: StateFlow<List<FavoriteList>> = repository.activePlaylistId
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else repository.observeFavoriteLists(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val pickerCategory = MutableStateFlow<Long?>(null)
 
     /** Kanali kategorije izabrane u izboru kanala. */
@@ -137,9 +150,12 @@ class MultiViewViewModel @Inject constructor(
         _state.update { it.copy(picker = MultiPicker(slot)) }
     }
 
-    fun pickCategory(category: Category) {
-        pickerCategory.value = category.id
-        _state.update { state -> state.copy(picker = state.picker?.copy(categoryId = category.id, categoryName = category.name)) }
+    fun pickCategory(category: Category) = pickGroup(category.id, category.name)
+
+    /** Otvara kanale grupe [groupId]: kategorije ili posebne grupe iz `ChannelGroups` (omiljeni, lista omiljenih). */
+    fun pickGroup(groupId: Long, name: String) {
+        pickerCategory.value = groupId
+        _state.update { state -> state.copy(picker = state.picker?.copy(categoryId = groupId, categoryName = name)) }
     }
 
     /** Korak nazad u izboru: sa kanala na kategorije, sa kategorija na zatvaranje. Vraća false kad nema izbora. */
