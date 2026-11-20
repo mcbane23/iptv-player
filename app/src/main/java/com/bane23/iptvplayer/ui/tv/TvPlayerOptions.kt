@@ -1,5 +1,11 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
@@ -121,9 +127,25 @@ fun TvChoicePanel(
     modifier: Modifier = Modifier,
 ) {
     val firstFocus = remember { FocusRequester() }
+    // Meni se često otvara dugim pritiskom na OK. Dok se taster još drži, ponovljeni pritisci stižu
+    // u meni i puštanje tastera bi izabralo prvu stavku. Zato OK važi tek od novog pritiska.
+    var okArmed by remember { mutableStateOf(false) }
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
+            .onPreviewKeyEvent { event ->
+                val native = event.nativeKeyEvent
+                val ok = native.keyCode == AndroidKeyEvent.KEYCODE_DPAD_CENTER ||
+                    native.keyCode == AndroidKeyEvent.KEYCODE_ENTER ||
+                    native.keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER
+                if (!ok || okArmed) return@onPreviewKeyEvent false
+                if (native.action == AndroidKeyEvent.ACTION_DOWN && native.repeatCount == 0) {
+                    okArmed = true
+                    false
+                } else {
+                    true
+                }
+            }
             .fillMaxHeight()
             .fillMaxWidth(0.32f)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
