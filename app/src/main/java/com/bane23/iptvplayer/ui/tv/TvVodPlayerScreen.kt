@@ -60,7 +60,11 @@ import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.label
 import com.bane23.iptvplayer.ui.common.player.subtitleStepChoices
+import com.bane23.iptvplayer.ui.common.player.PlayerMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
+import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.subtitles.appliedSubtitleToast
@@ -105,6 +109,12 @@ fun TvVodPlayerScreen(
     val rootFocus = remember { FocusRequester() }
     val playFocus = remember { FocusRequester() }
     val seekFocus = remember { FocusRequester() }
+    // Meniji su oblačići iznad svojih dugmića; kad se meni zatvori, fokus se vraća na to dugme.
+    val anchors = rememberPlayerMenuAnchors()
+    val subtitlesChip = remember { FocusRequester() }
+    val audioChip = remember { FocusRequester() }
+    val settingsChip = remember { FocusRequester() }
+    val returnFocus = remember { arrayOfNulls<FocusRequester>(1) }
     val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
 
     LaunchedEffect(Unit) { start(viewModel) }
@@ -159,8 +169,11 @@ fun TvVodPlayerScreen(
         when {
             tracks != null || onlineOpen || settingsOpen -> Unit
             controls -> repeat(FOCUS_ATTEMPTS) {
-                val target = if (focusOn == VodFocus.SEEK) seekFocus else playFocus
-                if (target.tryRequestFocus()) return@LaunchedEffect
+                val target = returnFocus[0] ?: if (focusOn == VodFocus.SEEK) seekFocus else playFocus
+                if (target.tryRequestFocus()) {
+                    returnFocus[0] = null
+                    return@LaunchedEffect
+                }
                 delay(FOCUS_STEP_MS)
             }
             else -> rootFocus.tryRequestFocus()
@@ -436,19 +449,40 @@ fun TvVodPlayerScreen(
                                 icon = AppIcons.Subtitles,
                                 label = stringResource(R.string.player_subtitles),
                                 active = playback.textEnabled,
-                                onClick = { tracks = TvTrackKind.SUBTITLES },
+                                open = tracks == TvTrackKind.SUBTITLES,
+                                onClick = {
+                                    returnFocus[0] = subtitlesChip
+                                    tracks = TvTrackKind.SUBTITLES
+                                },
+                                modifier = Modifier
+                                    .focusRequester(subtitlesChip)
+                                    .playerMenuAnchor(anchors, PlayerMenu.SUBTITLES),
                             )
                             PlayerChip(
                                 icon = AppIcons.Audio,
                                 label = stringResource(R.string.player_audio),
-                                onClick = { tracks = TvTrackKind.AUDIO },
+                                open = tracks == TvTrackKind.AUDIO,
+                                onClick = {
+                                    returnFocus[0] = audioChip
+                                    tracks = TvTrackKind.AUDIO
+                                },
+                                modifier = Modifier
+                                    .focusRequester(audioChip)
+                                    .playerMenuAnchor(anchors, PlayerMenu.AUDIO),
                             )
                             PlayerChip(
                                 icon = AppIcons.Settings,
                                 label = stringResource(R.string.settings_title),
                                 // Brzina koja nije obična se vidi i na samom dugmetu.
                                 active = ui.speed != 1f,
-                                onClick = { settingsOpen = true },
+                                open = settingsOpen,
+                                onClick = {
+                                    returnFocus[0] = settingsChip
+                                    settingsOpen = true
+                                },
+                                modifier = Modifier
+                                    .focusRequester(settingsChip)
+                                    .playerMenuAnchor(anchors, PlayerMenu.SETTINGS),
                             )
                             PlayerChip(
                                 icon = AppIcons.Info,
@@ -462,42 +496,45 @@ fun TvVodPlayerScreen(
             }
 
             tracks?.let { kind ->
-                TvTrackPanel(
-                    kind = kind,
-                    playback = playback,
-                    onSelectAudio = viewModel::selectAudio,
-                    onSelectText = viewModel::selectText,
-                    onClose = { tracks = null },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    onSearchOnline = if (ui.onlineSubtitles) {
-                        {
-                            tracks = null
-                            onlineOpen = true
-                            viewModel.searchOnlineSubtitles()
-                        }
-                    } else {
-                        null
-                    },
-                    steps = if (kind == TvTrackKind.SUBTITLES) {
-                        subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle)
-                    } else {
-                        emptyList()
-                    },
-                )
+                val menu = if (kind == TvTrackKind.SUBTITLES) PlayerMenu.SUBTITLES else PlayerMenu.AUDIO
+                PlayerMenuBubble(anchor = anchors[menu], width = TvTrackMenuWidth) {
+                    TvTrackPanel(
+                        kind = kind,
+                        playback = playback,
+                        onSelectAudio = viewModel::selectAudio,
+                        onSelectText = viewModel::selectText,
+                        onClose = { tracks = null },
+                        onSearchOnline = if (ui.onlineSubtitles) {
+                            {
+                                tracks = null
+                                onlineOpen = true
+                                viewModel.searchOnlineSubtitles()
+                            }
+                        } else {
+                            null
+                        },
+                        steps = if (kind == TvTrackKind.SUBTITLES) {
+                            subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle)
+                        } else {
+                            emptyList()
+                        },
+                    )
+                }
             }
             if (settingsOpen) {
-                TvQuickSettingsPanel(
-                    choices = quickSettingChoices(
-                        tv = true,
-                        aspectMode = ui.aspectMode,
-                        onAspectMode = viewModel::setAspectMode,
-                        decoder = ui.decoder,
-                        onDecoder = viewModel::setDecoder,
-                        speed = ui.speed,
-                        onSpeed = viewModel::setSpeed,
-                    ),
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.SETTINGS], width = TvSettingsMenuWidth) {
+                    TvQuickSettingsPanel(
+                        choices = quickSettingChoices(
+                            tv = true,
+                            aspectMode = ui.aspectMode,
+                            onAspectMode = viewModel::setAspectMode,
+                            decoder = ui.decoder,
+                            onDecoder = viewModel::setDecoder,
+                            speed = ui.speed,
+                            onSpeed = viewModel::setSpeed,
+                        ),
+                    )
+                }
             }
             if (onlineOpen) {
                 TvOnlineSubtitlesPanel(

@@ -1,22 +1,16 @@
 package com.bane23.iptvplayer.ui.mobile
 
-import android.content.res.Configuration
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,10 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -41,33 +32,18 @@ import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.StepChoice
 
+/** Širina oblačića sa spiskom zapisa i sa podešavanjima (vrednosti su duže, pa je širi). */
+internal val MobileTrackMenuWidth = 260.dp
+internal val MobileSettingsMenuWidth = 300.dp
+
 /**
- * Panel „Brza podešavanja” preko slike: prekidači deluju odmah, a stavke sa više vrednosti na dodir
- * prelaze na sledeću. U položenom telefonu stoji uz desnu ivicu, u uspravnom pri dnu. Zatvara se
- * dodirom van panela ili tasterom Nazad (to rešava ekran plejera).
+ * Stavke menija „Podešavanja” u plejeru; sadržaj oblačića iznad dugmeta (PlayerMenuBubble).
+ * Prekidači deluju odmah, a stavke sa više vrednosti na dodir prelaze na sledeću. Meni se zatvara
+ * dodirom pored njega ili tasterom Nazad (to rešava ekran plejera).
  */
 @Composable
-internal fun BoxScope.MobileQuickSettingsPanel(choices: List<SettingChoice>) {
-    val portrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
-    Column(
-        modifier = Modifier
-            .align(if (portrait) Alignment.BottomCenter else Alignment.CenterEnd)
-            .safeDrawingPadding()
-            .padding(12.dp)
-            .then(if (portrait) Modifier.fillMaxWidth() else Modifier.widthIn(max = 320.dp))
-            .clip(PanelShape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            // Dodir na sam panel ne sme da ga zatvori.
-            .pointerInput(Unit) { detectTapGestures { } }
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.player_quick_settings),
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+internal fun MobileQuickSettingsMenu(choices: List<SettingChoice>) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         choices.forEach { choice -> QuickSettingRow(choice) }
         // Napomene uz stavke koje ne važe odmah (bafer).
         choices.map { it.summary }.filter { it.isNotEmpty() }.forEach { note ->
@@ -82,38 +58,37 @@ internal fun BoxScope.MobileQuickSettingsPanel(choices: List<SettingChoice>) {
 }
 
 /**
- * Meni „Titlovi” preko slike, na istom mestu i istog izgleda kao „Brza podešavanja”: spisak titlova
- * (dodir bira i zatvara, to rešava ekran plejera), po želji stavka [extra] (npr. „Potraži online”),
- * a ispod redovi [steps] sa dugmadima − i +. Kontrole plejera su za to vreme sklonjene, pa se titl
- * vidi dok se podešava.
+ * Spisak iz kog se bira jedna stavka (titlovi, zvuk, izvori, trajanje snimanja); sadržaj oblačića
+ * iznad dugmeta (PlayerMenuBubble). Dodir bira; zatvaranje rešava ekran plejera. Po želji ima naslov
+ * [title], poruku [emptyText] kad nema stavki, stavku [extra] koja otvara nešto drugo (npr. „Potraži
+ * online”), a ispod redove [steps] sa dugmadima − i + (veličina i pomeranje titla).
  */
 @Composable
-internal fun BoxScope.MobileSubtitlesPanel(
+internal fun MobileChoiceMenu(
     options: List<Pair<String, Boolean>>,
     onSelect: (Int) -> Unit,
-    extra: Pair<String, () -> Unit>?,
-    steps: List<StepChoice>,
+    title: String? = null,
+    emptyText: String? = null,
+    extra: Pair<String, () -> Unit>? = null,
+    steps: List<StepChoice> = emptyList(),
 ) {
-    val portrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
-    Column(
-        modifier = Modifier
-            .align(if (portrait) Alignment.BottomCenter else Alignment.CenterEnd)
-            .safeDrawingPadding()
-            .padding(12.dp)
-            .then(if (portrait) Modifier.fillMaxWidth() else Modifier.widthIn(max = 320.dp))
-            .clip(PanelShape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            // Dodir na sam panel ne sme da ga zatvori.
-            .pointerInput(Unit) { detectTapGestures { } }
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.player_subtitles),
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        if (title != null) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        if (options.isEmpty() && emptyText != null) {
+            Text(
+                text = emptyText,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+        }
         options.forEachIndexed { index, (label, selected) ->
             SubtitleRow(
                 label = label,
@@ -132,7 +107,7 @@ internal fun BoxScope.MobileSubtitlesPanel(
     }
 }
 
-/** Red spiska titlova: kvačica ispred izabranog, strelica iza stavke koja otvara nešto drugo. */
+/** Red spiska: kvačica ispred izabranog, strelica iza stavke koja otvara nešto drugo. */
 @Composable
 private fun SubtitleRow(label: String, leading: ImageVector?, trailing: ImageVector?, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
@@ -140,7 +115,7 @@ private fun SubtitleRow(label: String, leading: ImageVector?, trailing: ImageVec
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 44.dp)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp),
     ) {
@@ -172,7 +147,7 @@ private fun StepRow(step: StepChoice) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 44.dp)
             .padding(start = 16.dp, end = 4.dp),
     ) {
         Text(
@@ -206,7 +181,7 @@ private fun QuickSettingRow(choice: SettingChoice) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 44.dp)
             .then(
                 if (choice.toggle) {
                     Modifier.toggleable(value = choice.checked, role = Role.Switch, onValueChange = { choice.flip() })
@@ -237,5 +212,3 @@ private fun QuickSettingRow(choice: SettingChoice) {
         }
     }
 }
-
-private val PanelShape = RoundedCornerShape(18.dp)

@@ -64,6 +64,11 @@ import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
@@ -128,9 +133,33 @@ fun TvPlayerScreen(
     var scheduleOpen by remember { mutableStateOf(false) }
     // Panel „Izvori” (isti kanal iz spojenih lista) je otvoren.
     var sourcesOpen by remember { mutableStateOf(false) }
+    // Meniji su oblačići iznad svojih dugmića; kad se meni zatvori, fokus se vraća na to dugme.
+    val anchors = rememberPlayerMenuAnchors()
+    val chipFocus = remember { PlayerMenu.entries.associateWith { FocusRequester() } }
+    val returnFocus = remember { arrayOfNulls<FocusRequester>(1) }
+    // Meni se otvara iznad svog dugmeta, pa dugmići moraju da budu na ekranu.
+    fun openMenu(menu: PlayerMenu) {
+        returnFocus[0] = chipFocus[menu]
+        overlay = Overlay.ACTIVE
+        when (menu) {
+            PlayerMenu.SUBTITLES -> tracks = TvTrackKind.SUBTITLES
+            PlayerMenu.AUDIO -> tracks = TvTrackKind.AUDIO
+            PlayerMenu.SETTINGS -> settingsOpen = true
+            PlayerMenu.SOURCES -> sourcesOpen = true
+            PlayerMenu.RECORD -> recordPanel = true
+        }
+    }
+    val openedMenu = when {
+        tracks == TvTrackKind.SUBTITLES -> PlayerMenu.SUBTITLES
+        tracks == TvTrackKind.AUDIO -> PlayerMenu.AUDIO
+        settingsOpen -> PlayerMenu.SETTINGS
+        sourcesOpen -> PlayerMenu.SOURCES
+        recordPanel -> PlayerMenu.RECORD
+        else -> null
+    }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
-        if (isRecording) viewModel.toggleRecording() else recordPanel = true
+        if (isRecording) viewModel.toggleRecording() else openMenu(PlayerMenu.RECORD)
     }
     // Šta koje dugme daljinskog radi (Podešavanja → „Dugmad daljinskog”).
     val remoteButtons: RemoteButtonsViewModel = hiltViewModel()
@@ -179,9 +208,9 @@ fun TvPlayerScreen(
                 // Zvezdica je među kontrolama, pa se one kratko pokažu da se vidi šta se promenilo.
                 if (overlay == Overlay.HIDDEN) overlay = Overlay.INFO
             }
-            RemoteAction.AUDIO -> tracks = TvTrackKind.AUDIO
-            RemoteAction.SUBTITLES -> tracks = TvTrackKind.SUBTITLES
-            RemoteAction.QUICK_SETTINGS -> settingsOpen = true
+            RemoteAction.AUDIO -> openMenu(PlayerMenu.AUDIO)
+            RemoteAction.SUBTITLES -> openMenu(PlayerMenu.SUBTITLES)
+            RemoteAction.QUICK_SETTINGS -> openMenu(PlayerMenu.SETTINGS)
             RemoteAction.INFO -> infoVisible = !infoVisible
             RemoteAction.CONTROLS -> overlay = Overlay.ACTIVE
         }
@@ -209,7 +238,12 @@ fun TvPlayerScreen(
         when {
             panelOpen -> Unit
             overlay == Overlay.ACTIVE -> repeat(FOCUS_ATTEMPTS) {
-                if (firstChipFocus.tryRequestFocus()) return@LaunchedEffect
+                if ((returnFocus[0] ?: firstChipFocus).tryRequestFocus()) {
+                    returnFocus[0] = null
+                    return@LaunchedEffect
+                }
+                // Dugme na koje fokus treba da se vrati više nije na ekranu.
+                if (it == FOCUS_ATTEMPTS / 2) returnFocus[0] = null
                 delay(FOCUS_STEP_MS)
             }
             else -> rootFocus.tryRequestFocus()
@@ -377,9 +411,12 @@ fun TvPlayerScreen(
                     firstChipFocus = firstChipFocus,
                     onChannels = { channelList = true },
                     onSchedule = { scheduleOpen = true },
-                    onSources = { sourcesOpen = true },
-                    onAudio = { tracks = TvTrackKind.AUDIO },
-                    onSettings = { settingsOpen = true },
+                    onSources = { openMenu(PlayerMenu.SOURCES) },
+                    onAudio = { openMenu(PlayerMenu.AUDIO) },
+                    onSettings = { openMenu(PlayerMenu.SETTINGS) },
+                    anchors = anchors,
+                    chipFocus = chipFocus,
+                    openedMenu = openedMenu,
                     infoVisible = infoVisible,
                     onInfo = { infoVisible = !infoVisible },
                     onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
@@ -401,27 +438,30 @@ fun TvPlayerScreen(
             }
 
             tracks?.let { kind ->
-                TvTrackPanel(
-                    kind = kind,
-                    playback = playback,
-                    onSelectAudio = viewModel::selectAudio,
-                    onSelectText = viewModel::selectText,
-                    onClose = { tracks = null },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                val menu = if (kind == TvTrackKind.SUBTITLES) PlayerMenu.SUBTITLES else PlayerMenu.AUDIO
+                PlayerMenuBubble(anchor = anchors[menu], width = TvTrackMenuWidth) {
+                    TvTrackPanel(
+                        kind = kind,
+                        playback = playback,
+                        onSelectAudio = viewModel::selectAudio,
+                        onSelectText = viewModel::selectText,
+                        onClose = { tracks = null },
+                    )
+                }
             }
 
             if (settingsOpen) {
-                TvQuickSettingsPanel(
-                    choices = quickSettingChoices(
-                        tv = true,
-                        aspectMode = ui.aspectMode,
-                        onAspectMode = viewModel::setAspectMode,
-                        decoder = ui.decoder,
-                        onDecoder = viewModel::setDecoder,
-                    ),
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.SETTINGS], width = TvSettingsMenuWidth) {
+                    TvQuickSettingsPanel(
+                        choices = quickSettingChoices(
+                            tv = true,
+                            aspectMode = ui.aspectMode,
+                            onAspectMode = viewModel::setAspectMode,
+                            decoder = ui.decoder,
+                            onDecoder = viewModel::setDecoder,
+                        ),
+                    )
+                }
             }
 
             val scheduleChannel = ui.channel
@@ -436,24 +476,28 @@ fun TvPlayerScreen(
 
             if (sourcesOpen) {
                 val sources = ui.sources
-                TvChoicePanel(
-                    title = stringResource(R.string.player_sources),
-                    options = sources.map { it.label(ui) },
-                    onSelect = { index -> sources.getOrNull(index)?.let { viewModel.selectSource(it.channelId) } },
-                    onClose = { sourcesOpen = false },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.SOURCES], width = TvSettingsMenuWidth) {
+                    TvChoicePanel(
+                        title = stringResource(R.string.player_sources),
+                        options = sources.map { it.label(ui) },
+                        onSelect = { index -> sources.getOrNull(index)?.let { viewModel.selectSource(it.channelId) } },
+                        onClose = { sourcesOpen = false },
+                        bubble = true,
+                    )
+                }
             }
 
             if (recordPanel) {
                 val choices = recordingChoices(nowNext.now?.stopMs)
-                TvChoicePanel(
-                    title = stringResource(R.string.recording_duration_title),
-                    options = choices.map { it.label },
-                    onSelect = { index -> viewModel.toggleRecording(choices[index].stopAtMs()) },
-                    onClose = { recordPanel = false },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.RECORD], width = TvTrackMenuWidth) {
+                    TvChoicePanel(
+                        title = stringResource(R.string.recording_duration_title),
+                        options = choices.map { it.label },
+                        onSelect = { index -> viewModel.toggleRecording(choices[index].stopAtMs()) },
+                        onClose = { recordPanel = false },
+                        bubble = true,
+                    )
+                }
             }
         }
     }
@@ -478,7 +522,13 @@ private fun LiveControls(
     onFavorite: () -> Unit,
     isRecording: Boolean,
     onRecord: () -> Unit,
+    anchors: PlayerMenuAnchors,
+    chipFocus: Map<PlayerMenu, FocusRequester>,
+    openedMenu: PlayerMenu?,
 ) {
+    // Dugme koje otvara meni: pamti mu se mesto (za oblačić) i fokus se vraća na njega.
+    fun Modifier.menuChip(menu: PlayerMenu): Modifier =
+        this.focusRequester(chipFocus.getValue(menu)).playerMenuAnchor(anchors, menu)
     val channel = ui.channel ?: return
     val now by rememberNow()
     Box(modifier = Modifier.fillMaxSize()) {
@@ -585,13 +635,27 @@ private fun LiveControls(
                     PlayerChip(icon = AppIcons.Guide, label = stringResource(R.string.player_schedule), onClick = onSchedule)
                     // Isti kanal postoji i u spojenoj listi: može da se izabere odakle se gleda.
                     if (ui.sources.size > 1) {
-                        PlayerChip(icon = AppIcons.Swap, label = stringResource(R.string.player_sources), onClick = onSources)
+                        PlayerChip(
+                            icon = AppIcons.Swap,
+                            label = stringResource(R.string.player_sources),
+                            open = openedMenu == PlayerMenu.SOURCES,
+                            onClick = onSources,
+                            modifier = Modifier.menuChip(PlayerMenu.SOURCES),
+                        )
                     }
-                    PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
+                    PlayerChip(
+                        icon = AppIcons.Audio,
+                        label = stringResource(R.string.player_audio),
+                        open = openedMenu == PlayerMenu.AUDIO,
+                        onClick = onAudio,
+                        modifier = Modifier.menuChip(PlayerMenu.AUDIO),
+                    )
                     PlayerChip(
                         icon = AppIcons.Settings,
                         label = stringResource(R.string.settings_title),
+                        open = openedMenu == PlayerMenu.SETTINGS,
                         onClick = onSettings,
+                        modifier = Modifier.menuChip(PlayerMenu.SETTINGS),
                     )
                     PlayerChip(
                         icon = AppIcons.Info,
@@ -610,7 +674,9 @@ private fun LiveControls(
                         icon = AppIcons.Record,
                         label = stringResource(if (isRecording) R.string.recording_chip_active else R.string.recording_chip),
                         active = isRecording,
+                        open = openedMenu == PlayerMenu.RECORD,
                         onClick = onRecord,
+                        modifier = Modifier.menuChip(PlayerMenu.RECORD),
                     )
                 }
             }

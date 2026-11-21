@@ -80,6 +80,11 @@ import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
@@ -118,6 +123,16 @@ fun MobilePlayerScreen(
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(Panel.NONE) }
+    // Zvuk, izvori, podešavanja i trajanje snimanja su oblačići iznad svojih dugmića; kontrole tada
+    // ostaju na ekranu. Lista kanala i raspored su paneli sa strane.
+    val anchors = rememberPlayerMenuAnchors()
+    val bubbleMenu = when (panel) {
+        Panel.AUDIO -> PlayerMenu.AUDIO
+        Panel.SOURCES -> PlayerMenu.SOURCES
+        Panel.SETTINGS -> PlayerMenu.SETTINGS
+        Panel.RECORD -> PlayerMenu.RECORD
+        else -> null
+    }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
         if (isRecording) viewModel.toggleRecording() else panel = Panel.RECORD
@@ -144,7 +159,7 @@ fun MobilePlayerScreen(
     // Izbor zvuka i snimanja su zasebni prozori, pa se dodiri u njima ovde ne vide.
     val pauseDim = rememberPauseDim(
         status = playback.status,
-        enabled = panel != Panel.AUDIO && panel != Panel.RECORD && panel != Panel.SOURCES,
+        enabled = true,
         info = rememberPauseInfoEnabled() && panel == Panel.NONE && !inPip,
         onExit = onClose,
     )
@@ -228,7 +243,7 @@ fun MobilePlayerScreen(
                         unlockVisible = false
                         controlsVisible = true
                     }
-                } else if (controlsVisible && panel == Panel.NONE) {
+                } else if ((controlsVisible && panel == Panel.NONE) || bubbleMenu != null) {
                     LiveControls(
                         ui = ui,
                         playback = playback,
@@ -256,22 +271,59 @@ fun MobilePlayerScreen(
                         onRecord = record,
                         onPip = rememberEnterPictureInPicture(),
                         onCast = cast,
+                        anchors = anchors,
+                        openedMenu = bubbleMenu,
                     )
+                    // Dok je meni otvoren trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
                     PlayerSideSliders(levels) { sliderTouches++ }
                 }
 
-                if (panel == Panel.SETTINGS) {
-                    // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-                    PlayerSideSliders(levels) { }
-                    MobileQuickSettingsPanel(
-                        quickSettingChoices(
-                            tv = false,
-                            aspectMode = ui.aspectMode,
-                            onAspectMode = viewModel::setAspectMode,
-                            decoder = ui.decoder,
-                            onDecoder = viewModel::setDecoder,
-                        ),
-                    )
+                when (panel) {
+                    Panel.SETTINGS -> PlayerMenuBubble(anchors[PlayerMenu.SETTINGS], MobileSettingsMenuWidth) {
+                        MobileQuickSettingsMenu(
+                            quickSettingChoices(
+                                tv = false,
+                                aspectMode = ui.aspectMode,
+                                onAspectMode = viewModel::setAspectMode,
+                                decoder = ui.decoder,
+                                onDecoder = viewModel::setDecoder,
+                            ),
+                        )
+                    }
+
+                    Panel.AUDIO -> PlayerMenuBubble(anchors[PlayerMenu.AUDIO], MobileTrackMenuWidth) {
+                        MobileChoiceMenu(
+                            options = playback.audioTracks.map { it.label to it.selected },
+                            onSelect = { index ->
+                                viewModel.selectAudio(playback.audioTracks[index])
+                                panel = Panel.NONE
+                            },
+                            emptyText = stringResource(R.string.player_no_tracks),
+                        )
+                    }
+
+                    Panel.SOURCES -> PlayerMenuBubble(anchors[PlayerMenu.SOURCES], MobileSettingsMenuWidth) {
+                        MobileChoiceMenu(
+                            options = ui.sources.map { it.label(ui) to (it.channelId == ui.sourceId) },
+                            onSelect = { index ->
+                                ui.sources.getOrNull(index)?.let { viewModel.selectSource(it.channelId) }
+                                panel = Panel.NONE
+                            },
+                        )
+                    }
+
+                    Panel.RECORD -> PlayerMenuBubble(anchors[PlayerMenu.RECORD], MobileTrackMenuWidth) {
+                        MobileChoiceMenu(
+                            title = stringResource(R.string.recording_duration_title),
+                            options = recordChoices.map { it.label to false },
+                            onSelect = { index ->
+                                viewModel.toggleRecording(recordChoices[index].stopAtMs())
+                                panel = Panel.NONE
+                            },
+                        )
+                    }
+
+                    else -> Unit
                 }
 
                 val scheduleChannel = ui.channel
@@ -294,33 +346,6 @@ fun MobilePlayerScreen(
         }
     }
 
-    when (panel) {
-        Panel.AUDIO -> TrackDialog(
-            title = stringResource(R.string.player_audio),
-            options = playback.audioTracks.map { it.label to it.selected },
-            emptyText = stringResource(R.string.player_no_tracks),
-            onSelect = { index -> viewModel.selectAudio(playback.audioTracks[index]) },
-            onDismiss = { panel = Panel.NONE },
-        )
-
-        Panel.SOURCES -> TrackDialog(
-            title = stringResource(R.string.player_sources),
-            options = ui.sources.map { it.label(ui) to (it.channelId == ui.sourceId) },
-            emptyText = null,
-            onSelect = { index -> ui.sources.getOrNull(index)?.let { viewModel.selectSource(it.channelId) } },
-            onDismiss = { panel = Panel.NONE },
-        )
-
-        Panel.RECORD -> TrackDialog(
-            title = stringResource(R.string.recording_duration_title),
-            options = recordChoices.map { it.label to false },
-            emptyText = null,
-            onSelect = { index -> viewModel.toggleRecording(recordChoices[index].stopAtMs()) },
-            onDismiss = { panel = Panel.NONE },
-        )
-
-        else -> Unit
-    }
 }
 
 /** Iste kontrole kao u plejeru filmova: naziv kanala gore, emisija sa trakom i dugmad dole. */
@@ -340,6 +365,8 @@ private fun LiveControls(
     onSources: (() -> Unit)?,
     onAudio: () -> Unit,
     onSettings: () -> Unit,
+    anchors: PlayerMenuAnchors,
+    openedMenu: PlayerMenu?,
     infoVisible: Boolean,
     onInfo: () -> Unit,
     isFavorite: Boolean,
@@ -408,10 +435,28 @@ private fun LiveControls(
             }
             // Isti kanal postoji i u spojenoj listi: može da se izabere odakle se gleda.
             if (onSources != null) {
-                PlayerChip(icon = AppIcons.Swap, label = stringResource(R.string.player_sources), onClick = onSources)
+                PlayerChip(
+                    icon = AppIcons.Swap,
+                    label = stringResource(R.string.player_sources),
+                    open = openedMenu == PlayerMenu.SOURCES,
+                    onClick = onSources,
+                    modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SOURCES),
+                )
             }
-            PlayerChip(icon = AppIcons.Audio, label = stringResource(R.string.player_audio), onClick = onAudio)
-            PlayerChip(icon = AppIcons.Settings, label = stringResource(R.string.settings_title), onClick = onSettings)
+            PlayerChip(
+                icon = AppIcons.Audio,
+                label = stringResource(R.string.player_audio),
+                open = openedMenu == PlayerMenu.AUDIO,
+                onClick = onAudio,
+                modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.AUDIO),
+            )
+            PlayerChip(
+                icon = AppIcons.Settings,
+                label = stringResource(R.string.settings_title),
+                open = openedMenu == PlayerMenu.SETTINGS,
+                onClick = onSettings,
+                modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SETTINGS),
+            )
             PlayerChip(
                 icon = AppIcons.Info,
                 label = stringResource(R.string.player_stream_info),
@@ -429,7 +474,9 @@ private fun LiveControls(
                     icon = AppIcons.Record,
                     label = stringResource(if (isRecording) R.string.recording_chip_active else R.string.recording_chip),
                     active = isRecording,
+                    open = openedMenu == PlayerMenu.RECORD,
                     onClick = onRecord,
+                    modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.RECORD),
                 )
             }
         },
