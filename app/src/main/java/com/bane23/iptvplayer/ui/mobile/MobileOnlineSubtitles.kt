@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -25,13 +26,17 @@ import androidx.compose.ui.unit.dp
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.subtitles.SubtitleResult
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuDivider
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuMuted
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuNote
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuText
 import com.bane23.iptvplayer.ui.common.subtitles.appliedSubtitleToast
 import com.bane23.iptvplayer.ui.common.subtitles.details
 import com.bane23.iptvplayer.ui.common.subtitles.message
 import com.bane23.iptvplayer.ui.common.vod.OnlineSubtitlesState
 
 /** Širina oblačića sa rezultatima; širi je od spiska titlova jer su nazivi dugi. */
-internal val MobileOnlineMenuWidth = 340.dp
+internal val MobileOnlineMenuWidth = 320.dp
 
 /**
  * Titlovi nađeni na internetu za ono što se gleda: drugi korak u oblačiću „Titlovi”
@@ -46,7 +51,6 @@ internal fun MobileOnlineSubtitlesMenu(
     onDone: () -> Unit,
 ) {
     val context = LocalContext.current
-    val scheme = MaterialTheme.colorScheme
     LaunchedEffect(state.appliedId) {
         if (state.appliedId != null) {
             appliedSubtitleToast(context, state.remaining)
@@ -58,26 +62,26 @@ internal fun MobileOnlineSubtitlesMenu(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 44.dp)
+                .heightIn(min = MobileMenuRowHeight)
                 .clickable(role = Role.Button, onClick = onBack)
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 6.dp),
         ) {
             Icon(
                 imageVector = AppIcons.ChevronLeft,
                 contentDescription = stringResource(R.string.action_back),
-                tint = scheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                tint = PlayerMenuMuted,
+                modifier = Modifier.size(16.dp),
             )
             Text(
                 text = stringResource(R.string.player_subtitles),
-                color = scheme.onSurface,
-                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                style = PlayerMenuText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(start = 6.dp),
             )
         }
-        HorizontalDivider(color = scheme.outlineVariant)
+        HorizontalDivider(color = PlayerMenuDivider, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
         val results = state.results.orEmpty()
         val status = when {
             state.searching -> stringResource(R.string.subtitles_searching)
@@ -88,9 +92,9 @@ internal fun MobileOnlineSubtitlesMenu(
         if (status != null) {
             Text(
                 text = status,
-                color = if (state.failure != null) scheme.error else scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                color = if (state.failure != null) MaterialTheme.colorScheme.error else PlayerMenuMuted,
+                style = PlayerMenuText,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
             )
         }
         results.forEach { result ->
@@ -98,12 +102,12 @@ internal fun MobileOnlineSubtitlesMenu(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = state.downloadingId == null, role = Role.Button) { onPick(result) }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
             ) {
                 Text(
                     text = result.name,
-                    color = scheme.onSurface,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    style = PlayerMenuText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -113,8 +117,8 @@ internal fun MobileOnlineSubtitlesMenu(
                     } else {
                         result.details()
                     },
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
+                    color = PlayerMenuMuted,
+                    style = PlayerMenuNote,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -22,7 +22,7 @@ fun speedLabel(speed: Float): String = DecimalFormat("0.##").format(speed.toDoub
 /**
  * Stavke panela „Podešavanja” u plejeru: nekoliko podešavanja koja se menjaju dok se gleda, bez
  * izlaska iz plejera. Telefon ([tv] = false) dobija prekidače za bočne trake i puštanje u pozadini,
- * a TV odnos slike i bafer. [speed] je brzina puštanja filma ili epizode; null za kanal uživo, gde
+ * a TV usklađivanje osvežavanja ekrana. [speed] je brzina puštanja filma ili epizode; null za kanal uživo, gde
  * brzina nema smisla.
  */
 @Composable
@@ -41,6 +41,7 @@ fun quickSettingChoices(
     val volumeSlider by settingsViewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by settingsViewModel.backgroundPlay.collectAsStateWithLifecycle()
     val sleepMinutes by settingsViewModel.sleepTimerMinutes.collectAsStateWithLifecycle()
+    val matchFrameRate by settingsViewModel.matchFrameRate.collectAsStateWithLifecycle()
     val onOff = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off))
 
     fun switch(title: String, checked: Boolean, set: (Boolean) -> Unit) = SettingChoice(
@@ -109,7 +110,15 @@ fun quickSettingChoices(
         speedChoice,
         bufferChoice,
     )
-    if (tv) return shared
+    // Samo TV: usklađivanje osvežavanja ekrana sa snimkom. Ista sačuvana vrednost kao u glavnim
+    // Podešavanjima, pa važi poslednja izmena, gde god da je napravljena.
+    if (tv) {
+        return shared + switch(
+            stringResource(R.string.settings_match_frame_rate),
+            matchFrameRate,
+            settingsViewModel::setMatchFrameRate,
+        )
+    }
     // Samo telefon: trake na dodir i puštanje u pozadini.
     return shared + listOf(
         switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),

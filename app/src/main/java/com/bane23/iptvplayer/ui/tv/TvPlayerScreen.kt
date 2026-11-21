@@ -67,6 +67,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerResolution
@@ -561,6 +562,8 @@ private fun LiveControls(
                 val paused = playback.status == PlaybackStatus.PAUSED
                 val failed = playback.status == PlaybackStatus.FAILED || ui.sourceMissing
                 PlayerTransportBar(
+                    // Meniji se otvaraju iznad trake, pa se njeno mesto pamti.
+                    modifier = Modifier.playerMenuBar(anchors),
                     startLabel = program?.let { formatTime(it.startMs) },
                     endLabel = program?.let { formatTime(it.stopMs) },
                     leading = {

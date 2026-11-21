@@ -6,19 +6,37 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
@@ -32,6 +50,10 @@ import com.bane23.iptvplayer.player.TrackOption
 import com.bane23.iptvplayer.data.subtitles.SubtitleResult
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuDivider
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuMuted
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuNote
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuText
 import com.bane23.iptvplayer.ui.common.player.StepChoice
 import com.bane23.iptvplayer.ui.common.subtitles.details
 import com.bane23.iptvplayer.ui.common.subtitles.message
@@ -40,15 +62,113 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 
 /** Širina oblačića sa spiskom zapisa i sa podešavanjima (vrednosti su duže, pa je širi). */
-internal val TvTrackMenuWidth = 290.dp
-internal val TvSettingsMenuWidth = 340.dp
-internal val TvOnlineMenuWidth = 440.dp
+internal val TvTrackMenuWidth = 250.dp
+internal val TvSettingsMenuWidth = 300.dp
+internal val TvOnlineMenuWidth = 380.dp
+
+private val MenuRowShape = RoundedCornerShape(7.dp)
+
+/**
+ * Red u meniju plejera (oblačić): iste veličine slova kao dugmad ispod trake. U fokusu ima tamnu
+ * podlogu i okvir u boji teme, kao dugmad plejera; izabrana stavka je u boji teme. [content]
+ * dobija boju teksta.
+ */
+@Composable
+private fun TvMenuRow(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    content: @Composable RowScope.(color: Color) -> Unit,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val primary = MaterialTheme.colorScheme.primary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 32.dp)
+            .then(
+                if (focused) {
+                    Modifier
+                        .background(Color.Black.copy(alpha = 0.85f), MenuRowShape)
+                        .border(2.dp, primary, MenuRowShape)
+                } else {
+                    Modifier
+                },
+            )
+            .clip(MenuRowShape)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        content = { content(if (selected) primary else Color.White) },
+    )
+}
+
+/** Red menija sa jednim tekstom; po želji kvačica ili strelica ispred i vrednost ili strelica iza. */
+@Composable
+private fun TvMenuTextRow(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    /** Mesto za kvačicu postoji u svakom redu spiska, da nazivi stoje u istoj liniji. */
+    checkSlot: Boolean = false,
+    leading: ImageVector? = null,
+    trailing: ImageVector? = null,
+    value: String? = null,
+) {
+    TvMenuRow(onClick = onClick, modifier = modifier, selected = selected) { color ->
+        if (checkSlot || leading != null) {
+            Box(modifier = Modifier.size(14.dp)) {
+                val icon = leading ?: if (selected) AppIcons.Check else null
+                if (icon != null) Icon(icon, contentDescription = null, tint = if (leading != null) PlayerMenuMuted else color)
+            }
+        }
+        Text(
+            text = text,
+            color = color,
+            style = PlayerMenuText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = if (checkSlot || leading != null) 8.dp else 0.dp),
+        )
+        if (value != null) {
+            Text(
+                text = value,
+                color = MaterialTheme.colorScheme.primary,
+                style = PlayerMenuText,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+        if (trailing != null) {
+            Icon(trailing, contentDescription = null, tint = PlayerMenuMuted, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+/** Mali prekidač u redu menija: uključen je u boji teme. */
+@Composable
+private fun TvMenuSwitch(checked: Boolean) {
+    Box(
+        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+        modifier = Modifier
+            .padding(start = 12.dp)
+            .size(width = 28.dp, height = 16.dp)
+            .background(if (checked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.25f), CircleShape)
+            .padding(2.dp),
+    ) {
+        Box(modifier = Modifier.size(12.dp).background(if (checked) MaterialTheme.colorScheme.onPrimary else Color.White, CircleShape))
+    }
+}
 
 /** Koji spisak zapisa je otvoren preko slike. */
 enum class TvTrackKind { AUDIO, SUBTITLES }
 
 /**
- * Spisak zvučnih zapisa ili titlova; sadržaj oblačića iznad dugmeta (PlayerMenuBubble). Fokus kreće
+ * Spisak zvučnih zapisa ili titlova; sadržaj oblačića iznad trake (PlayerMenuBubble). Fokus kreće
  * od izabranog zapisa, a izbor zatvara spisak.
  */
 @Composable
@@ -73,31 +193,26 @@ fun TvTrackPanel(
     }
     val focusIndex = rows.indexOfFirst { it.second }.coerceAtLeast(0)
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
-            .tvKeepFocus()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-    ) {
+    LazyColumn(modifier = modifier.tvKeepFocus()) {
         if (rows.isEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.player_no_tracks),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = PlayerMenuMuted,
+                    style = PlayerMenuText,
                     modifier = Modifier
                         .focusRequester(selectedFocus)
                         .focusable()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
                 )
             }
         }
         items(rows.size) { index ->
             val (label, selected) = rows[index]
-            TvTextRow(
+            TvMenuTextRow(
                 text = label,
                 selected = selected,
-                trailing = if (selected) "✓" else null,
+                checkSlot = true,
                 onClick = {
                     when (kind) {
                         TvTrackKind.AUDIO -> onSelectAudio(playback.audioTracks[index])
@@ -110,17 +225,17 @@ fun TvTrackPanel(
         }
         if (kind == TvTrackKind.SUBTITLES && onSearchOnline != null) {
             item {
-                TvTextRow(
+                TvMenuTextRow(
                     text = stringResource(R.string.subtitles_search_online),
-                    trailing = "›",
+                    checkSlot = true,
+                    trailing = AppIcons.ChevronRight,
                     onClick = onSearchOnline,
                 )
             }
         }
-        if (kind == TvTrackKind.SUBTITLES) {
-            items(steps.size) { index ->
-                TvStepRow(steps[index], modifier = if (index == 0) Modifier.padding(top = 10.dp) else Modifier)
-            }
+        if (kind == TvTrackKind.SUBTITLES && steps.isNotEmpty()) {
+            item { MenuDivider() }
+            items(steps.size) { index -> TvStepRow(steps[index]) }
         }
     }
     // U praznom spisku fokus drži sama poruka; zatvara se tasterom Nazad.
@@ -133,7 +248,8 @@ fun TvTrackPanel(
  */
 @Composable
 private fun TvStepRow(choice: StepChoice, modifier: Modifier = Modifier) {
-    TvListRow(
+    val primary = MaterialTheme.colorScheme.primary
+    TvMenuRow(
         onClick = {},
         modifier = modifier.onPreviewKeyEvent { event ->
             val native = event.nativeKeyEvent
@@ -149,7 +265,7 @@ private fun TvStepRow(choice: StepChoice, modifier: Modifier = Modifier) {
         Text(
             text = choice.title,
             color = color,
-            style = MaterialTheme.typography.bodyLarge,
+            style = PlayerMenuText,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
@@ -157,24 +273,36 @@ private fun TvStepRow(choice: StepChoice, modifier: Modifier = Modifier) {
         Icon(
             imageVector = AppIcons.ChevronLeft,
             contentDescription = null,
-            tint = color.copy(alpha = if (choice.canDecrease) 1f else 0.3f),
-            modifier = Modifier.size(18.dp),
+            tint = primary.copy(alpha = if (choice.canDecrease) 1f else 0.3f),
+            modifier = Modifier.size(16.dp),
         )
         Text(
             text = choice.value,
-            color = color,
-            style = MaterialTheme.typography.bodyMedium,
+            color = primary,
+            style = PlayerMenuText,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            modifier = Modifier.widthIn(min = 84.dp),
+            modifier = Modifier.widthIn(min = 64.dp),
         )
         Icon(
             imageVector = AppIcons.ChevronRight,
             contentDescription = null,
-            tint = color.copy(alpha = if (choice.canIncrease) 1f else 0.3f),
-            modifier = Modifier.size(18.dp),
+            tint = primary.copy(alpha = if (choice.canIncrease) 1f else 0.3f),
+            modifier = Modifier.size(16.dp),
         )
     }
+}
+
+/** Linija koja u meniju deli spisak od redova sa vrednostima. */
+@Composable
+private fun MenuDivider() {
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .fillMaxWidth()
+            .heightIn(min = 1.dp)
+            .background(PlayerMenuDivider),
+    )
 }
 
 /** Kratak spisak izbora preko slike (npr. trajanje snimanja). OK bira i zatvara, Nazad samo zatvara. */
@@ -185,7 +313,7 @@ fun TvChoicePanel(
     onSelect: (Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    /** Spisak je sadržaj oblačića iznad dugmeta (PlayerMenuBubble), a ne panel uz ivicu ekrana. */
+    /** Spisak je sadržaj oblačića iznad trake (PlayerMenuBubble), a ne panel uz ivicu ekrana. */
     bubble: Boolean = false,
 ) {
     val firstFocus = remember { FocusRequester() }
@@ -193,7 +321,7 @@ fun TvChoicePanel(
     // u meni i puštanje tastera bi izabralo prvu stavku. Zato OK važi tek od novog pritiska.
     var okArmed by remember { mutableStateOf(false) }
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(if (bubble) 0.dp else 6.dp),
         modifier = modifier
             .onPreviewKeyEvent { event ->
                 val native = event.nativeKeyEvent
@@ -211,7 +339,7 @@ fun TvChoicePanel(
             .tvKeepFocus()
             .then(
                 if (bubble) {
-                    Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    Modifier
                 } else {
                     Modifier
                         .fillMaxHeight()
@@ -222,58 +350,81 @@ fun TvChoicePanel(
             ),
     ) {
         item {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = if (bubble) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 16.dp, top = if (bubble) 6.dp else 0.dp, bottom = if (bubble) 4.dp else 12.dp),
-            )
+            if (bubble) {
+                Text(
+                    text = title,
+                    color = PlayerMenuMuted,
+                    style = PlayerMenuText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+            } else {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+                )
+            }
         }
         items(options.size) { index ->
-            TvTextRow(
-                text = options[index],
-                onClick = {
-                    onSelect(index)
-                    onClose()
-                },
-                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
-            )
+            val focusModifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
+            val pick = {
+                onSelect(index)
+                onClose()
+            }
+            if (bubble) {
+                TvMenuTextRow(text = options[index], onClick = pick, modifier = focusModifier)
+            } else {
+                TvTextRow(text = options[index], onClick = pick, modifier = focusModifier)
+            }
         }
     }
     LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
 }
 
 /**
- * Stavke menija „Podešavanja”; sadržaj oblačića iznad dugmeta (PlayerMenuBubble). OK na stavci
+ * Stavke menija „Podešavanja”; sadržaj oblačića iznad trake (PlayerMenuBubble). OK na stavci
  * prelazi na sledeću vrednost, a meni ostaje otvoren; Nazad ga zatvara (to rešava ekran plejera).
  */
 @Composable
 fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
     val firstFocus = remember { FocusRequester() }
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
-            .tvKeepFocus()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-    ) {
+    LazyColumn(modifier = modifier.tvKeepFocus()) {
         items(choices.size) { index ->
             val choice = choices[index]
-            TvTextRow(
-                text = choice.title,
-                trailing = if (choice.toggle) null else choice.value,
-                checked = if (choice.toggle) choice.checked else null,
-                onClick = { if (choice.toggle) choice.flip() else choice.cycle() },
-                modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
-            )
+            val focusModifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
+            if (choice.toggle) {
+                TvMenuRow(
+                    onClick = { choice.flip() },
+                    modifier = focusModifier.semantics {
+                        role = Role.Switch
+                        toggleableState = if (choice.checked) ToggleableState.On else ToggleableState.Off
+                    },
+                ) { color ->
+                    Text(
+                        text = choice.title,
+                        color = color,
+                        style = PlayerMenuText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TvMenuSwitch(choice.checked)
+                }
+            } else {
+                TvMenuTextRow(text = choice.title, value = choice.value, onClick = { choice.cycle() }, modifier = focusModifier)
+            }
         }
         // Napomene uz stavke koje ne važe odmah (bafer).
         val notes = choices.map { it.summary }.filter { it.isNotEmpty() }
         items(notes.size) { index ->
             Text(
                 text = notes[index],
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                color = PlayerMenuMuted,
+                style = PlayerMenuNote,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
     }
@@ -301,33 +452,29 @@ fun TvOnlineSubtitlesPanel(
         else -> null
     }
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier
-            .tvKeepFocus()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-    ) {
+    LazyColumn(modifier = modifier.tvKeepFocus()) {
         item {
-            TvTextRow(
+            TvMenuTextRow(
                 text = stringResource(R.string.player_subtitles),
-                icon = AppIcons.ChevronLeft,
+                leading = AppIcons.ChevronLeft,
                 onClick = onBack,
                 modifier = Modifier.focusRequester(backFocus),
             )
         }
+        item { MenuDivider() }
         if (status != null) {
             item {
                 Text(
                     text = status,
-                    color = if (state.failure != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    color = if (state.failure != null) MaterialTheme.colorScheme.error else PlayerMenuMuted,
+                    style = PlayerMenuText,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
                 )
             }
         }
         items(results.size) { index ->
             val result = results[index]
-            TvListRow(
+            TvMenuRow(
                 onClick = { onPick(result) },
                 modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
             ) { color ->
@@ -335,7 +482,7 @@ fun TvOnlineSubtitlesPanel(
                     Text(
                         text = result.name,
                         color = color,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = PlayerMenuText,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -345,8 +492,8 @@ fun TvOnlineSubtitlesPanel(
                         } else {
                             result.details()
                         },
-                        color = color.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        color = PlayerMenuMuted,
+                        style = PlayerMenuNote,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
