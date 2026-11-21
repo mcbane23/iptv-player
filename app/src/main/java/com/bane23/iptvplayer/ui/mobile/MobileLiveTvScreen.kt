@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -58,6 +59,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import com.bane23.iptvplayer.ui.common.LiveTvUiState
 import androidx.compose.ui.unit.Dp
@@ -199,6 +201,9 @@ fun MobileLiveTvScreen(
                 .padding(padding),
         ) {
             val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+            // Položen telefon nema spisak kategorija u prozoru (grupe su stalno levo), pa se otvoren
+            // spisak zatvara; inače bi iskočio ponovo kad se telefon vrati uspravno.
+            LaunchedEffect(landscape) { if (landscape) pickerOpen = false }
             // Izbor liste, vodič, više kanala i pretraga. Položen telefon ih nosi u naslovu nad kanalima.
             val toolbar: @Composable RowScope.(Boolean) -> Unit = { withSearch ->
                 val active = playlists.playlists.firstOrNull { it.id == playlistId }
@@ -235,6 +240,7 @@ fun MobileLiveTvScreen(
 
                 else -> {
                     val channels = channelsViewModel.channels.collectAsLazyPagingItems()
+                    KeepNowPlayingFresh(channels)
                     // Nova kategorija kreće od vrha liste; posle povratka iz plejera ostaje gde je bila.
                     val listState = rememberLazyGridState()
                     var listShows by rememberSaveable { mutableStateOf(selected) }
@@ -685,9 +691,17 @@ private fun GroupPanel(
     onListMenu: (FavoriteList?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Spisak se otvara tamo gde je izabrana kategorija, da posle okretanja telefona bude na vidiku.
+    // Omiljeni, nedavno i svi kanali su na vrhu, pa tada spisak kreće od početka.
+    val listState = remember {
+        val index = state.categories.indexOfFirst { it.id == selected }
+        val pinned = if (state.recentCount > 0) 4 else 3
+        LazyListState(firstVisibleItemIndex = if (index < 0) 0 else pinned + index - 1)
+    }
     // Isti izgled kao spisak kategorija kod filmova i serija: svaki red je svoja zaobljena pločica.
     LazyColumn(
         modifier = modifier,
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(6.dp),
         contentPadding = PaddingValues(bottom = 8.dp),
     ) {

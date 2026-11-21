@@ -144,6 +144,10 @@ interface PlaylistDao {
     @Update
     suspend fun update(playlist: PlaylistEntity)
 
+    /** Adresa na kojoj server stvarno radi (npr. http umesto https). */
+    @Query("UPDATE playlists SET source = :source WHERE id = :id")
+    suspend fun setSource(id: Long, source: String)
+
     @Query("UPDATE playlists SET lastRefreshedAt = :time, epgUrl = :epgUrl WHERE id = :id")
     suspend fun markRefreshed(id: Long, time: Long, epgUrl: String?)
 

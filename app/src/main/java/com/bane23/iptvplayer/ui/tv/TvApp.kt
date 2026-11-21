@@ -29,6 +29,7 @@ import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.WatchLinkViewModel
 import com.bane23.iptvplayer.ui.common.cast.CastHostViewModel
 import com.bane23.iptvplayer.ui.common.cast.rememberLocalNetworkAccess
+import com.bane23.iptvplayer.ui.common.navigation.push
 import com.bane23.iptvplayer.ui.common.navigation.CastPlayback
 import com.bane23.iptvplayer.ui.common.navigation.SearchAll
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
@@ -71,7 +72,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
         if (!watchLinks.isActive(link.playlistId)) return@LaunchedEffect
         // Ono što je bilo otvoreno (npr. plejer) se zatvara, da ne ostane da radi ispod detalja.
         while (backStack.size > 1) backStack.removeLastOrNull()
-        backStack.add(
+        backStack.push(
             if (link.series) {
                 SeriesDetails(link.itemId, link.name, link.poster)
             } else {
@@ -91,7 +92,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
     val pairingCode by castHost.pairingCode.collectAsStateWithLifecycle()
     val incomingTransfer by castHost.transfer.collectAsStateWithLifecycle()
     LaunchedEffect(castSession?.id) {
-        if (castSession != null && backStack.lastOrNull() !is CastPlayback) backStack.add(CastPlayback)
+        if (castSession != null && backStack.lastOrNull() !is CastPlayback) backStack.push(CastPlayback)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -113,58 +114,58 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 LaunchedEffect(Unit) {
                     if (!resumeChecked) {
                         resumeChecked = true
-                        liveTvViewModel.channelToResume()?.let { backStack.add(Player(it, null)) }
+                        liveTvViewModel.channelToResume()?.let { backStack.push(Player(it, null)) }
                     }
                 }
                 TvHomeScreen(
                     liveTvViewModel = liveTvViewModel,
-                    onUnlock = { backStack.add(Unlock) },
-                    onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
-                    onSearch = { backStack.add(Search) },
-                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
+                    onUnlock = { backStack.push(Unlock) },
+                    onPlay = { channelId, categoryId -> backStack.push(Player(channelId, categoryId)) },
+                    onSearch = { backStack.push(Search) },
+                    onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
                     onOpenVod = { item, series ->
                         if (series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                            backStack.push(SeriesDetails(item.id, item.name, item.poster))
                         } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                            backStack.push(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
-                    onSearchVod = { series -> backStack.add(VodSearch(series)) },
-                    onAddPlaylist = { backStack.add(EditPlaylist()) },
-                    onAddFromPhone = { backStack.add(PairPlaylist) },
-                    onEditPlaylist = { id -> backStack.add(EditPlaylist(id)) },
-                    onCategories = { section -> backStack.add(ManageCategories(section.name)) },
-                    onParental = { backStack.add(ParentalControl) },
-                    onTrakt = { backStack.add(TraktAccount) },
-                    onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
-                    onRecordings = { backStack.add(Recordings) },
-                    onRemoteButtons = { backStack.add(RemoteButtons) },
-                    onMultiView = { backStack.add(MultiView) },
+                    onSearchVod = { series -> backStack.push(VodSearch(series)) },
+                    onAddPlaylist = { backStack.push(EditPlaylist()) },
+                    onAddFromPhone = { backStack.push(PairPlaylist) },
+                    onEditPlaylist = { id -> backStack.push(EditPlaylist(id)) },
+                    onCategories = { section -> backStack.push(ManageCategories(section.name)) },
+                    onParental = { backStack.push(ParentalControl) },
+                    onTrakt = { backStack.push(TraktAccount) },
+                    onOpenSubtitles = { backStack.push(OpenSubtitlesAccount) },
+                    onRecordings = { backStack.push(Recordings) },
+                    onRemoteButtons = { backStack.push(RemoteButtons) },
+                    onMultiView = { backStack.push(MultiView) },
                 )
             }
             entry<SearchAll> {
                 TvSearchAllScreen(
-                    onPlay = { channelId -> backStack.add(Player(channelId, null)) },
+                    onPlay = { channelId -> backStack.push(Player(channelId, null)) },
                     onOpenVod = { item, series ->
                         if (series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                            backStack.push(SeriesDetails(item.id, item.name, item.poster))
                         } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                            backStack.push(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
                 )
             }
             entry<Search> {
-                TvSearchScreen(onPlay = { channelId -> backStack.add(Player(channelId, null)) })
+                TvSearchScreen(onPlay = { channelId -> backStack.push(Player(channelId, null)) })
             }
             entry<VodSearch> { key ->
                 TvVodSearchScreen(
                     series = key.series,
                     onOpen = { item ->
                         if (key.series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                            backStack.push(SeriesDetails(item.id, item.name, item.poster))
                         } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                            backStack.push(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
                 )
@@ -174,8 +175,8 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 TvGuideScreen(
                     playlistId = key.playlistId,
                     categoryId = key.categoryId,
-                    onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
-                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
+                    onPlay = { channelId -> backStack.push(Player(channelId, key.categoryId)) },
+                    onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
                 )
             }
             entry<ChannelArchive> { key ->
@@ -183,7 +184,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     TvArchiveScreen(
                         channelId = key.channelId,
                         onPlay = { program ->
-                            backStack.add(
+                            backStack.push(
                                 PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
                             )
                         },
@@ -207,7 +208,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                         // Arhiva zamenjuje plejer, da kanal ne nastavi da troši vezu u pozadini.
                         onArchive = { channelId ->
                             backStack.removeLastOrNull()
-                            backStack.add(ChannelArchive(channelId))
+                            backStack.push(ChannelArchive(channelId))
                         },
                     )
                 }
@@ -220,7 +221,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                         poster = key.poster,
                         extension = key.extension,
                         onPlay = { extension, startOver ->
-                            backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
+                            backStack.push(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
                         },
                     )
                 }
@@ -232,7 +233,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                         name = key.name,
                         poster = key.poster,
                         onPlay = { episodeId, startOver ->
-                            backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                            backStack.push(PlayEpisode(key.seriesId, episodeId, startOver))
                         },
                     )
                 }
@@ -254,7 +255,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 }
             }
             entry<MultiView> {
-                TvMultiViewScreen(onOpen = { channelId -> backStack.add(Player(channelId, null)) })
+                TvMultiViewScreen(onOpen = { channelId -> backStack.push(Player(channelId, null)) })
             }
             entry<CastPlayback> {
                 TvCastPlayerScreen(
@@ -266,7 +267,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
             entry<OpenSubtitlesAccount> { TvOpenSubtitlesScreen() }
             entry<RemoteButtons> { TvRemoteButtonsScreen() }
             entry<Recordings> {
-                TvRecordingsScreen(onPlay = { id -> backStack.add(PlayRecording(id)) })
+                TvRecordingsScreen(onPlay = { id -> backStack.push(PlayRecording(id)) })
             }
             entry<Unlock> {
                 // Tačan PIN otključava sve; ekran se zatvara i vraća na spisak kategorija.
@@ -304,7 +305,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                 if (option == 0) {
                     reminderViewModel.watch(reminder) { channelId ->
                         if (backStack.lastOrNull() is Player) backStack.removeLastOrNull()
-                        backStack.add(Player(channelId, null))
+                        backStack.push(Player(channelId, null))
                     }
                 }
             },
