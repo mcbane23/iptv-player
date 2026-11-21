@@ -25,6 +25,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
+import com.bane23.iptvplayer.ui.common.navigation.push
 import com.bane23.iptvplayer.ui.common.navigation.CastRemote
 import com.bane23.iptvplayer.ui.common.navigation.EditPlaylist
 import com.bane23.iptvplayer.ui.common.navigation.ParentalControl
@@ -66,14 +67,14 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
     LaunchedEffect(sendTarget) {
         if (sendTarget != null) {
             backStack.removeAll { it is SendToTv }
-            backStack.add(SendToTv(sendTarget))
+            backStack.push(SendToTv(sendTarget))
             onSendTargetHandled()
         }
     }
     // Kad puštanje na TV-u krene, plejer na telefonu se zatvara i otvara se daljinski.
     val castStarted = {
         backStack.removeLastOrNull()
-        backStack.add(CastRemote)
+        backStack.push(CastRemote)
         Unit
     }
     NavDisplay(
@@ -94,37 +95,37 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 LaunchedEffect(Unit) {
                     if (!resumeChecked) {
                         resumeChecked = true
-                        liveTvViewModel.channelToResume()?.let { backStack.add(Player(it, null)) }
+                        liveTvViewModel.channelToResume()?.let { backStack.push(Player(it, null)) }
                     }
                 }
                 MobileHomeScreen(
                     liveTvViewModel = liveTvViewModel,
-                    onPlay = { channelId, categoryId -> backStack.add(Player(channelId, categoryId)) },
-                    onSearch = { backStack.add(Search) },
-                    onGuide = { playlistId, categoryId -> backStack.add(Guide(playlistId, categoryId)) },
+                    onPlay = { channelId, categoryId -> backStack.push(Player(channelId, categoryId)) },
+                    onSearch = { backStack.push(Search) },
+                    onGuide = { playlistId, categoryId -> backStack.push(Guide(playlistId, categoryId)) },
                     onOpenVod = { item, series ->
                         if (series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                            backStack.push(SeriesDetails(item.id, item.name, item.poster))
                         } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                            backStack.push(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
-                    onSearchVod = { series -> backStack.add(VodSearch(series)) },
-                    onPlaylists = { backStack.add(Playlists) },
-                    onCategories = { section -> backStack.add(ManageCategories(section.name)) },
-                    onParental = { backStack.add(ParentalControl) },
-                    onUnlock = { backStack.add(Unlock) },
-                    onTrakt = { backStack.add(TraktAccount) },
-                    onTransfer = { backStack.add(TransferToTv) },
-                    onOpenSubtitles = { backStack.add(OpenSubtitlesAccount) },
-                    onRecordings = { backStack.add(Recordings) },
-                    onDownloads = { backStack.add(Downloads) },
-                    onMultiView = { backStack.add(MultiView) },
+                    onSearchVod = { series -> backStack.push(VodSearch(series)) },
+                    onPlaylists = { backStack.push(Playlists) },
+                    onCategories = { section -> backStack.push(ManageCategories(section.name)) },
+                    onParental = { backStack.push(ParentalControl) },
+                    onUnlock = { backStack.push(Unlock) },
+                    onTrakt = { backStack.push(TraktAccount) },
+                    onTransfer = { backStack.push(TransferToTv) },
+                    onOpenSubtitles = { backStack.push(OpenSubtitlesAccount) },
+                    onRecordings = { backStack.push(Recordings) },
+                    onDownloads = { backStack.push(Downloads) },
+                    onMultiView = { backStack.push(MultiView) },
                 )
             }
             entry<Search> {
                 MobileSearchScreen(
-                    onPlay = { channelId -> backStack.add(Player(channelId, null)) },
+                    onPlay = { channelId -> backStack.push(Player(channelId, null)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -138,8 +139,8 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 MobileGuideScreen(
                     playlistId = key.playlistId,
                     categoryId = key.categoryId,
-                    onPlay = { channelId -> backStack.add(Player(channelId, key.categoryId)) },
-                    onArchive = { channelId -> backStack.add(ChannelArchive(channelId)) },
+                    onPlay = { channelId -> backStack.push(Player(channelId, key.categoryId)) },
+                    onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -148,7 +149,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     MobileArchiveScreen(
                         channelId = key.channelId,
                         onPlay = { program ->
-                            backStack.add(
+                            backStack.push(
                                 PlayArchive(key.channelId, program.startMs, program.stopMs, program.title, program.startToken),
                             )
                         },
@@ -174,7 +175,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         // Arhiva zamenjuje plejer, da kanal ne nastavi da troši vezu u pozadini.
                         onArchive = { channelId ->
                             backStack.removeLastOrNull()
-                            backStack.add(ChannelArchive(channelId))
+                            backStack.push(ChannelArchive(channelId))
                         },
                         onCastStarted = castStarted,
                     )
@@ -185,9 +186,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     series = key.series,
                     onOpen = { item ->
                         if (key.series) {
-                            backStack.add(SeriesDetails(item.id, item.name, item.poster))
+                            backStack.push(SeriesDetails(item.id, item.name, item.poster))
                         } else {
-                            backStack.add(MovieDetails(item.id, item.name, item.poster, item.extension))
+                            backStack.push(MovieDetails(item.id, item.name, item.poster, item.extension))
                         }
                     },
                     onBack = { backStack.removeLastOrNull() },
@@ -201,9 +202,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         poster = key.poster,
                         extension = key.extension,
                         onPlay = { extension, startOver ->
-                            backStack.add(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
+                            backStack.push(PlayMovie(key.movieId, key.name, extension, startOver, key.poster))
                         },
-                        onDownloads = { backStack.add(Downloads) },
+                        onDownloads = { backStack.push(Downloads) },
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
@@ -215,9 +216,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                         name = key.name,
                         poster = key.poster,
                         onPlay = { episodeId, startOver ->
-                            backStack.add(PlayEpisode(key.seriesId, episodeId, startOver))
+                            backStack.push(PlayEpisode(key.seriesId, episodeId, startOver))
                         },
-                        onDownloads = { backStack.add(Downloads) },
+                        onDownloads = { backStack.push(Downloads) },
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }
@@ -253,7 +254,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<MultiView> {
                 MobileMultiViewScreen(
-                    onOpen = { channelId -> backStack.add(Player(channelId, null)) },
+                    onOpen = { channelId -> backStack.push(Player(channelId, null)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -268,7 +269,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<Recordings> {
                 MobileRecordingsScreen(
-                    onPlay = { id -> backStack.add(PlayRecording(id)) },
+                    onPlay = { id -> backStack.push(PlayRecording(id)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -276,7 +277,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 MobileDownloadsScreen(
                     onPlay = { item ->
                         val series = item.entity.seriesId
-                        backStack.add(PlayDownload(item.id, series = series != null, lockId = series ?: item.entity.itemId))
+                        backStack.push(PlayDownload(item.id, series = series != null, lockId = series ?: item.entity.itemId))
                     },
                     onBack = { backStack.removeLastOrNull() },
                 )
@@ -305,8 +306,8 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
             }
             entry<Playlists> {
                 MobilePlaylistsScreen(
-                    onAdd = { backStack.add(EditPlaylist()) },
-                    onEdit = { id -> backStack.add(EditPlaylist(id)) },
+                    onAdd = { backStack.push(EditPlaylist()) },
+                    onEdit = { id -> backStack.push(EditPlaylist(id)) },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }
@@ -331,7 +332,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onClick = {
                         reminderViewModel.watch(reminder) { channelId ->
                             if (backStack.lastOrNull() is Player) backStack.removeLastOrNull()
-                            backStack.add(Player(channelId, null))
+                            backStack.push(Player(channelId, null))
                         }
                     },
                 ) { Text(stringResource(R.string.reminder_watch)) }

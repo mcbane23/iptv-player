@@ -11,6 +11,7 @@ import com.bane23.iptvplayer.data.db.PlaylistEntity
 import com.bane23.iptvplayer.data.m3u.M3uItem
 import com.bane23.iptvplayer.data.m3u.M3uParser
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.text.TextCharset
 import com.bane23.iptvplayer.data.xtream.XtreamApi
 import com.bane23.iptvplayer.work.EpgScheduler
 import com.bane23.iptvplayer.data.xtream.XtreamJson
@@ -25,6 +26,7 @@ import com.bane23.iptvplayer.domain.PlaylistException
 import com.bane23.iptvplayer.domain.PlaylistType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.EOFException
+import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
@@ -146,10 +148,12 @@ class PlaylistRepository @Inject constructor(
     /** Dodaje listu i odmah učitava njen sadržaj. Ako učitavanje ne uspe, lista se ne upisuje. */
     suspend fun addPlaylist(draft: PlaylistDraft): Long = guarded {
         val entity = draft.toNewEntity()
-        val id = db.withTransaction {
-            val newId = playlistDao.insert(entity)
-            importContent(entity.copy(id = newId))
-            newId
+        val id = fetchContent(entity).use { fetched ->
+            db.withTransaction {
+                val newId = playlistDao.insert(entity)
+                writeContent(entity.copy(id = newId), fetched)
+                newId
+            }
         }
         if (settings.activePlaylistId.first() == null) settings.setActivePlaylistId(id)
         epgScheduler.refreshNow(id)
@@ -160,19 +164,24 @@ class PlaylistRepository @Inject constructor(
     suspend fun updatePlaylist(id: Long, draft: PlaylistDraft) = guarded {
         val existing = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
         val fresh = draft.toNewEntity(existingPassword = existing.passwordEncrypted)
-        val updated = fresh.copy(
-            id = id,
-            epgUrl = existing.epgUrl,
-            lastRefreshedAt = existing.lastRefreshedAt,
-            merged = existing.merged,
-        )
-        db.withTransaction {
-            playlistDao.update(updated)
-            importContent(updated)
+        fetchContent(fresh.copy(id = id)).use { fetched ->
+            db.withTransaction {
+                // Čita se iznova: dok je sadržaj stizao sa servera, lista je mogla da se promeni (npr. vodič).
+                val current = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
+                val updated = fresh.copy(
+                    id = id,
+                    epgUrl = current.epgUrl,
+                    lastRefreshedAt = current.lastRefreshedAt,
+                    epgRefreshedAt = current.epgRefreshedAt,
+                    merged = current.merged,
+                )
+                playlistDao.update(updated)
+                writeContent(updated, fetched)
+            }
         }
         // Drugi server ili nalog: filmovi i serije sačuvani na uređaju više ne važe.
-        if (updated.source != existing.source || updated.username != existing.username ||
-            updated.passwordEncrypted != existing.passwordEncrypted
+        if (fresh.source != existing.source || fresh.username != existing.username ||
+            fresh.passwordEncrypted != existing.passwordEncrypted
         ) {
             vodDiskCache.clear(id)
         }
@@ -182,7 +191,13 @@ class PlaylistRepository @Inject constructor(
     /** Ponovo preuzima sadržaj liste. Ako preuzimanje ne uspe, stari sadržaj ostaje netaknut. */
     suspend fun refreshPlaylist(id: Long) = guarded {
         val entity = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
-        db.withTransaction { importContent(entity) }
+        fetchContent(entity).use { fetched ->
+            db.withTransaction {
+                // Lista je mogla da bude obrisana dok je sadržaj stizao sa servera.
+                val current = playlistDao.getById(id) ?: throw PlaylistException(Kind.UNKNOWN)
+                writeContent(current, fetched)
+            }
+        }
         epgScheduler.refreshNow(id)
     }
 
@@ -302,8 +317,65 @@ class PlaylistRepository @Inject constructor(
     /** Podešavanja kategorija liste koja se upravo osvežava (naziv -> stara kategorija). */
     private var categoryPrefs: Map<String, CategoryEntity> = emptyMap()
 
-    /** Briše stari sadržaj liste i upisuje novi. Poziva se unutar transakcije. */
-    private suspend fun importContent(playlist: PlaylistEntity) {
+    /**
+     * Sadržaj liste preuzet sa servera u privremeni fajl, spreman za upis u bazu. Preuzimanje ide pre
+     * transakcije: dok ono traje (kod sporog servera i minut), baza ostaje slobodna za sve ostalo.
+     */
+    private class Fetched(
+        /** Adresa koja je radila (može biti http umesto https); ista kao u listi ako nije menjana. */
+        val source: String,
+        /** Preuzet sadržaj, ili null za listu iz fajla sa uređaja (ona se čita pravo iz fajla). */
+        val file: File?,
+        /** Samo za Xtream: podaci o nalogu i kategorije kanala (ključ, naziv). */
+        val account: XtreamAccount? = null,
+        val categories: List<Pair<String, String>> = emptyList(),
+    ) : java.io.Closeable {
+        override fun close() {
+            file?.delete()
+        }
+    }
+
+    private class XtreamAccount(val expiresAtMs: Long?, val maxConnections: Int?)
+
+    /** Preuzima sadržaj liste sa servera. Ništa ne upisuje u bazu. */
+    private suspend fun fetchContent(playlist: PlaylistEntity): Fetched = when (playlist.type) {
+        PlaylistType.M3U_URL -> {
+            val (workingUrl, stream) = openUrlWithHttpFallback(playlist.source, playlist.userAgent)
+            Fetched(workingUrl, saveToFile(stream, tolerateCutOff = true))
+        }
+        PlaylistType.M3U_FILE -> Fetched(playlist.source, file = null)
+        PlaylistType.XTREAM -> fetchXtream(playlist)
+    }
+
+    /**
+     * Upisuje odgovor servera u privremeni fajl. Sa [tolerateCutOff] se prihvata i odgovor koji je
+     * server prekinuo bez urednog kraja, ako je nešto stiglo: neki serveri tako završe M3U listu.
+     */
+    private fun saveToFile(input: InputStream, tolerateCutOff: Boolean): File {
+        val file = File.createTempFile("playlist", ".tmp", context.cacheDir)
+        try {
+            input.use { source ->
+                file.outputStream().use { target ->
+                    try {
+                        source.copyTo(target, COPY_BUFFER)
+                    } catch (e: IOException) {
+                        val cutOff = e is ProtocolException || e is EOFException
+                        if (!tolerateCutOff || !cutOff || file.length() == 0L) throw e
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            file.delete()
+            throw e
+        }
+        return file
+    }
+
+    /** Briše stari sadržaj liste i upisuje preuzeti. Poziva se unutar transakcije; ne koristi mrežu. */
+    private suspend fun writeContent(playlist: PlaylistEntity, fetched: Fetched) {
+        if (fetched.source != playlist.source) playlistDao.setSource(playlist.id, fetched.source)
+        // Posebnim upitom, da ga kasniji upisi cele liste (izmena, prelazak na http) ne pregaze starim.
+        fetched.account?.let { playlistDao.setAccountInfo(playlist.id, it.expiresAtMs, it.maxConnections) }
         // Sakrivene i zaključane kategorije i njihov redosled se pamte po nazivu, da prežive osvežavanje.
         categoryPrefs = categoryDao.getByPlaylist(playlist.id)
             .filter { it.hidden || it.userOrder != null || it.locked }
@@ -311,14 +383,10 @@ class PlaylistRepository @Inject constructor(
         channelDao.deleteByPlaylist(playlist.id)
         categoryDao.deleteByPlaylist(playlist.id)
         val epgUrl = when (playlist.type) {
-            PlaylistType.M3U_URL -> {
-                val (workingUrl, stream) = openUrlWithHttpFallback(playlist.source, playlist.userAgent)
-                if (workingUrl != playlist.source) playlistDao.update(playlist.copy(source = workingUrl))
-                stream.use { importM3u(playlist.id, it) }
-            }
+            PlaylistType.M3U_URL -> fetched.file!!.inputStream().use { importM3u(playlist.id, it) }
             PlaylistType.M3U_FILE -> openFile(playlist.source).use { importM3u(playlist.id, it) }
             PlaylistType.XTREAM -> {
-                importXtream(playlist)
+                importXtream(playlist, fetched)
                 null
             }
         }
@@ -391,7 +459,7 @@ class PlaylistRepository @Inject constructor(
         var epgUrl: String? = null
         val writer = ChannelWriter(playlistId)
         try {
-            input.bufferedReader(Charsets.UTF_8).useLines { lines ->
+            TextCharset.reader(input).buffered().useLines { lines ->
                 for (item in M3uParser.parse(lines)) {
                     when (item) {
                         is M3uItem.Header -> epgUrl = item.epgUrl
@@ -432,8 +500,8 @@ class PlaylistRepository @Inject constructor(
         return epgUrl
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
-    private suspend fun importXtream(playlist: PlaylistEntity) {
+    /** Proverava nalog i preuzima kategorije i spisak kanala Xtream liste. */
+    private suspend fun fetchXtream(playlist: PlaylistEntity): Fetched {
         var server: HttpUrl = XtreamUrls.normalizeServer(playlist.source)
             ?: throw PlaylistException(Kind.INVALID_URL)
         val username = playlist.username ?: throw PlaylistException(Kind.MISSING_FIELDS)
@@ -457,7 +525,6 @@ class PlaylistRepository @Inject constructor(
                 throw e
             }
             server = http
-            playlistDao.update(playlist.copy(source = http.toString()))
             result
         }
         val user = account.userInfo
@@ -470,26 +537,35 @@ class PlaylistRepository @Inject constructor(
                 throw PlaylistException(Kind.ACCOUNT_EXPIRED)
             status == "banned" || status == "disabled" -> throw PlaylistException(Kind.ACCOUNT_DISABLED)
         }
-        // Posebnim upitom, da ga kasniji upisi cele liste (izmena, prelazak na http) ne pregaze starim.
-        playlistDao.setAccountInfo(playlist.id, expiresAt?.let { it * 1000 }, user.maxConnections)
 
-        val writer = ChannelWriter(playlist.id)
         val categories = xtreamApi.liveCategories(
             XtreamUrls.playerApi(server, username, password, XtreamUrls.ACTION_LIVE_CATEGORIES),
             playlist.userAgent,
-        )
-        for (category in categories) {
-            val key = category.id ?: continue
-            writer.ensureCategory(key, category.name?.takeIf { it.isNotBlank() } ?: key)
+        ).mapNotNull { category ->
+            val key = category.id ?: return@mapNotNull null
+            key to (category.name?.takeIf { it.isNotBlank() } ?: key)
         }
-
         val body = xtreamApi.liveStreams(
             XtreamUrls.playerApi(server, username, password, XtreamUrls.ACTION_LIVE_STREAMS),
             playlist.userAgent,
         )
-        body.use {
+        val file = saveToFile(body.byteStream(), tolerateCutOff = false)
+        return Fetched(
+            // Adresa se menja samo kad je https zamenjen sa http; inače ostaje kako je upisana.
+            source = if (server.toString() != XtreamUrls.normalizeServer(playlist.source).toString()) server.toString() else playlist.source,
+            file = file,
+            account = XtreamAccount(expiresAt?.let { it * 1000 }, user.maxConnections),
+            categories = categories,
+        )
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun importXtream(playlist: PlaylistEntity, fetched: Fetched) {
+        val writer = ChannelWriter(playlist.id)
+        for ((key, name) in fetched.categories) writer.ensureCategory(key, name)
+        fetched.file!!.inputStream().buffered(COPY_BUFFER).use { input ->
             val streams = XtreamJson.decodeToSequence(
-                it.byteStream(),
+                input,
                 XtreamLiveStream.serializer(),
                 DecodeSequenceMode.ARRAY_WRAPPED,
             )
@@ -601,6 +677,7 @@ class PlaylistRepository @Inject constructor(
 
     private companion object {
         const val BATCH_SIZE = 500
+        const val COPY_BUFFER = 64 * 1024
         const val MAX_EPG_SHIFT_HOURS = 14
     }
 }

@@ -172,9 +172,13 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
     // Isti ID kategorije se ponavlja hiljadama puta; čuva se jedan primerak.
     val categoryIds = HashMap<String, String>()
     fun category(value: String?): String? = value?.takeIf { it.isNotBlank() }?.let { categoryIds.getOrPut(it) { it } }
+    // Neki paneli isti film ili seriju pošalju dvaput; ostaje prvi, jer ekran sa posterima traži da
+    // svaki ima svoj ID.
+    val seen = HashSet<Long>()
     if (kind == VodKind.MOVIES) {
         for (stream in XtreamJson.decodeToSequence(input, XtreamVodStream.serializer(), DecodeSequenceMode.ARRAY_WRAPPED)) {
             val id = stream.streamId?.toLongOrNull() ?: continue
+            if (!seen.add(id)) continue
             items.add(
                 VodItem(
                     id = id,
@@ -192,6 +196,7 @@ internal fun readVodItems(kind: VodKind, input: InputStream): List<VodItem> {
     } else {
         for (series in XtreamJson.decodeToSequence(input, XtreamSeries.serializer(), DecodeSequenceMode.ARRAY_WRAPPED)) {
             val id = series.seriesId?.toLongOrNull() ?: continue
+            if (!seen.add(id)) continue
             items.add(
                 VodItem(
                     id = id,
@@ -389,7 +394,7 @@ class VodRepository @Inject constructor(
             api.categories(session.api(action), session.userAgent).mapNotNull { category ->
                 val id = category.id?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 VodCategory(id, category.name?.takeIf { it.isNotBlank() } ?: id)
-            }
+            }.distinctBy { it.id }
         }
     }
 

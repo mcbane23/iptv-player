@@ -608,7 +608,9 @@ class VodSearchViewModel @Inject constructor(
             }
             val items = all ?: try {
                 _state.update { it.copy(loading = true, failed = false) }
-                repository.allItems(kind).map { VodSearch.normalize(it.name) to it }.also { all = it }
+                // Priprema naziva za ceo spisak traje, pa ne ide na glavnoj niti.
+                val list = repository.allItems(kind)
+                withContext(Dispatchers.Default) { list.map { VodSearch.normalize(it.name) to it } }.also { all = it }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

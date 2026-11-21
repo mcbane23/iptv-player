@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -239,6 +240,7 @@ fun MobileLiveTvScreen(
 
                 else -> {
                     val channels = channelsViewModel.channels.collectAsLazyPagingItems()
+                    KeepNowPlayingFresh(channels)
                     // Nova kategorija kreće od vrha liste; posle povratka iz plejera ostaje gde je bila.
                     val listState = rememberLazyGridState()
                     var listShows by rememberSaveable { mutableStateOf(selected) }

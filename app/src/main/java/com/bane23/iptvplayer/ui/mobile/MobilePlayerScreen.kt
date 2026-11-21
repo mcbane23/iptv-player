@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import android.app.PendingIntent
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import android.app.PictureInPictureParams
@@ -496,6 +497,7 @@ private fun ChannelListPanel(
     modifier: Modifier = Modifier,
 ) {
     val channels = viewModel.channels.collectAsLazyPagingItems()
+    KeepNowPlayingFresh(channels)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = ui.position)
     LazyColumn(
         state = listState,
