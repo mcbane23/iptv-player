@@ -135,9 +135,11 @@ fun TvVodPlayerScreen(
     fun closeTop() {
         when {
             settingsOpen -> settingsOpen = false
+            // Titlovi sa interneta su drugi korak menija „Titlovi”: Nazad vraća na spisak titlova.
             onlineOpen -> {
                 onlineOpen = false
                 viewModel.closeOnlineSubtitles()
+                tracks = TvTrackKind.SUBTITLES
             }
             tracks != null -> tracks = null
             seekArmed -> {
@@ -449,7 +451,7 @@ fun TvVodPlayerScreen(
                                 icon = AppIcons.Subtitles,
                                 label = stringResource(R.string.player_subtitles),
                                 active = playback.textEnabled,
-                                open = tracks == TvTrackKind.SUBTITLES,
+                                open = tracks == TvTrackKind.SUBTITLES || onlineOpen,
                                 onClick = {
                                     returnFocus[0] = subtitlesChip
                                     tracks = TvTrackKind.SUBTITLES
@@ -537,11 +539,13 @@ fun TvVodPlayerScreen(
                 }
             }
             if (onlineOpen) {
-                TvOnlineSubtitlesPanel(
-                    state = online,
-                    onPick = viewModel::downloadSubtitle,
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.SUBTITLES], width = TvOnlineMenuWidth) {
+                    TvOnlineSubtitlesPanel(
+                        state = online,
+                        onPick = viewModel::downloadSubtitle,
+                        onBack = { closeTop() },
+                    )
+                }
             }
         }
     }

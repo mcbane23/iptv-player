@@ -86,8 +86,14 @@ fun MobileVodPlayerScreen(
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
     // Titlovi, zvuk i podešavanja su oblačići iznad svojih dugmića: dodir pored njih ili Nazad ih
-    // zatvara, a kontrole ostaju na ekranu. Titlovi sa interneta su zaseban prozor.
-    val sidePanel = panel == VodPanel.SETTINGS || panel == VodPanel.SUBTITLES || panel == VodPanel.AUDIO
+    // zatvara, a kontrole ostaju na ekranu. Titlovi sa interneta su drugi korak oblačića „Titlovi”:
+    // Nazad iz njih vraća na spisak titlova.
+    val sidePanel = panel != VodPanel.NONE
+    fun closePanel(back: Boolean = false) {
+        val online = panel == VodPanel.ONLINE_SUBTITLES
+        if (online) viewModel.closeOnlineSubtitles()
+        panel = if (online && back) VodPanel.SUBTITLES else VodPanel.NONE
+    }
     val anchors = rememberPlayerMenuAnchors()
     val pauseInfoOn = rememberPauseInfoEnabled()
     val pauseDim = rememberPauseDim(
@@ -110,7 +116,7 @@ fun MobileVodPlayerScreen(
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
-    BackHandler(enabled = sidePanel) { panel = VodPanel.NONE }
+    BackHandler(enabled = sidePanel) { closePanel(back = true) }
 
     LaunchedEffect(controlsVisible, panel, playback.status, activity, preview) {
         if (controlsVisible && panel == VodPanel.NONE && preview == null && playback.status == PlaybackStatus.PLAYING) {
@@ -136,13 +142,14 @@ fun MobileVodPlayerScreen(
                         viewModel.onUserActivity()
                         when {
                             locked -> unlockVisible = !unlockVisible
-                            sidePanel -> panel = VodPanel.NONE
+                            // Stanje se čita ovde, a ne iz ranije izračunate vrednosti, da dodir vidi otvoren meni.
+                            panel != VodPanel.NONE -> closePanel()
                             else -> controlsVisible = !controlsVisible
                         }
                     },
                     // Dupli tap: leva i desna trećina slike premotavaju, sredina pauzira ili pušta.
                     onDoubleTap = { offset ->
-                        if (!locked && !sidePanel) {
+                        if (!locked && panel == VodPanel.NONE) {
                             when {
                                 offset.x < size.width / 3 -> viewModel.seekBy(-viewModel.seekStepMs)
                                 offset.x > size.width * 2 / 3 -> viewModel.seekBy(viewModel.seekStepMs)
@@ -287,7 +294,7 @@ fun MobileVodPlayerScreen(
                             icon = AppIcons.Subtitles,
                             label = stringResource(R.string.player_subtitles),
                             active = playback.textEnabled,
-                            open = panel == VodPanel.SUBTITLES,
+                            open = panel == VodPanel.SUBTITLES || panel == VodPanel.ONLINE_SUBTITLES,
                             onClick = { panel = VodPanel.SUBTITLES },
                             modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SUBTITLES),
                         )
@@ -374,25 +381,19 @@ fun MobileVodPlayerScreen(
                     )
                 }
 
-                else -> Unit
+                VodPanel.ONLINE_SUBTITLES -> PlayerMenuBubble(anchors[PlayerMenu.SUBTITLES], MobileOnlineMenuWidth) {
+                    val online by viewModel.online.collectAsStateWithLifecycle()
+                    MobileOnlineSubtitlesMenu(
+                        state = online,
+                        onPick = viewModel::downloadSubtitle,
+                        onBack = { closePanel(back = true) },
+                        onDone = { closePanel() },
+                    )
+                }
+
+                VodPanel.NONE -> Unit
             }
         }
-    }
-
-    when (panel) {
-        VodPanel.ONLINE_SUBTITLES -> {
-            val online by viewModel.online.collectAsStateWithLifecycle()
-            OnlineSubtitlesDialog(
-                state = online,
-                onPick = viewModel::downloadSubtitle,
-                onDismiss = {
-                    viewModel.closeOnlineSubtitles()
-                    panel = VodPanel.NONE
-                },
-            )
-        }
-
-        else -> Unit
     }
 }
 
