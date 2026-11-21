@@ -301,10 +301,10 @@
     <string name="nav_live">Uživo</string>
     <string name="search_channels">Kanali i emisije</string>
     <string name="settings_tv_preview">Pregled kanala</string>
-    <string name="settings_brightness_slider">Traka za osvetljenje</string>
-    <string name="settings_brightness_slider_summary">U plejeru, uz levu ivicu ekrana, traka kojom se menja osvetljenje</string>
-    <string name="settings_volume_slider">Traka za zvuk</string>
-    <string name="settings_volume_slider_summary">U plejeru, uz desnu ivicu ekrana, traka kojom se menja jačina zvuka</string>
+    <string name="settings_brightness_swipe">Prevlačenje za osvetljenje</string>
+    <string name="settings_brightness_swipe_summary">U plejeru, prevlačenje gore-dole uz levu ivicu ekrana menja osvetljenje</string>
+    <string name="settings_volume_swipe">Prevlačenje za zvuk</string>
+    <string name="settings_volume_swipe_summary">U plejeru, prevlačenje gore-dole uz desnu ivicu ekrana menja jačinu zvuka</string>
     <string name="settings_background_play">Puštanje u pozadini</string>
     <string name="settings_background_play_summary">Na telefonu zvuk nastavlja da ide kad se ekran ugasi ili aplikacija ode u pozadinu</string>
     <string name="background_play_channel">Puštanje u pozadini</string>

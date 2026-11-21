@@ -91,20 +91,20 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[APP_FULL_SCREEN] = enabled }
     }
 
-    /** Traka za osvetljenje uz levu ivicu plejera na telefonu. Isključena dok je korisnik ne uključi. */
-    val playerBrightnessSlider: Flow<Boolean> =
-        dataStore.data.map { it[PLAYER_BRIGHTNESS_SLIDER] ?: false }.distinctUntilChanged()
+    /** Telefon: prevlačenje uz levu ivicu plejera menja osvetljenje. Uključeno dok ga korisnik ne isključi. */
+    val playerBrightnessSwipe: Flow<Boolean> =
+        dataStore.data.map { it[PLAYER_BRIGHTNESS_SWIPE] ?: true }.distinctUntilChanged()
 
-    suspend fun setPlayerBrightnessSlider(enabled: Boolean) {
-        dataStore.edit { it[PLAYER_BRIGHTNESS_SLIDER] = enabled }
+    suspend fun setPlayerBrightnessSwipe(enabled: Boolean) {
+        dataStore.edit { it[PLAYER_BRIGHTNESS_SWIPE] = enabled }
     }
 
-    /** Traka za jačinu zvuka uz desnu ivicu plejera na telefonu. Isključena dok je korisnik ne uključi. */
-    val playerVolumeSlider: Flow<Boolean> =
-        dataStore.data.map { it[PLAYER_VOLUME_SLIDER] ?: false }.distinctUntilChanged()
+    /** Telefon: prevlačenje uz desnu ivicu plejera menja jačinu zvuka. Uključeno dok ga korisnik ne isključi. */
+    val playerVolumeSwipe: Flow<Boolean> =
+        dataStore.data.map { it[PLAYER_VOLUME_SWIPE] ?: true }.distinctUntilChanged()
 
-    suspend fun setPlayerVolumeSlider(enabled: Boolean) {
-        dataStore.edit { it[PLAYER_VOLUME_SLIDER] = enabled }
+    suspend fun setPlayerVolumeSwipe(enabled: Boolean) {
+        dataStore.edit { it[PLAYER_VOLUME_SWIPE] = enabled }
     }
 
     /** Telefon: zvuk nastavlja kad se ekran ugasi ili aplikacija ode u pozadinu. Isključeno dok korisnik ne uključi. */
@@ -506,8 +506,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_VOD_PREVIEW = booleanPreferencesKey("tv_vod_preview")
         val DRAW_UNDER_CUTOUT = booleanPreferencesKey("draw_under_cutout")
         val APP_FULL_SCREEN = booleanPreferencesKey("app_full_screen")
-        val PLAYER_BRIGHTNESS_SLIDER = booleanPreferencesKey("player_brightness_slider")
-        val PLAYER_VOLUME_SLIDER = booleanPreferencesKey("player_volume_slider")
+        val PLAYER_BRIGHTNESS_SWIPE = booleanPreferencesKey("player_brightness_swipe")
+        val PLAYER_VOLUME_SWIPE = booleanPreferencesKey("player_volume_swipe")
         val BACKGROUND_PLAY = booleanPreferencesKey("background_play")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val REOPEN_AFTER_UPDATE = booleanPreferencesKey("reopen_after_update")
