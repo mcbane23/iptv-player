@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -89,7 +90,21 @@ fun MobileVodScreen(
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
     val searchLabel = stringResource(if (series) R.string.search_series else R.string.search_movies)
 
-    if (onBack == null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    // Mreža postera deli isto stanje u oba položaja telefona, pa okretanje ne pomera spisak.
+    // Druga grupa (kategorija, favoriti, „Nastavi gledanje”) kreće od vrha, kao kanali u Uživo.
+    val gridState = rememberLazyGridState()
+    val shownGroup = if (showingContinue && continueItems.isNotEmpty()) CONTINUE_GROUP else state.selected?.id
+    var gridShows by rememberSaveable { mutableStateOf(shownGroup) }
+    LaunchedEffect(shownGroup) {
+        if (gridShows != shownGroup) {
+            gridShows = shownGroup
+            gridState.scrollToItem(0)
+        }
+    }
+    val landscape = onBack == null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Položen telefon ima kategorije stalno levo; otvoren spisak se zatvara da ne iskoči posle povratka.
+    LaunchedEffect(landscape) { if (landscape) pickerOpen = false }
+    if (landscape) {
         // Položen telefon: kategorije levo, posteri desno.
         MobileVodLandscape(
             series = series,
@@ -97,6 +112,9 @@ fun MobileVodScreen(
             continueItems = continueItems,
             favorites = favorites,
             watched = watched,
+            continueChosen = showingContinue,
+            onContinueChosen = { showingContinue = it },
+            gridState = gridState,
             onSelectCategory = viewModel::selectCategory,
             onHideCategory = viewModel::hideCategory,
             onMoveCategoryToTop = viewModel::moveCategoryToTop,
@@ -218,6 +236,7 @@ fun MobileVodScreen(
                     }
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 104.dp),
+                        state = gridState,
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -299,6 +318,9 @@ fun MobileVodScreen(
         )
     }
 }
+
+/** Oznaka grupe „Nastavi gledanje” za praćenje šta mreža postera prikazuje; nije id kategorije. */
+private const val CONTINUE_GROUP = "continue-watching"
 
 /** Dugme za redosled postera: otvara meni sa načinima slaganja, izabrani je obeležen. */
 @Composable
