@@ -161,7 +161,12 @@ fun MobileVodPlayerScreen(
                 )
             },
     ) {
-        VideoSurface(player = viewModel.player, aspectMode = ui.aspectMode, modifier = Modifier.fillMaxSize())
+        VideoSurface(
+            player = viewModel.player,
+            aspectMode = ui.aspectMode,
+            modifier = Modifier.fillMaxSize(),
+            subtitleText = viewModel.subtitleText,
+        )
 
         PauseDimLayer(
             state = pauseDim,
