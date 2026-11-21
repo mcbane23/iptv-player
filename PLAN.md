@@ -792,6 +792,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] TV Liste i Podešavanja (Bane, 21. 11. 2026): „Liste” se otvaraju sa fokusom na aktivnoj listi, a dugi OK na
       listi otvara opcije (osveži, izmeni, spoji, obriši), uz kratko uputstvo iznad spiska; u Podešavanjima se
       jezik, boja i veličina prikaza biraju sa spiska vrednosti umesto kruženjem na svaki OK
+- [x] TV: bočni meni ne treperi pri povratku (Bane, 21. 11. 2026): dok fokus putuje u sadržaj (Nazad iz druge
+      sekcije na „Početnu”, povratak iz detalja ili plejera, pokretanje) meni se ne širi i ne boji stavku
 
 ## 7. Testiranje
 
