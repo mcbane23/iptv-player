@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -534,6 +535,7 @@ fun TvLiveTvScreen(
                 }
 
                 val channels = channelsViewModel.channels.collectAsLazyPagingItems()
+                KeepNowPlayingFresh(channels)
                 Column(
                     modifier = Modifier
                         .weight(0.42f)

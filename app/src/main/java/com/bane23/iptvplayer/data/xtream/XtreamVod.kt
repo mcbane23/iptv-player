@@ -143,7 +143,8 @@ object XtreamVodParser {
             is JsonArray -> raw.forEachIndexed { index, list -> readEpisodes(list, index + 1, episodes) }
             else -> Unit
         }
-        val seasons = episodes.groupBy { it.season }
+        // Isti ID epizode dvaput u odgovoru bi srušio spisak epizoda (svaki red ima ID kao ključ).
+        val seasons = episodes.distinctBy { it.id }.groupBy { it.season }
             .toSortedMap()
             .map { (number, list) -> Season(number, list.sortedBy { it.number }) }
         return SeriesDetails(

@@ -5,6 +5,14 @@ import kotlinx.serialization.Serializable
 
 /** Odredišta u aplikaciji. Zajednička su za telefon i TV, razlikuju se samo ekrani. */
 
+/**
+ * Otvara ekran [key], osim ako je baš on već na vrhu. Dva brza dodira (ili dva pritiska na OK) bi
+ * inače otvorila isti ekran dvaput; kod plejera su to i dve veze ka provajderu.
+ */
+fun <T : Any> MutableList<T>.push(key: T) {
+    if (lastOrNull() != key) add(key)
+}
+
 /** Početni ekran: sekcije (Uživo, Filmovi, Serije...) sa donjom trakom na telefonu, bočnim menijem na TV-u. */
 @Serializable
 data object LiveTv : NavKey

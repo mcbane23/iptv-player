@@ -10,6 +10,15 @@ class ReadVodItemsTest {
     private fun read(kind: VodKind, json: String) = readVodItems(kind, json.byteInputStream())
 
     @Test
+    fun `an id sent twice is kept once`() {
+        val movies = read(VodKind.MOVIES, """[{"stream_id":21,"name":"Prvi"},{"stream_id":21,"name":"Opet prvi"},{"stream_id":22,"name":"Drugi"}]""")
+        assertEquals(listOf(21L, 22L), movies.map { it.id })
+        assertEquals("Prvi", movies.first().name)
+        val series = read(VodKind.SERIES, """[{"series_id":31,"name":"Serija"},{"series_id":31,"name":"Serija"}]""")
+        assertEquals(listOf(31L), series.map { it.id })
+    }
+
+    @Test
     fun `movies are read with id, name, poster, rating, extension and tmdb id`() {
         val items = read(
             VodKind.MOVIES,

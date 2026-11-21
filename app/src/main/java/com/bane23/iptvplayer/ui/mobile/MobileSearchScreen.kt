@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import androidx.compose.foundation.layout.Column
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,7 @@ fun MobileSearchScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
+    KeepNowPlayingFresh(results)
     val programs by viewModel.programs.collectAsStateWithLifecycle()
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.notice)

@@ -11,6 +11,7 @@ import com.bane23.iptvplayer.work.EpgScheduler
 import com.bane23.iptvplayer.data.epg.GuideChannel
 import com.bane23.iptvplayer.data.epg.XmltvItem
 import com.bane23.iptvplayer.data.epg.XmltvParser
+import com.bane23.iptvplayer.data.text.TextCharset
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.domain.PlaylistType
@@ -253,7 +254,7 @@ class EpgRepository @Inject constructor(
         val batch = ArrayList<EpgProgramEntity>(BATCH_SIZE)
 
         openGuide(url, playlist.userAgent).use { stream ->
-            val reader = InputStreamReader(stream, Charsets.UTF_8)
+            val reader = TextCharset.reader(stream)
             for (item in XmltvParser.parse(reader)) {
                 when (item) {
                     is XmltvItem.Channel -> {
