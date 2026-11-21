@@ -41,6 +41,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
@@ -252,6 +253,8 @@ fun MobileVodPlayerScreen(
                     bottom = {
                         // Premotavanje na krajevima, pauza posle premotavanja unazad, traka u sredini.
                         PlayerTransportBar(
+                            // Meniji se otvaraju iznad trake, pa se njeno mesto pamti.
+                            modifier = Modifier.playerMenuBar(anchors),
                             startLabel = formatDuration(preview ?: ui.positionMs),
                             endLabel = formatDuration(ui.durationMs),
                             leading = {

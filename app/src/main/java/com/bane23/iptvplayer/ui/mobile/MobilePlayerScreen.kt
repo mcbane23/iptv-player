@@ -84,6 +84,7 @@ import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerProgress
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
@@ -391,6 +392,8 @@ private fun LiveControls(
             val program = nowNext.now
             // Prethodni i sledeći kanal na krajevima, traka emisije u sredini.
             PlayerTransportBar(
+                // Meniji se otvaraju iznad trake, pa se njeno mesto pamti.
+                modifier = Modifier.playerMenuBar(anchors),
                 startLabel = program?.let { formatTime(it.startMs) },
                 endLabel = program?.let { formatTime(it.stopMs) },
                 leading = {
