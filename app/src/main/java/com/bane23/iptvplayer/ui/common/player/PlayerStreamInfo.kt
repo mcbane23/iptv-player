@@ -52,14 +52,16 @@ fun PlayerStreamInfo(player: Player, technical: VideoInfo, modifier: Modifier = 
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
     }
-    val (video, audio) = remember(player, version) {
+    // Strim koji ne javlja broj sličica u sekundi (čest kod kanala uživo) dobija izmereni.
+    val measuredFrameRate = technical.measuredFrameRate
+    val (video, audio) = remember(player, version, measuredFrameRate) {
         val videoFormat = player.selectedFormat(C.TRACK_TYPE_VIDEO)
         val audioFormat = player.selectedFormat(C.TRACK_TYPE_AUDIO)
         val size = player.videoSize
         val videoLine = videoInfoLine(
             width = if (size.width > 0) size.width else videoFormat?.width ?: 0,
             height = if (size.height > 0) size.height else videoFormat?.height ?: 0,
-            frameRate = videoFormat?.frameRate ?: 0f,
+            frameRate = videoFormat?.frameRate?.takeIf { it > 0f } ?: measuredFrameRate,
             mimeType = videoFormat?.sampleMimeType,
             bitrate = videoFormat?.bitrate ?: 0,
         )
