@@ -20,8 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.NowNext
+import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.rememberClockText
 
@@ -36,6 +39,13 @@ data class PauseInfo(
     /** Red na dnu, npr. šta sledi na kanalu. */
     val footer: String? = null,
 )
+
+/** Da li je ekran pauze uključen u Podešavanjima. */
+@Composable
+fun rememberPauseInfoEnabled(settingsViewModel: SettingsViewModel = hiltViewModel()): Boolean {
+    val enabled by settingsViewModel.pauseInfo.collectAsStateWithLifecycle()
+    return enabled
+}
 
 /** Ekran pauze za film, epizodu, arhivu ili snimak: naslov, opis i koliko je ostalo do kraja. */
 @Composable

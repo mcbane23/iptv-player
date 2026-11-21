@@ -59,6 +59,7 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
 import com.bane23.iptvplayer.ui.common.player.livePauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -176,7 +177,8 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
     // Pauza: posle kratkog čekanja ekran pauze, a posle dužeg vremena plejer se zatvara.
-    val pauseDim = rememberPauseDim(playback.status, info = !panelOpen, onExit = onClose)
+    val pauseInfoOn = rememberPauseInfoEnabled()
+    val pauseDim = rememberPauseDim(playback.status, info = !panelOpen, describe = pauseInfoOn, onExit = onClose)
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = panelOpen || overlay != Overlay.HIDDEN
 

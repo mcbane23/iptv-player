@@ -33,6 +33,7 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
 import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -95,10 +96,12 @@ fun MobileVodPlayerScreen(
         panel = if (online && back) VodPanel.SUBTITLES else VodPanel.NONE
     }
     val anchors = rememberPlayerMenuAnchors()
+    val pauseInfoOn = rememberPauseInfoEnabled()
     val pauseDim = rememberPauseDim(
         status = playback.status,
         enabled = panel == VodPanel.NONE || sidePanel,
         info = panel == VodPanel.NONE,
+        describe = pauseInfoOn,
         onExit = onClose,
     )
     ImmersiveMode()

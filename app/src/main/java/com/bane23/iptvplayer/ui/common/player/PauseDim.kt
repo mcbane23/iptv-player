@@ -32,6 +32,9 @@ import kotlinx.coroutines.delay
 /** Posle ovoliko pauze kontrole ustupe mesto ekranu pauze (naslov, opis, sat). */
 const val PAUSE_INFO_AFTER_MS = 10_000L
 
+/** Kad je ekran pauze isključen u Podešavanjima: posle ovoliko pauze slika se samo zatamni. */
+const val PAUSE_PLAIN_AFTER_MS = 5_000L
+
 /** Posle ovoliko pauze plejer se zatvara. */
 const val PAUSE_EXIT_AFTER_MS = 30 * 60_000L
 
@@ -50,6 +53,10 @@ class PauseDimState {
     var info by mutableStateOf(false)
         private set
 
+    /** Ekran pauze je isključen u Podešavanjima: slika je samo zatamnjena, bez teksta. */
+    var plain by mutableStateOf(false)
+        private set
+
     /** Raste sa svakim tasterom ili dodirom; odbrojavanje tada kreće iznova. */
     var activity by mutableIntStateOf(0)
         private set
@@ -65,7 +72,8 @@ class PauseDimState {
         info = false
     }
 
-    internal fun showInfo() {
+    internal fun showInfo(plain: Boolean) {
+        this.plain = plain
         info = true
     }
 
@@ -99,27 +107,30 @@ class PauseDimState {
 /**
  * Odbrojava dok je sadržaj pauziran: posle [PAUSE_EXIT_AFTER_MS] zove [onExit]. Dok je [enabled]
  * false (otvoren je izbor u zasebnom prozoru) ne radi ništa. Sa [info] se posle
- * [PAUSE_INFO_AFTER_MS] prikazuje ekran pauze i ostaje do tastera, dodira ili izlaza.
+ * [PAUSE_INFO_AFTER_MS] prikazuje ekran pauze i ostaje do tastera, dodira ili izlaza. Kad je
+ * [describe] false (isključeno u Podešavanjima), slika se posle [PAUSE_PLAIN_AFTER_MS] samo zatamni.
  */
 @Composable
 fun rememberPauseDim(
     status: PlaybackStatus,
     enabled: Boolean = true,
     info: Boolean = false,
+    describe: Boolean = true,
     onExit: () -> Unit,
 ): PauseDimState {
     val state = remember { PauseDimState() }
     val exit by rememberUpdatedState(onExit)
     val paused = enabled && status == PlaybackStatus.PAUSED
-    LaunchedEffect(paused, info, state.activity) {
+    LaunchedEffect(paused, info, describe, state.activity) {
         if (!paused) {
             state.clear()
             return@LaunchedEffect
         }
         if (info) {
-            delay(PAUSE_INFO_AFTER_MS)
-            state.showInfo()
-            delay(PAUSE_EXIT_AFTER_MS - PAUSE_INFO_AFTER_MS)
+            val after = if (describe) PAUSE_INFO_AFTER_MS else PAUSE_PLAIN_AFTER_MS
+            delay(after)
+            state.showInfo(plain = !describe)
+            delay(PAUSE_EXIT_AFTER_MS - after)
         } else {
             state.clear()
             delay(PAUSE_EXIT_AFTER_MS)
@@ -160,7 +171,7 @@ fun PauseDimLayer(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val infoShown by animateFloatAsState(
-        targetValue = if (state.info && info != null) 1f else 0f,
+        targetValue = if (state.info) 1f else 0f,
         animationSpec = tween(INFO_FADE_MS),
         label = "pauseInfo",
     )
@@ -178,7 +189,7 @@ fun PauseDimLayer(
                 .graphicsLayer { alpha = 1f - infoShown },
             content = content,
         )
-        if (info != null && infoShown > 0f) {
+        if (info != null && !state.plain && infoShown > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

@@ -75,6 +75,7 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
 import com.bane23.iptvplayer.ui.common.player.livePauseInfo
+import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -161,6 +162,7 @@ fun MobilePlayerScreen(
         status = playback.status,
         enabled = true,
         info = panel == Panel.NONE && !inPip,
+        describe = rememberPauseInfoEnabled(),
         onExit = onClose,
     )
     ImmersiveMode()

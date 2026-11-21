@@ -98,6 +98,7 @@ fun MobileSettingsScreen(
     val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
     val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
+    val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
@@ -247,6 +248,12 @@ fun MobileSettingsScreen(
                                     onChange = viewModel::setResumeLastChannel,
                                 )
                                 choiceRows()
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_pause_info),
+                                    summary = stringResource(R.string.settings_pause_info_summary),
+                                    checked = pauseInfo,
+                                    onChange = viewModel::setPauseInfo,
+                                )
                                 SettingsSwitchRow(
                                     title = stringResource(R.string.settings_background_play),
                                     summary = stringResource(R.string.settings_background_play_summary),

@@ -675,6 +675,8 @@
     <string name="pause_left_hours">Pauzirano · još %1$d h %2$d min</string>
     <string name="pause_on_channel">Pauzirano · %1$s</string>
     <string name="pause_next">Sledi u %1$s: %2$s</string>
+    <string name="settings_pause_info">Ekran pauze</string>
+    <string name="settings_pause_info_summary">Posle 10 sekundi pauze umesto kontrola se vide naslov, opis, koliko je ostalo i sat. Kad je isključeno, slika se posle 5 sekundi samo zatamni. Prvi taster ili dodir vraća kontrole.</string>
     <string name="downloads_title">Preuzeto</string>
     <string name="downloads_empty">Ovde su filmovi i epizode koje preuzmeš na telefon. Dugme „Preuzmi” je u detaljima filma i pored svake epizode.</string>
     <string name="download_action">Preuzmi</string>

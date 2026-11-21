@@ -454,6 +454,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setDownloadOnMobile(enabled) }
     }
 
+    val pauseInfo: StateFlow<Boolean> = settings.pauseInfo
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setPauseInfo(enabled: Boolean) {
+        viewModelScope.launch { settings.setPauseInfo(enabled) }
+    }
+
     val blackTheme: StateFlow<Boolean> = settings.blackTheme
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
