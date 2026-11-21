@@ -87,7 +87,6 @@ fun TvSettingsScreen(
     val autoRefreshPlaylists by viewModel.autoRefreshPlaylists.collectAsStateWithLifecycle()
     val vodLocalCache by viewModel.vodLocalCache.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
-    val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
@@ -183,9 +182,6 @@ fun TvSettingsScreen(
                 viewModel.setResumeLastChannel(!resumeLastChannel)
             },
         ) + choiceItems(SettingsGroup.WATCHING) + listOfNotNull(
-            TvItem(PAUSE_INFO_ROW, stringResource(R.string.settings_pause_info), checked = pauseInfo) {
-                viewModel.setPauseInfo(!pauseInfo)
-            },
             TvItem(TV_PREVIEW_ROW, stringResource(R.string.settings_tv_preview), checked = channelPreview) {
                 viewModel.setTvChannelPreview(!channelPreview)
             },
@@ -496,7 +492,6 @@ private fun FocusedSummary(
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
-        PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
@@ -548,7 +543,6 @@ private const val VOD_PREVIEW_ROW = -16
 private const val UPDATE_CHECK_ROW = -17
 private const val WATCH_NEXT_ROW = -18
 private const val BLACK_THEME_ROW = -19
-private const val PAUSE_INFO_ROW = -20
 private const val REMOTE_BUTTONS_ROW = -21
 private const val VOD_CACHE_ROW = -22
 private const val CRASH_REPORT_ROW = -23

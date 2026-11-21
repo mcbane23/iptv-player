@@ -75,7 +75,6 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
 import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
 import com.bane23.iptvplayer.ui.common.player.livePauseInfo
-import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
@@ -155,12 +154,12 @@ fun MobilePlayerScreen(
         onBackground = viewModel::onBackground,
     )
     KeepScreenOn(playback.status)
-    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    // Pauza: posle kratkog čekanja ekran pauze, a posle dužeg vremena plejer se zatvara.
     // Izbor zvuka i snimanja su zasebni prozori, pa se dodiri u njima ovde ne vide.
     val pauseDim = rememberPauseDim(
         status = playback.status,
         enabled = true,
-        info = rememberPauseInfoEnabled() && panel == Panel.NONE && !inPip,
+        info = panel == Panel.NONE && !inPip,
         onExit = onClose,
     )
     ImmersiveMode()

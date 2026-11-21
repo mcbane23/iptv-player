@@ -356,13 +356,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     private fun remoteButtonKey(button: RemoteButton) = stringPreferencesKey("remote_button_${button.name.lowercase()}")
 
-    /** Ekran pauze: posle nekoliko sekundi pauze naslov, opis i sat umesto kontrola. */
-    val pauseInfo: Flow<Boolean> = dataStore.data.map { it[PAUSE_INFO] ?: true }.distinctUntilChanged()
-
-    suspend fun setPauseInfo(enabled: Boolean) {
-        dataStore.edit { it[PAUSE_INFO] = enabled }
-    }
-
     /** Crna tema: potpuno crna pozadina umesto tamnosive, bez sjaja u uglu. */
     val blackTheme: Flow<Boolean> = dataStore.data.map { it[BLACK_THEME] ?: false }.distinctUntilChanged()
 
@@ -519,7 +512,6 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val APP_THEME = stringPreferencesKey("app_theme")
         val TV_RAIL_ICONS_ONLY = booleanPreferencesKey("tv_rail_icons_only")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
-        val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")

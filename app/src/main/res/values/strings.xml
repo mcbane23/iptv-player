@@ -674,8 +674,6 @@
     <string name="pause_left_hours">Paused · %1$d h %2$d min left</string>
     <string name="pause_on_channel">Paused · %1$s</string>
     <string name="pause_next">Next at %1$s: %2$s</string>
-    <string name="settings_pause_info">Pause screen</string>
-    <string name="settings_pause_info_summary">After a few seconds of pause the controls give way to the title, description, time left and a clock. The first key or touch brings the controls back.</string>
     <string name="downloads_title">Downloads</string>
     <string name="downloads_empty">Movies and episodes you download to the phone show up here. The Download button is in movie details and next to every episode.</string>
     <string name="download_action">Download</string>
