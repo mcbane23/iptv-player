@@ -106,7 +106,37 @@ fun TvSettingsScreen(
     var permissionScreenMissing by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { autostartAllowed = Autostart.isAllowed(context) }
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
-    val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme)
+    // Boja i veličina prikaza se biraju sa spiska, kao i ostala podešavanja sa vrednostima (Bane).
+    val accentChoice = SettingChoice(
+        title = stringResource(R.string.settings_accent_color),
+        summary = stringResource(R.string.settings_accent_color_tv_summary),
+        options = AccentColor.entries.map { it.label() },
+        selected = (accentColor ?: AccentColor.DEFAULT).ordinal,
+        group = SettingsGroup.LOOK,
+        onSelect = { viewModel.setAccentColor(AccentColor.entries[it]) },
+    )
+    val scales = UiScale.choices(isTv = true)
+    val scaleChoice = SettingChoice(
+        title = stringResource(R.string.settings_ui_scale),
+        summary = stringResource(R.string.settings_ui_scale_tv_summary),
+        options = scales.map { it.label },
+        selected = scales.indexOf(uiScale).coerceAtLeast(0),
+        group = SettingsGroup.LOOK,
+        onSelect = { index -> scales.getOrNull(index)?.let(viewModel::setUiScale) },
+    )
+    val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
+        accentChoice + scaleChoice
+    // Jezik se bira sa spiska u bočnom prozoru; red jezika je u levoj koloni, van stavki grupa.
+    var languageOpen by remember { mutableStateOf(false) }
+    if (languageOpen) {
+        val currentLanguage = AppLocale.get(context)
+        TvActionDialog(
+            title = stringResource(R.string.settings_language),
+            options = AppLanguage.entries.map { if (it == currentLanguage) "✓ ${it.label()}" else it.label() },
+            onSelect = { index -> AppLanguage.entries.getOrNull(index)?.let { AppLocale.change(context, it) } },
+            onClose = { languageOpen = false },
+        )
+    }
     val groups = SettingsGroup.entries.filter { it != SettingsGroup.RECORDINGS || onRecordings != null }
     val groupFocus = remember { SettingsGroup.entries.map { FocusRequester() } }
     val languageFocus = remember { FocusRequester() }
@@ -203,17 +233,8 @@ fun TvSettingsScreen(
 
         // Tema se bira sa spiska, kao i ostala podešavanja sa vrednostima.
         SettingsGroup.LOOK -> choiceItems(SettingsGroup.LOOK) + listOf(
-            TvItem(ACCENT_ROW, stringResource(R.string.settings_accent_color), accentColor?.label()) {
-                // Svaki pritisak prelazi na sledeću boju; promena se vidi odmah.
-                val current = accentColor ?: AccentColor.DEFAULT
-                viewModel.setAccentColor(AccentColor.entries[(current.ordinal + 1) % AccentColor.entries.size])
-            },
             TvItem(BLACK_THEME_ROW, stringResource(R.string.settings_black_theme), checked = blackTheme) {
                 viewModel.setBlackTheme(!blackTheme)
-            },
-            // Svaki pritisak prelazi na sledeću veličinu; promena se vidi odmah.
-            TvItem(UI_SCALE_ROW, stringResource(R.string.settings_ui_scale), uiScale.label) {
-                viewModel.setUiScale(UiScale.next(uiScale, isTv = true))
             },
             TvItem(VOD_PREVIEW_ROW, stringResource(R.string.settings_tv_vod_preview), checked = vodPreview) {
                 viewModel.setTvVodPreview(!vodPreview)
@@ -300,11 +321,7 @@ fun TvSettingsScreen(
                     TvTextRow(
                         text = stringResource(R.string.settings_language),
                         trailing = AppLocale.get(context).label(),
-                        onClick = {
-                            // Svaki pritisak prelazi na sledeći jezik; ekran se odmah iscrtava na njemu.
-                            val next = (AppLocale.get(context).ordinal + 1) % AppLanguage.entries.size
-                            AppLocale.change(context, AppLanguage.entries[next])
-                        },
+                        onClick = { languageOpen = true },
                         onFocused = {
                             focusedChoice = LANGUAGE_ROW
                             currentGroup = null
@@ -510,10 +527,8 @@ private fun FocusedSummary(
         VOD_PREVIEW_ROW -> stringResource(R.string.settings_tv_vod_preview_summary)
         UPDATE_CHECK_ROW -> stringResource(R.string.update_check_summary)
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
-        ACCENT_ROW -> stringResource(R.string.settings_accent_color_tv_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
-        UI_SCALE_ROW -> stringResource(R.string.settings_ui_scale_tv_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
         VOD_CACHE_ROW -> stringResource(R.string.settings_vod_cache_summary)
@@ -533,8 +548,8 @@ private fun FocusedSummary(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        // Napomena važi samo za podešavanja plejera.
-        if (focused >= 0) {
+        // Napomena važi samo za podešavanja plejera; izgled (tema, boja, veličina) se menja odmah.
+        if (focused >= 0 && choices.getOrNull(focused)?.group != SettingsGroup.LOOK) {
             Text(
                 text = stringResource(R.string.settings_player_note),
                 style = MaterialTheme.typography.bodyMedium,
@@ -549,12 +564,10 @@ private const val RETURN_FOCUS_FRAMES = 10
 
 /** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
 private const val AUTOSTART_ROW = -1
-private const val ACCENT_ROW = -2
 private const val LANGUAGE_ROW = -3
 private const val UPDATE_CHANNEL_ROW = -4
 private const val AUTO_REFRESH_ROW = -5
 private const val MATCH_FRAME_RATE_ROW = -6
-private const val UI_SCALE_ROW = -7
 private const val RESUME_ROW = -8
 private const val REOPEN_ROW = -9
 private const val CATEGORIES_ROW = -10

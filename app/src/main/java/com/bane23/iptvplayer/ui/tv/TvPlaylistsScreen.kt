@@ -51,6 +51,8 @@ fun TvPlaylistsScreen(
     // Lista kojoj je otvoreno „Izmeni”: posle povratka fokus ide na nju, ne na „Dodaj listu”.
     var editedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editedFocus = remember { FocusRequester() }
+    // Pri ulasku fokus ide na aktivnu listu, a ne na „Dodaj listu”.
+    val activeFocus = remember { FocusRequester() }
 
     Column(
         modifier = Modifier
@@ -112,6 +114,13 @@ fun TvPlaylistsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 27.dp),
             ) {
+                item(key = "hint") {
+                    Text(
+                        text = stringResource(R.string.playlists_tv_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (state.playlists.any { it.merged }) {
                     item(key = "merge-hint") {
                         Text(
@@ -131,7 +140,8 @@ fun TvPlaylistsScreen(
                             editedId = playlist.id
                             onEdit(playlist.id)
                         },
-                        rowModifier = if (playlist.id == editedId) Modifier.focusRequester(editedFocus) else Modifier,
+                        rowModifier = (if (playlist.id == editedId) Modifier.focusRequester(editedFocus) else Modifier)
+                            .then(if (playlist.isActive) Modifier.focusRequester(activeFocus) else Modifier),
                         onDelete = { viewModel.delete(playlist.id) },
                         // Spajanje ima smisla tek kad postoje bar dve liste.
                         onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
@@ -152,6 +162,12 @@ fun TvPlaylistsScreen(
                 withFrameNanos { }
             }
             editedId = null
+        }
+        repeat(RETURN_FOCUS_FRAMES) {
+            if (activeFocus.tryRequestFocus()) return@LaunchedEffect
+            // Bez lista nema šta da se čeka.
+            if (!state.loading && state.playlists.isEmpty()) return@repeat
+            withFrameNanos { }
         }
         addFocus.tryRequestFocus()
     }
@@ -185,6 +201,32 @@ private fun TvPlaylistRow(
     val deleteFocus = remember { FocusRequester() }
     // Dugmad se menjaju u mestu, pa fokus mora ručno da pređe na novo dugme.
     var confirmWasOpen by remember { mutableStateOf(false) }
+    // Dugi OK na listi otvara iste opcije kao dugme „Opcije”, bez šetnje do njega.
+    var menuOpen by remember { mutableStateOf(false) }
+    if (menuOpen) {
+        val actions = buildList<Pair<String, () -> Unit>> {
+            add(stringResource(R.string.action_refresh) to { if (!refreshing) onRefresh() })
+            add(stringResource(R.string.action_edit) to { if (!refreshing) onEdit() })
+            if (onMerge != null) {
+                add(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge) to onMerge)
+            }
+            // Brisanje se i ovde potvrđuje u samom redu liste.
+            add(
+                stringResource(R.string.action_delete) to {
+                    if (!refreshing) {
+                        expanded = true
+                        confirmDelete = true
+                    }
+                },
+            )
+        }
+        TvActionDialog(
+            title = playlist.name,
+            options = actions.map { it.first },
+            onSelect = { index -> actions.getOrNull(index)?.second?.invoke() },
+            onClose = { menuOpen = false },
+        )
+    }
     LaunchedEffect(confirmDelete) {
         if (confirmDelete) cancelFocus.tryRequestFocus() else if (confirmWasOpen) deleteFocus.tryRequestFocus()
         confirmWasOpen = confirmDelete
@@ -200,6 +242,7 @@ private fun TvPlaylistRow(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TvListRow(
                 onClick = { if (!playlist.isActive) onSelect() },
+                onLongClick = { menuOpen = true },
                 modifier = rowModifier.weight(1f),
             ) { color ->
                 Column(modifier = Modifier.weight(1f)) {

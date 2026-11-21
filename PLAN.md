@@ -789,6 +789,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       sadržaj (i na „Početnoj”); u Filmovima i Serijama Desno sa kategorije ide na prvi poster na ekranu; Levo sa
       postera i kanala vraća na izabranu kategoriju; Uživo posle plejera fokusira kanal koji je gledan poslednji;
       Vodič se otvara sa fokusom na emisiji koja traje na prvom kanalu
+- [x] TV Liste i Podešavanja (Bane, 21. 11. 2026): „Liste” se otvaraju sa fokusom na aktivnoj listi, a dugi OK na
+      listi otvara opcije (osveži, izmeni, spoji, obriši), uz kratko uputstvo iznad spiska; u Podešavanjima se
+      jezik, boja i veličina prikaza biraju sa spiska vrednosti umesto kruženjem na svaki OK
 
 ## 7. Testiranje
 
