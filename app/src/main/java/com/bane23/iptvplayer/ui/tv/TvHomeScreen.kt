@@ -66,6 +66,7 @@ import com.bane23.iptvplayer.ui.common.guide.GuideViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
+import kotlinx.coroutines.delay
 
 /** Sekcije koje se otvaraju u početnom ekranu, pored bočnog menija. */
 private enum class TvTab { SEARCH, HOME, LIVE, GUIDE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
@@ -122,8 +123,19 @@ fun TvHomeScreen(
     // Pri pokretanju, posle povratka dugmetom Nazad i kad se „Početna” izabere iz menija fokus ide pravo
     // na prvu stavku „Početne”, da prvi pritisak ne troši vreme na bočni meni.
     var focusHomeContent by rememberSaveable { mutableStateOf(true) }
+    // Dok fokus putuje u sadržaj (pokretanje, povratak sa drugog ekrana, Nazad iz druge sekcije), on na
+    // trenutak padne na bočni meni. Meni se za to vreme ne širi i ne boji stavku, da ne zatreperi (Bane).
+    // Prestaje čim sadržaj dobije fokus, a najkasnije posle kratkog čekanja, ako sadržaj nema šta da fokusira.
+    var railHold by remember { mutableStateOf(true) }
+    LaunchedEffect(railHold) {
+        if (railHold) {
+            delay(RAIL_HOLD_MS)
+            railHold = false
+        }
+    }
     BackHandler(enabled = tab != startTab) {
         focusHomeContent = true
+        railHold = true
         tab = startTab
     }
     ExitOnDoubleBack(enabled = tab == startTab)
@@ -143,7 +155,7 @@ fun TvHomeScreen(
     var railFocused by remember { mutableStateOf(false) }
     // Bez animacije širine i bez senke: senka i animacija se crtaju u svakom kadru, što na slabijim
     // TV uređajima usporava prvi pomeraj fokusa posle ulaska u meni.
-    val railExpanded = railFocused && !iconsOnly
+    val railExpanded = railFocused && !iconsOnly && !railHold
     val railWidth = if (railExpanded) RailExpanded else RailCollapsed
     // Raširen meni pomera sadržaj udesno samo kao pomeraj pri crtanju: ništa se ne preslaže, pa je i na
     // slabijem uređaju bez zastoja (desna ivica za to vreme izlazi van ekrana).
@@ -189,6 +201,7 @@ fun TvHomeScreen(
                 .fillMaxSize()
                 .padding(start = RailCollapsed - 32.dp)
                 .graphicsLayer { translationX = if (railExpanded) slidePx else 0f }
+                .onFocusChanged { if (it.hasFocus) railHold = false }
                 .focusRequester(contentFocus)
                 .focusGroup(),
         ) {
@@ -293,6 +306,7 @@ fun TvHomeScreen(
                 icon = if (iconsOnly) AppIcons.ChevronRight else AppIcons.ChevronLeft,
                 label = stringResource(if (iconsOnly) R.string.tv_rail_expand else R.string.tv_rail_collapse),
                 expanded = railExpanded,
+                showFocus = !railHold,
                 onClick = { settingsViewModel.setTvRailIconsOnly(!iconsOnly) },
             )
             if (recording.isNotEmpty() || recordingFocused) {
@@ -305,6 +319,7 @@ fun TvHomeScreen(
                         else -> stringResource(R.string.recordings_title)
                     },
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     onClick = onRecordings,
                     modifier = Modifier.onFocusChanged { recordingFocused = it.isFocused },
                     tint = if (recording.isNotEmpty()) MaterialTheme.colorScheme.error else null,
@@ -315,6 +330,7 @@ fun TvHomeScreen(
                     icon = AppIcons.Search,
                     label = stringResource(R.string.action_search),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     selected = tab == TvTab.SEARCH,
                     onClick = { pickTab(TvTab.SEARCH) },
                     modifier = if (tab == TvTab.SEARCH) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -325,6 +341,7 @@ fun TvHomeScreen(
                     icon = AppIcons.Home,
                     label = stringResource(R.string.nav_home),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     selected = tab == TvTab.HOME,
                     onClick = { pickTab(TvTab.HOME) },
                     modifier = if (tab == TvTab.HOME) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -334,6 +351,7 @@ fun TvHomeScreen(
                 icon = AppIcons.LiveTv,
                 label = stringResource(R.string.nav_live),
                 expanded = railExpanded,
+                showFocus = !railHold,
                 selected = tab == TvTab.LIVE,
                 onClick = { pickTab(TvTab.LIVE) },
                 modifier = if (tab == TvTab.LIVE) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -343,6 +361,7 @@ fun TvHomeScreen(
                     icon = AppIcons.Guide,
                     label = stringResource(R.string.guide_title),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     selected = tab == TvTab.GUIDE,
                     onClick = { pickTab(TvTab.GUIDE) },
                     modifier = if (tab == TvTab.GUIDE) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -351,6 +370,7 @@ fun TvHomeScreen(
                     icon = AppIcons.MultiView,
                     label = stringResource(R.string.multiview_title),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     onClick = onMultiView,
                 )
             }
@@ -359,6 +379,7 @@ fun TvHomeScreen(
                     icon = AppIcons.Movies,
                     label = stringResource(R.string.vod_movies),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     selected = tab == TvTab.MOVIES,
                     onClick = { pickTab(TvTab.MOVIES) },
                     modifier = if (tab == TvTab.MOVIES) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -367,6 +388,7 @@ fun TvHomeScreen(
                     icon = AppIcons.Series,
                     label = stringResource(R.string.vod_series),
                     expanded = railExpanded,
+                    showFocus = !railHold,
                     selected = tab == TvTab.SERIES,
                     onClick = { pickTab(TvTab.SERIES) },
                     modifier = if (tab == TvTab.SERIES) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -376,6 +398,7 @@ fun TvHomeScreen(
                 icon = AppIcons.Playlists,
                 label = stringResource(R.string.playlists_title),
                 expanded = railExpanded,
+                showFocus = !railHold,
                 selected = tab == TvTab.PLAYLISTS,
                 onClick = { pickTab(TvTab.PLAYLISTS) },
                 modifier = if (tab == TvTab.PLAYLISTS) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -384,6 +407,7 @@ fun TvHomeScreen(
                 icon = AppIcons.Settings,
                 label = stringResource(R.string.settings_title),
                 expanded = railExpanded,
+                showFocus = !railHold,
                 selected = tab == TvTab.SETTINGS,
                 onClick = { pickTab(TvTab.SETTINGS) },
                 modifier = if (tab == TvTab.SETTINGS) Modifier.focusRequester(selectedFocus) else Modifier,
@@ -406,8 +430,11 @@ private fun RailItem(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     tint: Color? = null,
+    showFocus: Boolean = true,
 ) {
-    var focused by remember { mutableStateOf(false) }
+    var hasFocus by remember { mutableStateOf(false) }
+    // Dok fokus samo prolazi kroz meni na putu u sadržaj, stavka se ne boji.
+    val focused = hasFocus && showFocus
     val colors = MaterialTheme.colorScheme
     val content = when {
         focused -> colors.onPrimary
@@ -421,7 +448,7 @@ private fun RailItem(
             .height(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(if (focused) colors.primary else Color.Transparent)
-            .onFocusChanged { focused = it.isFocused }
+            .onFocusChanged { hasFocus = it.isFocused }
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -439,3 +466,6 @@ private fun RailItem(
         }
     }
 }
+
+/** Najduže čekanje da sadržaj preuzme fokus pre nego što se bočni meni ponaša uobičajeno. */
+private const val RAIL_HOLD_MS = 800L
