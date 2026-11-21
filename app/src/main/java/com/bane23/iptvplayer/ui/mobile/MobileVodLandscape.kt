@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -64,6 +66,9 @@ fun MobileVodLandscape(
     continueItems: List<ContinueItem>,
     favorites: List<VodItem>,
     watched: WatchedMarks,
+    continueChosen: Boolean,
+    onContinueChosen: (Boolean) -> Unit,
+    gridState: LazyGridState,
     onSelectCategory: (VodCategory) -> Unit,
     onHideCategory: (VodCategory) -> Unit,
     onMoveCategoryToTop: (VodCategory) -> Unit,
@@ -76,8 +81,8 @@ fun MobileVodLandscape(
     onRetry: () -> Unit,
 ) {
     val favoritesLabel = stringResource(R.string.category_favorites)
-    // „Nastavi gledanje” je prikazano dok korisnik ne izabere nešto drugo, kao na TV-u.
-    var continueChosen by rememberSaveable { mutableStateOf(false) }
+    // „Nastavi gledanje” je prikazano dok korisnik ne izabere nešto drugo, kao na TV-u. Izbor i
+    // položaj mreže drži roditelj, da budu isti i kad je telefon uspravno.
     val showContinue = continueChosen && continueItems.isNotEmpty()
     val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
     var filter by rememberSaveable { mutableStateOf("") }
@@ -109,7 +114,7 @@ fun MobileVodLandscape(
                 icon = AppIcons.Star,
                 selected = showFavorites,
                 onClick = {
-                    continueChosen = false
+                    onContinueChosen(false)
                     onSelectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
                 },
             )
@@ -119,7 +124,7 @@ fun MobileVodLandscape(
                     subtitle = stringResource(R.string.vod_total, continueItems.size),
                     icon = AppIcons.Play,
                     selected = showContinue,
-                    onClick = { continueChosen = true },
+                    onClick = { onContinueChosen(true) },
                 )
             }
             FilterField(value = filter, onChange = { filter = it })
@@ -127,8 +132,13 @@ fun MobileVodLandscape(
                 val text = filter.trim()
                 if (text.isEmpty()) state.categories else state.categories.filter { it.name.contains(text, ignoreCase = true) }
             }
+            // Spisak se otvara kod izabrane kategorije, da posle okretanja telefona bude na vidiku.
+            val categoriesState = remember {
+                LazyListState(firstVisibleItemIndex = (state.categories.indexOf(state.selected) - 1).coerceAtLeast(0))
+            }
             LazyColumn(
                 modifier = Modifier.weight(1f),
+                state = categoriesState,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(bottom = 8.dp),
             ) {
@@ -138,7 +148,7 @@ fun MobileVodLandscape(
                             title = category.name,
                             selected = !showContinue && category == state.selected,
                             onClick = {
-                                continueChosen = false
+                                onContinueChosen(false)
                                 onSelectCategory(category)
                             },
                             onLongClick = { menuFor = category.id },
@@ -191,7 +201,7 @@ fun MobileVodLandscape(
             }
             Box(modifier = Modifier.weight(1f)) {
                 when {
-                    showContinue -> PosterGrid {
+                    showContinue -> PosterGrid(gridState) {
                         items(continueItems, key = { it.id }) { item ->
                             ContinueTile(item = item, onOpen = onOpen, onRemove = onDismissContinue)
                         }
@@ -200,7 +210,7 @@ fun MobileVodLandscape(
                     showFavorites && favorites.isEmpty() ->
                         EmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
 
-                    showFavorites -> PosterGrid {
+                    showFavorites -> PosterGrid(gridState) {
                         items(favorites, key = { it.id }) { item ->
                             PosterTile(
                                 name = item.name,
@@ -227,7 +237,7 @@ fun MobileVodLandscape(
                         text = stringResource(R.string.vod_empty),
                     )
 
-                    else -> PosterGrid {
+                    else -> PosterGrid(gridState) {
                         items(state.items, key = { it.id }) { item ->
                             PosterTile(
                                 name = item.name,
@@ -246,8 +256,9 @@ fun MobileVodLandscape(
 }
 
 @Composable
-private fun PosterGrid(content: androidx.compose.foundation.lazy.grid.LazyGridScope.() -> Unit) {
+private fun PosterGrid(state: LazyGridState, content: androidx.compose.foundation.lazy.grid.LazyGridScope.() -> Unit) {
     LazyVerticalGrid(
+        state = state,
         columns = GridCells.Adaptive(minSize = 112.dp),
         contentPadding = PaddingValues(start = 8.dp, end = 12.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),

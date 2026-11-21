@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -185,56 +186,52 @@ fun MobileHomeScreen(
         }
     }
 
-    if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-        // U landscape-u je visina dragocena: kartice idu u usku traku levo, a ne u donju traku.
-        Scaffold(
-            // Po izboru u podešavanjima sadržaj ide i ispod isečka za kameru (samo sistemske trake se poštuju).
-            contentWindowInsets = if (underCutout) WindowInsets.systemBars else WindowInsets.safeDrawing,
-            containerColor = Color.Transparent,
-            // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
-            contentColor = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
-        ) { padding ->
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .consumeWindowInsets(padding)
-                    // Ekrani u karticama ne smeju sami da se odmaknu od kamere kad je izabrana cela širina.
-                    .then(if (underCutout) Modifier.consumeWindowInsets(WindowInsets.displayCutout) else Modifier),
-            ) {
-                CompactNavRail(tabs = shownTabs, selected = tab, onSelect = { tab = it })
-                Column(modifier = Modifier.weight(1f)) {
-                    recordingBar()
-                    Box(modifier = Modifier.weight(1f)) { tabContent() }
-                }
-            }
-        }
-        return
-    }
-
+    // Jedan raspored za oba položaja: sadržaj kartice ostaje na istom mestu u stablu, pa okretanje
+    // telefona menja samo izgled, a izabrana kartica, kategorija, podmeni i skrol ostaju isti.
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     Scaffold(
+        // Položeno, po izboru u podešavanjima, sadržaj ide i ispod isečka za kameru (samo sistemske trake se poštuju).
+        contentWindowInsets = when {
+            !landscape -> ScaffoldDefaults.contentWindowInsets
+            underCutout -> WindowInsets.systemBars
+            else -> WindowInsets.safeDrawing
+        },
         // Blag sjaj akcentne boje gore levo; ekrani u karticama su providni da se vidi.
         containerColor = Color.Transparent,
         // Providna pozadina ne daje boju teksta, pa se zadaje izričito (inače je crn).
         contentColor = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.glowBackground(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.background),
         bottomBar = {
-            Column {
-                recordingBar()
-                CompactNavBar(tabs = shownTabs, selected = tab, onSelect = { tab = it })
+            if (!landscape) {
+                Column {
+                    recordingBar()
+                    CompactNavBar(tabs = shownTabs, selected = tab, onSelect = { tab = it })
+                }
             }
         },
     ) { padding ->
         // Ekrani u karticama imaju svoj Scaffold; umeci (status bar, donja traka) se ovde troše
         // da ih ne bi dodali još jednom.
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .consumeWindowInsets(padding),
+                .consumeWindowInsets(padding)
+                // Ekrani u karticama ne smeju sami da se odmaknu od kamere kad je izabrana cela širina.
+                .then(if (landscape && underCutout) Modifier.consumeWindowInsets(WindowInsets.displayCutout) else Modifier),
         ) {
-            tabContent()
+            // U landscape-u je visina dragocena: kartice idu u usku traku levo, a ne u donju traku.
+            if (landscape) CompactNavRail(tabs = shownTabs, selected = tab, onSelect = { tab = it })
+            Column(modifier = Modifier.weight(1f)) {
+                if (landscape) recordingBar()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    tabContent()
+                }
+            }
         }
     }
 }
