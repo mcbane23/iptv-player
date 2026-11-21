@@ -671,6 +671,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       godina, žanr), opisu, tome koliko je ostalo do kraja i satu; za kanal emisija iz vodiča sa opisom i
       šta sledi. Prvi taster ili dodir samo vraća kontrole, dugme za puštanje nastavlja odmah. Posle
       minut pauze i dalje sledi zatamnjenje, a posle 30 minuta izlaz. Gasi se u Podešavanjima („Ekran pauze”)
+- [x] Pauza bez zatamnjenja (Bane, 21. 11. 2026): ekran pauze se pojavljuje posle 10 sekundi (bilo 5) i
+      ostaje dok se nešto ne pritisne; zatamnjenje posle minut pauze je uklonjeno. Izlaz posle 30 minuta
+      ostaje (Banetov izbor). Važi svuda: TV i telefon, filmovi, serije, kanali, arhiva i snimci.
+      Kad je „Ekran pauze” isključen u Podešavanjima, slika se posle istih 10 sekundi samo zatamni, bez teksta.
 
 - [x] Brže kretanje na TV-u (Bane, 19. 11. 2026, pregled „Uskladi izgled cele aplikacije”, stavke P). Bez
       promene izgleda: u Uživo i u Filmovima/Serijama korak D-pada više ne crta iznova ceo ekran i sve redove

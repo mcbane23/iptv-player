@@ -176,9 +176,9 @@ fun TvPlayerScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onBackground() }
     KeepScreenOn(playback.status)
-    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    // Pauza: posle kratkog čekanja ekran pauze, a posle dužeg vremena plejer se zatvara.
     val pauseInfoOn = rememberPauseInfoEnabled()
-    val pauseDim = rememberPauseDim(playback.status, info = pauseInfoOn && !panelOpen, onExit = onClose)
+    val pauseDim = rememberPauseDim(playback.status, info = !panelOpen, describe = pauseInfoOn, onExit = onClose)
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = panelOpen || overlay != Overlay.HIDDEN
 

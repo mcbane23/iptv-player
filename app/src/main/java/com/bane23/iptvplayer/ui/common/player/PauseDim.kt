@@ -29,34 +29,32 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.bane23.iptvplayer.player.PlaybackStatus
 import kotlinx.coroutines.delay
 
-/** Posle ovoliko pauze slika se zatamni, a kontrole se sklone. */
-const val PAUSE_DIM_AFTER_MS = 60_000L
-
-/** Posle ovoliko pauze kontrole ustupe mesto ekranu pauze (naslov, opis, sat). */
-const val PAUSE_INFO_AFTER_MS = 5_000L
+/**
+ * Posle ovoliko pauze kontrole ustupe mesto ekranu pauze (naslov, opis, sat). Kad je ekran pauze
+ * isključen u Podešavanjima, slika se posle istog vremena samo zatamni.
+ */
+const val PAUSE_INFO_AFTER_MS = 10_000L
 
 /** Posle ovoliko pauze plejer se zatvara. */
 const val PAUSE_EXIT_AFTER_MS = 30 * 60_000L
 
-/** Koliko slike ostaje vidljivo dok je zatamnjena. */
-private const val DIMMED_PICTURE = 0.3f
-
 /** Koliko slike ostaje vidljivo iza ekrana pauze. */
 private const val INFO_PICTURE = 0.4f
-private const val DIM_FADE_MS = 600
 private const val INFO_FADE_MS = 300
 
 /**
- * Zaštita ekrana od urezivanja slike: zaboravljena pauza ne ostavlja nepomičnu sliku i kontrole
- * punim sjajem. Prvi taster ili dodir samo vraća sliku, ne radi ništa drugo.
+ * Pauza: posle kratkog čekanja kontrole ustupe mesto ekranu pauze, koji ostaje dok se nešto ne
+ * pritisne. Prvi taster ili dodir samo vraća kontrole, ne radi ništa drugo. Zaboravljena pauza
+ * zatvara plejer, da nepomična slika ne ostane na ekranu.
  */
 @Stable
 class PauseDimState {
-    var dimmed by mutableStateOf(false)
-        private set
-
     /** Ekran pauze je preko slike umesto kontrola. */
     var info by mutableStateOf(false)
+        private set
+
+    /** Ekran pauze je isključen u Podešavanjima: slika je samo zatamnjena, bez teksta. */
+    var plain by mutableStateOf(false)
         private set
 
     /** Raste sa svakim tasterom ili dodirom; odbrojavanje tada kreće iznova. */
@@ -66,26 +64,20 @@ class PauseDimState {
     /** Taster koji je vratio sliku; guta se dok se ne pusti, da ne bi još nešto uradio. */
     private var wakeKey: Int? = null
 
-    /** Slika je pokrivena (ekranom pauze ili zatamnjenjem), pa prvi taster ili dodir samo vraća kontrole. */
-    val covered: Boolean get() = dimmed || info
+    /** Preko slike je ekran pauze, pa prvi taster ili dodir samo vraća kontrole. */
+    val covered: Boolean get() = info
 
     fun touch() {
         activity++
-        dimmed = false
         info = false
     }
 
-    internal fun showInfo() {
+    internal fun showInfo(plain: Boolean) {
+        this.plain = plain
         info = true
     }
 
-    internal fun dim() {
-        dimmed = true
-        info = false
-    }
-
     internal fun clear() {
-        dimmed = false
         info = false
     }
 
@@ -113,41 +105,41 @@ class PauseDimState {
 }
 
 /**
- * Odbrojava dok je sadržaj pauziran: posle [PAUSE_DIM_AFTER_MS] zatamni sliku, posle
- * [PAUSE_EXIT_AFTER_MS] zove [onExit]. Dok je [enabled] false (otvoren je izbor u zasebnom prozoru)
- * ne radi ništa. Sa [info] se posle [PAUSE_INFO_AFTER_MS], do zatamnjenja, prikazuje ekran pauze.
+ * Odbrojava dok je sadržaj pauziran: posle [PAUSE_EXIT_AFTER_MS] zove [onExit]. Dok je [enabled]
+ * false (otvoren je izbor u zasebnom prozoru) ne radi ništa. Sa [info] se posle
+ * [PAUSE_INFO_AFTER_MS] prikazuje ekran pauze i ostaje do tastera, dodira ili izlaza. Kad je
+ * [describe] false (isključeno u Podešavanjima), slika se posle istog vremena samo zatamni.
  */
 @Composable
 fun rememberPauseDim(
     status: PlaybackStatus,
     enabled: Boolean = true,
     info: Boolean = false,
+    describe: Boolean = true,
     onExit: () -> Unit,
 ): PauseDimState {
     val state = remember { PauseDimState() }
     val exit by rememberUpdatedState(onExit)
     val paused = enabled && status == PlaybackStatus.PAUSED
-    LaunchedEffect(paused, info, state.activity) {
+    LaunchedEffect(paused, info, describe, state.activity) {
         if (!paused) {
             state.clear()
             return@LaunchedEffect
         }
         if (info) {
             delay(PAUSE_INFO_AFTER_MS)
-            state.showInfo()
-            delay(PAUSE_DIM_AFTER_MS - PAUSE_INFO_AFTER_MS)
+            state.showInfo(plain = !describe)
+            delay(PAUSE_EXIT_AFTER_MS - PAUSE_INFO_AFTER_MS)
         } else {
             state.clear()
-            delay(PAUSE_DIM_AFTER_MS)
+            delay(PAUSE_EXIT_AFTER_MS)
         }
-        state.dim()
-        delay(PAUSE_EXIT_AFTER_MS - PAUSE_DIM_AFTER_MS)
         exit()
     }
     return state
 }
 
-/** Beleži tastere i dodire; dok je slika zatamnjena, prvi od njih samo vraća sliku. */
+/** Beleži tastere i dodire; dok je preko slike ekran pauze, prvi od njih samo vraća kontrole. */
 fun Modifier.pauseDimInput(state: PauseDimState): Modifier = this
     .onPreviewKeyEvent(state::onKey)
     .pointerInput(state) {
@@ -168,8 +160,8 @@ fun Modifier.pauseDimInput(state: PauseDimState): Modifier = this
     }
 
 /**
- * Sve što stoji preko slike (kontrole, paneli, poruke). Dok je slika zatamnjena ili je preko nje
- * ekran pauze ([info]), sadržaj se ne vidi, ali ostaje na mestu, da fokus ne bi nestao.
+ * Sve što stoji preko slike (kontrole, paneli, poruke). Dok je preko slike ekran pauze ([info]),
+ * sadržaj se ne vidi, ali ostaje na mestu, da fokus ne bi nestao.
  */
 @Composable
 fun PauseDimLayer(
@@ -177,13 +169,8 @@ fun PauseDimLayer(
     info: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val dim by animateFloatAsState(
-        targetValue = if (state.dimmed) 1f else 0f,
-        animationSpec = tween(DIM_FADE_MS),
-        label = "pauseDim",
-    )
     val infoShown by animateFloatAsState(
-        targetValue = if (state.info && info != null) 1f else 0f,
+        targetValue = if (state.info) 1f else 0f,
         animationSpec = tween(INFO_FADE_MS),
         label = "pauseInfo",
     )
@@ -191,21 +178,21 @@ fun PauseDimLayer(
         modifier = Modifier
             .fillMaxSize()
             .drawBehind {
-                val shade = maxOf(dim * (1f - DIMMED_PICTURE), infoShown * (1f - INFO_PICTURE))
+                val shade = infoShown * (1f - INFO_PICTURE)
                 if (shade > 0f) drawRect(Color.Black.copy(alpha = shade))
             },
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = 1f - maxOf(dim, infoShown) },
+                .graphicsLayer { alpha = 1f - infoShown },
             content = content,
         )
-        if (info != null && infoShown > 0f) {
+        if (info != null && !state.plain && infoShown > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer { alpha = infoShown * (1f - dim) },
+                    .graphicsLayer { alpha = infoShown },
                 content = info,
             )
         }

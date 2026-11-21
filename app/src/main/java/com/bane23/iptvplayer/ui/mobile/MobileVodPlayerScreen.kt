@@ -85,7 +85,7 @@ fun MobileVodPlayerScreen(
 
     LaunchedEffect(Unit) { start(viewModel) }
     KeepScreenOn(playback.status)
-    // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
+    // Pauza: posle kratkog čekanja ekran pauze, a posle dužeg vremena plejer se zatvara.
     // Titlovi, zvuk i podešavanja su oblačići iznad svojih dugmića: dodir pored njih ili Nazad ih
     // zatvara, a kontrole ostaju na ekranu. Titlovi sa interneta su drugi korak oblačića „Titlovi”:
     // Nazad iz njih vraća na spisak titlova.
@@ -100,7 +100,8 @@ fun MobileVodPlayerScreen(
     val pauseDim = rememberPauseDim(
         status = playback.status,
         enabled = panel == VodPanel.NONE || sidePanel,
-        info = pauseInfoOn && panel == VodPanel.NONE,
+        info = panel == VodPanel.NONE,
+        describe = pauseInfoOn,
         onExit = onClose,
     )
     ImmersiveMode()
