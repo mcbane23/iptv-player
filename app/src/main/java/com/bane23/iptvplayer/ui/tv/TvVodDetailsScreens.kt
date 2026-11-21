@@ -25,12 +25,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -83,6 +86,8 @@ fun TvMovieScreen(
     val playExtension = state.extension ?: XtreamVodParser.DEFAULT_EXTENSION
     val firstFocus = remember { FocusRequester() }
     val openTrailer = rememberOpenTrailer()
+    // Fokus je na nekom od dugmadi; čita ga samo ponovno postavljanje fokusa.
+    val buttonsFocused = remember { BooleanArray(1) }
 
     Backdrop(state.poster, details?.backdrop) {
         Row(
@@ -112,7 +117,9 @@ fun TvMovieScreen(
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.padding(vertical = 8.dp),
+                    modifier = Modifier
+                        .padding(vertical = 8.dp)
+                        .onFocusChanged { buttonsFocused[0] = it.hasFocus },
                 ) {
                     val progress = state.progress
                     if (progress != null && progress.resumable) {
@@ -179,8 +186,12 @@ fun TvMovieScreen(
             }
         }
     }
-    // Dugme se menja kad stigne zapamćena pozicija, pa se fokus postavlja ponovo.
-    LaunchedEffect(state.progress?.resumable) { runCatching { firstFocus.requestFocus() } }
+    // Dugme „Pusti” se menja kad stigne zapamćena pozicija, pa se fokus postavlja ponovo. Ako je korisnik
+    // u međuvremenu prešao na drugo dugme (ono ostaje isto), fokus se ne dira.
+    LaunchedEffect(state.progress?.resumable) {
+        withFrameNanos { }
+        if (!buttonsFocused[0]) firstFocus.tryRequestFocus()
+    }
 }
 
 /** Detalji serije na TV-u: levo opis, u sredini sezone, desno epizode izabrane sezone. */
@@ -202,6 +213,11 @@ fun TvSeriesScreen(
     val episodeFocus = remember { FocusRequester() }
     val episodeListState = rememberLazyListState()
     var targetEpisodeId by remember { mutableStateOf<Long?>(null) }
+    // Levo sa epizoda vraća na izabranu sezonu, a ne na sezonu koja je u istoj visini (ona bi se time izabrala).
+    val seasonFocus = remember { FocusRequester() }
+    // Epizoda puštena sa spiska: posle Nazad iz plejera fokus se vraća na nju.
+    var playedEpisodeId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val playedFocus = remember { FocusRequester() }
     LaunchedEffect(state.selectedSeason, details != null, state.progress.isEmpty()) {
         val index = firstUnwatchedIndex(state.episodes, state.progress)
         targetEpisodeId = state.episodes.getOrNull(index)?.id
@@ -311,12 +327,14 @@ fun TvSeriesScreen(
                         }
                         items(details.seasons, key = { it.number }) { season ->
                             val isFirst = resume == null && season == details.seasons.first()
+                            val isSelected = season.number == state.selectedSeason
                             TvTextRow(
                                 text = stringResource(R.string.vod_season, season.number),
-                                selected = season.number == state.selectedSeason,
+                                selected = isSelected,
                                 onFocused = { viewModel.selectSeason(season.number) },
                                 onClick = { viewModel.selectSeason(season.number) },
                                 modifier = (if (isFirst) Modifier.focusRequester(firstFocus) else Modifier)
+                                    .then(if (isSelected) Modifier.focusRequester(seasonFocus) else Modifier)
                                     // Desno sa sezone vodi na prvu neodgledanu epizodu; ako njen red još
                                     // ne postoji, fokus ide uobičajenim putem.
                                     .onPreviewKeyEvent { event ->
@@ -331,7 +349,12 @@ fun TvSeriesScreen(
                         state = episodeListState,
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight(),
+                            .fillMaxHeight()
+                            .onPreviewKeyEvent { event ->
+                                if (event.key != Key.DirectionLeft) return@onPreviewKeyEvent false
+                                // Ako red izabrane sezone nije na ekranu, Levo radi kao i pre.
+                                event.type == KeyEventType.KeyDown && seasonFocus.tryRequestFocus()
+                            },
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         state.selectedSeason?.let { season ->
@@ -368,10 +391,14 @@ fun TvSeriesScreen(
                                 episode = episode,
                                 progress = progress,
                                 fallbackImage = state.poster,
-                                onClick = { onPlay(episode.id, progress?.resumable != true) },
+                                onClick = {
+                                    playedEpisodeId = episode.id
+                                    onPlay(episode.id, progress?.resumable != true)
+                                },
                                 // Dug pritisak na OK označava epizodu kao odgledanu, odnosno poništava.
                                 onLongClick = { viewModel.toggleWatched(episode) },
-                                modifier = if (episode.id == targetEpisodeId) Modifier.focusRequester(episodeFocus) else Modifier,
+                                modifier = (if (episode.id == targetEpisodeId) Modifier.focusRequester(episodeFocus) else Modifier)
+                                    .then(if (episode.id == playedEpisodeId) Modifier.focusRequester(playedFocus) else Modifier),
                             )
                         }
                     }
@@ -380,7 +407,22 @@ fun TvSeriesScreen(
         }
     }
     LaunchedEffect(state.loading, state.failed) {
-        if (!state.loading) runCatching { firstFocus.requestFocus() }
+        if (state.loading) return@LaunchedEffect
+        val played = playedEpisodeId
+        val playedIndex = state.episodes.indexOfFirst { it.id == played }
+        if (playedIndex >= 0) {
+            // Red epizode mora da postoji da bi primio fokus; ispred epizoda je red „označi sezonu”.
+            runCatching { episodeListState.scrollToItem(playedIndex + 1) }
+            repeat(FOCUS_RESTORE_FRAMES) {
+                if (playedFocus.tryRequestFocus()) {
+                    playedEpisodeId = null
+                    return@LaunchedEffect
+                }
+                withFrameNanos { }
+            }
+        }
+        playedEpisodeId = null
+        firstFocus.tryRequestFocus()
     }
 }
 
@@ -530,3 +572,6 @@ private fun EpisodeRow(
         }
     }
 }
+
+/** Koliko kadrova se čeka da red epizode stigne na ekran pre nego što fokus ode na vrh. */
+private const val FOCUS_RESTORE_FRAMES = 30

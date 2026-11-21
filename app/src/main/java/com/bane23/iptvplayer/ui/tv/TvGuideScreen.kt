@@ -26,6 +26,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -111,7 +112,12 @@ fun TvGuideScreen(
     val firstFocus = remember { FocusRequester() }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Početak emisije na kojoj je fokus bio (null na nazivu kanala), da se vrati baš na nju.
+    var lastProgramStart by rememberSaveable { mutableStateOf<Long?>(null) }
     var restoreChannelId by remember { mutableStateOf(lastChannelId) }
+    val restoreProgramStart = remember { lastProgramStart }
+    // Prvi ulazak u vodič: fokus ide na emisiju koja traje na prvom kanalu, ne na dugmad gore.
+    var focusFirstRow by remember { mutableStateOf(lastChannelId == null) }
     // Vreme se osvežava povremeno, ne pri svakom crtanju: inače svaki korak iznova crta sve redove vodiča.
     val now by rememberNow()
 
@@ -177,9 +183,16 @@ fun TvGuideScreen(
                         onPlay = { onPlay(channel.id) },
                         onArchive = { onArchive(channel.id) },
                         onLink = { linkChannel = channel },
-                        onFocused = { lastChannelId = channel.id },
-                        restoreFocus = channel.id == restoreChannelId,
-                        onFocusRestored = { restoreChannelId = null },
+                        onFocused = { programStart ->
+                            lastChannelId = channel.id
+                            lastProgramStart = programStart
+                        },
+                        restoreFocus = channel.id == restoreChannelId || (focusFirstRow && index == 0),
+                        restoreProgramStart = if (focusFirstRow) NOW_PROGRAM else restoreProgramStart,
+                        onFocusRestored = {
+                            restoreChannelId = null
+                            focusFirstRow = false
+                        },
                     )
                 } else {
                     Box(modifier = Modifier.height(ROW_HEIGHT))
@@ -190,10 +203,14 @@ fun TvGuideScreen(
         SelectionPanel(selected = { uiState.value.selection })
     }
     LaunchedEffect(Unit) {
-        firstFocus.tryRequestFocus()
-        // Ako red sa zapamćenim kanalom nije na ekranu, od vraćanja fokusa se odustaje.
+        // Fokus ide na zapamćen kanal (pri prvom ulasku na prvi kanal) čim njegov red stigne. Ako red
+        // ne stigne na ekran, od toga se odustaje i fokus ide na dugmad gore, da daljinski ne ostane bez fokusa.
         delay(FOCUS_RESTORE_TIMEOUT_MS)
-        restoreChannelId = null
+        if (restoreChannelId != null || focusFirstRow) {
+            restoreChannelId = null
+            focusFirstRow = false
+            firstFocus.tryRequestFocus()
+        }
     }
 }
 
@@ -210,8 +227,9 @@ private fun GuideRow(
     onPlay: () -> Unit,
     onArchive: () -> Unit,
     onLink: () -> Unit,
-    onFocused: () -> Unit,
+    onFocused: (programStart: Long?) -> Unit,
     restoreFocus: Boolean,
+    restoreProgramStart: Long?,
     onFocusRestored: () -> Unit,
 ) {
     val cells by produceState(emptyList<GuideCell>(), channel.id, windowStart, reloadKey) {
@@ -228,9 +246,14 @@ private fun GuideRow(
             shiftTarget = null
         }
     }
+    // Povratak iz plejera: fokus ide na emisiju na kojoj je bio, a ako je više nema, na naziv kanala.
+    val restoreCellFocus = remember { FocusRequester() }
     if (restoreFocus) {
-        LaunchedEffect(Unit) {
-            channelFocus.tryRequestFocus()
+        val waitForCells = restoreProgramStart != null && cells.isEmpty()
+        LaunchedEffect(waitForCells) {
+            if (waitForCells) return@LaunchedEffect
+            if (restoreProgramStart != null) withFrameNanos { }
+            if (restoreProgramStart == null || !restoreCellFocus.tryRequestFocus()) channelFocus.tryRequestFocus()
             onFocusRestored()
         }
     }
@@ -245,7 +268,7 @@ private fun GuideRow(
             text = if (hasArchive) "↺ ${channel.name}" else channel.name,
             highlighted = false,
             onFocused = {
-                onFocused()
+                onFocused(null)
                 viewModel.select(channel, null)
             },
             onClick = if (hasArchive) onArchive else onPlay,
@@ -276,7 +299,7 @@ private fun GuideRow(
                 },
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
                 onFocused = {
-                    onFocused()
+                    onFocused(program?.startMs)
                     viewModel.select(channel, program)
                 },
                 // Buduća emisija nudi podsetnik i snimanje; ostalo pušta kanal, odnosno arhivu.
@@ -288,6 +311,13 @@ private fun GuideRow(
                 modifier = Modifier
                     .weight(cell.weight)
                     .then(if (index == targetIndex) Modifier.focusRequester(shiftFocus) else Modifier)
+                    .then(
+                        if (restoreFocus && program != null && program.isRestoreTarget(restoreProgramStart, now)) {
+                            Modifier.focusRequester(restoreCellFocus)
+                        } else {
+                            Modifier
+                        },
+                    )
                     .onPreviewKeyEvent { event ->
                         val right = index == lastIndex &&
                             event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_RIGHT
@@ -391,6 +421,12 @@ private fun SelectionPanel(selected: () -> GuideSelection?) {
 }
 
 private const val FOCUS_RESTORE_TIMEOUT_MS = 1_500L
+
+/** Umesto početka emisije: fokus ide na emisiju koja upravo traje. */
+private const val NOW_PROGRAM = Long.MIN_VALUE
+
+private fun Program.isRestoreTarget(start: Long?, now: Long): Boolean =
+    if (start == NOW_PROGRAM) startMs <= now && stopMs > now else startMs == start
 private val CHANNEL_WIDTH = 220.dp
 private val ROW_HEIGHT = 56.dp
 private val PANEL_HEIGHT = 112.dp

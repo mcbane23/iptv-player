@@ -133,6 +133,9 @@ class LiveTvViewModel @Inject constructor(
     /** Kanal koji treba pustiti odmah pri startu aplikacije, ili null. */
     suspend fun channelToResume(): Long? = repository.channelToResume()
 
+    /** Kanal koji je gledan poslednji; posle izlaska iz plejera fokus u spisku ide na njega. */
+    suspend fun lastWatchedChannelId(): Long? = repository.lastWatchedChannelId()
+
     /** Pamti grupu koju je korisnik otvorio; sačuvana grupa važi dok nema nedavno gledanih. */
     fun rememberCategory(groupId: Long) {
         val current = state.value

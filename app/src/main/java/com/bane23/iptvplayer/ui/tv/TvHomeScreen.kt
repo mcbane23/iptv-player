@@ -119,8 +119,8 @@ fun TvHomeScreen(
         }
     }
     // Nazad iz druge sekcije prvo vraća na početnu sekciju, tek odatle izlazi iz aplikacije.
-    // Pri pokretanju i posle povratka dugmetom Nazad fokus ide pravo na prvu stavku „Početne”, da
-    // prvi pritisak ne troši vreme na bočni meni. Izbor „Početne” iz menija ostavlja fokus u meniju.
+    // Pri pokretanju, posle povratka dugmetom Nazad i kad se „Početna” izabere iz menija fokus ide pravo
+    // na prvu stavku „Početne”, da prvi pritisak ne troši vreme na bočni meni.
     var focusHomeContent by rememberSaveable { mutableStateOf(true) }
     BackHandler(enabled = tab != startTab) {
         focusHomeContent = true
@@ -156,6 +156,20 @@ fun TvHomeScreen(
     // ispod raširenog menija), fokus ide na prvi element sekcije, inače bi meni ostao raširen.
     val leaveRail: () -> Boolean = {
         focusManager.moveFocus(FocusDirection.Right) || contentFocus.tryRequestFocus()
+    }
+    // OK na sekciji u meniju otvara je i fokus odmah prelazi u njen sadržaj, kod svih sekcija isto (Bane).
+    // Ostale sekcije same uzimaju fokus čim se prikažu; „Početna” to radi preko [focusHomeContent], a
+    // sekcija koja je već otvorena se samo napusti kao strelicom Desno.
+    val pickTab: (TvTab) -> Unit = { picked ->
+        when {
+            picked == TvTab.HOME -> {
+                focusHomeContent = true
+                tab = picked
+            }
+
+            picked == tab -> leaveRail()
+            else -> tab = picked
+        }
     }
     // Nazad dok je fokus u meniju prvo sklanja meni.
     BackHandler(enabled = railFocused) {
@@ -302,7 +316,7 @@ fun TvHomeScreen(
                     label = stringResource(R.string.action_search),
                     expanded = railExpanded,
                     selected = tab == TvTab.SEARCH,
-                    onClick = { tab = TvTab.SEARCH },
+                    onClick = { pickTab(TvTab.SEARCH) },
                     modifier = if (tab == TvTab.SEARCH) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
             }
@@ -312,7 +326,7 @@ fun TvHomeScreen(
                     label = stringResource(R.string.nav_home),
                     expanded = railExpanded,
                     selected = tab == TvTab.HOME,
-                    onClick = { tab = TvTab.HOME },
+                    onClick = { pickTab(TvTab.HOME) },
                     modifier = if (tab == TvTab.HOME) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
             }
@@ -321,7 +335,7 @@ fun TvHomeScreen(
                 label = stringResource(R.string.nav_live),
                 expanded = railExpanded,
                 selected = tab == TvTab.LIVE,
-                onClick = { tab = TvTab.LIVE },
+                onClick = { pickTab(TvTab.LIVE) },
                 modifier = if (tab == TvTab.LIVE) Modifier.focusRequester(selectedFocus) else Modifier,
             )
             if (playlistId != null) {
@@ -330,7 +344,7 @@ fun TvHomeScreen(
                     label = stringResource(R.string.guide_title),
                     expanded = railExpanded,
                     selected = tab == TvTab.GUIDE,
-                    onClick = { tab = TvTab.GUIDE },
+                    onClick = { pickTab(TvTab.GUIDE) },
                     modifier = if (tab == TvTab.GUIDE) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
                 RailItem(
@@ -346,7 +360,7 @@ fun TvHomeScreen(
                     label = stringResource(R.string.vod_movies),
                     expanded = railExpanded,
                     selected = tab == TvTab.MOVIES,
-                    onClick = { tab = TvTab.MOVIES },
+                    onClick = { pickTab(TvTab.MOVIES) },
                     modifier = if (tab == TvTab.MOVIES) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
                 RailItem(
@@ -354,7 +368,7 @@ fun TvHomeScreen(
                     label = stringResource(R.string.vod_series),
                     expanded = railExpanded,
                     selected = tab == TvTab.SERIES,
-                    onClick = { tab = TvTab.SERIES },
+                    onClick = { pickTab(TvTab.SERIES) },
                     modifier = if (tab == TvTab.SERIES) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
             }
@@ -363,7 +377,7 @@ fun TvHomeScreen(
                 label = stringResource(R.string.playlists_title),
                 expanded = railExpanded,
                 selected = tab == TvTab.PLAYLISTS,
-                onClick = { tab = TvTab.PLAYLISTS },
+                onClick = { pickTab(TvTab.PLAYLISTS) },
                 modifier = if (tab == TvTab.PLAYLISTS) Modifier.focusRequester(selectedFocus) else Modifier,
             )
             RailItem(
@@ -371,7 +385,7 @@ fun TvHomeScreen(
                 label = stringResource(R.string.settings_title),
                 expanded = railExpanded,
                 selected = tab == TvTab.SETTINGS,
-                onClick = { tab = TvTab.SETTINGS },
+                onClick = { pickTab(TvTab.SETTINGS) },
                 modifier = if (tab == TvTab.SETTINGS) Modifier.focusRequester(selectedFocus) else Modifier,
             )
         }

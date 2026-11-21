@@ -131,6 +131,9 @@ fun TvLiveTvScreen(
     var categoryFilter by rememberSaveable(playlistId) { mutableStateOf("") }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
+    // Sa spiska je otvoren plejer: posle povratka fokus ide na kanal koji je gledan poslednji, jer se
+    // u plejeru kanal može promeniti.
+    var openedPlayer by rememberSaveable { mutableStateOf(false) }
     // Kanal na kome je fokus, za logo i naziv u pregledu kad slike nema.
     var focusedChannel by remember { mutableStateOf<Channel?>(null) }
     val now by rememberNow()
@@ -580,6 +583,12 @@ fun TvLiveTvScreen(
                     state = channelListState,
                     modifier = Modifier
                         .fillMaxSize()
+                        // Levo sa kanala vraća na izabranu kategoriju, a ne na red koji je u istoj visini.
+                        .onPreviewKeyEvent { event ->
+                            if (event.key != Key.DirectionLeft) return@onPreviewKeyEvent false
+                            // Ako red izabrane kategorije nije na ekranu, Levo radi kao i pre.
+                            event.type == KeyEventType.KeyDown && firstFocus.tryRequestFocus()
+                        }
                         .tvHeldKeyScroll(channelListState, edgeMargin) { focusedRow[0] },
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
@@ -590,6 +599,7 @@ fun TvLiveTvScreen(
                                 channel?.let {
                                     // Veza pregleda se zatvara pre pravog plejera (provajderi sa jednom vezom).
                                     previewViewModel.stop()
+                                    openedPlayer = true
                                     onPlay(it.id, selectedCategory.takeIf { id -> id != ALL_CHANNELS })
                                 }
                             },
@@ -736,6 +746,27 @@ fun TvLiveTvScreen(
                 }
                 // Posle povratka iz plejera fokus ide na kanal koji je gledan, inače na izabranu kategoriju.
                 LaunchedEffect(Unit) {
+                    val opened = lastChannelId
+                    if (opened != null && openedPlayer) {
+                        // U plejeru je kanal možda promenjen: fokus ide na poslednji gledani. Ako ga u ovom
+                        // spisku nema (ili još nije učitan), ostaje kanal koji je otvoren.
+                        val watched = viewModel.lastWatchedChannelId()
+                        if (watched != null && watched != opened) {
+                            lastChannelId = watched
+                            repeat(FOCUS_RESTORE_ATTEMPTS) {
+                                delay(FOCUS_RESTORE_STEP_MS)
+                                if (channelFocus.tryRequestFocus()) {
+                                    openedPlayer = false
+                                    return@LaunchedEffect
+                                }
+                                val row = channels.itemSnapshotList.indexOfFirst { it?.id == watched }
+                                if (row >= 0) runCatching { channelListState.scrollToItem((row - 2).coerceAtLeast(0)) }
+                            }
+                            lastChannelId = opened
+                            delay(FOCUS_RESTORE_STEP_MS)
+                        }
+                    }
+                    openedPlayer = false
                     if (lastChannelId != null) {
                         // Kanali se učitavaju sa malim zakašnjenjem, pa se pokušava nekoliko puta.
                         repeat(FOCUS_RESTORE_ATTEMPTS) {
