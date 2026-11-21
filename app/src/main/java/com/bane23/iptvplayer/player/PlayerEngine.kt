@@ -27,7 +27,10 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import com.bane23.iptvplayer.domain.StreamSource
+import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class PlaybackStatus { IDLE, LOADING, PLAYING, PAUSED, RETRYING, FAILED }
 
@@ -174,14 +178,29 @@ class PlayerEngine(
     /** Pozicija od koje sledeća priprema plejera treba da krene (samo kad je [seekable]). */
     private var resumePositionMs = 0L
 
-    /** Titlovi dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. */
+    /**
+     * Titlovi iz fajla dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. Plejer za njih
+     * ne zna: aplikacija ih sama čita i prikazuje preko slike ([subtitleText]), pa se sadržaj ne
+     * priprema iznova kad se titl doda, zameni ili pomeri.
+     */
     private var externalSubtitles: List<ExternalSubtitle> = emptyList()
 
-    /** Pomerene kopije titlova (ID titla i adresa kopije), kad je korisnik ispravio vreme titla. */
-    private var shiftedSubtitleUris: Map<String, String> = emptyMap()
+    /** Pročitani titlovi iz fajla, po ID-ju titla. */
+    private var externalCues: Map<String, SrtCues> = emptyMap()
 
-    /** Dodat titl koji treba uključiti čim se pojavi među zapisima. */
-    private var pendingSubtitleId: String? = null
+    /** Titl iz fajla koji je sada uključen, ili null kad nije nijedan. */
+    private var activeExternalId: String? = null
+
+    /** Za koliko je korisnik pomerio titl iz fajla (pozitivno = titl izlazi kasnije). */
+    private var subtitleOffsetMs = 0L
+
+    private var subtitleLoadJob: Job? = null
+    private var subtitleTextJob: Job? = null
+
+    private val _subtitleText = MutableStateFlow<String?>(null)
+
+    /** Tekst uključenog titla iz fajla za trenutak koji se gleda, ili null kad nema šta da se prikaže. */
+    val subtitleText: StateFlow<String?> = _subtitleText.asStateFlow()
 
     val positionMs: Long get() = player.currentPosition.coerceAtLeast(0)
 
@@ -324,16 +343,8 @@ class PlayerEngine(
         retryJob?.cancel()
         seekable = startPositionMs != null
         resumePositionMs = startPositionMs ?: 0
-        if (subtitles != null || source != this.source) shiftedSubtitleUris = emptyMap()
-        if (subtitles != null) {
-            // Titlovi zapamćeni za ovaj sadržaj: poslednji se uključuje čim ga plejer prijavi.
-            externalSubtitles = subtitles
-            pendingSubtitleId = subtitles.lastOrNull()?.id
-        } else if (source != this.source) {
-            externalSubtitles = emptyList()
-            pendingSubtitleId = null
-        }
-        if (source != this.source) {
+        val newSource = source != this.source
+        if (newSource) {
             // Izbor zvuka i titla u plejeru važi samo za sadržaj koji se gledao; novi kreće po podešavanjima.
             player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
                 .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
@@ -346,6 +357,21 @@ class PlayerEngine(
         attempts = 0
         playedCurrentUrl = false
         _state.value = PlaybackState(status = PlaybackStatus.LOADING)
+        if (subtitles != null || newSource) {
+            // Titlovi zapamćeni za ovaj sadržaj: poslednji se odmah uključuje.
+            val hadExternal = activeExternalId != null
+            externalSubtitles = subtitles.orEmpty()
+            externalCues = emptyMap()
+            subtitleOffsetMs = 0
+            val active = externalSubtitles.lastOrNull()
+            if (active == null && hadExternal && !newSource) {
+                // Titl iz fajla je isključio titlove iz samog sadržaja; bez njega opet važe.
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                    .build()
+            }
+            showExternal(active)
+        }
         prepareCurrent(autoPlay = true)
     }
 
@@ -421,46 +447,78 @@ class PlayerEngine(
     fun selectAudio(option: TrackOption) = selectTrack(C.TRACK_TYPE_AUDIO, option)
 
     fun selectText(option: TrackOption?) {
-        if (option == null) {
+        when {
+            option == null -> {
+                showExternal(null)
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                    .build()
+            }
+
+            option.groupIndex == EXTERNAL_GROUP -> showExternal(externalSubtitles.getOrNull(option.trackIndex))
+
+            else -> {
+                showExternal(null)
+                selectTrack(C.TRACK_TYPE_TEXT, option)
+            }
+        }
+    }
+
+    /** Dodaje titl iz fajla i uključuje ga. Slika i zvuk idu dalje bez prekida. */
+    fun addSubtitle(subtitle: ExternalSubtitle) {
+        if (source == null) return
+        externalSubtitles = externalSubtitles.filterNot { it.id == subtitle.id } + subtitle
+        externalCues = externalCues - subtitle.id
+        subtitleOffsetMs = 0
+        showExternal(subtitle)
+    }
+
+    /** Pomera titl iz fajla za [offsetMs] (pozitivno = titl izlazi kasnije). Važi odmah. */
+    fun setSubtitleOffset(offsetMs: Long) {
+        subtitleOffsetMs = offsetMs
+    }
+
+    /**
+     * Uključuje titl iz fajla ([subtitle]) ili ga isključuje (null). Dok je uključen, titlovi iz
+     * samog sadržaja su isključeni, da se ne prikazuju dva titla odjednom.
+     */
+    private fun showExternal(subtitle: ExternalSubtitle?) {
+        subtitleLoadJob?.cancel()
+        activeExternalId = subtitle?.id
+        if (subtitle == null) {
+            subtitleTextJob?.cancel()
+            subtitleTextJob = null
+            _subtitleText.value = null
+        } else {
             player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                 .build()
-        } else {
-            selectTrack(C.TRACK_TYPE_TEXT, option)
+            if (subtitle.id !in externalCues) {
+                subtitleLoadJob = scope.launch {
+                    val cues = withContext(Dispatchers.IO) {
+                        try {
+                            val path = Uri.parse(subtitle.uri).path ?: throw IOException("No path")
+                            SrtCues.parse(SrtCues.decode(File(path).readBytes()))
+                        } catch (_: IOException) {
+                            // Fajl ne može da se pročita: titl ostaje u spisku, ali nema šta da prikaže.
+                            SrtCues(emptyList())
+                        }
+                    }
+                    externalCues = externalCues + (subtitle.id to cues)
+                }
+            }
+            if (subtitleTextJob?.isActive != true) {
+                subtitleTextJob = scope.launch {
+                    while (true) {
+                        _subtitleText.value = activeExternalId
+                            ?.let { externalCues[it] }
+                            ?.textAt(player.currentPosition - subtitleOffsetMs)
+                        delay(SUBTITLE_TICK_MS)
+                    }
+                }
+            }
         }
-    }
-
-    /**
-     * Dodaje titl iz fajla i uključuje ga. Sadržaj se priprema iznova (plejer ne ume da doda titl u
-     * hodu), pa se gledanje nastavlja sa istog mesta posle kratkog učitavanja.
-     */
-    fun addSubtitle(subtitle: ExternalSubtitle) {
-        if (source == null) return
-        retryJob?.cancel()
-        externalSubtitles = externalSubtitles.filterNot { it.id == subtitle.id } + subtitle
-        pendingSubtitleId = subtitle.id
-        rememberPosition()
-        if (_state.value.status == PlaybackStatus.FAILED) {
-            attempts = 0
-            _state.update { it.copy(status = PlaybackStatus.LOADING, failure = null, failureDetail = null) }
-        }
-        prepareCurrent()
-    }
-
-    /** Titlovi iz fajla koji su sada dodati uz sadržaj. */
-    fun externalSubtitles(): List<ExternalSubtitle> = externalSubtitles
-
-    /**
-     * Zamenjuje fajlove titlova pomerenim kopijama ([uris]: ID titla i adresa kopije; prazno vraća
-     * originale). Sadržaj se priprema iznova, pa se gledanje nastavlja sa istog mesta.
-     */
-    fun setShiftedSubtitles(uris: Map<String, String>) {
-        if (source == null || externalSubtitles.isEmpty() || uris == shiftedSubtitleUris) return
-        retryJob?.cancel()
-        shiftedSubtitleUris = uris
-        pendingSubtitleId = externalSubtitles.last().id
-        rememberPosition()
-        prepareCurrent()
+        publishTracks(player.currentTracks)
     }
 
     /**
@@ -494,6 +552,8 @@ class PlayerEngine(
         PlaybackActivity.set(this, false)
         retryJob?.cancel()
         statsJob?.cancel()
+        subtitleLoadJob?.cancel()
+        subtitleTextJob?.cancel()
         player.removeListener(listener)
         player.removeAnalyticsListener(analyticsListener)
         player.release()
@@ -509,7 +569,7 @@ class PlayerEngine(
 
     /**
      * Priprema trenutnu adresu. Bez [autoPlay] se čuva ono što je korisnik izabrao: pauziran sadržaj
-     * ostaje pauziran i posle ponovnog pokušaja, promene dekodera ili dodavanja titla.
+     * ostaje pauziran i posle ponovnog pokušaja ili promene dekodera.
      */
     private fun prepareCurrent(autoPlay: Boolean = false) {
         wasReady = false
@@ -520,19 +580,7 @@ class PlayerEngine(
         }
         httpFactory.setUserAgent(current.userAgent)
         httpFactory.setDefaultRequestProperties(headers)
-        val item = MediaItem.Builder()
-            .setUri(url)
-            .setSubtitleConfigurations(
-                externalSubtitles.map { subtitle ->
-                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(shiftedSubtitleUris[subtitle.id] ?: subtitle.uri))
-                        .setId(subtitle.id)
-                        .setMimeType(MimeTypes.APPLICATION_SUBRIP)
-                        .setLanguage(subtitle.language)
-                        .setLabel(subtitle.label)
-                        .build()
-                },
-            )
-            .build()
+        val item = MediaItem.fromUri(url)
         if (seekable) {
             player.setMediaItem(item, resumePositionMs)
         } else {
@@ -625,26 +673,6 @@ class PlayerEngine(
     }
 
     private fun publishTracks(tracks: Tracks) {
-        // Tek dodat titl se uključuje čim ga plejer prijavi; izbor pokreće novi poziv sa uključenim titlom.
-        val pending = pendingSubtitleId
-        if (pending != null) {
-            tracks.groups.forEach { group ->
-                if (group.type != C.TRACK_TYPE_TEXT) return@forEach
-                for (trackIndex in 0 until group.length) {
-                    // Plejer ispred oznake spoljnog titla dodaje redni broj izvora ("1:oznaka").
-                    val id = group.getTrackFormat(trackIndex).id ?: continue
-                    if (group.isTrackSupported(trackIndex) && (id == pending || id.endsWith(":$pending"))) {
-                        pendingSubtitleId = null
-                        if (!group.isTrackSelected(trackIndex)) {
-                            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-                                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                                .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
-                                .build()
-                        }
-                    }
-                }
-            }
-        }
         val audio = ArrayList<TrackOption>()
         val text = ArrayList<TrackOption>()
         tracks.groups.forEachIndexed { groupIndex, group ->
@@ -663,6 +691,13 @@ class PlayerEngine(
                 val language = format.language?.takeIf { it.isNotBlank() && it != "und" }
                 target.add(TrackOption(groupIndex, trackIndex, label, group.isTrackSelected(trackIndex), language))
             }
+        }
+        // Titlovi iz fajla idu na kraj spiska, kao i dok ih je prijavljivao sam plejer.
+        externalSubtitles.forEachIndexed { index, subtitle ->
+            val language = subtitle.language?.takeIf { it.isNotBlank() && it != "und" }
+            val label = listOfNotNull(subtitle.label.takeIf { it.isNotBlank() }, language)
+                .distinct().joinToString(" · ").ifEmpty { "${text.size + 1}" }
+            text.add(TrackOption(EXTERNAL_GROUP, index, label, subtitle.id == activeExternalId, language))
         }
         _state.update {
             it.copy(audioTracks = audio, textTracks = text, textEnabled = text.any { t -> t.selected })
@@ -734,5 +769,11 @@ class PlayerEngine(
         const val STATS_INTERVAL_MS = 1_000L
         const val MAX_ATTEMPTS = 3
         const val RETRY_DELAY_MS = 1_500L
+
+        /** Oznaka grupe za titlove iz fajla u [TrackOption]; redni broj zapisa je mesto u spisku titlova. */
+        const val EXTERNAL_GROUP = -1
+
+        /** Koliko često se proverava koji red titla iz fajla treba prikazati. */
+        const val SUBTITLE_TICK_MS = 100L
     }
 }
