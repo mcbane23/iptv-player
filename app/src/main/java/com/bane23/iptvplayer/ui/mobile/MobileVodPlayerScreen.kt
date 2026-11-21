@@ -74,6 +74,7 @@ fun MobileVodPlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var panel by remember { mutableStateOf(VodPanel.NONE) }
     val levels = rememberPlayerLevels()
+    val levelSwipes = rememberLevelSwipes()
     var locked by remember { mutableStateOf(false) }
     var infoVisible by remember { mutableStateOf(false) }
     var unlockVisible by remember { mutableStateOf(false) }
@@ -161,7 +162,14 @@ fun MobileVodPlayerScreen(
                         }
                     },
                 )
-            },
+            }
+            // Prevlačenje gore-dole uz levu ivicu menja osvetljenje, a uz desnu jačinu zvuka.
+            .playerSwipeGestures(
+                levels = levels,
+                swipes = levelSwipes,
+                enabled = !locked && panel == VodPanel.NONE && !inPip,
+                onInteraction = { activity++ },
+            ),
     ) {
         VideoSurface(
             player = viewModel.player,
@@ -204,7 +212,7 @@ fun MobileVodPlayerScreen(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .safeDrawingPadding()
-                        .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
+                        .padding(start = 16.dp, top = 76.dp, end = 16.dp),
                 )
             }
 
@@ -233,8 +241,6 @@ fun MobileVodPlayerScreen(
             }
 
             if (controlsVisible || sidePanel) {
-                // Dok je meni otvoren trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-                PlayerSideSliders(levels) { activity++ }
                 val season = ui.season
                 val episode = ui.episode
                 MobilePlayerControls(
@@ -406,6 +412,7 @@ fun MobileVodPlayerScreen(
                 VodPanel.NONE -> Unit
             }
         }
+        PlayerLevelIndicator(levels, belowTopRow = controlsVisible)
     }
 }
 

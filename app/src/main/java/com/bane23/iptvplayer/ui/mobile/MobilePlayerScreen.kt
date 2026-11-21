@@ -17,7 +17,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -99,7 +98,6 @@ import com.bane23.iptvplayer.ui.common.player.PlayerViewModel
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.statusMessage
-import kotlin.math.abs
 import kotlinx.coroutines.delay
 
 
@@ -147,7 +145,8 @@ fun MobilePlayerScreen(
     }
     val recordChoices = recordingChoices(nowNext.now?.stopMs)
     val levels = rememberPlayerLevels()
-    // Dodir na bočnim trakama odlaže sklanjanje kontrola.
+    val levelSwipes = rememberLevelSwipes()
+    // Prevlačenje za zvuk ili osvetljenje odlaže sklanjanje kontrola.
     var sliderTouches by remember { mutableIntStateOf(0) }
     var locked by remember { mutableStateOf(false) }
     var infoVisible by remember { mutableStateOf(false) }
@@ -210,34 +209,15 @@ fun MobilePlayerScreen(
                     onDoubleTap = { if (!locked && panel == Panel.NONE) viewModel.togglePlayPause() },
                 )
             }
-            // Prevlačenje nagore pušta sledeći kanal, a nadole prethodni. Važi samo po sredini slike:
-            // bočne ivice ostaju za svetlinu i zvuk, a gornja i donja za sistemske trake.
-            .pointerInput(locked, panel == Panel.NONE, inPip) {
-                if (locked || panel != Panel.NONE || inPip) return@pointerInput
-                val threshold = ZAP_SWIPE_DISTANCE.toPx()
-                val edge = ZAP_SWIPE_EDGE.toPx()
-                var active = false
-                var dragged = 0f
-                detectVerticalDragGestures(
-                    onDragStart = { start ->
-                        dragged = 0f
-                        active = start.x in size.width * ZAP_SWIPE_SIDE..size.width * (1 - ZAP_SWIPE_SIDE) &&
-                            start.y in edge..size.height - edge
-                    },
-                    onDragCancel = { active = false },
-                    onDragEnd = {
-                        if (active && abs(dragged) >= threshold) {
-                            if (dragged < 0) viewModel.next() else viewModel.previous()
-                            controlsVisible = true
-                        }
-                        active = false
-                    },
-                ) { change, amount ->
-                    if (active) {
-                        dragged += amount
-                        change.consume()
-                    }
-                }
+            // Prevlačenje gore-dole: uz ivice osvetljenje i zvuk, po sredini sledeći ili prethodni kanal.
+            .playerSwipeGestures(
+                levels = levels,
+                swipes = levelSwipes,
+                enabled = !locked && panel == Panel.NONE && !inPip,
+                onInteraction = { sliderTouches++ },
+            ) { next ->
+                if (next) viewModel.next() else viewModel.previous()
+                controlsVisible = true
             },
     ) {
         VideoSurface(
@@ -271,7 +251,7 @@ fun MobilePlayerScreen(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .safeDrawingPadding()
-                            .padding(start = streamInfoStartPadding(), top = 76.dp, end = 16.dp),
+                            .padding(start = 16.dp, top = 76.dp, end = 16.dp),
                     )
                 }
 
@@ -312,8 +292,6 @@ fun MobilePlayerScreen(
                         anchors = anchors,
                         openedMenu = bubbleMenu,
                     )
-                    // Dok je meni otvoren trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-                    PlayerSideSliders(levels) { sliderTouches++ }
                 }
 
                 when (panel) {
@@ -382,6 +360,7 @@ fun MobilePlayerScreen(
                 }
             }
         }
+        PlayerLevelIndicator(levels, belowTopRow = controlsVisible && panel == Panel.NONE)
     }
 
 }
@@ -728,12 +707,3 @@ private fun pipParams(autoEnter: Boolean): PictureInPictureParams {
 
 private const val ACTION_PIP_PLAY_PAUSE = "com.bane23.iptvplayer.action.PIP_PLAY_PAUSE"
 private const val CONTROLS_TIMEOUT_MS = 4_000L
-
-/** Koliko prst treba da pređe da bi prevlačenje promenilo kanal. */
-private val ZAP_SWIPE_DISTANCE = 64.dp
-
-/** Deo širine uz svaku bočnu ivicu u kom prevlačenje ne menja kanal (tamo su svetlina i zvuk). */
-private const val ZAP_SWIPE_SIDE = 0.2f
-
-/** Pojas uz gornju i donju ivicu ostavljen sistemskim pokretima. */
-private val ZAP_SWIPE_EDGE = 48.dp

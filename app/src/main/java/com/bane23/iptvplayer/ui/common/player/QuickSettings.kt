@@ -37,8 +37,8 @@ fun quickSettingChoices(
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ): List<SettingChoice> {
     val settings by settingsViewModel.playerSettings.collectAsStateWithLifecycle()
-    val brightnessSlider by settingsViewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
-    val volumeSlider by settingsViewModel.playerVolumeSlider.collectAsStateWithLifecycle()
+    val brightnessSlider by settingsViewModel.playerBrightnessSwipe.collectAsStateWithLifecycle()
+    val volumeSlider by settingsViewModel.playerVolumeSwipe.collectAsStateWithLifecycle()
     val backgroundPlay by settingsViewModel.backgroundPlay.collectAsStateWithLifecycle()
     val sleepMinutes by settingsViewModel.sleepTimerMinutes.collectAsStateWithLifecycle()
     val matchFrameRate by settingsViewModel.matchFrameRate.collectAsStateWithLifecycle()
@@ -121,8 +121,8 @@ fun quickSettingChoices(
     }
     // Samo telefon: trake na dodir i puštanje u pozadini.
     return shared + listOf(
-        switch(stringResource(R.string.settings_brightness_slider), brightnessSlider, settingsViewModel::setPlayerBrightnessSlider),
-        switch(stringResource(R.string.settings_volume_slider), volumeSlider, settingsViewModel::setPlayerVolumeSlider),
+        switch(stringResource(R.string.settings_brightness_swipe), brightnessSlider, settingsViewModel::setPlayerBrightnessSwipe),
+        switch(stringResource(R.string.settings_volume_swipe), volumeSlider, settingsViewModel::setPlayerVolumeSwipe),
         switch(stringResource(R.string.settings_background_play), backgroundPlay, settingsViewModel::setBackgroundPlay),
     )
 }

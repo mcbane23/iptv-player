@@ -422,18 +422,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAppFullScreen(enabled) }
     }
 
-    val playerBrightnessSlider: StateFlow<Boolean> = settings.playerBrightnessSlider
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val playerBrightnessSwipe: StateFlow<Boolean> = settings.playerBrightnessSwipe
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun setPlayerBrightnessSlider(enabled: Boolean) {
-        viewModelScope.launch { settings.setPlayerBrightnessSlider(enabled) }
+    fun setPlayerBrightnessSwipe(enabled: Boolean) {
+        viewModelScope.launch { settings.setPlayerBrightnessSwipe(enabled) }
     }
 
-    val playerVolumeSlider: StateFlow<Boolean> = settings.playerVolumeSlider
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val playerVolumeSwipe: StateFlow<Boolean> = settings.playerVolumeSwipe
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun setPlayerVolumeSlider(enabled: Boolean) {
-        viewModelScope.launch { settings.setPlayerVolumeSlider(enabled) }
+    fun setPlayerVolumeSwipe(enabled: Boolean) {
+        viewModelScope.launch { settings.setPlayerVolumeSwipe(enabled) }
     }
 
     val backgroundPlay: StateFlow<Boolean> = settings.backgroundPlay

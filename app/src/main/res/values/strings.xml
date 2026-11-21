@@ -303,10 +303,10 @@
     <string name="nav_live">Live</string>
     <string name="search_channels">Channels and programmes</string>
     <string name="settings_tv_preview">Channel preview</string>
-    <string name="settings_brightness_slider">Brightness bar</string>
-    <string name="settings_brightness_slider_summary">In the player, a bar along the left screen edge that changes brightness</string>
-    <string name="settings_volume_slider">Volume bar</string>
-    <string name="settings_volume_slider_summary">In the player, a bar along the right screen edge that changes volume</string>
+    <string name="settings_brightness_swipe">Swipe for brightness</string>
+    <string name="settings_brightness_swipe_summary">In the player, swiping up or down along the left screen edge changes brightness</string>
+    <string name="settings_volume_swipe">Swipe for volume</string>
+    <string name="settings_volume_swipe_summary">In the player, swiping up or down along the right screen edge changes volume</string>
     <string name="settings_background_play">Background play</string>
     <string name="settings_background_play_summary">On the phone, audio keeps playing when the screen turns off or the app goes to the background</string>
     <string name="background_play_channel">Background playback</string>

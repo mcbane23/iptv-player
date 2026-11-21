@@ -95,8 +95,8 @@ fun MobileSettingsScreen(
     val drawUnderCutout by viewModel.drawUnderCutout.collectAsStateWithLifecycle()
     val appFullScreen by viewModel.appFullScreen.collectAsStateWithLifecycle()
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle()
-    val brightnessSlider by viewModel.playerBrightnessSlider.collectAsStateWithLifecycle()
-    val volumeSlider by viewModel.playerVolumeSlider.collectAsStateWithLifecycle()
+    val brightnessSlider by viewModel.playerBrightnessSwipe.collectAsStateWithLifecycle()
+    val volumeSlider by viewModel.playerVolumeSwipe.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
@@ -261,16 +261,16 @@ fun MobileSettingsScreen(
                                     onChange = viewModel::setBackgroundPlay,
                                 )
                                 SettingsSwitchRow(
-                                    title = stringResource(R.string.settings_brightness_slider),
-                                    summary = stringResource(R.string.settings_brightness_slider_summary),
+                                    title = stringResource(R.string.settings_brightness_swipe),
+                                    summary = stringResource(R.string.settings_brightness_swipe_summary),
                                     checked = brightnessSlider,
-                                    onChange = viewModel::setPlayerBrightnessSlider,
+                                    onChange = viewModel::setPlayerBrightnessSwipe,
                                 )
                                 SettingsSwitchRow(
-                                    title = stringResource(R.string.settings_volume_slider),
-                                    summary = stringResource(R.string.settings_volume_slider_summary),
+                                    title = stringResource(R.string.settings_volume_swipe),
+                                    summary = stringResource(R.string.settings_volume_swipe_summary),
                                     checked = volumeSlider,
-                                    onChange = viewModel::setPlayerVolumeSlider,
+                                    onChange = viewModel::setPlayerVolumeSwipe,
                                 )
                             }
 
