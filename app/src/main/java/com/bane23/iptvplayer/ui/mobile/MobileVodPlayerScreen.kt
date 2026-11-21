@@ -304,14 +304,17 @@ fun MobileVodPlayerScreen(
                             label = stringResource(R.string.player_subtitles),
                             active = playback.textEnabled,
                             open = panel == VodPanel.SUBTITLES || panel == VodPanel.ONLINE_SUBTITLES,
-                            onClick = { panel = VodPanel.SUBTITLES },
+                            // Ponovni dodir na dugme otvorenog menija ga zatvara.
+                            onClick = {
+                                if (panel == VodPanel.SUBTITLES || panel == VodPanel.ONLINE_SUBTITLES) closePanel() else panel = VodPanel.SUBTITLES
+                            },
                             modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SUBTITLES),
                         )
                         PlayerChip(
                             icon = AppIcons.Audio,
                             label = stringResource(R.string.player_audio),
                             open = panel == VodPanel.AUDIO,
-                            onClick = { panel = VodPanel.AUDIO },
+                            onClick = { panel = if (panel == VodPanel.AUDIO) VodPanel.NONE else VodPanel.AUDIO },
                             modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.AUDIO),
                         )
                         PlayerChip(
@@ -320,7 +323,7 @@ fun MobileVodPlayerScreen(
                             // Brzina koja nije obična se vidi i na samom dugmetu.
                             active = ui.speed != 1f,
                             open = panel == VodPanel.SETTINGS,
-                            onClick = { panel = VodPanel.SETTINGS },
+                            onClick = { panel = if (panel == VodPanel.SETTINGS) VodPanel.NONE else VodPanel.SETTINGS },
                             modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SETTINGS),
                         )
                         PlayerChip(
