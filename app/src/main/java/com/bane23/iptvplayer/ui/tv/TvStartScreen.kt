@@ -65,6 +65,8 @@ import kotlinx.coroutines.delay
 fun TvStartScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
+    autoFocus: Boolean = false,
+    onAutoFocused: () -> Unit = {},
     viewModel: TvStartViewModel = hiltViewModel(),
 ) {
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
@@ -102,6 +104,13 @@ fun TvStartScreen(
     LaunchedEffect(Unit) {
         delay(LOADING_DELAY_MS)
         waited = true
+    }
+
+    // Fokus odmah na prvu stavku prvog reda čim redovi stignu (pokretanje aplikacije, povratak sa Nazad).
+    LaunchedEffect(autoFocus, nothing) {
+        if (!autoFocus || nothing) return@LaunchedEffect
+        delay(REFOCUS_DELAY_MS)
+        if (rowsFocus.tryRequestFocus()) onAutoFocused()
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 27.dp)) {
