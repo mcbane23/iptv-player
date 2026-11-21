@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 /** Širina oblačića sa spiskom zapisa i sa podešavanjima (vrednosti su duže, pa je širi). */
 internal val TvTrackMenuWidth = 290.dp
 internal val TvSettingsMenuWidth = 340.dp
+internal val TvOnlineMenuWidth = 440.dp
 
 /** Koji spisak zapisa je otvoren preko slike. */
 enum class TvTrackKind { AUDIO, SUBTITLES }
@@ -280,17 +281,18 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
 }
 
 /**
- * Titlovi nađeni na internetu, uz desnu ivicu ekrana. OK preuzima titl i uključuje ga. Dok traje
- * pretraga (ili kad nema rezultata) fokus drži sama poruka, da daljinski ne ostane bez fokusa.
+ * Titlovi nađeni na internetu: drugi korak u oblačiću „Titlovi” (PlayerMenuBubble). Prva stavka
+ * vraća na spisak titlova ([onBack]); izbor rezultata preuzima titl i uključuje ga.
  */
 @Composable
 fun TvOnlineSubtitlesPanel(
     state: OnlineSubtitlesState,
     onPick: (SubtitleResult) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val firstFocus = remember { FocusRequester() }
-    val statusFocus = remember { FocusRequester() }
+    val backFocus = remember { FocusRequester() }
     val results = state.results.orEmpty()
     val status = when {
         state.searching -> stringResource(R.string.subtitles_searching)
@@ -303,17 +305,14 @@ fun TvOnlineSubtitlesPanel(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .tvKeepFocus()
-            .fillMaxHeight()
-            .fillMaxWidth(0.45f)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         item {
-            Text(
-                text = stringResource(R.string.subtitles_online_title),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+            TvTextRow(
+                text = stringResource(R.string.player_subtitles),
+                icon = AppIcons.ChevronLeft,
+                onClick = onBack,
+                modifier = Modifier.focusRequester(backFocus),
             )
         }
         if (status != null) {
@@ -322,10 +321,7 @@ fun TvOnlineSubtitlesPanel(
                     text = status,
                     color = if (state.failure != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .focusRequester(statusFocus)
-                        .focusable()
-                        .padding(start = 16.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
         }
@@ -358,7 +354,8 @@ fun TvOnlineSubtitlesPanel(
             }
         }
     }
+    // Dok traje pretraga ili nema rezultata fokus drži stavka za povratak.
     LaunchedEffect(results.isEmpty()) {
-        if (results.isEmpty()) statusFocus.tryRequestFocus() else firstFocus.tryRequestFocus()
+        if (results.isEmpty()) backFocus.tryRequestFocus() else firstFocus.tryRequestFocus()
     }
 }
