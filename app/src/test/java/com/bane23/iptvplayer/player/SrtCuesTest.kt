@@ -50,7 +50,7 @@ class SrtCuesTest {
 
     @Test
     fun `windows line ends, dot fractions and missing blank lines are accepted`() {
-        val cues = SrtCues.parse("﻿1\r\n00:00:01.5 --> 00:00:02.25\r\njedan\r\n2\r\n00:00:03,000 --> 00:00:04,000\r\ndva\r\n").cues
+        val cues = SrtCues.parse("\uFEFF1\r\n00:00:01.5 --> 00:00:02.25\r\njedan\r\n2\r\n00:00:03,000 --> 00:00:04,000\r\ndva\r\n").cues
         assertEquals(listOf(SubtitleCue(1_500, 2_250, "jedan"), SubtitleCue(3_000, 4_000, "dva")), cues)
     }
 

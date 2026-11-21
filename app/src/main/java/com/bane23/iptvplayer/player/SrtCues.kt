@@ -47,7 +47,7 @@ class SrtCues(cues: List<SubtitleCue>) {
 
         /** Čita tekst .srt fajla. Redovi bez ispravnog vremena ili bez teksta se preskaču. */
         fun parse(text: String): SrtCues {
-            val lines = text.removePrefix("﻿").lines()
+            val lines = text.removePrefix("\uFEFF").lines()
             val cues = ArrayList<SubtitleCue>()
             var index = 0
             while (index < lines.size) {
