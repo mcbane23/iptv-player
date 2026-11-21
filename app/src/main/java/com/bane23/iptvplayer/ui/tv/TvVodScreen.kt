@@ -575,8 +575,9 @@ fun PosterCard(
     if (confirmRemove && onToggleFavorite != null) {
         TvActionDialog(
             title = name,
-            options = listOf(stringResource(R.string.action_cancel), stringResource(R.string.favorite_remove)),
-            onSelect = { option -> if (option == 1) onToggleFavorite() },
+            // „Ukloni” je prva stavka (Bane); meni ne prima OK dok se taster ne pusti, pa držanje ne potvrđuje.
+            options = listOf(stringResource(R.string.favorite_remove), stringResource(R.string.action_cancel)),
+            onSelect = { option -> if (option == 0) onToggleFavorite() },
             onClose = { confirmRemove = false },
         )
     }
