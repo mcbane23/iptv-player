@@ -280,12 +280,12 @@
     <!-- Novi izgled: navigacija -->
     <string name="settings_language">Jezik</string>
     <string name="settings_language_system">Kao uređaj</string>
-    <string name="settings_language_tv_summary">Pritisni OK za sledeći jezik.</string>
+    <string name="settings_language_tv_summary">Pritisni OK i izaberi jezik.</string>
     <string name="settings_accent_color">Boja aplikacije</string>
-    <string name="settings_accent_color_tv_summary">Pritisni OK za sledeću boju. Promena se vidi odmah.</string>
+    <string name="settings_accent_color_tv_summary">Pritisni OK i izaberi boju. Promena se vidi odmah.</string>
     <string name="settings_ui_scale">Veličina prikaza</string>
     <string name="settings_ui_scale_summary">Sitniji tekst i stavke, da više stane na ekran. Dodirni za sledeću veličinu.</string>
-    <string name="settings_ui_scale_tv_summary">Sitniji tekst i stavke, da više stane na ekran. Pritisni OK za sledeću veličinu. Promena se vidi odmah.</string>
+    <string name="settings_ui_scale_tv_summary">Sitniji tekst i stavke, da više stane na ekran. Pritisni OK i izaberi veličinu. Promena se vidi odmah.</string>
     <string name="accent_orange">Narandžasta</string>
     <string name="accent_blue">Plava</string>
     <string name="accent_green">Zelena</string>
@@ -553,6 +553,7 @@
     <string name="playlist_merge">Spoji sa drugim listama</string>
     <string name="playlist_unmerge">Ne spajaj</string>
     <string name="playlists_merge_hint">Kad je aktivna lista spojena, kanali svih spojenih lista se prikazuju zajedno. Filmovi i serije su uvek iz aktivne liste.</string>
+    <string name="playlists_tv_hint">OK bira listu. Drži OK na listi za opcije: osveži, izmeni, obriši.</string>
     <string name="playlists_select_hint">Dodirnite listu da je izaberete kao aktivnu.</string>
     <string name="playlist_advanced_show">Napredna podešavanja</string>
     <string name="playlist_advanced_hide">Sakrij napredna podešavanja</string>

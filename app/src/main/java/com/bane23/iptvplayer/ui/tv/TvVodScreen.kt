@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
@@ -21,7 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,7 +43,11 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,9 +112,27 @@ fun TvVodScreen(
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
     var focusTargetId by remember { mutableStateOf<String?>(null) }
     val moveFocus = remember { FocusRequester() }
-    // Drugi OK na već izabranoj kategoriji ide na postere, kao Desno (Bane).
+    // Desno sa leve kolone ide na prvi poster na ekranu, kao u Uživo na prvi kanal, a ne na poster koji
+    // je u visini kategorije. Drugi OK na već izabranoj kategoriji radi isto (Bane).
     val focusManager = LocalFocusManager.current
-    val toItems: () -> Unit = { focusManager.moveFocus(FocusDirection.Right) }
+    val gridFocus = remember { FocusRequester() }
+    val toItems: () -> Unit = { if (!gridFocus.tryRequestFocus()) focusManager.moveFocus(FocusDirection.Right) }
+    val toGrid = Modifier.onPreviewKeyEvent { event ->
+        if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
+        // Kad postera nema (učitavanje, prazna kategorija), Desno radi kao i pre.
+        event.type == KeyEventType.KeyDown && gridFocus.tryRequestFocus()
+    }
+    // Kolona postera na kome je fokus; nije stanje, da korak kroz postere ništa ne crta iznova.
+    val focusedColumn = remember { IntArray(1) }
+    // Levo sa prve kolone postera vraća na izabranu kategoriju, a ne na red koji je u istoj visini.
+    val gridModifier = Modifier
+        .focusRequester(gridFocus)
+        .focusGroup()
+        .onPreviewKeyEvent { event ->
+            if (event.key != Key.DirectionLeft || focusedColumn[0] != 0) return@onPreviewKeyEvent false
+            // Ako red izabrane kategorije nije na ekranu, Levo radi kao i pre.
+            event.type == KeyEventType.KeyDown && firstFocus.tryRequestFocus()
+        }
     var movedToTop by remember { mutableIntStateOf(0) }
     var shownCategoryIds by remember { mutableStateOf(emptyList<String>()) }
     // Meni postera u „Nastavi gledanje” (dugi OK): skloni iz reda.
@@ -279,7 +302,7 @@ fun TvVodScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    TvListRow(onClick = onSearch) { color ->
+                    TvListRow(onClick = onSearch, modifier = toGrid) { color ->
                         Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(if (series) R.string.search_series else R.string.search_movies),
@@ -290,7 +313,7 @@ fun TvVodScreen(
                             modifier = Modifier.padding(start = 12.dp),
                         )
                     }
-                    TvListRow(onClick = { sortOpen = true }) { color ->
+                    TvListRow(onClick = { sortOpen = true }, modifier = toGrid) { color ->
                         Icon(AppIcons.Sort, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(R.string.vod_sort_current, stringResource(state.sort.label)),
@@ -316,7 +339,8 @@ fun TvVodScreen(
                             }
                         },
                         modifier = (if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier)
-                            .then(if (focusTargetId == FAVORITES_ID) Modifier.focusRequester(moveFocus) else Modifier),
+                            .then(if (focusTargetId == FAVORITES_ID) Modifier.focusRequester(moveFocus) else Modifier)
+                            .then(toGrid),
                     )
                     if (continueItems.isNotEmpty()) {
                         PinnedRow(
@@ -333,7 +357,7 @@ fun TvVodScreen(
                                     viewModel.rememberContinue()
                                 }
                             },
-                            modifier = if (showContinue) Modifier.focusRequester(firstFocus) else Modifier,
+                            modifier = (if (showContinue) Modifier.focusRequester(firstFocus) else Modifier).then(toGrid),
                         )
                     }
                     TvFilterField(
@@ -348,7 +372,7 @@ fun TvVodScreen(
                     LaunchedEffect(shownCategories) { shownCategoryIds = shownCategories.map { it.id } }
                     LazyColumn(
                         state = categoryListState,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).then(toGrid),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         items(shownCategories, key = { it.id }) { category ->
@@ -383,8 +407,8 @@ fun TvVodScreen(
                         TvVodPreviewHeader(preview = preview)
                     }
                     when {
-                        showContinue -> PosterGrid {
-                            items(continueItems, key = { it.id }) { item ->
+                        showContinue -> PosterGrid(gridModifier) {
+                            itemsIndexed(continueItems, key = { _, item -> item.id }) { index, item ->
                                 val isLast = isLastItem(item.id) { lastItemId }
                                 PosterCard(
                                     name = item.name,
@@ -393,6 +417,7 @@ fun TvVodScreen(
                                     onLongClick = { menuContinue = item },
                                     onClick = { onOpen(item.toVodItem()) },
                                     onFocused = {
+                                        focusedColumn[0] = index % GRID_COLUMNS
                                         lastItemId = item.id
                                         previewViewModel.focus(item.toVodItem(), series)
                                     },
@@ -407,8 +432,8 @@ fun TvVodScreen(
 
                         showFavorites && favorites.isEmpty() -> TvEmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
 
-                        showFavorites -> PosterGrid {
-                            items(favorites, key = { it.id }) { item ->
+                        showFavorites -> PosterGrid(gridModifier) {
+                            itemsIndexed(favorites, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
                                     poster = item.poster,
@@ -417,6 +442,7 @@ fun TvVodScreen(
                                     onToggleFavorite = { if (pendingUnfavorite == null) pendingUnfavorite = item },
                                     onClick = { onOpen(item) },
                                     onFocused = {
+                                        focusedColumn[0] = index % GRID_COLUMNS
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -438,8 +464,8 @@ fun TvVodScreen(
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                         state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
-                        else -> PosterGrid {
-                            items(state.items, key = { it.id }) { item ->
+                        else -> PosterGrid(gridModifier) {
+                            itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
                                     poster = item.poster,
@@ -448,6 +474,7 @@ fun TvVodScreen(
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     onClick = { onOpen(item) },
                                     onFocused = {
+                                        focusedColumn[0] = index % GRID_COLUMNS
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -488,9 +515,10 @@ private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
     remember(id) { derivedStateOf { lastItemId() == id } }.value
 
 @Composable
-private fun PosterGrid(content: LazyGridScope.() -> Unit) {
+private fun PosterGrid(modifier: Modifier = Modifier, content: LazyGridScope.() -> Unit) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(5),
+        modifier = modifier,
+        columns = GridCells.Fixed(GRID_COLUMNS),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         // Mesto za uvećan poster u fokusu, da ga ivica mreže ne odseče.
@@ -543,6 +571,7 @@ internal fun PinnedRow(
 }
 
 
+private const val GRID_COLUMNS = 5
 private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L

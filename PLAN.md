@@ -778,6 +778,20 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       „Čuvaj filmove i serije na uređaju”) i prikazuju odmah po pokretanju, a ceo spisak liste se čita u
       pozadini i redovi se tiho zamene. Sačuvan red se ne koristi ako su se promenile sakrivene ili zaključane
       kategorije. Pri prvom preuzimanju stoji poruka „Učitavam filmove…”, kao u Filmovima i Serijama
+- [x] TV „Početna”: Nazad vraća fokus na otvorenu stavku (Bane, 21. 11. 2026): posle povratka iz detalja
+      filma ili serije, ili iz plejera, fokus je opet na istom posteru ili kanalu, a ne u bočnom meniju.
+- [x] TV: fokus se posle Nazad vraća na pravo mesto (Bane, 21. 11. 2026, pregled kretanja kroz sve TV ekrane):
+      Pretraga (opšta, kanala, filmova i serija) vraća na otvoreni rezultat, a ne u polje za kucanje; Serija vraća
+      na puštenu epizodu, a Levo sa epizoda ide na izabranu sezonu; Vodič vraća na emisiju na kojoj je fokus bio;
+      Podešavanja na red sa kog je otvoren podekran; Liste na listu koja je menjana; u detaljima filma fokus više
+      ne skače na „Pusti” ako je korisnik već na drugom dugmetu
+- [x] TV: kraći put kroz menije (Bane, 21. 11. 2026): OK na sekciji u bočnom meniju svuda prebacuje fokus u
+      sadržaj (i na „Početnoj”); u Filmovima i Serijama Desno sa kategorije ide na prvi poster na ekranu; Levo sa
+      postera i kanala vraća na izabranu kategoriju; Uživo posle plejera fokusira kanal koji je gledan poslednji;
+      Vodič se otvara sa fokusom na emisiji koja traje na prvom kanalu
+- [x] TV Liste i Podešavanja (Bane, 21. 11. 2026): „Liste” se otvaraju sa fokusom na aktivnoj listi, a dugi OK na
+      listi otvara opcije (osveži, izmeni, spoji, obriši), uz kratko uputstvo iznad spiska; u Podešavanjima se
+      jezik, boja i veličina prikaza biraju sa spiska vrednosti umesto kruženjem na svaki OK
 
 ## 7. Testiranje
 

@@ -282,12 +282,12 @@
     <string name="settings_language_system">Same as device</string>
     <string name="settings_language_serbian" translatable="false">Srpski</string>
     <string name="settings_language_english" translatable="false">English</string>
-    <string name="settings_language_tv_summary">Press OK to switch to the next language.</string>
+    <string name="settings_language_tv_summary">Press OK and pick a language.</string>
     <string name="settings_accent_color">App color</string>
-    <string name="settings_accent_color_tv_summary">Press OK to switch to the next color. The change shows right away.</string>
+    <string name="settings_accent_color_tv_summary">Press OK and pick a color. The change shows right away.</string>
     <string name="settings_ui_scale">Display size</string>
     <string name="settings_ui_scale_summary">Smaller text and items, so more fits on the screen. Tap to switch to the next size.</string>
-    <string name="settings_ui_scale_tv_summary">Smaller text and items, so more fits on the screen. Press OK to switch to the next size. The change shows right away.</string>
+    <string name="settings_ui_scale_tv_summary">Smaller text and items, so more fits on the screen. Press OK and pick a size. The change shows right away.</string>
     <string name="accent_orange">Orange</string>
     <string name="accent_blue">Blue</string>
     <string name="accent_green">Green</string>
@@ -554,6 +554,7 @@
     <string name="playlist_merge">Merge with other playlists</string>
     <string name="playlist_unmerge">Do not merge</string>
     <string name="playlists_merge_hint">When the active playlist is merged, channels of all merged playlists are shown together. Movies and series always come from the active playlist.</string>
+    <string name="playlists_tv_hint">OK selects the playlist. Hold OK on a playlist for options: refresh, edit, delete.</string>
     <string name="playlists_select_hint">Tap a playlist to make it the active one.</string>
     <string name="playlist_advanced_show">Advanced settings</string>
     <string name="playlist_advanced_hide">Hide advanced settings</string>

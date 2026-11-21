@@ -43,6 +43,8 @@ fun TvVodSearchScreen(
     val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
     val watched by viewModel.watched.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
+    // Posle Nazad iz detalja fokus se vraća na otvoreni poster, ne u polje za kucanje.
+    val back = rememberTvReturnFocus()
 
     Column(
         modifier = Modifier
@@ -92,11 +94,16 @@ fun TvVodSearchScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 12.dp, start = 12.dp, end = 12.dp),
             ) {
                 items(state.results, key = { it.id }) { item ->
+                    val focusKey = item.id.toString()
                     PosterCard(
                         name = item.name,
                         poster = item.poster,
-                        onClick = { onOpen(item) },
-                        onFocused = {},
+                        onClick = {
+                            back.opened()
+                            onOpen(item)
+                        },
+                        onFocused = { back.focused(focusKey) },
+                        modifier = back.target(focusKey),
                         favorite = item.id in favoriteIds,
                         watched = watched.of(item),
                         onToggleFavorite = { viewModel.toggleFavorite(item) },
@@ -105,7 +112,9 @@ fun TvVodSearchScreen(
             }
         }
     }
-    LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
+    LaunchedEffect(Unit) {
+        if (!back.restoreIfBack()) fieldFocus.tryRequestFocus()
+    }
 }
 
 @Composable
