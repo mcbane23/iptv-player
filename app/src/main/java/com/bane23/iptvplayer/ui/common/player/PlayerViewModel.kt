@@ -277,9 +277,8 @@ class PlayerViewModel @Inject constructor(
             if (ChannelGroups.isVirtual(categoryId) && categoryId != null) {
                 groupIds = repository.groupChannelIds(channel.playlistId, categoryId)
             }
-            val position = positionOf(channel)
-            listScope.value = ListScope(channel.playlistId, categoryId, position)
             show(channel)
+            listScope.value = ListScope(channel.playlistId, categoryId, _ui.value.position)
         }
     }
 
@@ -443,7 +442,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     private suspend fun show(channel: Channel) {
-        val position = positionOf(channel)
         // Izvori iz zaključanih kategorija se ne nude (roditeljska zaštita).
         val sources = repository.sources(channel).filter { it.channelId == channel.id || !locks.isChannelLocked(it.channelId) }
         // Lista sa koje je plejer već više puta morao da pobegne preskače se, da se ne čeka na nju kod svakog kanala.
@@ -453,7 +451,6 @@ class PlayerViewModel @Inject constructor(
             val before = it.channel
             it.copy(
                 channel = channel,
-                position = position,
                 sourceMissing = false,
                 lastChannel = if (before != null && before.id != channel.id) before else it.lastChannel,
                 sources = sources,
@@ -467,8 +464,11 @@ class PlayerViewModel @Inject constructor(
             _ui.update { it.copy(sourceMissing = true) }
         } else {
             engine.play(source)
-            repository.markWatched(channel.id)
         }
+        // Slika prvo: mesto kanala u spisku i beleška „nedavno gledano” ne smeju da je zadržavaju.
+        val position = positionOf(channel)
+        _ui.update { if (it.channel?.id == channel.id) it.copy(position = position) else it }
+        if (source != null) repository.markWatched(channel.id)
     }
 
     override fun onCleared() {

@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -45,7 +46,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Category
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import com.bane23.iptvplayer.domain.Channel
@@ -280,7 +280,7 @@ fun TvLiveTvScreen(
                 } else {
                     hiddenChannels.hide(channel.id)
                     hiddenCount++
-                    Toast.makeText(context, R.string.channel_hidden, Toast.LENGTH_LONG).show()
+                    AppMessages.show(context, R.string.channel_hidden, long = true)
                 }
             },
             onClose = { menuChannel = null },

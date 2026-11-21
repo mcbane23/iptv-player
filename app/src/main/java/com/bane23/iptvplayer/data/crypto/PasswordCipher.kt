@@ -30,7 +30,19 @@ class KeystorePasswordCipher @Inject constructor() : PasswordCipher {
         return Base64.encodeToString(cipher.iv + encrypted, Base64.NO_WRAP)
     }
 
+    /**
+     * Već dešifrovane lozinke, po šifrovanom tekstu. Keystore je spor (na TV uređajima i desetine
+     * milisekundi), a lozinka treba pri svakoj promeni kanala i svakom spisku filmova. Živi samo u
+     * memoriji, dok aplikacija radi.
+     */
+    private val decrypted = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     override fun decrypt(encrypted: String): String {
+        decrypted[encrypted]?.let { return it }
+        return decryptNow(encrypted).also { decrypted[encrypted] = it }
+    }
+
+    private fun decryptNow(encrypted: String): String {
         val bytes = Base64.decode(encrypted, Base64.NO_WRAP)
         require(bytes.size > IV_SIZE) { "Šifrovani tekst je prekratak" }
         val cipher = Cipher.getInstance(TRANSFORMATION)

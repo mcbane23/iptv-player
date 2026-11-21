@@ -2,7 +2,6 @@ package com.bane23.iptvplayer.ui.common
 
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -30,7 +29,7 @@ fun crashReportValue(): String {
 fun handOverCrashReport(context: Context) {
     val report = CrashLog.report.value
     if (report == null) {
-        Toast.makeText(context, R.string.crash_report_empty, Toast.LENGTH_SHORT).show()
+        AppMessages.show(context, R.string.crash_report_empty)
         return
     }
     CrashLog.markSeen(context)
@@ -47,7 +46,7 @@ private fun share(context: Context, report: CrashReport) {
     try {
         context.startActivity(chooser)
     } catch (_: Exception) {
-        Toast.makeText(context, R.string.crash_report_failed, Toast.LENGTH_LONG).show()
+        AppMessages.show(context, R.string.crash_report_failed, long = true)
     }
 }
 
@@ -64,7 +63,7 @@ private fun save(context: Context, report: CrashReport) {
     } else {
         context.getString(R.string.crash_report_failed)
     }
-    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    AppMessages.show(message, long = true)
 }
 
 private const val FILE_NAME = "glowbox-izvestaj"

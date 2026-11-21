@@ -1,9 +1,9 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import android.content.ClipData
+import com.bane23.iptvplayer.ui.common.AppMessages
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -161,5 +161,5 @@ private fun openActivation(context: Context, uriHandler: UriHandler, url: String
 
 private fun copyCode(context: Context, code: String) {
     context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Trakt", code))
-    Toast.makeText(context, R.string.trakt_code_copied, Toast.LENGTH_SHORT).show()
+    AppMessages.show(context, R.string.trakt_code_copied)
 }

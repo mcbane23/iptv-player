@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import androidx.activity.compose.BackHandler
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.runtime.key
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.focus.onFocusChanged
@@ -28,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -199,7 +199,7 @@ fun TvSettingsScreen(
             onCategories?.let { TvItem(CATEGORIES_ROW, stringResource(R.string.categories_manage_title), "›", onClick = it) },
             TvItem(HIDDEN_CHANNELS_ROW, stringResource(R.string.hidden_channels_title), hiddenChannels.size.toString()) {
                 if (hiddenChannels.isEmpty()) {
-                    Toast.makeText(context, R.string.hidden_channels_empty, Toast.LENGTH_SHORT).show()
+                    AppMessages.show(context, R.string.hidden_channels_empty)
                 } else {
                     hiddenOpen = true
                 }

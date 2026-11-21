@@ -1,6 +1,5 @@
 package com.bane23.iptvplayer.ui.common
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +24,7 @@ fun ExitOnDoubleBack(enabled: Boolean = true) {
     var armed by remember { mutableStateOf(false) }
     BackHandler(enabled = enabled && !armed) {
         armed = true
-        Toast.makeText(context, R.string.exit_press_again, Toast.LENGTH_SHORT).show()
+        AppMessages.show(context, R.string.exit_press_again)
     }
     LaunchedEffect(armed) {
         if (armed) {
