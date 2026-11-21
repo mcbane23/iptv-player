@@ -13,6 +13,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -142,6 +143,9 @@ class PlayerEngine(
 
     /** Brzina puštanja je drugačija od obične; tada zvuk ne sme da ide neraspakovan ni kroz tunel. */
     private var speedChanged = false
+
+    /** Zvuk koji se sada pušta ide neraspakovan ka TV-u ili pojačalu. */
+    private var audioPassthrough = false
 
     /** Izlaz zvuka ovog plejera; postoji od trenutka kad se plejer napravi. */
     @Volatile
@@ -288,6 +292,13 @@ class PlayerEngine(
             if (format.frameRate > 0f) _state.update { it.copy(video = it.video.copy(frameRate = format.frameRate)) }
             val container = format.containerMimeType?.substringAfter('/')?.removePrefix("x-") ?: return
             _state.update { it.copy(video = it.video.copy(container = container)) }
+        }
+
+        override fun onAudioTrackInitialized(
+            eventTime: AnalyticsListener.EventTime,
+            audioTrackConfig: AudioSink.AudioTrackConfig,
+        ) {
+            audioPassthrough = !Util.isEncodingLinearPcm(audioTrackConfig.encoding)
         }
 
         override fun onAudioUnderrun(
@@ -464,7 +475,7 @@ class PlayerEngine(
         applyTunneling()
         val gate = audioGate ?: return
         gate.pcmOnly = changed
-        val reload = if (changed) gate.passthrough else gate.refused
+        val reload = if (changed) audioPassthrough else gate.refused
         if (reload && seekable && source != null) prepareAgain()
     }
 
