@@ -78,12 +78,16 @@ fun TvSearchAllScreen(
     // Posle izabranog nedavnog ili izgovorenog upita fokus prelazi na prvi rezultat čim stigne.
     var focusResults by remember { mutableStateOf(false) }
     val showRecent = state.query.isBlank() && recent.isNotEmpty()
+    // Posle Nazad iz plejera ili detalja fokus se vraća na otvoreni rezultat, ne u polje za kucanje.
+    val back = rememberTvReturnFocus()
     val play: (Long) -> Unit = { id ->
         viewModel.remember()
+        back.opened()
         onPlay(id)
     }
     val openVod: (VodItem, Boolean) -> Unit = { item, series ->
         viewModel.remember()
+        back.opened()
         onOpenVod(item, series)
     }
 
@@ -177,7 +181,12 @@ fun TvSearchAllScreen(
             if (state.channels.isNotEmpty()) {
                 item(key = "h-channels") { TvSearchGroupTitle(stringResource(R.string.search_group_channels), state.channels.size) }
                 items(state.channels, key = { "c${it.id}" }) { channel ->
-                    TvListRow(onClick = { play(channel.id) }) { color ->
+                    val focusKey = "c${channel.id}"
+                    TvListRow(
+                        onClick = { play(channel.id) },
+                        onFocused = { back.focused(focusKey) },
+                        modifier = back.target(focusKey),
+                    ) { color ->
                         ChannelLogo(url = channel.logo, name = channel.name, size = 36.dp)
                         RowText(channel.name, color, Modifier.weight(1f))
                     }
@@ -186,26 +195,31 @@ fun TvSearchAllScreen(
             if (state.programs.isNotEmpty()) {
                 item(key = "h-programs") { TvSearchGroupTitle(stringResource(R.string.search_group_programs), state.programs.size) }
                 items(state.programs, key = { "p${it.channelId}-${it.startMs}" }) { hit ->
+                    val focusKey = "p${hit.channelId}-${hit.startMs}"
                     TvProgramHitRow(
                         hit = hit,
                         now = now,
                         reminded = hit.key in reminders,
                         onPlay = { play(hit.channelId) },
                         onToggleReminder = { viewModel.toggleReminder(hit) },
+                        onFocused = { back.focused(focusKey) },
+                        modifier = back.target(focusKey),
                     )
                 }
             }
             if (state.movies.isNotEmpty()) {
                 item(key = "h-movies") { TvSearchGroupTitle(stringResource(R.string.vod_movies), state.movies.size) }
-                item(key = "r-movies") { PosterRow(state.movies, favoriteMovies, { viewModel.toggleFavorite(it, series = false) }) { openVod(it, false) } }
+                item(key = "r-movies") { PosterRow(state.movies, favoriteMovies, back, "m", { viewModel.toggleFavorite(it, series = false) }) { openVod(it, false) } }
             }
             if (state.series.isNotEmpty()) {
                 item(key = "h-series") { TvSearchGroupTitle(stringResource(R.string.vod_series), state.series.size) }
-                item(key = "r-series") { PosterRow(state.series, favoriteSeries, { viewModel.toggleFavorite(it, series = true) }) { openVod(it, true) } }
+                item(key = "r-series") { PosterRow(state.series, favoriteSeries, back, "s", { viewModel.toggleFavorite(it, series = true) }) { openVod(it, true) } }
             }
         }
     }
-    LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
+    LaunchedEffect(Unit) {
+        if (!back.restoreIfBack()) fieldFocus.tryRequestFocus()
+    }
     val hasResults = state.channels.isNotEmpty() || state.programs.isNotEmpty() ||
         state.movies.isNotEmpty() || state.series.isNotEmpty()
     LaunchedEffect(focusResults, hasResults, state.searching) {
@@ -231,9 +245,15 @@ internal fun TvProgramHitRow(
     reminded: Boolean,
     onPlay: () -> Unit,
     onToggleReminder: () -> Unit,
+    modifier: Modifier = Modifier,
+    onFocused: () -> Unit = {},
 ) {
     val onAir = hit.startMs <= now
-    TvListRow(onClick = { if (onAir) onPlay() else onToggleReminder() }) { color ->
+    TvListRow(
+        onClick = { if (onAir) onPlay() else onToggleReminder() },
+        onFocused = onFocused,
+        modifier = modifier,
+    ) { color ->
         RowIcon(AppIcons.Guide, color)
         RowText(if (reminded) "🔔 ${hit.title}" else hit.title, color, Modifier.weight(1f))
         Text(
@@ -288,6 +308,8 @@ internal fun TvSearchGroupTitle(text: String, count: Int) {
 private fun PosterRow(
     list: List<VodItem>,
     favoriteIds: Set<Long>,
+    back: TvReturnFocus,
+    keyPrefix: String,
     onToggleFavorite: (VodItem) -> Unit,
     onOpen: (VodItem) -> Unit,
 ) {
@@ -297,14 +319,15 @@ private fun PosterRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(list, key = { it.id }) { item ->
+            val focusKey = keyPrefix + item.id
             PosterCard(
                 name = item.name,
                 poster = item.poster,
                 onClick = { onOpen(item) },
-                onFocused = {},
+                onFocused = { back.focused(focusKey) },
                 favorite = item.id in favoriteIds,
                 onToggleFavorite = { onToggleFavorite(item) },
-                modifier = Modifier.width(120.dp),
+                modifier = Modifier.width(120.dp).then(back.target(focusKey)),
             )
         }
     }

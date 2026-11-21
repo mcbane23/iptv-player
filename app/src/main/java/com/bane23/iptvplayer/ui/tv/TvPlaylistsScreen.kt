@@ -16,7 +16,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -46,6 +48,9 @@ fun TvPlaylistsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val addFocus = remember { FocusRequester() }
+    // Lista kojoj je otvoreno „Izmeni”: posle povratka fokus ide na nju, ne na „Dodaj listu”.
+    var editedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val editedFocus = remember { FocusRequester() }
 
     Column(
         modifier = Modifier
@@ -122,7 +127,11 @@ fun TvPlaylistsScreen(
                         refreshing = playlist.id in state.refreshing,
                         onSelect = { viewModel.setActive(playlist.id) },
                         onRefresh = { viewModel.refresh(playlist.id) },
-                        onEdit = { onEdit(playlist.id) },
+                        onEdit = {
+                            editedId = playlist.id
+                            onEdit(playlist.id)
+                        },
+                        rowModifier = if (playlist.id == editedId) Modifier.focusRequester(editedFocus) else Modifier,
                         onDelete = { viewModel.delete(playlist.id) },
                         // Spajanje ima smisla tek kad postoje bar dve liste.
                         onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
@@ -132,7 +141,20 @@ fun TvPlaylistsScreen(
         }
     }
 
-    LaunchedEffect(Unit) { addFocus.tryRequestFocus() }
+    LaunchedEffect(Unit) {
+        if (editedId != null) {
+            // Spisak stiže iz baze, pa se pokušava nekoliko kadrova zaredom.
+            repeat(RETURN_FOCUS_FRAMES) {
+                if (editedFocus.tryRequestFocus()) {
+                    editedId = null
+                    return@LaunchedEffect
+                }
+                withFrameNanos { }
+            }
+            editedId = null
+        }
+        addFocus.tryRequestFocus()
+    }
     // Kad se lista obriše, njen red nestaje zajedno sa fokusom, pa se fokus vraća na dugme za dodavanje.
     var knownCount by remember { mutableStateOf(state.playlists.size) }
     LaunchedEffect(state.playlists.size) {
@@ -154,6 +176,7 @@ private fun TvPlaylistRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onMerge: (() -> Unit)?,
+    rowModifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     // Brisanje se potvrđuje u samom redu: dijalozi na TV-u lako izgube fokus.
@@ -177,7 +200,7 @@ private fun TvPlaylistRow(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TvListRow(
                 onClick = { if (!playlist.isActive) onSelect() },
-                modifier = Modifier.weight(1f),
+                modifier = rowModifier.weight(1f),
             ) { color ->
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -268,3 +291,6 @@ private fun TvPlaylistRow(
         }
     }
 }
+
+/** Koliko kadrova se čeka red liste na koju se fokus vraća posle izmene. */
+private const val RETURN_FOCUS_FRAMES = 30

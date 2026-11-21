@@ -85,13 +85,12 @@ fun TvStartScreen(
     // Stavka na kojoj je fokus bio poslednji put. Posle povratka dugmetom Nazad (iz detalja filma ili
     // serije, iz plejera) fokus se vraća baš na nju, da ne ode u bočni meni.
     var lastFocusKey by rememberSaveable { mutableStateOf<String?>(null) }
-    // Sa „Početne” je nešto otvoreno, pa se pri sledećem prikazu fokus vraća na tu stavku. Kad se
-    // „Početna” izabere iz bočnog menija ovo ne važi i fokus ostaje u meniju.
+    // Sa „Početne” je nešto otvoreno, pa se pri sledećem prikazu fokus vraća na tu stavku.
     var returning by rememberSaveable { mutableStateOf(false) }
     val itemFocus = remember { FocusRequester() }
     val lastKey: () -> String? = { lastFocusKey }
     // Ovaj prikaz je povratak sa otvorene stavke: fokus na prvu stavku ([autoFocus]) tada ne važi.
-    val cameBack = remember { returning }
+    val cameBack = remember { BooleanArray(1) { returning } }
     LaunchedEffect(Unit) {
         if (!returning) return@LaunchedEffect
         returning = false
@@ -133,7 +132,8 @@ fun TvStartScreen(
     // Fokus odmah na prvu stavku prvog reda čim redovi stignu (pokretanje aplikacije, povratak sa Nazad).
     LaunchedEffect(autoFocus, nothing) {
         if (!autoFocus || nothing) return@LaunchedEffect
-        if (cameBack) {
+        if (cameBack[0]) {
+            cameBack[0] = false
             onAutoFocused()
             return@LaunchedEffect
         }

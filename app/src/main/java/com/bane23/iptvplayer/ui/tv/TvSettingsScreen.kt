@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -112,6 +113,10 @@ fun TvSettingsScreen(
     val firstItemFocus = remember { FocusRequester() }
     val rowFocus = remember { List(choices.size) { FocusRequester() } }
     val optionFocus = remember { FocusRequester() }
+    // Red na kome je poslednji put pritisnut OK. Posle povratka sa podekrana (Kategorije, Roditeljska
+    // kontrola, Trakt…) fokus se vraća na njega, a ne na grupu.
+    var returnItem by rememberSaveable { mutableStateOf<Int?>(null) }
+    val returnFocus = remember { FocusRequester() }
     // Grupa čije se stavke vide u srednjoj koloni; null dok je fokus na jeziku.
     var currentGroup by rememberSaveable { mutableStateOf<SettingsGroup?>(SettingsGroup.CONTENT) }
     // Fokus je u srednjoj koloni, među stavkama grupe.
@@ -319,6 +324,7 @@ fun TvSettingsScreen(
                                 focusedChoice = GROUP_ROW - group.ordinal
                                 currentGroup = group
                                 openChoice = null
+                                returnItem = null
                             },
                             modifier = Modifier
                                 .focusRequester(groupFocus[group.ordinal])
@@ -357,12 +363,16 @@ fun TvSettingsScreen(
                                 trailing = item.trailing,
                                 checked = item.checked,
                                 selected = openChoice == item.id,
-                                onClick = item.onClick,
+                                onClick = {
+                                    returnItem = item.id
+                                    item.onClick()
+                                },
                                 onFocused = {
                                     focusedChoice = item.id
                                     if (openChoice != item.id) openChoice = null
                                 },
                                 modifier = Modifier
+                                    .then(if (item.id == returnItem) Modifier.focusRequester(returnFocus) else Modifier)
                                     .then(if (index == 0) Modifier.focusRequester(firstItemFocus) else Modifier)
                                     .then(if (item.id >= 0) Modifier.focusRequester(rowFocus[item.id]) else Modifier),
                             )
@@ -456,6 +466,12 @@ fun TvSettingsScreen(
     // Fokus kreće sa reda na kome je bio (posle povratka sa podekrana ili promene jezika).
     LaunchedEffect(Unit) {
         val group = currentGroup
+        if (group != null && returnItem != null) {
+            repeat(RETURN_FOCUS_FRAMES) {
+                if (returnFocus.tryRequestFocus()) return@LaunchedEffect
+                withFrameNanos { }
+            }
+        }
         if (group == null) languageFocus.tryRequestFocus() else groupFocus[group.ordinal].tryRequestFocus()
     }
 }
@@ -527,6 +543,9 @@ private fun FocusedSummary(
         }
     }
 }
+
+/** Koliko kadrova se čeka red na koji se fokus vraća posle povratka sa podekrana. */
+private const val RETURN_FOCUS_FRAMES = 10
 
 /** Oznaka reda „Pokreni pri paljenju” na mestu rednog broja podešavanja plejera. */
 private const val AUTOSTART_ROW = -1

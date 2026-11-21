@@ -286,6 +286,12 @@ class ChannelRepository @Inject constructor(
         return channelDao.recentIds(playlistId).firstOrNull()?.takeUnless { locks.isChannelLocked(it) }
     }
 
+    /** Kanal koji je gledan poslednji u aktivnoj listi, ili null ako ništa nije gledano. */
+    suspend fun lastWatchedChannelId(): Long? {
+        val playlistId = settings.activePlaylistId.first() ?: return null
+        return channelDao.recentIds(playlistId).firstOrNull()
+    }
+
     private fun flowOfKey(channelId: Long, block: (String) -> Flow<Boolean>): Flow<Boolean> =
         flow {
             val key = channelDao.getById(channelId)?.stableKey

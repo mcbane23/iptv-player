@@ -51,6 +51,12 @@ fun TvSearchScreen(
     RecordingNotices(viewModel.notice)
     val now = System.currentTimeMillis()
     val fieldFocus = remember { FocusRequester() }
+    // Posle Nazad iz plejera fokus se vraća na otvoreni rezultat, ne u polje za kucanje.
+    val back = rememberTvReturnFocus()
+    val play: (Long) -> Unit = { id ->
+        back.opened()
+        onPlay(id)
+    }
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
     TvFavoritePickDialog(favoriteLists)
 
@@ -95,9 +101,12 @@ fun TvSearchScreen(
             }
             items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
                 val channel = results[index]
+                val focusKey = "c${channel?.id}"
                 TvListRow(
-                    onClick = { channel?.let { onPlay(it.id) } },
+                    onClick = { channel?.let { play(it.id) } },
                     onLongClick = { channel?.let { favoriteLists.favoriteAction(it.id) } },
+                    onFocused = { if (channel != null) back.focused(focusKey) },
+                    modifier = back.target(focusKey),
                 ) { color ->
                     ChannelLogo(url = channel?.logo, name = channel?.name, size = 36.dp)
                     Text(
@@ -121,16 +130,21 @@ fun TvSearchScreen(
                 }
                 items(count = programs.size, key = { "p${programs[it].channelId}-${programs[it].startMs}" }) { index ->
                     val hit = programs[index]
+                    val focusKey = "p${hit.channelId}-${hit.startMs}"
                     TvProgramHitRow(
                         hit = hit,
                         now = now,
                         reminded = hit.key in reminders,
-                        onPlay = { onPlay(hit.channelId) },
+                        onPlay = { play(hit.channelId) },
                         onToggleReminder = { viewModel.toggleReminder(hit) },
+                        onFocused = { back.focused(focusKey) },
+                        modifier = back.target(focusKey),
                     )
                 }
             }
         }
     }
-    LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
+    LaunchedEffect(Unit) {
+        if (!back.restoreIfBack()) fieldFocus.tryRequestFocus()
+    }
 }
