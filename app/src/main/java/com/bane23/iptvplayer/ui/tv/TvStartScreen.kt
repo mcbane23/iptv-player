@@ -23,10 +23,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -79,6 +82,27 @@ fun TvStartScreen(
     // Posle sklanjanja stavke fokus se vraća u redove, da ne ode u bočni meni.
     var refocus by remember { mutableStateOf(0) }
     val rowsFocus = remember { FocusRequester() }
+    // Stavka na kojoj je fokus bio poslednji put. Posle povratka dugmetom Nazad (iz detalja filma ili
+    // serije, iz plejera) fokus se vraća baš na nju, da ne ode u bočni meni.
+    var lastFocusKey by rememberSaveable { mutableStateOf<String?>(null) }
+    // Sa „Početne” je nešto otvoreno, pa se pri sledećem prikazu fokus vraća na tu stavku. Kad se
+    // „Početna” izabere iz bočnog menija ovo ne važi i fokus ostaje u meniju.
+    var returning by rememberSaveable { mutableStateOf(false) }
+    val itemFocus = remember { FocusRequester() }
+    val lastKey: () -> String? = { lastFocusKey }
+    // Ovaj prikaz je povratak sa otvorene stavke: fokus na prvu stavku ([autoFocus]) tada ne važi.
+    val cameBack = remember { returning }
+    LaunchedEffect(Unit) {
+        if (!returning) return@LaunchedEffect
+        returning = false
+        // Redovi se slažu tek pri prvom crtanju, pa se pokušava nekoliko kadrova zaredom.
+        repeat(RETURN_FOCUS_FRAMES) {
+            if (itemFocus.tryRequestFocus()) return@LaunchedEffect
+            withFrameNanos { }
+        }
+        // Stavke više nema u redovima (npr. odgledan film): fokus ide na prvu stavku.
+        rowsFocus.tryRequestFocus()
+    }
     LaunchedEffect(refocus) {
         if (refocus == 0) return@LaunchedEffect
         delay(REFOCUS_DELAY_MS)
@@ -109,6 +133,10 @@ fun TvStartScreen(
     // Fokus odmah na prvu stavku prvog reda čim redovi stignu (pokretanje aplikacije, povratak sa Nazad).
     LaunchedEffect(autoFocus, nothing) {
         if (!autoFocus || nothing) return@LaunchedEffect
+        if (cameBack) {
+            onAutoFocused()
+            return@LaunchedEffect
+        }
         delay(REFOCUS_DELAY_MS)
         if (rowsFocus.tryRequestFocus()) onAutoFocused()
     }
@@ -144,14 +172,18 @@ fun TvStartScreen(
                 item(key = "continue") {
                     StartRow(stringResource(R.string.vod_continue_watching)) {
                         items(continueItems, key = { (if (it.isSeries) "s" else "m") + it.id }) { item ->
+                            val focusKey = "continue-" + (if (item.isSeries) "s" else "m") + item.id
                             PosterCard(
                                 name = item.name,
                                 poster = item.poster,
                                 progress = item.progress,
-                                onClick = { onOpenVod(item.toVodItem(), item.isSeries) },
-                                onFocused = {},
+                                onClick = {
+                                    returning = true
+                                    onOpenVod(item.toVodItem(), item.isSeries)
+                                },
+                                onFocused = { lastFocusKey = focusKey },
                                 onLongClick = { menuContinue = item },
-                                modifier = Modifier.width(POSTER_WIDTH),
+                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
                             )
                         }
                     }
@@ -163,7 +195,17 @@ fun TvStartScreen(
                     val title = if (group == ChannelGroups.FAVORITES) R.string.home_favorite_channels else R.string.home_recent_channels
                     StartRow(stringResource(title)) {
                         items(channels, key = { it.id }) { channel ->
-                            ChannelTile(channel = channel, nowMs = now, onClick = { onPlay(channel.id, group) })
+                            val focusKey = "channel-${channel.id}"
+                            ChannelTile(
+                                channel = channel,
+                                nowMs = now,
+                                onClick = {
+                                    returning = true
+                                    onPlay(channel.id, group)
+                                },
+                                onFocused = { lastFocusKey = focusKey },
+                                modifier = Modifier.returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
+                            )
                         }
                     }
                 }
@@ -172,14 +214,18 @@ fun TvStartScreen(
                 item(key = "movies") {
                     StartRow(stringResource(R.string.home_added_movies)) {
                         items(added.movies, key = { it.id }) { item ->
+                            val focusKey = "movies-${item.id}"
                             PosterCard(
                                 name = item.name,
                                 poster = item.poster,
-                                onClick = { onOpenVod(item, false) },
-                                onFocused = {},
+                                onClick = {
+                                    returning = true
+                                    onOpenVod(item, false)
+                                },
+                                onFocused = { lastFocusKey = focusKey },
                                 favorite = item.id in favoriteMovies,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = false) },
-                                modifier = Modifier.width(POSTER_WIDTH),
+                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
                             )
                         }
                     }
@@ -189,14 +235,18 @@ fun TvStartScreen(
                 item(key = "series") {
                     StartRow(stringResource(R.string.home_added_series)) {
                         items(added.series, key = { it.id }) { item ->
+                            val focusKey = "series-${item.id}"
                             PosterCard(
                                 name = item.name,
                                 poster = item.poster,
-                                onClick = { onOpenVod(item, true) },
-                                onFocused = {},
+                                onClick = {
+                                    returning = true
+                                    onOpenVod(item, true)
+                                },
+                                onFocused = { lastFocusKey = focusKey },
                                 favorite = item.id in favoriteSeries,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = true) },
-                                modifier = Modifier.width(POSTER_WIDTH),
+                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
                             )
                         }
                     }
@@ -256,23 +306,44 @@ private fun StartRow(title: String, content: androidx.compose.foundation.lazy.La
     }
 }
 
+/**
+ * Da li je stavka [key] ona na kojoj je fokus bio poslednji. Stavka prati samo ovaj odgovor, a ne samu
+ * vrednost, pa se pri koraku D-pada iznova crtaju samo dve stavke, a ne svi redovi.
+ */
+@Composable
+private fun isLastFocused(key: String, lastKey: () -> String?): Boolean =
+    remember(key) { derivedStateOf { lastKey() == key } }.value
+
+/** Samo stavka na koju se fokus vraća nosi [requester]. */
+private fun Modifier.returnFocus(isTarget: Boolean, requester: FocusRequester): Modifier =
+    if (isTarget) focusRequester(requester) else this
+
 /** Kanal na „Početnoj”: logo, naziv, emisija koja je sada na programu i tanka traka koliko je odmakla. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChannelTile(channel: Channel, nowMs: Long, onClick: () -> Unit) {
+private fun ChannelTile(
+    channel: Channel,
+    nowMs: Long,
+    onClick: () -> Unit,
+    onFocused: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(10.dp)
     val content = if (focused) colors.onPrimary else colors.onSurface
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(horizontal = 5.dp)
             .width(CHANNEL_WIDTH)
             .height(CHANNEL_HEIGHT)
             .clip(shape)
             .background(if (focused) colors.primary else colors.surface)
             .border(3.dp, if (focused) colors.primary else androidx.compose.ui.graphics.Color.Transparent, shape)
-            .onFocusChanged { focused = it.isFocused }
+            .onFocusChanged {
+                if (it.isFocused && !focused) onFocused()
+                focused = it.isFocused
+            }
             .combinedClickable(onClick = onClick),
     ) {
         Row(
@@ -315,4 +386,5 @@ private val POSTER_WIDTH = 132.dp
 private val CHANNEL_WIDTH = 240.dp
 private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L
+private const val RETURN_FOCUS_FRAMES = 30
 private const val LOADING_DELAY_MS = 300L

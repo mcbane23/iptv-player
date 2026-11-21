@@ -778,6 +778,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       „Čuvaj filmove i serije na uređaju”) i prikazuju odmah po pokretanju, a ceo spisak liste se čita u
       pozadini i redovi se tiho zamene. Sačuvan red se ne koristi ako su se promenile sakrivene ili zaključane
       kategorije. Pri prvom preuzimanju stoji poruka „Učitavam filmove…”, kao u Filmovima i Serijama
+- [x] TV „Početna”: Nazad vraća fokus na otvorenu stavku (Bane, 21. 11. 2026): posle povratka iz detalja
+      filma ili serije, ili iz plejera, fokus je opet na istom posteru ili kanalu, a ne u bočnom meniju.
 
 ## 7. Testiranje
 
