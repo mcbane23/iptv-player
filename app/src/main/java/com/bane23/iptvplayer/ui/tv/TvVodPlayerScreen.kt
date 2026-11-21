@@ -63,6 +63,7 @@ import com.bane23.iptvplayer.ui.common.player.subtitleStepChoices
 import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.quickSettingChoices
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.seekStepFor
@@ -389,6 +390,8 @@ fun TvVodPlayerScreen(
                             }
                         }
                         PlayerTransportBar(
+                            // Meniji se otvaraju iznad trake, pa se njeno mesto pamti.
+                            modifier = Modifier.playerMenuBar(anchors),
                             startLabel = formatDuration(scrub ?: ui.positionMs),
                             endLabel = formatDuration(ui.durationMs),
                             leading = {
