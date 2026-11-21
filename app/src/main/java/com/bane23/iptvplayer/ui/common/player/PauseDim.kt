@@ -29,11 +29,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.bane23.iptvplayer.player.PlaybackStatus
 import kotlinx.coroutines.delay
 
-/** Posle ovoliko pauze kontrole ustupe mesto ekranu pauze (naslov, opis, sat). */
+/**
+ * Posle ovoliko pauze kontrole ustupe mesto ekranu pauze (naslov, opis, sat). Kad je ekran pauze
+ * isključen u Podešavanjima, slika se posle istog vremena samo zatamni.
+ */
 const val PAUSE_INFO_AFTER_MS = 10_000L
-
-/** Kad je ekran pauze isključen u Podešavanjima: posle ovoliko pauze slika se samo zatamni. */
-const val PAUSE_PLAIN_AFTER_MS = 5_000L
 
 /** Posle ovoliko pauze plejer se zatvara. */
 const val PAUSE_EXIT_AFTER_MS = 30 * 60_000L
@@ -108,7 +108,7 @@ class PauseDimState {
  * Odbrojava dok je sadržaj pauziran: posle [PAUSE_EXIT_AFTER_MS] zove [onExit]. Dok je [enabled]
  * false (otvoren je izbor u zasebnom prozoru) ne radi ništa. Sa [info] se posle
  * [PAUSE_INFO_AFTER_MS] prikazuje ekran pauze i ostaje do tastera, dodira ili izlaza. Kad je
- * [describe] false (isključeno u Podešavanjima), slika se posle [PAUSE_PLAIN_AFTER_MS] samo zatamni.
+ * [describe] false (isključeno u Podešavanjima), slika se posle istog vremena samo zatamni.
  */
 @Composable
 fun rememberPauseDim(
@@ -127,10 +127,9 @@ fun rememberPauseDim(
             return@LaunchedEffect
         }
         if (info) {
-            val after = if (describe) PAUSE_INFO_AFTER_MS else PAUSE_PLAIN_AFTER_MS
-            delay(after)
+            delay(PAUSE_INFO_AFTER_MS)
             state.showInfo(plain = !describe)
-            delay(PAUSE_EXIT_AFTER_MS - after)
+            delay(PAUSE_EXIT_AFTER_MS - PAUSE_INFO_AFTER_MS)
         } else {
             state.clear()
             delay(PAUSE_EXIT_AFTER_MS)

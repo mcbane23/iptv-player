@@ -674,7 +674,7 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Pauza bez zatamnjenja (Bane, 21. 11. 2026): ekran pauze se pojavljuje posle 10 sekundi (bilo 5) i
       ostaje dok se nešto ne pritisne; zatamnjenje posle minut pauze je uklonjeno. Izlaz posle 30 minuta
       ostaje (Banetov izbor). Važi svuda: TV i telefon, filmovi, serije, kanali, arhiva i snimci.
-      Kad je „Ekran pauze” isključen u Podešavanjima, slika se posle 5 sekundi samo zatamni, bez teksta.
+      Kad je „Ekran pauze” isključen u Podešavanjima, slika se posle istih 10 sekundi samo zatamni, bez teksta.
 
 - [x] Brže kretanje na TV-u (Bane, 19. 11. 2026, pregled „Uskladi izgled cele aplikacije”, stavke P). Bez
       promene izgleda: u Uživo i u Filmovima/Serijama korak D-pada više ne crta iznova ceo ekran i sve redove
