@@ -102,6 +102,10 @@ import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 
+
+/** Dodir na dugme čiji je meni već otvoren zatvara taj meni, umesto da ga ostavi otvorenim. */
+private fun toggled(current: Panel, menu: Panel): Panel = if (current == menu) Panel.NONE else menu
+
 private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE, SOURCES }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
@@ -139,7 +143,7 @@ fun MobilePlayerScreen(
     }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
-        if (isRecording) viewModel.toggleRecording() else panel = Panel.RECORD
+        if (isRecording) viewModel.toggleRecording() else panel = toggled(panel, Panel.RECORD)
     }
     val recordChoices = recordingChoices(nowNext.now?.stopMs)
     val levels = rememberPlayerLevels()
@@ -293,9 +297,9 @@ fun MobilePlayerScreen(
                         onRetry = viewModel::retry,
                         onChannels = { panel = Panel.CHANNELS },
                         onSchedule = { panel = Panel.SCHEDULE },
-                        onSources = if (ui.sources.size > 1) ({ panel = Panel.SOURCES }) else null,
-                        onAudio = { panel = Panel.AUDIO },
-                        onSettings = { panel = Panel.SETTINGS },
+                        onSources = if (ui.sources.size > 1) ({ panel = toggled(panel, Panel.SOURCES) }) else null,
+                        onAudio = { panel = toggled(panel, Panel.AUDIO) },
+                        onSettings = { panel = toggled(panel, Panel.SETTINGS) },
                         infoVisible = infoVisible,
                         onInfo = { infoVisible = !infoVisible },
                         isFavorite = isFavorite,
