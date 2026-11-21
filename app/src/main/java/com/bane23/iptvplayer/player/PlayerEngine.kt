@@ -84,6 +84,8 @@ data class VideoInfo(
     val tunneled: Boolean = false,
     /** Broj sličica u sekundi koji strim javlja; 0 kad se ne zna. */
     val frameRate: Float = 0f,
+    /** Broj sličica u sekundi izmeren iz prikazanih slika, za strim koji ga ne javlja; 0 dok se ne izmeri. */
+    val measuredFrameRate: Float = 0f,
 )
 
 data class PlaybackState(
@@ -264,6 +266,7 @@ class PlayerEngine(
     /** Da li je sadržaj već jednom krenuo; posle toga se svako novo učitavanje broji kao zastoj. */
     private var wasReady = false
     private var statsJob: Job? = null
+    private val frameRateMeter = FrameRateMeter()
 
     /**
      * Brojači dekodera slike se čitaju jednom u sekundi; plejer ih sam javlja tek posle 50 ispuštenih slika.
@@ -286,6 +289,10 @@ class PlayerEngine(
     }
 
     private fun readVideoCounters() {
+        val measured = frameRateMeter.frameRate()
+        if (_state.value.video.measuredFrameRate != measured) {
+            _state.update { it.copy(video = it.video.copy(measuredFrameRate = measured)) }
+        }
         val counters = player.videoDecoderCounters ?: return
         counters.ensureUpdated()
         val dropped = counters.droppedBufferCount
@@ -307,6 +314,10 @@ class PlayerEngine(
         }
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
+        // U prikazu više kanala se broj sličica ne ispisuje, pa se tamo ni ne meri.
+        if (!shared) {
+            player.setVideoFrameMetadataListener { presentationTimeUs, _, _, _ -> frameRateMeter.onFrame(presentationTimeUs) }
+        }
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setPreferredAudioLanguages(*settings.audioLanguages.toTypedArray())
             .setPreferredTextLanguages(*settings.subtitleLanguages.toTypedArray())
@@ -341,6 +352,7 @@ class PlayerEngine(
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
                 .build()
         }
+        if (source != this.source) frameRateMeter.reset()
         this.source = source
         urlIndex = 0
         attempts = 0
