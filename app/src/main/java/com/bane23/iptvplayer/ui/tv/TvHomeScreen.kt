@@ -119,13 +119,20 @@ fun TvHomeScreen(
         }
     }
     // Nazad iz druge sekcije prvo vraća na početnu sekciju, tek odatle izlazi iz aplikacije.
-    BackHandler(enabled = tab != startTab) { tab = startTab }
+    // Pri pokretanju i posle povratka dugmetom Nazad fokus ide pravo na prvu stavku „Početne”, da
+    // prvi pritisak ne troši vreme na bočni meni. Izbor „Početne” iz menija ostavlja fokus u meniju.
+    var focusHomeContent by rememberSaveable { mutableStateOf(true) }
+    BackHandler(enabled = tab != startTab) {
+        focusHomeContent = true
+        tab = startTab
+    }
     ExitOnDoubleBack(enabled = tab == startTab)
     val holder = rememberSaveableStateHolder()
     // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
     // Filmovi i serije pamte svoju kategoriju.
     LaunchedEffect(tab) {
         if (tab != TvTab.SETTINGS) holder.removeState(TvTab.SETTINGS.name)
+        if (tab != TvTab.HOME) focusHomeContent = false
         if (tab != TvTab.LIVE) {
             holder.removeState(TvTab.LIVE.name)
             liveTvViewModel.startFresh()
@@ -178,6 +185,8 @@ fun TvHomeScreen(
                         TvStartScreen(
                             onPlay = onPlay,
                             onOpenVod = onOpenVod,
+                            autoFocus = focusHomeContent,
+                            onAutoFocused = { focusHomeContent = false },
                             viewModel = hiltViewModel<TvStartViewModel>(key = "start-$playlistId"),
                         )
                     }
