@@ -1,5 +1,9 @@
 package com.bane23.iptvplayer
 
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.request.crossfade
 import android.app.Application
 import android.content.Context
 import com.bane23.iptvplayer.data.crash.CrashLog
@@ -19,7 +23,12 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class IptvApplication : Application() {
+class IptvApplication : Application(), SingletonImageLoader.Factory {
+
+    /** Logoi i posteri se meko pojave kad stignu, umesto da iskoče u punoj jačini. */
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context).crossfade(IMAGE_FADE_MS).build()
+
 
     @Inject
     lateinit var epgScheduler: EpgScheduler
@@ -62,5 +71,9 @@ class IptvApplication : Application() {
         if (traktTokens.isAvailable) traktScheduler.syncSoon()
         // Red „Nastavite sa gledanjem” na početnom ekranu postoji samo na TV uređajima.
         if (DeviceType.isTv(this)) watchNext.start()
+    }
+
+    private companion object {
+        const val IMAGE_FADE_MS = 200
     }
 }

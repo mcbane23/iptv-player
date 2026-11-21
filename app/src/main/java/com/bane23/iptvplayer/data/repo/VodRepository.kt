@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.DecodeSequenceMode
@@ -906,20 +908,28 @@ class VodRepository @Inject constructor(
         fetch: suspend () -> V,
     ): V {
         memory[key]?.let { return it }
-        val local = settings.vodLocalCache.first()
-        if (local) {
-            val stored = readDisk()
-            if (stored != null) {
-                memory[key] = stored.value
-                if (stored.stamp != stamp) refreshInBackground(memory, key, kind, writeDisk, fetch)
-                return stored.value
+        // Isti spisak često zatraži više ekrana odjednom (Početna, pretraga, Trakt): preuzima ga prvi,
+        // a ostali sačekaju njegov ishod, umesto da svako preuzima ceo spisak za sebe.
+        return loading.getOrPut(key) { Mutex() }.withLock {
+            memory[key]?.let { return@withLock it }
+            val local = settings.vodLocalCache.first()
+            if (local) {
+                val stored = readDisk()
+                if (stored != null) {
+                    memory[key] = stored.value
+                    if (stored.stamp != stamp) refreshInBackground(memory, key, kind, writeDisk, fetch)
+                    return@withLock stored.value
+                }
             }
+            val value = fetch()
+            memory[key] = value
+            if (local) writeDisk(value)
+            value
         }
-        val value = fetch()
-        memory[key] = value
-        if (local) writeDisk(value)
-        return value
     }
+
+    /** Po jedna brava za svaki spisak koji se upravo učitava, vidi [cached]. */
+    private val loading = ConcurrentHashMap<String, Mutex>()
 
     private fun <V : Any> refreshInBackground(
         memory: ConcurrentHashMap<String, V>,

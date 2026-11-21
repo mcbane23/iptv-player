@@ -29,14 +29,17 @@ import com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors
  */
 @Composable
 fun ChannelLogo(url: String?, name: String?, modifier: Modifier = Modifier, size: Dp = 40.dp) {
-    var failed by remember(url) { mutableStateOf(false) }
+    var failed by remember(url) { mutableStateOf(FailedImages.contains(url)) }
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         if (!url.isNullOrBlank() && !failed) {
             AsyncImage(
                 model = url,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                onError = { failed = true },
+                onError = {
+                    FailedImages.add(url, it)
+                    failed = true
+                },
                 modifier = Modifier.size(size),
             )
         } else if (!name.isNullOrBlank()) {

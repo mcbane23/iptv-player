@@ -123,6 +123,12 @@ class VodBrowseViewModel @Inject constructor(
         }
     }
 
+    /** Lista je upravo ručno osvežena: kategorije i otvorena kategorija se učitavaju iznova. */
+    fun reload() {
+        if (!opened) return
+        viewModelScope.launch { refreshQuietly() }
+    }
+
     /**
      * U pozadini je stigao noviji spisak od onog sačuvanog na uređaju: kategorije i izabrana
      * kategorija se zamene bez obrisa učitavanja.

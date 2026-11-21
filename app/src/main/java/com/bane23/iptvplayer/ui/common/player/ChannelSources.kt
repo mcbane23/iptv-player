@@ -1,9 +1,8 @@
 package com.bane23.iptvplayer.ui.common.player
 
-import android.widget.Toast
 import androidx.compose.runtime.Composable
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
@@ -13,11 +12,10 @@ import kotlinx.coroutines.flow.Flow
 /** Kratka poruka kad plejer sam pređe na izvor kanala iz druge liste, jer se prethodni nije javio. */
 @Composable
 fun SourceNotices(notices: Flow<String>) {
-    val context = LocalContext.current
     val resources = LocalResources.current
     LaunchedEffect(notices, resources) {
         notices.collect { playlist ->
-            Toast.makeText(context, resources.getString(R.string.player_source_switched, playlist), Toast.LENGTH_LONG).show()
+            AppMessages.show(resources.getString(R.string.player_source_switched, playlist), long = true)
         }
     }
 }

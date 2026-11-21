@@ -27,11 +27,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.material3.TextButton
@@ -62,7 +64,11 @@ import com.bane23.iptvplayer.data.subtitles.isOpenSubtitlesConfigured
 import com.bane23.iptvplayer.data.trakt.isTraktConfigured
 import com.bane23.iptvplayer.ui.common.ExitOnDoubleBack
 import com.bane23.iptvplayer.ui.common.CategorySection
+import com.bane23.iptvplayer.ui.common.AppMessages
+import com.bane23.iptvplayer.domain.PlaylistError
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
+import com.bane23.iptvplayer.ui.common.PlaylistRefreshViewModel
+import com.bane23.iptvplayer.ui.common.message
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.SearchAllViewModel
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
@@ -130,53 +136,68 @@ fun MobileHomeScreen(
     ExitOnDoubleBack(enabled = tab == MobileTab.LIVE)
 
     val openLiveCategories: () -> Unit = { onCategories(CategorySection.LIVE) }
+    val refreshViewModel: PlaylistRefreshViewModel = hiltViewModel()
+    val refreshing by refreshViewModel.refreshing.collectAsStateWithLifecycle()
+    RefreshFailedMessage(refreshViewModel)
     val tabContent: @Composable () -> Unit = {
         // Spisak filmova i serija pripada aktivnoj listi, pa se posle promene liste učitava iznova.
         holder.SaveableStateProvider(tab.name) {
-            when (tab) {
-                MobileTab.LIVE -> MobileLiveTvScreen(
-                    onPlay = onPlay,
-                    onManagePlaylists = onPlaylists,
-                    onSearch = onSearch,
-                    onGuide = onGuide,
-                    onMultiView = onMultiView,
-                    onUnlock = onUnlock,
-                    onCategories = { onCategories(CategorySection.LIVE) },
-                    viewModel = liveTvViewModel,
-                )
+            // Povlačenje nadole u Uživo, Filmovima i Serijama osvežava celu aktivnu listu.
+            val playlistId = liveState.playlistId.takeIf { tab in PULL_REFRESH_TABS }
+            PullRefresh(refreshing = refreshing, onRefresh = playlistId?.let { id -> { refreshViewModel.refresh(id) } }) {
+                when (tab) {
+                    MobileTab.LIVE -> MobileLiveTvScreen(
+                        onPlay = onPlay,
+                        onManagePlaylists = onPlaylists,
+                        onSearch = onSearch,
+                        onGuide = onGuide,
+                        onMultiView = onMultiView,
+                        onUnlock = onUnlock,
+                        onCategories = { onCategories(CategorySection.LIVE) },
+                        viewModel = liveTvViewModel,
+                    )
 
-                MobileTab.MOVIES -> MobileVodScreen(
-                    series = false,
-                    onOpen = { onOpenVod(it, false) },
-                    onSearch = { onSearchVod(false) },
-                    onCategories = { onCategories(CategorySection.MOVIES) },
-                    viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}"),
-                )
+                    MobileTab.MOVIES -> {
+                        val viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-${liveState.playlistId}")
+                        LaunchedEffect(viewModel) { refreshViewModel.finished.collect { viewModel.reload() } }
+                        MobileVodScreen(
+                            series = false,
+                            onOpen = { onOpenVod(it, false) },
+                            onSearch = { onSearchVod(false) },
+                            onCategories = { onCategories(CategorySection.MOVIES) },
+                            viewModel = viewModel,
+                        )
+                    }
 
-                MobileTab.SERIES -> MobileVodScreen(
-                    series = true,
-                    onOpen = { onOpenVod(it, true) },
-                    onSearch = { onSearchVod(true) },
-                    onCategories = { onCategories(CategorySection.SERIES) },
-                    viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}"),
-                )
+                    MobileTab.SERIES -> {
+                        val viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-${liveState.playlistId}")
+                        LaunchedEffect(viewModel) { refreshViewModel.finished.collect { viewModel.reload() } }
+                        MobileVodScreen(
+                            series = true,
+                            onOpen = { onOpenVod(it, true) },
+                            onSearch = { onSearchVod(true) },
+                            onCategories = { onCategories(CategorySection.SERIES) },
+                            viewModel = viewModel,
+                        )
+                    }
 
-                MobileTab.SEARCH -> MobileSearchAllScreen(
-                    onPlay = { onPlay(it, null) },
-                    onOpenVod = onOpenVod,
-                    viewModel = hiltViewModel<SearchAllViewModel>(key = "search-all-${liveState.playlistId}"),
-                )
+                    MobileTab.SEARCH -> MobileSearchAllScreen(
+                        onPlay = { onPlay(it, null) },
+                        onOpenVod = onOpenVod,
+                        viewModel = hiltViewModel<SearchAllViewModel>(key = "search-all-${liveState.playlistId}"),
+                    )
 
-                MobileTab.SETTINGS -> MobileSettingsScreen(
-                    onPlaylists = onPlaylists,
-                    onCategories = openLiveCategories.takeIf { liveState.playlistId != null },
-                    onParental = onParental.takeIf { liveState.playlistId != null },
-                    onTrakt = onTrakt.takeIf { isTraktConfigured },
-                    onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
-                    onRecordings = onRecordings,
-                    onDownloads = onDownloads,
-                    onTransfer = onTransfer,
-                )
+                    MobileTab.SETTINGS -> MobileSettingsScreen(
+                        onPlaylists = onPlaylists,
+                        onCategories = openLiveCategories.takeIf { liveState.playlistId != null },
+                        onParental = onParental.takeIf { liveState.playlistId != null },
+                        onTrakt = onTrakt.takeIf { isTraktConfigured },
+                        onOpenSubtitles = onOpenSubtitles.takeIf { isOpenSubtitlesConfigured },
+                        onRecordings = onRecordings,
+                        onDownloads = onDownloads,
+                        onTransfer = onTransfer,
+                    )
+                }
             }
         }
     }
@@ -240,6 +261,33 @@ fun MobileHomeScreen(
  * Traka iznad donje trake dok se nešto snima, vidljiva u svim karticama. Dodir otvara „Snimci”;
  * kad se snima jedan kanal, snimanje može da se zaustavi odmah, bez odlaska na drugi ekran.
  */
+private val PULL_REFRESH_TABS = setOf(MobileTab.LIVE, MobileTab.MOVIES, MobileTab.SERIES)
+
+/** Sadržaj kartice koji se povlačenjem nadole osvežava; bez [onRefresh] je običan okvir. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullRefresh(refreshing: Boolean, onRefresh: (() -> Unit)?, content: @Composable () -> Unit) {
+    if (onRefresh == null) {
+        Box(modifier = Modifier.fillMaxSize()) { content() }
+    } else {
+        PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) { content() }
+    }
+}
+
+/** Kratka poruka kad osvežavanje povlačenjem ne uspe. Na ekranu ostaje dosadašnji sadržaj. */
+@Composable
+private fun RefreshFailedMessage(viewModel: PlaylistRefreshViewModel) {
+    var failed by remember { mutableStateOf<PlaylistError?>(null) }
+    LaunchedEffect(viewModel) { viewModel.errors.collect { failed = it } }
+    failed?.let { error ->
+        val text = error.copy(detail = null).message()
+        LaunchedEffect(error) {
+            AppMessages.show(text, long = true)
+            failed = null
+        }
+    }
+}
+
 @Composable
 private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onStop: (Long) -> Unit) {
     val single = active.singleOrNull()

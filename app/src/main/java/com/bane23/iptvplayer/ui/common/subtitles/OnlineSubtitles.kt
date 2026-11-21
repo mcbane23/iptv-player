@@ -1,7 +1,7 @@
 package com.bane23.iptvplayer.ui.common.subtitles
 
 import android.content.Context
-import android.widget.Toast
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -57,7 +57,7 @@ fun appliedSubtitleToast(context: Context, remaining: Int?) {
     } else {
         context.getString(R.string.subtitles_applied)
     }
-    Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+    AppMessages.show(text, long = true)
 }
 
 data class OpenSubtitlesUiState(

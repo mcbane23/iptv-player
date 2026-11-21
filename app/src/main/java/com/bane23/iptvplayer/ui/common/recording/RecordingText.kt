@@ -1,10 +1,10 @@
 package com.bane23.iptvplayer.ui.common.recording
 
 import android.Manifest
+import com.bane23.iptvplayer.ui.common.AppMessages
 import android.content.pm.PackageManager
 import android.os.Build
 import android.text.format.Formatter
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -84,8 +84,7 @@ fun RecordingNotices(notices: Flow<Int>) {
     LaunchedEffect(notices) {
         notices.collect {
             // Upozorenje je duže od obične poruke, pa ostaje duže na ekranu.
-            val length = if (it == R.string.recording_started_single_stream) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
-            Toast.makeText(context, it, length).show()
+            AppMessages.show(context, it, long = it == R.string.recording_started_single_stream)
         }
     }
 }

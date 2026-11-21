@@ -1,9 +1,10 @@
 package com.bane23.iptvplayer.ui.common.vod
 
+import com.bane23.iptvplayer.ui.common.FailedImages
+import com.bane23.iptvplayer.ui.common.AppMessages
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -67,7 +68,7 @@ fun Poster(
     progress: Float? = null,
     watched: Boolean = false,
 ) {
-    var failed by remember(url) { mutableStateOf(false) }
+    var failed by remember(url) { mutableStateOf(FailedImages.contains(url)) }
     Box(
         modifier = modifier
             .aspectRatio(POSTER_RATIO)
@@ -79,7 +80,10 @@ fun Poster(
                 model = url,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                onError = { failed = true },
+                onError = {
+                    FailedImages.add(url, it)
+                    failed = true
+                },
                 modifier = Modifier.fillMaxSize(),
             )
         } else if (!name.isNullOrBlank()) {
@@ -192,7 +196,7 @@ fun rememberOpenTrailer(): (String) -> Unit {
             try {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (_: ActivityNotFoundException) {
-                Toast.makeText(context, R.string.vod_trailer_no_app, Toast.LENGTH_SHORT).show()
+                AppMessages.show(context, R.string.vod_trailer_no_app)
             }
         }
     }

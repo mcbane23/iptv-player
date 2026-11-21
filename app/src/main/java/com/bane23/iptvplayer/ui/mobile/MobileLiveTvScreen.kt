@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
 import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -71,7 +72,6 @@ import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -329,7 +329,7 @@ fun MobileLiveTvScreen(
                                         onHide = { picked ->
                                             if (picked.id == previewId) previewId = null
                                             hiddenChannels.hide(picked.id)
-                                            Toast.makeText(context, R.string.channel_hidden, Toast.LENGTH_LONG).show()
+                                            AppMessages.show(context, R.string.channel_hidden, long = true)
                                         },
                                     )
                                 }

@@ -1,7 +1,7 @@
 package com.bane23.iptvplayer.ui.common.download
 
 import android.text.format.Formatter
-import android.widget.Toast
+import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -64,7 +64,7 @@ fun DownloadStorage.label(): String {
 fun DownloadNotices(notices: Flow<Int>) {
     val context = LocalContext.current
     LaunchedEffect(notices) {
-        notices.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        notices.collect { AppMessages.show(context, it) }
     }
 }
 
