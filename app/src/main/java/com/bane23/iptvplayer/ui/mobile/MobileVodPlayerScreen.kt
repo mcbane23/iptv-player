@@ -38,6 +38,10 @@ import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
+import com.bane23.iptvplayer.ui.common.player.PlayerMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
+import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
 import com.bane23.iptvplayer.ui.common.player.PlayerStreamInfo
 import com.bane23.iptvplayer.ui.common.player.PlayerTransportBar
@@ -81,9 +85,10 @@ fun MobileVodPlayerScreen(
     LaunchedEffect(Unit) { start(viewModel) }
     KeepScreenOn(playback.status)
     // Zaboravljena pauza: slika se zatamni, a posle dužeg vremena plejer se zatvara.
-    // Izbor zvuka je zaseban prozor, pa se dodiri u njemu ovde ne vide.
-    // Podešavanja i titlovi su paneli preko slike: dodir pored njih ili Nazad ih zatvara.
-    val sidePanel = panel == VodPanel.SETTINGS || panel == VodPanel.SUBTITLES
+    // Titlovi, zvuk i podešavanja su oblačići iznad svojih dugmića: dodir pored njih ili Nazad ih
+    // zatvara, a kontrole ostaju na ekranu. Titlovi sa interneta su zaseban prozor.
+    val sidePanel = panel == VodPanel.SETTINGS || panel == VodPanel.SUBTITLES || panel == VodPanel.AUDIO
+    val anchors = rememberPlayerMenuAnchors()
     val pauseInfoOn = rememberPauseInfoEnabled()
     val pauseDim = rememberPauseDim(
         status = playback.status,
@@ -213,40 +218,8 @@ fun MobileVodPlayerScreen(
                 )
             }
 
-            if (panel == VodPanel.SETTINGS) {
-                // Trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
-                PlayerSideSliders(levels) { }
-                MobileQuickSettingsPanel(
-                    quickSettingChoices(
-                        tv = false,
-                        aspectMode = ui.aspectMode,
-                        onAspectMode = viewModel::setAspectMode,
-                        decoder = ui.decoder,
-                        onDecoder = viewModel::setDecoder,
-                        speed = ui.speed,
-                        onSpeed = viewModel::setSpeed,
-                    ),
-                )
-            } else if (panel == VodPanel.SUBTITLES) {
-                // Kontrole su sklonjene, da se titl vidi dok se podešava.
-                MobileSubtitlesPanel(
-                    options = listOf(stringResource(R.string.player_subtitles_off) to !playback.textEnabled) +
-                        playback.textTracks.map { it.label to it.selected },
-                    onSelect = { index ->
-                        viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
-                        panel = VodPanel.NONE
-                    },
-                    extra = if (ui.onlineSubtitles) {
-                        stringResource(R.string.subtitles_search_online) to {
-                            viewModel.searchOnlineSubtitles()
-                            panel = VodPanel.ONLINE_SUBTITLES
-                        }
-                    } else {
-                        null
-                    },
-                    steps = subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle),
-                )
-            } else if (controlsVisible) {
+            if (controlsVisible || sidePanel) {
+                // Dok je meni otvoren trake ostaju na ekranu, da se odmah vidi šta prekidač radi.
                 PlayerSideSliders(levels) { activity++ }
                 val season = ui.season
                 val episode = ui.episode
@@ -314,19 +287,25 @@ fun MobileVodPlayerScreen(
                             icon = AppIcons.Subtitles,
                             label = stringResource(R.string.player_subtitles),
                             active = playback.textEnabled,
+                            open = panel == VodPanel.SUBTITLES,
                             onClick = { panel = VodPanel.SUBTITLES },
+                            modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SUBTITLES),
                         )
                         PlayerChip(
                             icon = AppIcons.Audio,
                             label = stringResource(R.string.player_audio),
+                            open = panel == VodPanel.AUDIO,
                             onClick = { panel = VodPanel.AUDIO },
+                            modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.AUDIO),
                         )
                         PlayerChip(
                             icon = AppIcons.Settings,
                             label = stringResource(R.string.settings_title),
                             // Brzina koja nije obična se vidi i na samom dugmetu.
                             active = ui.speed != 1f,
+                            open = panel == VodPanel.SETTINGS,
                             onClick = { panel = VodPanel.SETTINGS },
+                            modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.SETTINGS),
                         )
                         PlayerChip(
                             icon = AppIcons.Info,
@@ -348,18 +327,59 @@ fun MobileVodPlayerScreen(
                     },
                 )
             }
+
+            when (panel) {
+                VodPanel.SUBTITLES -> PlayerMenuBubble(anchors[PlayerMenu.SUBTITLES], MobileTrackMenuWidth) {
+                    MobileChoiceMenu(
+                        options = listOf(stringResource(R.string.player_subtitles_off) to !playback.textEnabled) +
+                            playback.textTracks.map { it.label to it.selected },
+                        onSelect = { index ->
+                            viewModel.selectText(if (index == 0) null else playback.textTracks[index - 1])
+                            panel = VodPanel.NONE
+                        },
+                        extra = if (ui.onlineSubtitles) {
+                            stringResource(R.string.subtitles_search_online) to {
+                                viewModel.searchOnlineSubtitles()
+                                panel = VodPanel.ONLINE_SUBTITLES
+                            }
+                        } else {
+                            null
+                        },
+                        steps = subtitleStepChoices(ui.subtitleOffsetMs, viewModel::shiftSubtitle),
+                    )
+                }
+
+                VodPanel.AUDIO -> PlayerMenuBubble(anchors[PlayerMenu.AUDIO], MobileTrackMenuWidth) {
+                    MobileChoiceMenu(
+                        options = playback.audioTracks.map { it.label to it.selected },
+                        onSelect = { index ->
+                            viewModel.selectAudio(playback.audioTracks[index])
+                            panel = VodPanel.NONE
+                        },
+                        emptyText = stringResource(R.string.player_no_tracks),
+                    )
+                }
+
+                VodPanel.SETTINGS -> PlayerMenuBubble(anchors[PlayerMenu.SETTINGS], MobileSettingsMenuWidth) {
+                    MobileQuickSettingsMenu(
+                        quickSettingChoices(
+                            tv = false,
+                            aspectMode = ui.aspectMode,
+                            onAspectMode = viewModel::setAspectMode,
+                            decoder = ui.decoder,
+                            onDecoder = viewModel::setDecoder,
+                            speed = ui.speed,
+                            onSpeed = viewModel::setSpeed,
+                        ),
+                    )
+                }
+
+                else -> Unit
+            }
         }
     }
 
     when (panel) {
-        VodPanel.AUDIO -> TrackDialog(
-            title = stringResource(R.string.player_audio),
-            options = playback.audioTracks.map { it.label to it.selected },
-            emptyText = stringResource(R.string.player_no_tracks),
-            onSelect = { index -> viewModel.selectAudio(playback.audioTracks[index]) },
-            onDismiss = { panel = VodPanel.NONE },
-        )
-
         VodPanel.ONLINE_SUBTITLES -> {
             val online by viewModel.online.collectAsStateWithLifecycle()
             OnlineSubtitlesDialog(
@@ -372,7 +392,7 @@ fun MobileVodPlayerScreen(
             )
         }
 
-        VodPanel.NONE, VodPanel.SETTINGS, VodPanel.SUBTITLES -> Unit
+        else -> Unit
     }
 }
 

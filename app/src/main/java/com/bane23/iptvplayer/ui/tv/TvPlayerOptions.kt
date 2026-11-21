@@ -39,12 +39,16 @@ import com.bane23.iptvplayer.ui.common.vod.OnlineSubtitlesState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 
+/** Širina oblačića sa spiskom zapisa i sa podešavanjima (vrednosti su duže, pa je širi). */
+internal val TvTrackMenuWidth = 290.dp
+internal val TvSettingsMenuWidth = 340.dp
+
 /** Koji spisak zapisa je otvoren preko slike. */
 enum class TvTrackKind { AUDIO, SUBTITLES }
 
 /**
- * Spisak zvučnih zapisa ili titlova uz desnu ivicu ekrana. Fokus kreće od izabranog zapisa,
- * a izbor zatvara spisak.
+ * Spisak zvučnih zapisa ili titlova; sadržaj oblačića iznad dugmeta (PlayerMenuBubble). Fokus kreće
+ * od izabranog zapisa, a izbor zatvara spisak.
  */
 @Composable
 fun TvTrackPanel(
@@ -72,26 +76,18 @@ fun TvTrackPanel(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .tvKeepFocus()
-            .fillMaxHeight()
-            .fillMaxWidth(0.32f)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
-        item {
-            Text(
-                text = stringResource(if (kind == TvTrackKind.AUDIO) R.string.player_audio else R.string.player_subtitles),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
-            )
-        }
         if (rows.isEmpty()) {
             item {
                 Text(
                     text = stringResource(R.string.player_no_tracks),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = 16.dp),
+                    modifier = Modifier
+                        .focusRequester(selectedFocus)
+                        .focusable()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
         }
@@ -126,7 +122,7 @@ fun TvTrackPanel(
             }
         }
     }
-    // Prazan spisak nema šta da primi fokus; zatvara se tasterom Nazad.
+    // U praznom spisku fokus drži sama poruka; zatvara se tasterom Nazad.
     LaunchedEffect(kind) { selectedFocus.tryRequestFocus() }
 }
 
@@ -188,6 +184,8 @@ fun TvChoicePanel(
     onSelect: (Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Spisak je sadržaj oblačića iznad dugmeta (PlayerMenuBubble), a ne panel uz ivicu ekrana. */
+    bubble: Boolean = false,
 ) {
     val firstFocus = remember { FocusRequester() }
     // Meni se često otvara dugim pritiskom na OK. Dok se taster još drži, ponovljeni pritisci stižu
@@ -210,17 +208,24 @@ fun TvChoicePanel(
                 }
             }
             .tvKeepFocus()
-            .fillMaxHeight()
-            .fillMaxWidth(0.32f)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            .then(
+                if (bubble) {
+                    Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                } else {
+                    Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(0.32f)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+                        .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp)
+                },
+            ),
     ) {
         item {
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+                style = if (bubble) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 16.dp, top = if (bubble) 6.dp else 0.dp, bottom = if (bubble) 4.dp else 12.dp),
             )
         }
         items(options.size) { index ->
@@ -238,8 +243,8 @@ fun TvChoicePanel(
 }
 
 /**
- * Panel „Brza podešavanja” uz desnu ivicu ekrana. OK na stavci prelazi na sledeću vrednost, a panel
- * ostaje otvoren; Nazad ga zatvara (to rešava ekran plejera).
+ * Stavke menija „Podešavanja”; sadržaj oblačića iznad dugmeta (PlayerMenuBubble). OK na stavci
+ * prelazi na sledeću vrednost, a meni ostaje otvoren; Nazad ga zatvara (to rešava ekran plejera).
  */
 @Composable
 fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
@@ -248,19 +253,8 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .tvKeepFocus()
-            .fillMaxHeight()
-            .fillMaxWidth(0.4f)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-            .padding(start = 16.dp, end = 48.dp, top = 27.dp, bottom = 27.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.player_quick_settings),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
-            )
-        }
         items(choices.size) { index ->
             val choice = choices[index]
             TvTextRow(
@@ -278,7 +272,7 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
                 text = notes[index],
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(start = 16.dp, top = 10.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             )
         }
     }

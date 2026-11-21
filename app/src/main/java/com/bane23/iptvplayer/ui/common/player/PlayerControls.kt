@@ -179,21 +179,28 @@ fun PlayerChip(
     modifier: Modifier = Modifier,
     active: Boolean = false,
     icon: ImageVector? = null,
+    /** Meni ovog dugmeta je otvoren: dugme je puno, u boji teme, da se vidi čiji je meni. */
+    open: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val content = if (active) MaterialTheme.colorScheme.primary else Color.White
+    val content = when {
+        open -> MaterialTheme.colorScheme.onPrimary
+        active -> MaterialTheme.colorScheme.primary
+        else -> Color.White
+    }
     val iconOnly = icon != null && LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
     Row(
         modifier = modifier
             .height(if (iconOnly) 36.dp else ChipHeight)
             // U fokusu (TV): isti okvir u boji teme kao kod okruglih dugmadi.
             .then(
-                if (focused) {
-                    Modifier
-                        .background(Color.Black.copy(alpha = 0.85f), ChipShape)
-                        .border(3.dp, MaterialTheme.colorScheme.primary, ChipShape)
-                } else {
-                    Modifier.playerPanel(ChipShape)
+                when {
+                    open -> Modifier.background(MaterialTheme.colorScheme.primary, ChipShape)
+                    focused ->
+                        Modifier
+                            .background(Color.Black.copy(alpha = 0.85f), ChipShape)
+                            .border(3.dp, MaterialTheme.colorScheme.primary, ChipShape)
+                    else -> Modifier.playerPanel(ChipShape)
                 },
             )
             .clip(ChipShape)
