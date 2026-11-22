@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.userActivity
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.focusProperties
@@ -288,7 +289,7 @@ fun TvActionDialog(title: String, options: List<String>, onSelect: (Int) -> Unit
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+        Box(modifier = Modifier.fillMaxSize().userActivity(), contentAlignment = Alignment.CenterEnd) {
             TvChoicePanel(title = title, options = options, onSelect = onSelect, onClose = onClose)
         }
     }

@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.userActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -181,7 +182,7 @@ private fun TvSideDialog(onClose: () -> Unit, content: LazyListScope.() -> Unit)
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+        Box(modifier = Modifier.fillMaxSize().userActivity(), contentAlignment = Alignment.CenterEnd) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier

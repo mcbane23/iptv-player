@@ -810,6 +810,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       jezik, boja i veličina prikaza biraju sa spiska vrednosti umesto kruženjem na svaki OK
 - [x] TV: bočni meni ne treperi pri povratku (Bane, 21. 11. 2026): dok fokus putuje u sadržaj (Nazad iz druge
       sekcije na „Početnu”, povratak iz detalja ili plejera, pokretanje) meni se ne širi i ne boji stavku
+- [x] TV: čuvar ekrana (Bane, 22. 11. 2026): kad se izabrano vreme ne pritisne nijedan taster, preko svega
+      se vidi crn ekran sa satom i datumom koji se polako sele; bilo koji taster ga gasi i fokus ostaje gde je
+      bio. Podešavanja > Izgled „Čuvar ekrana”: Isključeno, 2, 5 (podrazumevano), 10 ili 15 minuta. Ne pali
+      se preko plejera (pauza ima svoj ekran) ni dok se čeka telefon. Samo TV; ekran se ne drži upaljenim.
 
 ## 7. Testiranje
 

@@ -409,6 +409,15 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     /** Ime veličine prikaza koju je korisnik izabrao (vidi `UiScale`), ili null za podrazumevanu. */
     val uiScale: Flow<String?> = dataStore.data.map { it[UI_SCALE] }.distinctUntilChanged()
 
+    /** Posle koliko minuta bez tastera se na TV-u pali čuvar ekrana; 0 znači isključeno. */
+    val screensaverMinutes: Flow<Int> = dataStore.data
+        .map { ScreensaverTimeout.fromStored(it[SCREENSAVER_MINUTES]) }
+        .distinctUntilChanged()
+
+    suspend fun setScreensaverMinutes(minutes: Int) {
+        dataStore.edit { it[SCREENSAVER_MINUTES] = minutes }
+    }
+
     suspend fun setUiScale(name: String) {
         dataStore.edit { it[UI_SCALE] = name }
     }
@@ -534,6 +543,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_FAVORITE_HINT_SHOWN = booleanPreferencesKey("tv_favorite_hint_shown")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val UI_SCALE = stringPreferencesKey("ui_scale")
+        val SCREENSAVER_MINUTES = intPreferencesKey("screensaver_minutes")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
     }

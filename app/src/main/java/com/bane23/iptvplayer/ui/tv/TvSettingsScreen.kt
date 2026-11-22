@@ -11,6 +11,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import com.bane23.iptvplayer.ui.common.SettingsGroup
+import com.bane23.iptvplayer.data.prefs.ScreensaverTimeout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -124,8 +125,24 @@ fun TvSettingsScreen(
         group = SettingsGroup.LOOK,
         onSelect = { index -> scales.getOrNull(index)?.let(viewModel::setUiScale) },
     )
+    val screensaverMinutes by viewModel.screensaverMinutes.collectAsStateWithLifecycle()
+    val screensaverOff = stringResource(R.string.settings_screensaver_off)
+    val screensaverChoice = SettingChoice(
+        title = stringResource(R.string.settings_screensaver),
+        summary = stringResource(R.string.settings_screensaver_summary),
+        options = ScreensaverTimeout.choices.map { minutes ->
+            if (minutes == ScreensaverTimeout.OFF) {
+                screensaverOff
+            } else {
+                stringResource(R.string.settings_screensaver_minutes, minutes)
+            }
+        },
+        selected = ScreensaverTimeout.choices.indexOf(screensaverMinutes).coerceAtLeast(0),
+        group = SettingsGroup.LOOK,
+        onSelect = { index -> ScreensaverTimeout.choices.getOrNull(index)?.let(viewModel::setScreensaverMinutes) },
+    )
     val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
-        accentChoice + scaleChoice
+        accentChoice + scaleChoice + screensaverChoice
     // Jezik se bira sa spiska u bočnom prozoru; red jezika je u levoj koloni, van stavki grupa.
     var languageOpen by remember { mutableStateOf(false) }
     if (languageOpen) {

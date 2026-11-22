@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import com.bane23.iptvplayer.ui.common.ReminderViewModel
+import com.bane23.iptvplayer.ui.common.UserActivity
 import com.bane23.iptvplayer.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.LaunchedEffect
@@ -312,6 +313,14 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
             onClose = { reminderViewModel.dismiss(reminder) },
         )
     }
+    // Čuvar ekrana se ne pali preko plejera (pauza ima svoj ekran) ni dok se čeka telefon ili unos.
+    val top = backStack.lastOrNull()
+    val screensaverBlocked = top is Player || top is PlayMovie || top is PlayEpisode || top is PlayArchive ||
+        top is PlayRecording || top is MultiView || top is CastPlayback || top is PairPlaylist ||
+        top is EditPlaylist || top is TraktAccount || top is OpenSubtitlesAccount
+    // Podsetnik, kod za uparivanje i prenos sa telefona ga gase, da se vide.
+    LaunchedEffect(dueReminder, pairingCode, incomingTransfer) { UserActivity.touch() }
+    TvScreensaver(blocked = screensaverBlocked)
     TvCastPairingCode(
         code = pairingCode,
         onExpired = castHost::dismissPairing,
