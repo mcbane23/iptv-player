@@ -132,4 +132,16 @@ class ChannelRulesTest {
         assertEquals(setOf(3L), ChannelRules.hidden(rows, none, ChannelFilter(country = "RS")))
         assertEquals(setOf(1L, 2L, 3L), ChannelRules.hidden(rows, none, ChannelFilter(minQuality = 3, country = "RS")))
     }
+
+    @Test
+    fun `filter decides from stored quality and country`() {
+        assertEquals(false, ChannelFilter().hides(0, null))
+        assertEquals(true, ChannelFilter(minQuality = 2).hides(1, "RS"))
+        assertEquals(false, ChannelFilter(minQuality = 2).hides(3, null))
+        assertEquals(true, ChannelFilter(country = "RS").hides(3, null))
+        assertEquals(true, ChannelFilter(country = "RS").hides(3, "DE"))
+        assertEquals(false, ChannelFilter(country = "SR").hides(0, "RS"))
+        // Sačuvana oznaka koja nije zemlja ne filtrira.
+        assertEquals(false, ChannelFilter(country = "SKY").hides(0, null))
+    }
 }

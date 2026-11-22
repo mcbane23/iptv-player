@@ -26,6 +26,16 @@ data class ChannelFilter(
 ) {
     val count: Int get() = (if (minQuality > 0) 1 else 0) + (if (country != null) 1 else 0)
     val active: Boolean get() = count > 0
+
+    /**
+     * Da li filter sklanja kanal kvaliteta [quality] iz zemlje [channelCountry] (ISO oznaka ili null).
+     * Isto pravilo kao naredba `ChannelDao.applyFilter`; koristi se pri uvozu liste, da kanali budu
+     * upisani već filtrirani.
+     */
+    fun hides(quality: Int, channelCountry: String?): Boolean {
+        val wanted = ChannelRules.countryCode(country)
+        return (minQuality > 0 && quality < minQuality) || (wanted != null && channelCountry != wanted)
+    }
 }
 
 /**
