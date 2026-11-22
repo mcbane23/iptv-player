@@ -194,10 +194,7 @@ class ChannelRepository @Inject constructor(
 
     /** Oznake zemalja koje liste zaista koriste ispred naziva kanala ili kategorije, najčešće prve. */
     suspend fun filterCountries(): List<String> {
-        val rows = channelDao.ruleRows()
-        return withContext(Dispatchers.Default) {
-            ChannelRules.countries(rows.map { ChannelRules.Row(it.id, it.playlistId, it.name, it.kept, it.category) })
-        }
+        return channelDao.countries(ChannelRules.MIN_COUNTRY_CHANNELS)
     }
 
     private fun likePattern(query: String): String =

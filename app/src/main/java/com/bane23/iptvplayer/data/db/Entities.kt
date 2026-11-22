@@ -121,7 +121,19 @@ data class ChannelEntity(
      * Izvor istine su podešavanja; kolonu održava `ChannelRulesSync`.
      */
     val ruleHidden: Boolean = false,
+    /**
+     * Kvalitet iz naziva (0 do 3, vidi `ChannelRules.quality`); -1 dok ga `ChannelRulesSync` ne izračuna
+     * posle uvoza liste. Čuva se u bazi da filter kanala ne čita nazive svih kanala pri svakoj promeni.
+     */
+    val quality: Int = -1,
+    /** ISO oznaka zemlje iz naziva kanala ili kategorije (vidi `ChannelRules.country`), ili null. */
+    val country: String? = null,
+    /** Kanal je sklonjen filterom kanala iz Uživo (kvalitet, zemlja). Kolonu održava `ChannelRulesSync`. */
+    val filterHidden: Boolean = false,
 )
+
+/** Kanal kome kvalitet i zemlja još nisu izračunati. */
+data class ChannelUnclassifiedRow(val id: Long, val name: String, val category: String? = null)
 
 /** Kanal za računanje pravila: [hidden] je sadašnje stanje kolone, [kept] znači da je među omiljenima. */
 data class ChannelRuleRow(

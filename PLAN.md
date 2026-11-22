@@ -858,6 +858,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Filter kanala: izbor zemlje iz spiska (Bane, 22. 11. 2026, posle probe: previše dugmića; telefon i TV):
       red „Zemlja” otvara abecedni spisak sa pretragom i punim nazivima („Srbija (RS)”). Nude se samo prave
       zemlje (ISO 3166, i oznake sa tri slova i uobičajene poput UK, SR), nazivi paketa i liga se ne računaju
+- [x] Brži filter kanala (Bane, 22. 11. 2026: na TV-u su kanali stizali tek posle 15 s): kvalitet i zemlja se
+      čuvaju u bazi (v23: `channels.quality`, `country`, `filterHidden`), popune se jednom posle uvoza liste,
+      a promena filtera je jedna naredba nad bazom umesto čitanja naziva svih kanala. Pravila za kanale i dalje
+      koriste `ruleHidden` i računaju se odvojeno
 - [x] TV Početna: veliki prikaz stavke u fokusu (Bane, 22. 11. 2026; samo TV, izgled izabran sa slike): iznad
       redova stoje naziv, godina, ocena, žanr i opis filma ili serije sa slikom na desnoj strani; za kanal logo i
       emisija koja traje. Naziv, godina i ocena stižu odmah iz spiska, a opis i široka slika se čitaju sa servera
