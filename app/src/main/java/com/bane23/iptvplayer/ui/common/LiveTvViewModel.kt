@@ -78,6 +78,31 @@ class LiveTvViewModel @Inject constructor(
     private val repository: ChannelRepository,
 ) : ViewModel() {
 
+    /** Filter kanala (kvalitet, zemlja); važi u svim grupama dok se ne poništi. */
+    val liveFilter: StateFlow<com.bane23.iptvplayer.domain.ChannelFilter> = repository.liveFilter
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.bane23.iptvplayer.domain.ChannelFilter())
+
+    private val _filterCountries = MutableStateFlow<List<String>>(emptyList())
+
+    /** Oznake zemalja koje se nude u filteru; učitavaju se kad se filter otvori. */
+    val filterCountries: StateFlow<List<String>> = _filterCountries
+
+    fun loadFilterCountries() {
+        viewModelScope.launch {
+            _filterCountries.value = try {
+                repository.filterCountries()
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    }
+
+    fun setLiveFilter(filter: com.bane23.iptvplayer.domain.ChannelFilter) {
+        viewModelScope.launch { repository.setLiveFilter(filter) }
+    }
+
     /** Grupa koju je korisnik poslednju otvorio u ovom pokretanju aplikacije, po listi. */
     private val picked = MutableStateFlow<Map<Long, Long>>(emptyMap())
 

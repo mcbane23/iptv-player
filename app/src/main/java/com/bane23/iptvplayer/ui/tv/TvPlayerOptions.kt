@@ -390,7 +390,12 @@ fun TvChoicePanel(
  * otvoren; Nazad ga zatvara (to rešava ekran plejera).
  */
 @Composable
-fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
+fun TvQuickSettingsPanel(
+    choices: List<SettingChoice>,
+    modifier: Modifier = Modifier,
+    /** Radnje ispod podešavanja (npr. „Poništi filter”): natpis i šta OK radi. */
+    actions: List<Pair<String, () -> Unit>> = emptyList(),
+) {
     val firstFocus = remember { FocusRequester() }
     LazyColumn(modifier = modifier.tvKeepFocus()) {
         items(choices.size) { index ->
@@ -426,6 +431,9 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
                     modifier = focusModifier,
                 )
             }
+        }
+        items(actions.size) { index ->
+            TvMenuTextRow(text = actions[index].first, onClick = actions[index].second)
         }
         // Napomene uz stavke koje ne važe odmah (bafer).
         val notes = choices.map { it.summary }.filter { it.isNotEmpty() }

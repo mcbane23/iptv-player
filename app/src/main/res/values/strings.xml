@@ -829,4 +829,32 @@
     <string name="backup_tv_allow_files_missing">This device has no screen for that permission. Only files made by this installation can be imported.</string>
     <string name="backup_tv_refresh">Refresh the list of files</string>
     <string name="backup_restore_from_file">Restore from a file</string>
+    <!-- Filteri -->
+    <string name="filter_row">Filter</string>
+    <string name="filter_row_current">Filter: %1$s</string>
+    <string name="filter_title_movies">Movie filter</string>
+    <string name="filter_title_series">Series filter</string>
+    <string name="filter_title_channels">Channel filter</string>
+    <string name="filter_all">All</string>
+    <string name="filter_all_channels">All</string>
+    <string name="filter_years">Year</string>
+    <string name="filter_years_2020">2020 and newer</string>
+    <string name="filter_years_2010">2010 to 2019</string>
+    <string name="filter_years_2000">2000 to 2009</string>
+    <string name="filter_years_older">Older</string>
+    <string name="filter_rating">Minimum rating</string>
+    <string name="filter_rating_value">%1$d+</string>
+    <string name="filter_only_4k">4K only</string>
+    <string name="filter_4k_short">4K</string>
+    <string name="filter_on">On</string>
+    <string name="filter_off">Off</string>
+    <string name="filter_quality">Quality</string>
+    <string name="filter_quality_hd">HD and better</string>
+    <string name="filter_quality_fhd">FHD and better</string>
+    <string name="filter_quality_4k">4K only</string>
+    <string name="filter_country">Country</string>
+    <string name="filter_country_none">The playlist has no country marks in front of channel or category names.</string>
+    <string name="filter_reset">Clear filter</string>
+    <string name="filter_done">Done</string>
+    <string name="filter_empty">Nothing matches the filter.</string>
 </resources>

@@ -55,7 +55,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.repo.VodFilter
 import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.ui.common.vodFilterChoices
 import com.bane23.iptvplayer.ui.common.vod.label
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.Poster
@@ -133,6 +135,7 @@ fun MobileVodScreen(
             onOpen = onOpen,
             onSearch = onSearch,
             onSort = viewModel::setSort,
+            onFilter = viewModel::setFilter,
             onRetry = { if (state.categoriesFailed) viewModel.loadCategories() else viewModel.retryItems() },
         )
         return
@@ -147,6 +150,12 @@ fun MobileVodScreen(
         ) {
             SectionTopBar(title = title, onBack = onBack) {
                 VodSortButton(sort = state.sort, onSort = viewModel::setSort)
+                FilterButton(
+                    title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
+                    count = state.filter.count,
+                    choices = vodFilterChoices(state.filter, viewModel::setFilter),
+                    onReset = { viewModel.setFilter(VodFilter()) },
+                )
                 ToolbarIcon(AppIcons.Search, searchLabel, onSearch)
             }
 
@@ -284,7 +293,7 @@ fun MobileVodScreen(
                             }
 
                             state.items.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
-                                EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
+                                EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty))
                             }
 
                             else -> items(state.items, key = { it.id }) { item ->

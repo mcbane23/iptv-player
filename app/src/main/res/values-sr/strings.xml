@@ -830,4 +830,32 @@
     <string name="backup_tv_allow_files_missing">Ovaj uređaj nema ekran za tu dozvolu. Mogu da se uvezu samo fajlovi koje je napravila ova instalacija.</string>
     <string name="backup_tv_refresh">Osveži spisak fajlova</string>
     <string name="backup_restore_from_file">Vrati iz fajla</string>
+    <!-- Filteri -->
+    <string name="filter_row">Filter</string>
+    <string name="filter_row_current">Filter: %1$s</string>
+    <string name="filter_title_movies">Filter filmova</string>
+    <string name="filter_title_series">Filter serija</string>
+    <string name="filter_title_channels">Filter kanala</string>
+    <string name="filter_all">Sve</string>
+    <string name="filter_all_channels">Svi</string>
+    <string name="filter_years">Godina</string>
+    <string name="filter_years_2020">2020. i novije</string>
+    <string name="filter_years_2010">2010 do 2019</string>
+    <string name="filter_years_2000">2000 do 2009</string>
+    <string name="filter_years_older">Starije</string>
+    <string name="filter_rating">Najmanja ocena</string>
+    <string name="filter_rating_value">%1$d+</string>
+    <string name="filter_only_4k">Samo 4K</string>
+    <string name="filter_4k_short">4K</string>
+    <string name="filter_on">Uključeno</string>
+    <string name="filter_off">Isključeno</string>
+    <string name="filter_quality">Kvalitet</string>
+    <string name="filter_quality_hd">HD i bolje</string>
+    <string name="filter_quality_fhd">FHD i bolje</string>
+    <string name="filter_quality_4k">Samo 4K</string>
+    <string name="filter_country">Zemlja</string>
+    <string name="filter_country_none">Lista nema oznake zemalja ispred naziva kanala ili kategorija.</string>
+    <string name="filter_reset">Poništi filter</string>
+    <string name="filter_done">Gotovo</string>
+    <string name="filter_empty">Nijedna stavka ne odgovara filteru.</string>
 </resources>

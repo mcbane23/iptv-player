@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.data.repo
 import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.domain.ChannelFilter
 import com.bane23.iptvplayer.domain.ChannelRuleSettings
 import com.bane23.iptvplayer.domain.ChannelRules
 import javax.inject.Inject
@@ -19,7 +20,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Održava kolonu `channels.ruleHidden` prema pravilima za kanale iz Podešavanja (sakrij SD kad
- * postoji HD, sakrij kanale +1, spoji istoimene), da upiti mogu da izostave takve kanale. Računa se
+ * postoji HD, sakrij kanale +1, spoji istoimene) i prema filteru kanala iz Uživo (kvalitet, zemlja),
+ * da upiti mogu da izostave takve kanale. Računa se
  * iznova kad se promeni neko pravilo i kad se neka lista učita ili osveži. Kanali se ne brišu:
  * isključivanje pravila ih vraća.
  */
@@ -39,9 +41,9 @@ class ChannelRulesSync @Inject constructor(
             val content = db.playlistDao().observeAllWithCount()
                 .map { lists -> lists.map { Triple(it.playlist.id, it.playlist.lastRefreshedAt, it.channelCount) } }
                 .distinctUntilChanged()
-            combine(settings.channelRules, content) { rules, _ -> rules }.collectLatest { rules ->
+            combine(settings.channelRules, settings.liveFilter, content) { rules, filter, _ -> rules to filter }.collectLatest { (rules, filter) ->
                 try {
-                    apply(rules)
+                    apply(rules, filter)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -51,14 +53,14 @@ class ChannelRulesSync @Inject constructor(
         }
     }
 
-    private suspend fun apply(rules: ChannelRuleSettings) {
+    private suspend fun apply(rules: ChannelRuleSettings, filter: ChannelFilter) {
         val dao = db.channelDao()
-        if (!rules.any) {
+        if (!rules.any && !filter.active) {
             dao.clearRuleHidden()
             return
         }
         val rows = dao.ruleRows()
-        val wanted = ChannelRules.hidden(rows.map { ChannelRules.Row(it.id, it.playlistId, it.name, it.kept) }, rules)
+        val wanted = ChannelRules.hidden(rows.map { ChannelRules.Row(it.id, it.playlistId, it.name, it.kept, it.category) }, rules, filter)
         val toHide = rows.filter { !it.hidden && it.id in wanted }.map { it.id }
         val toShow = rows.filter { it.hidden && it.id !in wanted }.map { it.id }
         if (toHide.isEmpty() && toShow.isEmpty()) return

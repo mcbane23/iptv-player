@@ -79,7 +79,10 @@ import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.label
+import com.bane23.iptvplayer.data.repo.VodFilter
 import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.ui.common.summary
+import com.bane23.iptvplayer.ui.common.vodFilterChoices
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
 
@@ -145,6 +148,16 @@ fun TvVodScreen(
         }
     }
     var sortOpen by remember { mutableStateOf(false) }
+    var filterOpen by remember { mutableStateOf(false) }
+    if (filterOpen) {
+        TvFilterDialog(
+            title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
+            choices = vodFilterChoices(state.filter, viewModel::setFilter),
+            resetLabel = stringResource(R.string.filter_reset),
+            onReset = { viewModel.setFilter(VodFilter()) },
+            onClose = { filterOpen = false },
+        )
+    }
     // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
     var focusTargetId by remember { mutableStateOf<String?>(null) }
@@ -434,6 +447,22 @@ fun TvVodScreen(
                             modifier = Modifier.padding(start = 12.dp),
                         )
                     }
+                    // Filter postera: dok je uključen, red je označen i piše šta je izabrano.
+                    TvListRow(onClick = { filterOpen = true }, selected = state.filter.active, modifier = toGrid) { color ->
+                        Icon(AppIcons.Filter, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = if (state.filter.active) {
+                                stringResource(R.string.filter_row_current, state.filter.summary())
+                            } else {
+                                stringResource(R.string.filter_row)
+                            },
+                            color = color,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
                     PinnedRow(
                         icon = AppIcons.Star,
                         title = favoritesLabel,
@@ -572,7 +601,7 @@ fun TvVodScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
-                        state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
+                        state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty))
 
                         else -> PosterGrid(columns, gridModifier) {
                             itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
