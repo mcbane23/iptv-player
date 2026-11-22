@@ -865,7 +865,7 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
     rotacija na telefonu zaključana; poruka o položenom prikazu samo pri prvom puštanju; Podešavanja >
     Izgled > „Položaj ekrana” (Automatski, Uvek uspravno, Uvek položeno) za celu aplikaciju
   - Filmovi i Serije: jedno široko dugme kategorije sa brojem naslova umesto duplog naslova, naziv
-    postera u jednom redu, zvezdica samo na omiljenima (dodavanje dugim pritiskom)
+    postera u jednom redu, zvezdica samo na omiljenima (dodavanje dugim pritiskom); posteri isto i položeno
   - Uživo: svi redovi iste visine, broj kanala na čipu izabrane grupe; izabran čip u boji aplikacije
   - vrh (naslov i čipovi) se sklanja dok se lista nadole, u Uživo, Filmovima i Serijama
   - TV vodič uspravno je spisak „sada i sledeće”; položeno ostaje mreža
