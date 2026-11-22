@@ -9,7 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -36,8 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -128,7 +131,8 @@ private enum class SwipeTarget { BRIGHTNESS, VOLUME, ZAP }
  * Prevlačenje gore-dole preko slike, radi i dok su kontrole sklonjene: leva petina ekrana menja
  * osvetljenje, desna jačinu zvuka. Sredina, ako je [onZap] zadat, pušta sledeći kanal (nagore) ili
  * prethodni (nadole). Gornja i donja ivica se preskaču jer tamo sistem izvlači svoje trake.
- * Sve je u jednom detektoru: dva odvojena bi jedan drugom otimala potez.
+ * Sam levi i desni rub se preskaču, a potez se računa tek kad je jasno uspravan, da ga sistemski
+ * gest Nazad ne pali. Sve je u jednom detektoru: dva odvojena bi jedan drugom otimala potez.
  */
 internal fun Modifier.playerSwipeGestures(
     levels: PlayerLevels,
@@ -140,45 +144,58 @@ internal fun Modifier.playerSwipeGestures(
     if (!enabled) return@pointerInput
     val zapThreshold = ZAP_SWIPE_DISTANCE.toPx()
     val edge = SWIPE_EDGE.toPx()
-    var target: SwipeTarget? = null
-    var dragged = 0f
-    detectVerticalDragGestures(
-        onDragStart = { start ->
-            dragged = 0f
-            target = when {
-                start.y !in edge..size.height - edge -> null
-                start.x < size.width * SWIPE_SIDE -> SwipeTarget.BRIGHTNESS.takeIf { swipes.brightness }
-                start.x > size.width * (1 - SWIPE_SIDE) -> SwipeTarget.VOLUME.takeIf { swipes.volume }
-                else -> SwipeTarget.ZAP.takeIf { onZap != null }
-            }
-            // Zvuk je možda u međuvremenu promenjen tasterima telefona.
-            if (target == SwipeTarget.VOLUME) levels.refreshVolume()
-            levels.active = when (target) {
-                SwipeTarget.BRIGHTNESS -> PlayerLevel.BRIGHTNESS
-                SwipeTarget.VOLUME -> PlayerLevel.VOLUME
-                else -> null
-            }
-        },
-        onDragCancel = {
-            target = null
-            levels.active = null
-        },
-        onDragEnd = {
-            if (target == SwipeTarget.ZAP && abs(dragged) >= zapThreshold) onZap?.invoke(dragged < 0)
-            target = null
-            levels.active = null
-        },
-    ) { change, amount ->
+    val backEdge = SWIPE_BACK_EDGE.toPx()
+    val slop = SWIPE_SLOP.toPx()
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        val start = down.position
+        val target = when {
+            start.y !in edge..size.height - edge -> null
+            // Sam rub ekrana pripada sistemskom gestu Nazad.
+            start.x !in backEdge..size.width - backEdge -> null
+            start.x < size.width * SWIPE_SIDE -> SwipeTarget.BRIGHTNESS.takeIf { swipes.brightness }
+            start.x > size.width * (1 - SWIPE_SIDE) -> SwipeTarget.VOLUME.takeIf { swipes.volume }
+            else -> SwipeTarget.ZAP.takeIf { onZap != null }
+        } ?: return@awaitEachGesture
         // Isti put prsta za ceo opseg i kad je telefon uspravan i kad je položen.
         val range = minOf(size.width, size.height) * LEVEL_SWIPE_RANGE
-        when (target) {
-            SwipeTarget.BRIGHTNESS -> levels.changeBrightness(-amount / range)
-            SwipeTarget.VOLUME -> levels.changeVolume(-amount / range)
-            SwipeTarget.ZAP -> dragged += amount
-            null -> return@detectVerticalDragGestures
+        var moved = Offset.Zero
+        var started = false
+        var dragged = 0f
+        while (true) {
+            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+            if (!change.pressed) break
+            val delta = change.positionChange()
+            if (!started) {
+                // Neko drugi je već uzeo potez (traka za premotavanje, spisak).
+                if (change.isConsumed) break
+                moved += delta
+                if (moved.getDistance() < slop) continue
+                // Računa se samo jasno uspravan potez; kos ili vodoravan je nešto drugo, recimo gest Nazad.
+                if (abs(moved.y) < abs(moved.x) * SWIPE_VERTICAL_RATIO) break
+                started = true
+                dragged = moved.y
+                when (target) {
+                    SwipeTarget.BRIGHTNESS -> levels.active = PlayerLevel.BRIGHTNESS
+                    SwipeTarget.VOLUME -> {
+                        // Zvuk je možda u međuvremenu promenjen tasterima telefona.
+                        levels.refreshVolume()
+                        levels.active = PlayerLevel.VOLUME
+                    }
+                    SwipeTarget.ZAP -> Unit
+                }
+            } else {
+                when (target) {
+                    SwipeTarget.BRIGHTNESS -> levels.changeBrightness(-delta.y / range)
+                    SwipeTarget.VOLUME -> levels.changeVolume(-delta.y / range)
+                    SwipeTarget.ZAP -> dragged += delta.y
+                }
+                if (target != SwipeTarget.ZAP) onInteraction()
+            }
+            change.consume()
         }
-        if (target != SwipeTarget.ZAP) onInteraction()
-        change.consume()
+        if (started && target == SwipeTarget.ZAP && abs(dragged) >= zapThreshold) onZap?.invoke(dragged < 0)
+        levels.active = null
     }
 }
 
@@ -259,6 +276,15 @@ private const val SWIPE_SIDE = 0.2f
 
 /** Pojas uz gornju i donju ivicu koji se preskače, jer tamo sistem izvlači svoje trake. */
 private val SWIPE_EDGE = 48.dp
+
+/** Pojas uz levi i desni rub koji se preskače, jer odatle kreće sistemski gest Nazad. */
+private val SWIPE_BACK_EDGE = 32.dp
+
+/** Koliko prst mora da pređe pre nego što se potez uopšte računa. */
+private val SWIPE_SLOP = 20.dp
+
+/** Potez je uspravan ako je pomeraj gore-dole bar ovoliko puta veći od pomeraja u stranu. */
+private const val SWIPE_VERTICAL_RATIO = 2f
 
 /** Deo kraće strane ekrana koji prst pređe od najmanje do najveće vrednosti. */
 private const val LEVEL_SWIPE_RANGE = 0.7f
