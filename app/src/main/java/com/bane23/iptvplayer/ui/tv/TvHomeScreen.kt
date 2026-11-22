@@ -222,6 +222,7 @@ fun TvHomeScreen(
                     TvTab.LIVE -> TvLiveTvScreen(
                         onPlay = onPlay,
                         onManagePlaylists = { tab = TvTab.PLAYLISTS },
+                        onRestore = onBackup,
                         onSearch = onSearch,
                         onUnlock = onUnlock,
                         onCategories = { onCategories(CategorySection.LIVE) },
@@ -268,6 +269,7 @@ fun TvHomeScreen(
                         onAdd = onAddPlaylist,
                         onAddFromPhone = onAddFromPhone,
                         onEdit = onEditPlaylist,
+                        onRestore = onBackup,
                     )
 
                     TvTab.SETTINGS -> TvSettingsScreen(

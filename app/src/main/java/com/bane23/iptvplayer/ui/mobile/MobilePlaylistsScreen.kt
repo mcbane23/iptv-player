@@ -50,6 +50,7 @@ fun MobilePlaylistsScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onBack: () -> Unit,
+    onRestore: (() -> Unit)? = null,
     viewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -74,6 +75,9 @@ fun MobilePlaylistsScreen(
                     actionLabel = stringResource(R.string.action_add_playlist),
                     actionIcon = AppIcons.Add,
                     onAction = onAdd,
+                    secondaryLabel = stringResource(R.string.backup_restore_from_file),
+                    secondaryIcon = AppIcons.Download,
+                    onSecondary = onRestore,
                 )
 
                 else -> LazyColumn(

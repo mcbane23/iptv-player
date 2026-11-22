@@ -262,7 +262,7 @@ class BackupRepository @Inject constructor(
     }
 
     private companion object {
-        const val FILE_PREFIX = "glowbox-podesavanja-"
+        const val FILE_PREFIX = "glowbox-export-"
         const val MAX_TOKEN = 2_000
     }
 }

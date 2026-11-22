@@ -817,4 +817,5 @@
     <string name="backup_tv_allow_files_summary">Bez toga aplikacija vidi samo fajlove koje je sama napravila, a ne i fajl prenet sa drugog uređaja ili ostao od ranije instalacije. Na sistemskom ekranu koji se otvori uključi pristup svim fajlovima za Glowbox.</string>
     <string name="backup_tv_allow_files_missing">Ovaj uređaj nema ekran za tu dozvolu. Mogu da se uvezu samo fajlovi koje je napravila ova instalacija.</string>
     <string name="backup_tv_refresh">Osveži spisak fajlova</string>
+    <string name="backup_restore_from_file">Vrati iz fajla</string>
 </resources>

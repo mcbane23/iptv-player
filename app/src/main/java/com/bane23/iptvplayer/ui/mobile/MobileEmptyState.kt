@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +30,10 @@ fun EmptyState(
     actionLabel: String? = null,
     actionIcon: ImageVector? = null,
     onAction: (() -> Unit)? = null,
+    /** Druga, sporedna radnja ispod glavnog dugmeta (npr. vraćanje iz fajla dok nema lista). */
+    secondaryLabel: String? = null,
+    secondaryIcon: ImageVector? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
@@ -51,6 +56,14 @@ fun EmptyState(
                     Icon(actionIcon, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
                 Text(actionLabel, modifier = Modifier.padding(start = if (actionIcon != null) 8.dp else 0.dp))
+            }
+        }
+        if (secondaryLabel != null && onSecondary != null) {
+            OutlinedButton(onClick = onSecondary) {
+                if (secondaryIcon != null) {
+                    Icon(secondaryIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Text(secondaryLabel, modifier = Modifier.padding(start = if (secondaryIcon != null) 8.dp else 0.dp))
             }
         }
     }
