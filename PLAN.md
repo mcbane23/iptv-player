@@ -862,7 +862,16 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       redova stoje naziv, godina, ocena, žanr i opis filma ili serije sa slikom na desnoj strani; za kanal logo i
       emisija koja traje. Naziv, godina i ocena stižu odmah iz spiska, a opis i široka slika se čitaju sa servera
       kad fokus zastane 0,35 s i pamte se dok je ekran otvoren (`TvStartViewModel.preview`)
-
+- [x] Telefon uspravno, doterivanje (Bane, 22. 11. 2026; sve izabrano sa slika u `dizajn/uspravno`):
+  - plejer: donje kontrole stoje odmah ispod slike umesto na dnu ekrana
+  - okretanje: dugme u plejeru (u uglu slike uspravno, u gornjem redu položeno) okreće ekran i kad je
+    rotacija na telefonu zaključana; poruka o položenom prikazu samo pri prvom puštanju; Podešavanja >
+    Izgled > „Položaj ekrana” (Automatski, Uvek uspravno, Uvek položeno) za celu aplikaciju
+  - Filmovi i Serije: jedno široko dugme kategorije sa brojem naslova umesto duplog naslova, naziv
+    postera u jednom redu, zvezdica samo na omiljenima (dodavanje dugim pritiskom); posteri isto i položeno
+  - Uživo: svi redovi iste visine, broj kanala na čipu izabrane grupe; izabran čip u boji aplikacije
+  - vrh (naslov i čipovi) se sklanja dok se lista nadole, u Uživo, Filmovima i Serijama
+  - TV vodič uspravno je spisak „sada i sledeće”; položeno ostaje mreža
 
 ## 7. Testiranje
 

@@ -71,6 +71,8 @@ import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
+import com.bane23.iptvplayer.ui.common.ScreenPosition
+import com.bane23.iptvplayer.ui.common.screenPositionChoice
 import com.bane23.iptvplayer.ui.common.themeChoice
 
 /** Podešavanja aplikacije na telefonu. */
@@ -107,7 +109,9 @@ fun MobileSettingsScreen(
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
-    val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme)
+    val screenPosition by viewModel.screenPosition.collectAsStateWithLifecycle()
+    val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
+        screenPositionChoice(ScreenPosition.fromName(screenPosition), viewModel::setScreenPosition)
     // Podešavanje čiji se spisak vrednosti trenutno bira, ili null.
     var openChoice by remember { mutableStateOf<Int?>(null) }
     val context = LocalContext.current

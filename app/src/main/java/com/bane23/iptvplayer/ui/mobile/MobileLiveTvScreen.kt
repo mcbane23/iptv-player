@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -268,7 +270,9 @@ fun MobileLiveTvScreen(
             }
             // Položen telefon sa učitanom listom nema zaglavlje: visina ide kanalima, kao na TV-u.
             val twoPane = landscape && !state.loading && playlistId != null
-            if (!twoPane) SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
+            // Uspravno sa učitanom listom naslov je deo vrha koji se sklanja dok se kanali listaju.
+            val collapsing = !landscape && !state.loading && playlistId != null
+            if (!twoPane && !collapsing) SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
 
             when {
                 state.loading -> MobileChannelSkeletonList()
@@ -296,14 +300,7 @@ fun MobileLiveTvScreen(
                             listState.scrollToItem(0)
                         }
                     }
-                    // Naslov nad kanalima: izabrana grupa i koliko kanala ima, kao na TV-u.
-                    val headingTitle = when (selected) {
-                        ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
-                        ChannelGroups.RECENT -> stringResource(R.string.category_recent)
-                        ALL_CHANNELS -> stringResource(R.string.category_all)
-                        else -> state.favoriteList(selected)?.name
-                            ?: state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
-                    }
+                    // Broj kanala izabrane grupe, za njen čip.
                     val headingCount = when (selected) {
                         ChannelGroups.FAVORITES -> state.favoriteCount
                         ChannelGroups.RECENT -> state.recentCount
@@ -371,6 +368,7 @@ fun MobileLiveTvScreen(
                                             if (!showPreview || tapped.id == previewId) open(tapped.id) else previewId = tapped.id
                                         },
                                         onToggleFavorite = favoriteLists::favoriteAction,
+                                        evenHeight = true,
                                         onGuide = { picked -> onGuide(picked.playlistId, categoryId) },
                                         onHide = { picked ->
                                             if (picked.id == previewId) previewId = null
@@ -473,6 +471,23 @@ fun MobileLiveTvScreen(
                     } else {
                         // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
                         val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name, count = it.channelCount) }
+                        val header = rememberCollapsingHeaderState { listState.canScrollForward }
+                        LaunchedEffect(selected) { header.expand() }
+                        val groupName = when (selected) {
+                            ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
+                            ChannelGroups.RECENT -> stringResource(R.string.category_chip_recent)
+                            ALL_CHANNELS -> stringResource(R.string.category_chip_all)
+                            else -> state.favoriteList(selected)?.name
+                                ?: state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
+                        }
+                        Column(modifier = Modifier.weight(1f).nestedScroll(header.connection)) {
+                        CollapsingHeader(
+                            state = header,
+                            title = stringResource(R.string.nav_live),
+                            detail = "$groupName · $headingCount",
+                        ) {
+                        Column {
+                        SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
                         QuickGroupChips(
                             selected = selected,
                             inFavorites = inFavorites,
@@ -480,6 +495,7 @@ fun MobileLiveTvScreen(
                             onListMenu = { listMenu = FavoriteListMenu(it) },
                             onRecentMenu = { clearRecent = true },
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
+                            count = headingCount,
                             // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
                             onSelect = { group ->
                                 when {
@@ -492,6 +508,11 @@ fun MobileLiveTvScreen(
                             },
                             onMore = { pickerOpen = true },
                         )
+                        favoriteTabs(Modifier.padding(horizontal = 16.dp))
+                        }
+                        }
+                        channelGrid(Modifier.weight(1f))
+                        }
                         if (pickerOpen) {
                             CategoryPickerDialog(
                                 title = stringResource(R.string.nav_live),
@@ -516,9 +537,6 @@ fun MobileLiveTvScreen(
                                 ),
                             )
                         }
-                        favoriteTabs(Modifier.padding(horizontal = 16.dp))
-                        ChannelsHeading(title = headingTitle, count = headingCount, modifier = Modifier.padding(top = 8.dp))
-                        channelGrid(Modifier.weight(1f))
                     }
                 }
             }
@@ -578,9 +596,13 @@ private fun QuickGroupChips(
     onListMenu: (FavoriteList?) -> Unit,
     onRecentMenu: () -> Unit,
     categoryName: String?,
+    // Broj kanala izabrane grupe; piše na njenom čipu, pa poseban naslov nad kanalima ne treba.
+    count: Int,
     onSelect: (Long) -> Unit,
     onMore: () -> Unit,
 ) {
+    // „Nedavno · 30”
+    fun counted(label: String, chosen: Boolean) = if (chosen) "$label · $count" else label
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -600,19 +622,19 @@ private fun QuickGroupChips(
         )
         if (showRecent) {
             GroupChip(
-                label = stringResource(R.string.category_chip_recent),
+                label = counted(stringResource(R.string.category_chip_recent), selected == ChannelGroups.RECENT),
                 selected = selected == ChannelGroups.RECENT,
                 onClick = { onSelect(ChannelGroups.RECENT) },
                 onLongClick = onRecentMenu,
             )
         }
         GroupChip(
-            label = stringResource(R.string.category_chip_all),
+            label = counted(stringResource(R.string.category_chip_all), selected == ALL_CHANNELS),
             selected = selected == ALL_CHANNELS,
             onClick = { onSelect(ALL_CHANNELS) },
         )
         GroupChip(
-            label = categoryName ?: stringResource(R.string.category_chip_more),
+            label = categoryName?.let { counted(it, true) } ?: stringResource(R.string.category_chip_more),
             selected = categoryName != null,
             onClick = onMore,
             trailing = AppIcons.ArrowDown,
@@ -716,43 +738,20 @@ internal fun GroupChip(
         },
         leadingIcon = leading?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
         trailingIcon = trailing?.let { icon -> { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) } },
+        // Izabrano je u boji aplikacije, kao izabran red na TV-u i u položenom prikazu.
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+            selectedLabelColor = MaterialTheme.colorScheme.primary,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.primary,
+            selectedTrailingIconColor = MaterialTheme.colorScheme.primary,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            selectedBorderColor = MaterialTheme.colorScheme.primary,
+            selectedBorderWidth = 1.5.dp,
+        ),
     )
-}
-
-/** Naslov nad kanalima: izabrana grupa i broj kanala; desno, po želji, dugmad ([actions]). */
-@Composable
-private fun ChannelsHeading(
-    title: String,
-    count: Int,
-    modifier: Modifier = Modifier,
-    actions: @Composable RowScope.() -> Unit = {},
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Text(
-            text = pluralStringResource(R.plurals.channel_count, count, count),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            modifier = Modifier
-                .padding(start = 10.dp, end = 12.dp)
-                .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
-                .padding(horizontal = 10.dp, vertical = 3.dp),
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        actions()
-    }
 }
 
 /**

@@ -32,7 +32,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.data.trakt.TraktRepository
+import com.bane23.iptvplayer.ui.common.ScreenPosition
 import com.bane23.iptvplayer.ui.mobile.AppFullScreen
+import com.bane23.iptvplayer.ui.mobile.AppOrientation
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
 import com.bane23.iptvplayer.ui.tv.TvEdgeScroll
@@ -104,6 +106,9 @@ class MainActivity : ComponentActivity() {
         val savedScale = runBlocking { settingsStore.uiScale.first() }
         // I ceo ekran na telefonu, da se trake pri pokretanju ne pojave pa tek onda sakriju.
         val savedFullScreen = !isTv && runBlocking { settingsStore.appFullScreen.first() }
+        // I položaj ekrana, da se aplikacija ne otvori uspravno pa tek onda okrene.
+        val savedPosition = if (isTv) null else runBlocking { settingsStore.screenPosition.first() }
+        if (!isTv) requestedOrientation = ScreenPosition.fromName(savedPosition).request
         setContent {
             val accent by settingsStore.accentColor.collectAsStateWithLifecycle(initialValue = savedAccent)
             val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
@@ -116,8 +121,11 @@ class MainActivity : ComponentActivity() {
                         TvEdgeScroll { TvApp(watchLink = watchLink, onWatchLinkHandled = { watchLink = null }) }
                     } else {
                         val fullScreen by settingsStore.appFullScreen.collectAsStateWithLifecycle(initialValue = savedFullScreen)
-                        AppFullScreen(enabled = fullScreen) {
-                            MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                        val position by settingsStore.screenPosition.collectAsStateWithLifecycle(initialValue = savedPosition)
+                        AppOrientation(ScreenPosition.fromName(position)) {
+                            AppFullScreen(enabled = fullScreen) {
+                                MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                            }
                         }
                     }
                     UpdateDialog()

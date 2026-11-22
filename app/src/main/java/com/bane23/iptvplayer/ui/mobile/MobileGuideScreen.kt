@@ -1,5 +1,12 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.ChannelLogo
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +64,11 @@ import com.bane23.iptvplayer.ui.common.guide.timeRange
 /** Na telefonu se odjednom vidi sat i po programa. */
 private const val WINDOW_MS = 90 * 60_000L
 
-/** TV vodič na telefonu: za svaki kanal red emisija na zajedničkoj vremenskoj osi. */
+/**
+ * TV vodič na telefonu. Položeno: za svaki kanal red emisija na zajedničkoj vremenskoj osi.
+ * Uspravno, gde za vremensku osu nema širine: spisak kanala sa emisijom koja traje i onom koja sledi.
+ * Oba prikaza dele isto izabrano vreme, pa okretanje telefona ne menja gde je korisnik stao.
+ */
 @Composable
 fun MobileGuideScreen(
     playlistId: Long,
@@ -78,7 +89,14 @@ fun MobileGuideScreen(
     linkChannel?.let { channel -> MobileEpgLinkDialog(channel = channel, onClose = { linkChannel = null }) }
     val channels = viewModel.channelList.collectAsLazyPagingItems()
     val now = System.currentTimeMillis()
+    val portrait = !isLandscape()
+    // Uspravno: kanal čiji je ceo program otvoren preko spiska.
+    var scheduleChannel by remember { mutableStateOf<Channel?>(null) }
+    BackHandler(enabled = scheduleChannel != null) { scheduleChannel = null }
+    // Trenutak koji spisak prikazuje: sada, ili početak izabranog vremena kad se ide ranije ili kasnije.
+    val listAt = if (now >= ui.windowStart && now < ui.windowStart + LIST_SLOT_MS) now else ui.windowStart
 
+    Box {
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -104,7 +122,11 @@ fun MobileGuideScreen(
             ) {
                 TextButton(onClick = { viewModel.shift(-1) }) { Text(stringResource(R.string.guide_earlier)) }
                 Text(
-                    text = "${formatDayTime(ui.windowStart)} – ${formatTime(ui.windowStart + WINDOW_MS)}",
+                    text = if (portrait) {
+                        formatDayTime(listAt)
+                    } else {
+                        "${formatDayTime(ui.windowStart)} – ${formatTime(ui.windowStart + WINDOW_MS)}"
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier
                         .weight(1f)
@@ -117,10 +139,21 @@ fun MobileGuideScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(if (portrait) 4.dp else 0.dp),
             ) {
                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                     val channel = channels[index]
-                    if (channel != null) {
+                    if (channel != null && portrait) {
+                        GuideListRow(
+                            channel = channel,
+                            at = listAt,
+                            windowStart = ui.windowStart,
+                            reloadKey = status.refreshedAt,
+                            viewModel = viewModel,
+                            onPlay = { onPlay(channel.id) },
+                            onSchedule = { scheduleChannel = channel },
+                        )
+                    } else if (channel != null) {
                         GuideRow(
                             channel = channel,
                             windowStart = ui.windowStart,
@@ -177,7 +210,117 @@ fun MobileGuideScreen(
             }
         }
     }
+    // Ceo program kanala, isti panel kao „Program” u plejeru; dodir van njega ga zatvara.
+    val opened = scheduleChannel
+    if (portrait && opened != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .pointerInput(Unit) { detectTapGestures { scheduleChannel = null } },
+        ) {
+            MobileChannelSchedulePanel(channel = opened, onArchive = { onArchive(opened.id) }, guide = viewModel)
+        }
+    }
+    }
 }
+
+/**
+ * Red kanala u uspravnom vodiču: logo, emisija koja traje u trenutku [at] sa trakom koliko je
+ * prošlo, i emisija koja sledi. Dodir pušta kanal, strelica otvara ceo program kanala.
+ */
+@Composable
+private fun GuideListRow(
+    channel: Channel,
+    at: Long,
+    windowStart: Long,
+    reloadKey: Long?,
+    viewModel: GuideViewModel,
+    onPlay: () -> Unit,
+    onSchedule: () -> Unit,
+) {
+    val programs by produceState(emptyList<Program>(), channel.id, windowStart, reloadKey) {
+        value = viewModel.row(channel.id, windowStart, LIST_AHEAD_MS).mapNotNull { it.program }
+    }
+    val current = programs.firstOrNull { it.startMs <= at && it.stopMs > at }
+    val next = programs.firstOrNull { it.startMs >= (current?.stopMs ?: at) }
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .fillMaxWidth()
+            .height(LIST_ROW_HEIGHT)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.surface.copy(alpha = 0.6f))
+            .clickable(onClick = onPlay)
+            .padding(start = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ChannelLogo(url = channel.logo, name = channel.name, size = 40.dp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        ) {
+            Text(text = channel.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (current == null && next == null) {
+                Text(
+                    text = stringResource(R.string.guide_no_data),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                    maxLines = 1,
+                )
+            }
+            if (current != null) {
+                Text(
+                    text = current.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val length = (current.stopMs - current.startMs).coerceAtLeast(1)
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = 3.dp)
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(colors.onSurfaceVariant.copy(alpha = 0.15f)),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(((at - current.startMs).toFloat() / length).coerceIn(0f, 1f))
+                            .fillMaxHeight()
+                            .background(colors.primary.copy(alpha = 0.85f)),
+                    )
+                }
+            }
+            if (next != null) {
+                Text(
+                    text = "${formatTime(next.startMs)}  ${next.title}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        IconButton(onClick = onSchedule) {
+            Icon(
+                imageVector = AppIcons.ChevronRight,
+                contentDescription = stringResource(R.string.player_schedule),
+                tint = colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Koliko unapred uspravni spisak traži emisije, da nađe i onu koja sledi posle duge emisije. */
+private const val LIST_AHEAD_MS = 4 * 60 * 60_000L
+private val LIST_ROW_HEIGHT = 72.dp
+
+/** Korak vremena u vodiču (dugmad „Ranije” i „Kasnije”). */
+private const val LIST_SLOT_MS = 30 * 60_000L
 
 @Composable
 private fun GuideRow(
