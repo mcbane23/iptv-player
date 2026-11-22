@@ -609,6 +609,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   PIN i zaključavanja uvoz nikad ne skida. Format: `data/backup/Backup.kt`, oslonjen na `TransferBundle`.
   Dok nema nijedne liste, pored „Dodaj listu” (Uživo i Liste, telefon i TV) stoji i „Vrati iz fajla”, koje
   otvara isti ekran. Fajl se zove `glowbox-export-<datum>.json` (Bane: naziv na engleskom).
+  TV ima i sopstveni pregledač fajlova („Izaberi fajl iz drugog foldera”, Bane 22. 11. 2026): unutrašnja
+  memorija i priključeni USB, folderi i `.json` fajlovi, Nazad vraća folder naviše.
 - [x] Program kanala u plejeru (Bane, 18. 11. 2026, treći krug predloga): dugme „Program” otvara raspored
       kanala koji se gleda (emisija u toku i narednih 24 sata) preko slike, na TV-u i telefonu. Buduća
       emisija nudi „Podseti me” i zakazivanje snimanja, tekuća snimanje do kraja; kanal sa arhivom ima

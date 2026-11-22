@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.backup.Backup
+import com.bane23.iptvplayer.data.backup.BackupBrowseEntry
 import com.bane23.iptvplayer.data.backup.BackupCodec
 import com.bane23.iptvplayer.data.backup.BackupFileInfo
 import com.bane23.iptvplayer.data.backup.BackupImportState
@@ -27,6 +28,16 @@ data class BackupNotice(@StringRes val text: Int, val arg: Any? = null)
 /** Ono što se o pročitanom fajlu pokazuje pre uvoza. */
 data class BackupInfo(val createdAt: Long, val playlists: Int, val fromTv: Boolean)
 
+/**
+ * TV: pregledač fajlova. [path] je null dok se bira memorija (unutrašnja, USB). [focusPath] je stavka
+ * na koju ide fokus: folder iz koga se korisnik vratio, inače prva.
+ */
+data class BackupBrowse(
+    val path: String? = null,
+    val entries: List<BackupBrowseEntry> = emptyList(),
+    val focusPath: String? = null,
+)
+
 data class BackupUiState(
     /** Izvoz ili čitanje fajla je u toku. */
     val working: Boolean = false,
@@ -41,6 +52,8 @@ data class BackupUiState(
     val canReadForeign: Boolean = true,
     /** TV: putanja poslednjeg izvoza, da se vidi gde je fajl. */
     val exportedTo: String? = null,
+    /** TV: otvoren pregledač fajlova; null kad nije. */
+    val browse: BackupBrowse? = null,
     val notice: BackupNotice? = null,
 )
 
@@ -125,6 +138,57 @@ class BackupViewModel @Inject constructor(private val backups: BackupRepository)
         }
     }
 
+    /** Memorije uređaja, zapamćene dok je pregledač otvoren, da se zna gde je vrh. */
+    private var roots: List<BackupBrowseEntry> = emptyList()
+
+    /** TV: otvara pregledač fajlova. Uređaj sa jednom memorijom kreće odmah od njenog sadržaja. */
+    fun browse() {
+        if (_state.value.working) return
+        viewModelScope.launch {
+            roots = backups.storageRoots()
+            val only = roots.singleOrNull()
+            if (only != null) {
+                showFolder(only.path, focusPath = null)
+            } else {
+                _state.update { it.copy(browse = BackupBrowse(entries = roots)) }
+            }
+        }
+    }
+
+    /** TV: ulazi u folder sa spiska pregledača. */
+    fun browseInto(path: String) {
+        if (_state.value.working) return
+        viewModelScope.launch { showFolder(path, focusPath = null) }
+    }
+
+    /** TV: jedan folder naviše; sa vrha se pregledač zatvara. */
+    fun browseUp() {
+        val current = _state.value.browse ?: return
+        val path = current.path
+        viewModelScope.launch {
+            when {
+                path == null -> closeBrowse()
+                roots.any { it.path == path } ->
+                    if (roots.size > 1) _state.update { it.copy(browse = BackupBrowse(entries = roots, focusPath = path)) } else closeBrowse()
+                else -> {
+                    val parent = path.substringBeforeLast('/', "")
+                    if (parent.isEmpty()) closeBrowse() else showFolder(parent, focusPath = path)
+                }
+            }
+        }
+    }
+
+    fun closeBrowse() = _state.update { it.copy(browse = null) }
+
+    private suspend fun showFolder(path: String, focusPath: String?) {
+        val entries = backups.listFolder(path)
+        if (entries == null) {
+            _state.update { it.copy(notice = BackupNotice(R.string.backup_tv_browse_unreadable)) }
+        } else {
+            _state.update { it.copy(browse = BackupBrowse(path, entries, focusPath)) }
+        }
+    }
+
     /** Lozinka za fajl koji je čeka. */
     fun submitPassword(password: String) {
         val text = lockedText ?: return
@@ -173,7 +237,8 @@ class BackupViewModel @Inject constructor(private val backups: BackupRepository)
     fun startImport(replace: Boolean) {
         val backup = pending ?: return
         pending = null
-        _state.update { it.copy(ready = null) }
+        // Tok uvoza se vidi na glavnom koraku ekrana, pa se pregledač zatvara.
+        _state.update { it.copy(ready = null, browse = null) }
         backups.startImport(backup, replace)
     }
 

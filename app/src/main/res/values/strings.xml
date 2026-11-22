@@ -828,6 +828,11 @@
     <string name="backup_tv_allow_files_summary">Without it the app sees only files it made itself, not one copied from another device or left from an earlier installation. Turn on access to all files for Glowbox on the system screen that opens.</string>
     <string name="backup_tv_allow_files_missing">This device has no screen for that permission. Only files made by this installation can be imported.</string>
     <string name="backup_tv_refresh">Refresh the list of files</string>
+    <string name="backup_tv_browse">Pick a file from another folder</string>
+    <string name="backup_tv_browse_summary">Browse the folders on this device and on a connected USB drive, for a file that is not in Download/Glowbox</string>
+    <string name="backup_tv_browse_pick_storage">Pick a storage</string>
+    <string name="backup_tv_browse_empty">There are no folders or export files here.</string>
+    <string name="backup_tv_browse_unreadable">This folder cannot be opened.</string>
     <string name="backup_restore_from_file">Restore from a file</string>
     <!-- Filteri -->
     <string name="filter_row">Filter</string>

@@ -50,7 +50,7 @@ import java.util.Date
 
 /**
  * Izvoz svih lista i podešavanja u fajl i uvoz iz njega, na TV-u. Fajl ide u Downloads/Glowbox, a
- * uvoz nudi fajlove nađene u tom folderu. Koraci (lozinka, izbor između dopune i zamene, potvrda
+ * uvoz nudi fajlove nađene u tom folderu i pregledač za fajl iz bilo kog drugog foldera ili sa USB-a. Koraci (lozinka, izbor između dopune i zamene, potvrda
  * zamene) se smenjuju na istom ekranu; Nazad vraća korak unazad.
  */
 @Composable
@@ -83,6 +83,7 @@ fun TvBackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
         state.ready != null -> Step.MODE
         state.needsPassword -> Step.IMPORT_PASSWORD
         askExportPassword -> Step.EXPORT_PASSWORD
+        state.browse != null -> Step.BROWSE
         else -> Step.MAIN
     }
     val cancel = {
@@ -93,14 +94,14 @@ fun TvBackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
         viewModel.cancelPending()
     }
     BackHandler(enabled = step != Step.MAIN) {
-        if (step == Step.CONFIRM_REPLACE) {
-            confirmReplace = false
-        } else {
-            cancel()
+        when (step) {
+            Step.CONFIRM_REPLACE -> confirmReplace = false
+            Step.BROWSE -> viewModel.browseUp()
+            else -> cancel()
         }
     }
     val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(step) {
+    LaunchedEffect(step, state.browse) {
         // Redovi novog koraka postoje tek od sledećeg crtanja.
         withFrameNanos { }
         firstFocus.tryRequestFocus()
@@ -192,6 +193,51 @@ fun TvBackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                     icon = AppIcons.Refresh,
                     modifier = rowWidth,
                 )
+                if (state.canReadForeign) {
+                    TvTextRow(
+                        text = stringResource(R.string.backup_tv_browse),
+                        onClick = { if (!busy) viewModel.browse() },
+                        icon = AppIcons.Folder,
+                        modifier = rowWidth,
+                    )
+                    Note(stringResource(R.string.backup_tv_browse_summary))
+                }
+            }
+
+            Step.BROWSE -> {
+                val browse = state.browse
+                Title(stringResource(R.string.backup_tv_browse))
+                Note(browse?.path ?: stringResource(R.string.backup_tv_browse_pick_storage))
+                val entries = browse?.entries.orEmpty()
+                // Fokus ide na folder iz koga se korisnik vratio, inače na prvu stavku; prazan folder ima samo „Nazad”.
+                val focused = entries.firstOrNull { it.path == browse?.focusPath } ?: entries.firstOrNull()
+                TvTextRow(
+                    text = stringResource(R.string.action_back),
+                    onClick = viewModel::browseUp,
+                    icon = AppIcons.Back,
+                    modifier = if (focused == null) rowWidth.focusRequester(firstFocus) else rowWidth,
+                )
+                if (entries.isEmpty()) Note(stringResource(R.string.backup_tv_browse_empty))
+                entries.forEach { entry ->
+                    TvTextRow(
+                        text = entry.name,
+                        trailing = if (entry.isDirectory) {
+                            null
+                        } else {
+                            DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(entry.modifiedAt))
+                        },
+                        onClick = {
+                            if (entry.isDirectory) {
+                                viewModel.browseInto(entry.path)
+                            } else if (!busy) {
+                                viewModel.clearImportResult()
+                                viewModel.open(entry.path)
+                            }
+                        },
+                        icon = if (entry.isDirectory) AppIcons.Folder else null,
+                        modifier = if (entry == focused) rowWidth.focusRequester(firstFocus) else rowWidth,
+                    )
+                }
             }
 
             Step.EXPORT_PASSWORD -> {
@@ -283,7 +329,7 @@ fun TvBackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
     }
 }
 
-private enum class Step { MAIN, EXPORT_PASSWORD, IMPORT_PASSWORD, MODE, CONFIRM_REPLACE }
+private enum class Step { MAIN, BROWSE, EXPORT_PASSWORD, IMPORT_PASSWORD, MODE, CONFIRM_REPLACE }
 
 @Composable
 private fun Title(text: String) {
