@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ import com.bane23.iptvplayer.ui.common.lock.ParentalError
 import com.bane23.iptvplayer.ui.common.lock.ParentalStep
 import com.bane23.iptvplayer.ui.common.lock.ParentalViewModel
 import com.bane23.iptvplayer.ui.common.lock.PinGateViewModel
+import com.bane23.iptvplayer.ui.common.vod.VodSearch
 
 private const val DELETE_KEY = "⌫"
 
@@ -210,6 +212,13 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
             state.step == ParentalStep.MANAGE -> {
                 val locked = stringResource(R.string.parental_locked)
                 val open = stringResource(R.string.parental_unlocked)
+                var filter by rememberSaveable { mutableStateOf("") }
+                val needle = remember(filter) { VodSearch.normalize(filter) }
+                fun found(items: List<LockItem>) =
+                    if (needle.isEmpty()) items else items.filter { VodSearch.normalize(it.name).contains(needle) }
+                val channels = remember(state.channels, needle) { found(state.channels) }
+                val movies = remember(state.movies, needle) { found(state.movies) }
+                val series = remember(state.series, needle) { found(state.series) }
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(0.75f),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -235,9 +244,29 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
                     item(key = "remove-pin") {
                         TvTextRow(text = stringResource(R.string.parental_remove_pin), onClick = viewModel::removePin)
                     }
-                    section("channels", R.string.player_channels, state.channels, locked, open, viewModel::toggle)
-                    section("movies", R.string.vod_movies, state.movies, locked, open, viewModel::toggle)
-                    section("series", R.string.vod_series, state.series, locked, open, viewModel::toggle)
+                    item(key = "search") {
+                        TvFilterField(
+                            value = filter,
+                            onChange = { filter = it },
+                            placeholder = stringResource(R.string.search_categories),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                        )
+                    }
+                    if (channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
+                        item(key = "nothing-found") {
+                            Text(
+                                text = stringResource(R.string.search_empty_categories),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 16.dp, top = 14.dp),
+                            )
+                        }
+                    }
+                    section("channels", R.string.player_channels, channels, locked, open, viewModel::toggle)
+                    section("movies", R.string.vod_movies, movies, locked, open, viewModel::toggle)
+                    section("series", R.string.vod_series, series, locked, open, viewModel::toggle)
                 }
                 LaunchedEffect(Unit) { firstRow.tryRequestFocus() }
             }

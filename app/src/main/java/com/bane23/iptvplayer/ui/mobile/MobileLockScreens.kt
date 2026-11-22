@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -26,12 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +52,8 @@ import com.bane23.iptvplayer.ui.common.lock.ParentalError
 import com.bane23.iptvplayer.ui.common.lock.ParentalStep
 import com.bane23.iptvplayer.ui.common.lock.ParentalViewModel
 import com.bane23.iptvplayer.ui.common.lock.PinGateViewModel
+import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.vod.VodSearch
 
 /** Unos PIN-a od četiri cifre; četvrta cifra ga odmah šalje. */
 @Composable
@@ -154,34 +159,66 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
             when {
                 state.loading -> CircularProgressIndicator(modifier = Modifier.padding(24.dp))
 
-                state.step == ParentalStep.MANAGE -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item(key = "hint") {
-                        Text(
-                            text = stringResource(R.string.parental_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
-                    item(key = "actions") {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            OutlinedButton(onClick = lockAgain, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.parental_lock_again))
-                            }
-                            OutlinedButton(onClick = viewModel::changePin, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.parental_change_pin))
-                            }
-                            OutlinedButton(onClick = viewModel::removePin, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.parental_remove_pin))
+                state.step == ParentalStep.MANAGE -> {
+                    var filter by rememberSaveable { mutableStateOf("") }
+                    val needle = remember(filter) { VodSearch.normalize(filter) }
+                    fun found(items: List<LockItem>) =
+                        if (needle.isEmpty()) items else items.filter { VodSearch.normalize(it.name).contains(needle) }
+                    val channels = remember(state.channels, needle) { found(state.channels) }
+                    val movies = remember(state.movies, needle) { found(state.movies) }
+                    val series = remember(state.series, needle) { found(state.series) }
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        item(key = "hint") {
+                            Text(
+                                text = stringResource(R.string.parental_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
+                        item(key = "actions") {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                OutlinedButton(onClick = lockAgain, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.parental_lock_again))
+                                }
+                                OutlinedButton(onClick = viewModel::changePin, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.parental_change_pin))
+                                }
+                                OutlinedButton(onClick = viewModel::removePin, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.parental_remove_pin))
+                                }
                             }
                         }
+                        item(key = "search") {
+                            OutlinedTextField(
+                                value = filter,
+                                onValueChange = { filter = it },
+                                placeholder = { Text(stringResource(R.string.search_categories)) },
+                                leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                            )
+                        }
+                        if (channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
+                            item(key = "nothing-found") {
+                                Text(
+                                    text = stringResource(R.string.search_empty_categories),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                                )
+                            }
+                        }
+                        section("channels", R.string.player_channels, channels, viewModel::toggle)
+                        section("movies", R.string.vod_movies, movies, viewModel::toggle)
+                        section("series", R.string.vod_series, series, viewModel::toggle)
                     }
-                    section("channels", R.string.player_channels, state.channels, viewModel::toggle)
-                    section("movies", R.string.vod_movies, state.movies, viewModel::toggle)
-                    section("series", R.string.vod_series, state.series, viewModel::toggle)
                 }
 
                 else -> key(state.step) {
