@@ -1,0 +1,4 @@
+Merging playlists is now a single "Merge channels of all playlists" switch at the top of the Playlists screen, instead of an item on every playlist
+Locked categories: an entered PIN lasts only until you leave the app, and "Lock again" locks at once
+Channels from locked categories are no longer kept in "Recent"
+A long press on a channel in "Recent" removes it from the list, and a long press on the group itself clears the whole list

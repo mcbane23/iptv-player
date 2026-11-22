@@ -1,0 +1,4 @@
+Spajanje lista je sada jedan prekidač „Spoji kanale svih lista” na vrhu ekrana Liste, umesto stavke na svakoj listi
+Zaključane kategorije: uneti PIN važi samo dok ne izađete iz aplikacije, a „Zaključaj ponovo” zaključava odmah
+Kanali iz zaključanih kategorija se više ne pamte u „Nedavno”
+Dugi pritisak na kanal u „Nedavno” ga uklanja sa spiska, a dugi pritisak na samu grupu briše ceo spisak
