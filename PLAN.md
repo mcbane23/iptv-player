@@ -835,6 +835,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       ne prikazuje, pa tamo ostaje red „Arhiva”
 - [x] Prekidač „Automatski pusti sledeću epizodu” (Bane, 22. 11. 2026; telefon i TV, podrazumevano uključen):
       kad je isključen, kartica na kraju epizode i dalje nudi sledeću, ali ona ne kreće sama
+- [x] TV Filmovi i Serije: šira mreža postera (Bane, 22. 11. 2026): čim fokus pređe na postere (OK na
+      kategoriji ili Desno), kategorije se skupe u tanku traku sa ikonicama i u red staje 7 malo manjih
+      postera umesto 5 (Bane izabrao sa slike). Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa
+      fokusom na izabranoj. OK na kategoriji je bira i prelazi na postere čim stignu. Uživo i telefon se
+      ne menjaju.
+
 
 ## 7. Testiranje
 
