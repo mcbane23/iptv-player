@@ -108,6 +108,7 @@ private const val ALL_CHANNELS = ChannelGroups.ALL
 fun TvLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
+    onRestore: (() -> Unit)? = null,
     onSearch: () -> Unit,
     onUnlock: () -> Unit,
     onCategories: () -> Unit = {},
@@ -492,8 +493,14 @@ fun TvLiveTvScreen(
             playlistId == null -> {
                 TvEmptyState(icon = AppIcons.Playlists, text = stringResource(R.string.playlists_empty))
                 // Početni fokus mora biti na nekom elementu, inače daljinski ne radi ništa.
-                TvButton(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
-                    Text(stringResource(R.string.action_add_playlist))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TvButton(onClick = onManagePlaylists, modifier = Modifier.focusRequester(firstFocus)) {
+                        Text(stringResource(R.string.action_add_playlist))
+                    }
+                    // Posle nove instalacije: sve se vraća iz fajla izvoza, bez kucanja podataka liste.
+                    if (onRestore != null) {
+                        TvOutlinedButton(onClick = onRestore) { Text(stringResource(R.string.backup_restore_from_file)) }
+                    }
                 }
                 LaunchedEffect(Unit) { firstFocus.tryRequestFocus() }
             }

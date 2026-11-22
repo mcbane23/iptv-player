@@ -607,6 +607,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   Download/Glowbox i nudi fajlove iz tog foldera (za fajl koji nije sam napravio traži pristup svim
   fajlovima); dekoder, veličina prikaza i folder snimaka se vraćaju samo na istoj vrsti uređaja. Postojeći
   PIN i zaključavanja uvoz nikad ne skida. Format: `data/backup/Backup.kt`, oslonjen na `TransferBundle`.
+  Dok nema nijedne liste, pored „Dodaj listu” (Uživo i Liste, telefon i TV) stoji i „Vrati iz fajla”, koje
+  otvara isti ekran. Fajl se zove `glowbox-export-<datum>.json` (Bane: naziv na engleskom).
 - [x] Program kanala u plejeru (Bane, 18. 11. 2026, treći krug predloga): dugme „Program” otvara raspored
       kanala koji se gleda (emisija u toku i narednih 24 sata) preko slike, na TV-u i telefonu. Buduća
       emisija nudi „Podseti me” i zakazivanje snimanja, tekuća snimanje do kraja; kanal sa arhivom ima
@@ -840,6 +842,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       FHD ili 4K), „Sakrij kanale +1” i „Spoji istoimene kanale” (isti naziv u jednoj listi prikazuje se jednom).
       Sve se čita iz naziva kanala (`domain/ChannelRules.kt`); omiljeni kanali se ne sklanjaju. Baza v22, kolona
       `channels.ruleHidden`, održava je `ChannelRulesSync` posle promene pravila i posle osvežavanja liste
+- [x] TV Filmovi i Serije: šira mreža postera (Bane, 22. 11. 2026): čim fokus pređe na postere (OK na
+      kategoriji ili Desno), kategorije se skupe u tanku traku sa ikonicama i u red staje 7 malo manjih
+      postera umesto 5 (Bane izabrao sa slike). Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa
+      fokusom na izabranoj. OK na kategoriji je bira i prelazi na postere čim stignu. Uživo i telefon se
+      ne menjaju.
+
 
 ## 7. Testiranje
 

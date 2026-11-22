@@ -150,6 +150,7 @@ fun MobileHomeScreen(
                     MobileTab.LIVE -> MobileLiveTvScreen(
                         onPlay = onPlay,
                         onManagePlaylists = onPlaylists,
+                        onRestore = onBackup,
                         onSearch = onSearch,
                         onGuide = onGuide,
                         onMultiView = onMultiView,
