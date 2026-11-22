@@ -1,0 +1,17 @@
+Meniji plejera (Titlovi, Zvuk, Podešavanja, Izvori) su mala providna pločica iznad svog dugmeta, na telefonu i TV-u
+Titl sa interneta se bira u istom meniju Titlovi i uključuje se bez prekida slike
+Veličina i pomeranje titla su sada u meniju Titlovi
+Brzina puštanja filmova i epizoda ide do 8x (iznad 2x bez zvuka)
+Telefon: zvuk i osvetljenje se menjaju prevlačenjem uz desnu i levu ivicu slike, bez smetanja gestu Nazad
+Telefon: prevlačenje gore ili dole u plejeru uživo menja kanal, a povlačenje nadole u spisku osvežava listu
+Telefon: okretanje menja samo izgled, a kartica, kategorija i mesto u spisku ostaju isti
+Telefon: ponovni dodir na dugme u plejeru zatvara njegov meni
+TV: posle Nazad fokus se vraća tamo gde je bio, a put kroz menije je kraći
+TV: fokus je pri pokretanju odmah na prvoj stavci Početne i ostaje u otvorenom meniju plejera
+TV: bočni meni više ne treperi pri povratku na Početnu
+TV: stavke u Podešavanjima plejera se menjaju strelicama levo i desno
+TV: pitanje pre uklanjanja filma ili serije iz favorita
+Prenos sa telefona na TV: TV odmah potvrdi prijem, a ostalo radi sam u pozadini
+Ekran pauze se pojavljuje posle 10 sekundi i ostaje, bez kasnijeg zatamnjenja
+Informacije o strimu uvek pokazuju broj sličica u sekundi (fps)
+Kanali se otvaraju brže, a program uz kanale je tačan i dok je spisak otvoren

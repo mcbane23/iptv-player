@@ -1,0 +1,17 @@
+Player menus (Subtitles, Audio, Settings, Sources) are a small translucent tile above their button, on phone and TV
+An online subtitle is picked in the same Subtitles menu and turns on without interrupting the picture
+Subtitle size and timing are now in the Subtitles menu
+Playback speed for movies and episodes goes up to 8x (muted above 2x)
+Phone: volume and brightness change by swiping along the right and left edge of the picture, without getting in the way of the Back gesture
+Phone: swiping up or down in the live player changes the channel, and pulling down in a list refreshes the playlist
+Phone: rotation changes only the layout, while the tab, category and place in the list stay the same
+Phone: tapping a player button again closes its menu
+TV: after Back the focus returns to where it was, and menus take fewer presses
+TV: focus starts on the first Home item at launch and stays inside an open player menu
+TV: the side menu no longer flashes when returning to Home
+TV: items in the player Settings change with the left and right arrows
+TV: a prompt before removing a movie or series from favorites
+Transfer from phone to TV: the TV confirms receipt at once and does the rest in the background
+The pause screen appears after 10 seconds and stays, with no later dimming
+Stream info always shows the frame rate (fps)
+Channels start faster, and the programme next to channels stays correct while the list is open
