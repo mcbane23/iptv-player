@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.ui.common.multiview
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.player.SeekKind
 import com.bane23.iptvplayer.player.VideoInfo
 
 /** Tehnički podaci polja kao jedan red teksta, ili null dok slika nije krenula. */
@@ -22,5 +23,12 @@ fun VideoInfo.label(): String? {
         stringResource(R.string.stream_info_rebuffers, rebuffers),
     )
     val tunnel = if (tunneled) stringResource(R.string.stream_info_tunnel) else null
-    return (listOfNotNull(kind, tunnel, size, container) + counters + listOfNotNull(decoder)).joinToString(" · ")
+    val seeking = when (seek) {
+        SeekKind.NORMAL -> null
+        SeekKind.APPROXIMATE -> stringResource(R.string.stream_info_seek_approximate)
+        SeekKind.MEASURING -> stringResource(R.string.stream_info_seek_measuring)
+        SeekKind.NO_SIZE -> stringResource(R.string.stream_info_seek_no_size)
+        SeekKind.NO_RANGE -> stringResource(R.string.stream_info_seek_no_range)
+    }
+    return (listOfNotNull(kind, tunnel, size, container, seeking) + counters + listOfNotNull(decoder)).joinToString(" · ")
 }

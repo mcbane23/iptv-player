@@ -439,6 +439,10 @@
     <string name="stream_info_keyframe_skips">skips %1$d</string>
     <string name="stream_info_audio_underruns">audio underruns %1$d</string>
     <string name="stream_info_rebuffers">rebuffers %1$d</string>
+    <string name="stream_info_seek_approximate">approximate seeking</string>
+    <string name="stream_info_seek_measuring">no seeking yet (measuring)</string>
+    <string name="stream_info_seek_no_size">no seeking (size unknown)</string>
+    <string name="stream_info_seek_no_range">no seeking (server refuses)</string>
     <string name="subtitle_preview_text">This is how subtitles will look</string>
     <string name="settings_subtitle_look_summary">How subtitles look in the player. Changes apply right away.</string>
     <string name="subtitle_size_small">Small</string>

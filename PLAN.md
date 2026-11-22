@@ -876,6 +876,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   - Uživo: svi redovi iste visine, broj kanala na čipu izabrane grupe; izabran čip u boji aplikacije
   - vrh (naslov i čipovi) se sklanja dok se lista nadole, u Uživo, Filmovima i Serijama
   - TV vodič uspravno je spisak „sada i sledeće”; položeno ostaje mreža
+- [x] Približno premotavanje fajlova bez indeksa (Bane, 22. 11. 2026; telefon i TV): matroska fajl bez
+      indeksa se više ne vodi kao nepremotljiv. Mesto se procenjuje iz veličine fajla i trajanja, posle
+      skoka se nađe početak bloka i po potrebi skoči još jednom, bliže. Fajl bez trajanja postaje
+      premotljiv posle dvadesetak sekundi učitavanja. Nastavak gledanja, promena dekodera i brzine više
+      ne vraćaju takav fajl na početak. Ako server ne da fajl od sredine, ostaje poruka kao do sada.
 
 ## 7. Testiranje
 
