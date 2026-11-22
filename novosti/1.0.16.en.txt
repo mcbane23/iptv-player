@@ -1,0 +1,6 @@
+TV: screensaver with a clock and the date after a chosen time without key presses (Settings > Appearance > Screensaver)
+TV: all list rows are the same height
+Parental control: category search, and a long press on a category locks or unlocks it
+A single channel, movie or series can be locked too; they disappear from the lists until the PIN is entered
+Quick "Unlock all" and "Lock again" on a long press
+Fixed: the PIN pad no longer flashes after "Lock again"

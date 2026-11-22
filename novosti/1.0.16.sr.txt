@@ -1,0 +1,6 @@
+TV: čuvar ekrana sa satom i datumom posle izabranog vremena bez tastera (Podešavanja > Izgled > Čuvar ekrana)
+TV: svi redovi u spiskovima su iste visine
+Roditeljska zaštita: pretraga kategorija, a dugi pritisak na kategoriju je zaključava ili otključava
+Može da se zaključa i pojedinačan kanal, film ili serija; nestaju iz spiskova dok se ne unese PIN
+Brzo „Otključaj sve” i „Zaključaj ponovo” na dugi pritisak
+Ispravljeno: tastatura za PIN više ne blesne posle „Zaključaj ponovo”
