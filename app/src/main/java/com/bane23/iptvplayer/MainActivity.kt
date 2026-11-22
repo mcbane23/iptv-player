@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -71,7 +72,11 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations) locks.lockAgain()
     }
 
-    /** Svaki taster i dodir odlažu čuvar ekrana. */
+    /**
+     * Svaki taster i dodir odlažu čuvar ekrana. Lint javlja RestrictedApi za svako preklapanje
+     * dispatchKeyEvent u ComponentActivity, iako je to javna metoda Activity-ja.
+     */
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         UserActivity.touch()
         return super.dispatchKeyEvent(event)
