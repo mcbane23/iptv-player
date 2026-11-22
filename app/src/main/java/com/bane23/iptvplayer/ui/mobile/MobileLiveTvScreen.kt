@@ -108,6 +108,7 @@ private const val ALL_CHANNELS = ChannelGroups.ALL
 fun MobileLiveTvScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onManagePlaylists: () -> Unit,
+    onRestore: (() -> Unit)? = null,
     onSearch: () -> Unit,
     onGuide: (playlistId: Long, categoryId: Long?) -> Unit,
     onMultiView: () -> Unit,
@@ -267,6 +268,9 @@ fun MobileLiveTvScreen(
                     actionLabel = stringResource(R.string.action_add_playlist),
                     actionIcon = AppIcons.Add,
                     onAction = onManagePlaylists,
+                    secondaryLabel = stringResource(R.string.backup_restore_from_file),
+                    secondaryIcon = AppIcons.Download,
+                    onSecondary = onRestore,
                 )
 
                 else -> {

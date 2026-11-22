@@ -44,6 +44,7 @@ fun TvPlaylistsScreen(
     onAdd: () -> Unit,
     onAddFromPhone: () -> Unit,
     onEdit: (Long) -> Unit,
+    onRestore: (() -> Unit)? = null,
     viewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -81,6 +82,12 @@ fun TvPlaylistsScreen(
             }
             TvOutlinedButton(onClick = onAddFromPhone, modifier = Modifier.padding(start = 12.dp)) {
                 Text(stringResource(R.string.action_add_from_phone))
+            }
+            // Dok nema nijedne liste nudi se i vraćanje svega iz fajla izvoza.
+            if (onRestore != null && !state.loading && state.playlists.isEmpty()) {
+                TvOutlinedButton(onClick = onRestore, modifier = Modifier.padding(start = 12.dp)) {
+                    Text(stringResource(R.string.backup_restore_from_file))
+                }
             }
             TvClock(modifier = Modifier.padding(start = 24.dp))
         }

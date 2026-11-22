@@ -317,6 +317,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onAdd = { backStack.push(EditPlaylist()) },
                     onEdit = { id -> backStack.push(EditPlaylist(id)) },
                     onBack = { backStack.removeLastOrNull() },
+                    onRestore = { backStack.push(BackupRestore) },
                 )
             }
             entry<EditPlaylist> { key ->
