@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.data.repo
 
+import com.bane23.iptvplayer.domain.ChannelRules
+import com.bane23.iptvplayer.domain.ChannelFilter
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
@@ -667,6 +669,10 @@ class PlaylistRepository @Inject constructor(
     /** Upisuje kanale u paketima i usput pravi kategorije po redosledu pojavljivanja. */
     private inner class ChannelWriter(private val playlistId: Long) {
         private val categoryIds = HashMap<String, Long>()
+        private val categoryNames = HashMap<Long, String>()
+        // Filter kanala u trenutku uvoza: kanali se upisuju već filtrirani, da se pri osvežavanju
+        // liste filter ne „ugasi” dok ga ChannelRulesSync ponovo ne primeni.
+        private var filter: ChannelFilter? = null
         private val batch = ArrayList<ChannelEntity>(BATCH_SIZE)
         var total = 0
             private set
@@ -686,6 +692,7 @@ class PlaylistRepository @Inject constructor(
                 ),
             )
             categoryIds[key] = id
+            categoryNames[id] = name
             return id
         }
 
@@ -696,7 +703,11 @@ class PlaylistRepository @Inject constructor(
         ) {
             val key = categoryKey?.takeIf { it.isNotBlank() }
             val categoryId = key?.let { ensureCategory(it, categoryName?.takeIf { n -> n.isNotBlank() } ?: it) }
-            batch.add(build(categoryId, total))
+            val channel = build(categoryId, total)
+            val current = filter ?: settings.liveFilter.first().also { filter = it }
+            val quality = ChannelRules.quality(channel.name)
+            val country = ChannelRules.country(channel.name, categoryId?.let { categoryNames[it] })
+            batch.add(channel.copy(quality = quality, country = country, filterHidden = current.hides(quality, country)))
             total++
             if (batch.size >= BATCH_SIZE) flush()
         }

@@ -66,10 +66,20 @@ class ChannelRepository @Inject constructor(
 
     suspend fun playlistName(playlistId: Long): String? = playlistDao.getById(playlistId)?.name
 
-    /** Vidljive kategorije. Kategorija koja je sada zaključana ima katanac ispred naziva. */
+    /**
+     * Vidljive kategorije. Kategorija koja je sada zaključana ima katanac ispred naziva. Dok je uključen
+     * filter kanala ili neko pravilo za kanale, kategorije u kojima posle toga nema nijednog kanala se
+     * ne prikazuju.
+     */
     fun observeCategories(playlistId: Long): Flow<List<Category>> =
-        combine(categoryDao.observeLiveWithCount(playlistId), locks.activeKeys) { rows, lockedKeys ->
-            rows.map {
+        combine(
+            categoryDao.observeLiveWithCount(playlistId),
+            locks.activeKeys,
+            settings.liveFilter,
+            settings.channelRules,
+        ) { rows, lockedKeys, filter, rules ->
+            val dropEmpty = filter.active || rules.any
+            rows.filter { !dropEmpty || it.channelCount > 0 }.map {
                 val name = it.category.name
                 val locked = LockRepository.liveKey(it.category.playlistId, name) in lockedKeys
                 Category(
