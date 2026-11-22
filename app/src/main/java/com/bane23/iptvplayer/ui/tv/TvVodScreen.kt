@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.lock.vodItem
+import com.bane23.iptvplayer.ui.common.lock.LockAction
+import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -110,6 +113,29 @@ fun TvVodScreen(
     // Meni kategorije (dugi OK): sakrij, pomeri na vrh, uredi.
     var menuCategory by remember { mutableStateOf<VodCategory?>(null) }
     val lockMenu = rememberLockMenu(onUnlock)
+    // Film ili serija zaključani dok PIN nije unet odmah nestaju iz mreže: fokus pre toga pređe na susedni poster.
+    var lockedAway by remember { mutableIntStateOf(0) }
+    val posterLock: (VodItem, List<VodItem>) -> ItemLock? = { item, shown ->
+        lockMenu.vodItem(series, item.id, item.name)?.let { lock ->
+            ItemLock(lock.actions) { action ->
+                if (action == LockAction.LOCK && lockMenu.state.hasPin && !lockMenu.state.unlocked) {
+                    val index = shown.indexOfFirst { it.id == item.id }
+                    (shown.getOrNull(index + 1) ?: shown.getOrNull(index - 1))?.let { neighbor ->
+                        lastItemId = neighbor.id
+                        lockedAway++
+                    }
+                }
+                lock.run(action)
+            }
+        }
+    }
+    LaunchedEffect(lockedAway) {
+        if (lockedAway == 0) return@LaunchedEffect
+        repeat(FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            if (posterFocus.tryRequestFocus()) return@LaunchedEffect
+        }
+    }
     var sortOpen by remember { mutableStateOf(false) }
     // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
@@ -447,6 +473,7 @@ fun TvVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onToggleFavorite = { if (pendingUnfavorite == null) pendingUnfavorite = item },
+                                    lock = posterLock(item, favorites),
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         focusedColumn[0] = index % GRID_COLUMNS
@@ -479,6 +506,7 @@ fun TvVodScreen(
                                     favorite = item.id in favoriteIds,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    lock = posterLock(item, state.items),
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         focusedColumn[0] = index % GRID_COLUMNS
@@ -604,8 +632,23 @@ fun PosterCard(
     watched: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    // Sa zaključavanjem dugi OK otvara meni: omiljeni i roditeljska zaštita.
+    lock: ItemLock? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
+    var lockMenuOpen by remember { mutableStateOf(false) }
+    if (lockMenuOpen && lock != null) {
+        val favoriteOption = onToggleFavorite?.let { stringResource(if (favorite) R.string.favorite_remove else R.string.favorite_add) }
+        TvActionDialog(
+            title = name,
+            options = listOfNotNull(favoriteOption) + lock.actions.map { stringResource(it.label) },
+            onSelect = { option ->
+                val shift = if (favoriteOption == null) 0 else 1
+                if (option < shift) onToggleFavorite?.invoke() else lock.actions.getOrNull(option - shift)?.let(lock.run)
+            },
+            onClose = { lockMenuOpen = false },
+        )
+    }
     // Uklanjanje iz favorita se prvo potvrđuje (Bane); dodavanje ide odmah.
     var confirmRemove by remember { mutableStateOf(false) }
     if (confirmRemove && onToggleFavorite != null) {
@@ -618,6 +661,7 @@ fun PosterCard(
         )
     }
     val longAction: (() -> Unit)? = onLongClick
+        ?: lock?.let { { lockMenuOpen = true } }
         ?: onToggleFavorite?.let { toggle -> { if (favorite) confirmRemove = true else toggle() } }
     // Jedno držanje tastera OK važi kao jedan dugi pritisak. [pressed]: pritisak je počeo na ovom posteru;
     // [foreignHold]: taster se drži od ranije (fokus je stigao sa drugog postera), pa se ne računa.

@@ -115,6 +115,8 @@ data class ParentalUiState(
     val channels: List<LockItem> = emptyList(),
     val movies: List<LockItem> = emptyList(),
     val series: List<LockItem> = emptyList(),
+    /** Pojedinačno zaključani kanali, filmovi i serije; dodir skida zaključavanje. */
+    val single: List<LockItem> = emptyList(),
 )
 
 /** Ekran roditeljske zaštite: postavljanje PIN-a i izbor kategorija koje se zaključavaju. */
@@ -168,6 +170,8 @@ class ParentalViewModel @Inject constructor(
                 movies = vodItems(names.movies, series = false),
                 series = vodItems(names.series, series = true),
             )
+        }.combine(locks.lockedItems) { ui, items ->
+            ui.copy(single = items.map { LockItem(LockRepository.itemKey(it.kind, it.playlistId, it.itemKey), it.name, locked = true) })
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ParentalUiState())
 
     init {

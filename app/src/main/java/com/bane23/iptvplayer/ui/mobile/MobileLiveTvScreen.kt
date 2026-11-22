@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.channel
+import com.bane23.iptvplayer.ui.common.lock.LockAction
+import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
@@ -358,6 +361,16 @@ fun MobileLiveTvScreen(
                                             if (picked.id == previewId) previewId = null
                                             hiddenChannels.hide(picked.id)
                                             AppMessages.show(context, R.string.channel_hidden, long = true)
+                                        },
+                                        lock = channel?.let { shown ->
+                                            lockMenu.channel(shown)?.let { lock ->
+                                                ItemLock(lock.actions) { action ->
+                                                    // Kanal zaključan dok PIN nije unet odmah nestaje iz spiska.
+                                                    val gone = action == LockAction.LOCK && lockMenu.state.hasPin && !lockMenu.state.unlocked
+                                                    if (gone && shown.id == previewId) previewId = null
+                                                    lock.run(action)
+                                                }
+                                            }
                                         },
                                         onRemoveRecent = if (selected == ChannelGroups.RECENT) {
                                             { picked ->

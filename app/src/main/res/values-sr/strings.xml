@@ -340,7 +340,7 @@
     <string name="archive_hint_tv">OK otvara arhivu</string>
     <string name="parental_title">Roditeljska zaštita</string>
     <string name="parental_intro">Postavi PIN od četiri cifre. Posle toga biraš kategorije koje se otvaraju tek posle unosa PIN-a.</string>
-    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Unet PIN važi dok ne izađeš iz aplikacije. Kanali zaključanih kategorija se ne pamte među nedavno gledanim.</string>
+    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Pojedinačno zaključan kanal, film ili serija se ne vidi nigde dok se ne unese PIN. Za brzo zaključavanje i otključavanje dugo pritisni kategoriju, kanal, film ili seriju. Unet PIN važi dok ne izađeš iz aplikacije. Zaključani kanali se ne pamte među nedavno gledanim.</string>
     <string name="parental_lock_again">Zaključaj ponovo</string>
     <string name="parental_change_pin">Promeni PIN</string>
     <string name="parental_remove_pin">Ukloni PIN i sva zaključavanja</string>
@@ -351,6 +351,7 @@
     <string name="lock_needs_pin">Prvo postavi PIN: Podešavanja, Roditeljska zaštita.</string>
     <string name="lock_done_open">Zaključano. Važi kad zaključaš ponovo ili izađeš iz aplikacije.</string>
     <string name="lock_removed">Zaključavanje uklonjeno</string>
+    <string name="parental_single">Pojedinačno zaključano</string>
     <string name="parental_unlocked">Slobodno</string>
     <string name="pin_enter">Unesi PIN</string>
     <string name="pin_new">Unesi novi PIN</string>
@@ -639,7 +640,7 @@
     <string name="epg_time_left">%1$s · još %2$d min</string>
     <string name="settings_playlists_summary">Dodavanje, izmena i brisanje lista</string>
     <string name="settings_categories_summary">Sakrivanje kategorija i promena njihovog redosleda</string>
-    <string name="settings_parental_summary">Zaključavanje kategorija PIN-om</string>
+    <string name="settings_parental_summary">Zaključavanje kategorija, kanala, filmova i serija PIN-om</string>
     <string name="settings_trakt_summary">Odgledani filmovi i epizode se usklađuju sa Trakt nalogom</string>
     <string name="settings_opensubtitles_summary">Nalog za više preuzimanja titlova sa interneta</string>
     <string name="settings_recordings_summary">Snimljeni kanali i zakazana snimanja</string>

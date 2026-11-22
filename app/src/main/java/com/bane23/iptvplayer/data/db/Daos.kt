@@ -25,9 +25,14 @@ private const val NOW_COLUMN =
         "(SELECT e.startMs $NOW_PROGRAM) AS nowStartMs, " +
         "(SELECT e.stopMs $NOW_PROGRAM) AS nowStopMs"
 
-/** Korisnik nije sakrio kanal (vidi [HiddenChannelEntity]). */
+/**
+ * Korisnik nije sakrio kanal (vidi [HiddenChannelEntity]) i kanal nije pojedinačno zaključan
+ * roditeljskom zaštitom (vidi [LockedItemEntity]; takav kanal se ne vidi dok se ne unese PIN).
+ */
 private const val NOT_HIDDEN_CHANNEL =
-    "NOT EXISTS(SELECT 1 FROM hidden_channels hx WHERE hx.playlistId = ch.playlistId AND hx.channelKey = ch.stableKey)"
+    "NOT EXISTS(SELECT 1 FROM hidden_channels hx WHERE hx.playlistId = ch.playlistId AND hx.channelKey = ch.stableKey) " +
+        "AND NOT EXISTS(SELECT 1 FROM locked_items lx WHERE lx.playlistId = ch.playlistId AND lx.kind = 'channel' " +
+        "AND lx.itemKey = ch.stableKey AND lx.active = 1)"
 
 /**
  * Kanal sme da se vidi u spiskovima: korisnik ga nije sakrio i nije u kategoriji koja je sada zaključana
@@ -85,7 +90,9 @@ private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrde
 private const val DUPLICATE =
     "EXISTS(SELECT 1 FROM channels d WHERE d.playlistId IN $SCOPE_IDS AND d.playlistId < ch.playlistId " +
         "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND (dc.hidden = 1 OR dc.locked = 1)) " +
-        "AND NOT EXISTS(SELECT 1 FROM hidden_channels dh WHERE dh.playlistId = d.playlistId AND dh.channelKey = d.stableKey))"
+        "AND NOT EXISTS(SELECT 1 FROM hidden_channels dh WHERE dh.playlistId = d.playlistId AND dh.channelKey = d.stableKey) " +
+        "AND NOT EXISTS(SELECT 1 FROM locked_items dl WHERE dl.playlistId = d.playlistId AND dl.kind = 'channel' " +
+        "AND dl.itemKey = d.stableKey AND dl.active = 1))"
 
 /**
  * Uslov koji iz spiska „svi kanali” (`:categoryId` je null) izbacuje kanale sakrivenih kategorija.
@@ -398,6 +405,25 @@ interface ChannelDao {
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
+}
+
+@Dao
+interface LockedItemDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(item: LockedItemEntity)
+
+    @Query("DELETE FROM locked_items WHERE playlistId = :playlistId AND kind = :kind AND itemKey = :itemKey")
+    suspend fun delete(playlistId: Long, kind: String, itemKey: String)
+
+    @Query("DELETE FROM locked_items")
+    suspend fun deleteAll()
+
+    /** Sve pojedinačno zaključano, poslednje zaključano prvo. */
+    @Query("SELECT * FROM locked_items ORDER BY lockedAt DESC")
+    fun observeAll(): Flow<List<LockedItemEntity>>
+
+    @Query("UPDATE locked_items SET active = :active WHERE active != :active")
+    suspend fun setActive(active: Boolean)
 }
 
 @Dao

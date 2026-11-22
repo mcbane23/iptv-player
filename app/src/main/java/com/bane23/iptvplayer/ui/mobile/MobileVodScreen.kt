@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.vodItem
+import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -265,6 +267,7 @@ fun MobileVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    lock = lockMenu.vodItem(series, item.id, item.name),
                                 )
                             }
 
@@ -292,6 +295,7 @@ fun MobileVodScreen(
                                     favorite = item.id in favoriteIds,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    lock = lockMenu.vodItem(series, item.id, item.name),
                                 )
                             }
                         }
@@ -404,8 +408,25 @@ fun PosterTile(
     watched: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
+    // Dugi pritisak tada otvara meni roditeljske zaštite za ovaj film, odnosno seriju.
+    lock: ItemLock? = null,
 ) {
-    Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+    var lockMenuOpen by remember { mutableStateOf(false) }
+    val longClick = onLongClick ?: lock?.let { { lockMenuOpen = true } }
+    Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = longClick)) {
+        if (lock != null) {
+            DropdownMenu(expanded = lockMenuOpen, onDismissRequest = { lockMenuOpen = false }) {
+                lock.actions.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(action.label)) },
+                        onClick = {
+                            lockMenuOpen = false
+                            lock.run(action)
+                        },
+                    )
+                }
+            }
+        }
         Box {
             Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite != null) {

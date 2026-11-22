@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.data.repo
 
 import com.bane23.iptvplayer.data.db.AppDatabase
+import com.bane23.iptvplayer.data.db.LockedItemEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.domain.Pin
 import javax.inject.Inject
@@ -35,11 +36,19 @@ class LockRepository @Inject constructor(
 
     val hasPin: Flow<Boolean> = settings.pinRecord.map { it != null }
 
-    /** Ključevi zaključanih kategorija, bez obzira na to da li je trenutno otključano. */
-    val lockedKeys: Flow<Set<String>> = settings.lockedCategories
+    /** Pojedinačno zaključani kanali, filmovi i serije svih lista, poslednje zaključano prvo. */
+    val lockedItems: Flow<List<LockedItemEntity>> = db.lockedItemDao().observeAll()
 
-    /** Ključevi kategorija čiji je sadržaj sada nedostupan (prazno kad nema PIN-a ili je otključano). */
-    val activeKeys: Flow<Set<String>> = combine(settings.pinRecord, settings.lockedCategories, _unlocked) { pin, keys, open ->
+    /**
+     * Ključevi svega što je izabrano za zaključavanje, bez obzira na to da li je trenutno otključano:
+     * kategorije ([liveKey], [vodKey]) i pojedinačan sadržaj ([itemKey]).
+     */
+    val lockedKeys: Flow<Set<String>> = combine(settings.lockedCategories, lockedItems) { categories, items ->
+        categories + items.map { itemKey(it.kind, it.playlistId, it.itemKey) }
+    }.distinctUntilChanged()
+
+    /** Ključevi onoga što je sada nedostupno (prazno kad nema PIN-a ili je otključano). */
+    val activeKeys: Flow<Set<String>> = combine(settings.pinRecord, lockedKeys, _unlocked) { pin, keys, open ->
         if (pin == null || open) emptySet() else keys
     }
 
@@ -65,6 +74,19 @@ class LockRepository @Inject constructor(
                 }
             }
         }
+        // Kolona `active` pojedinačno zaključanog sadržaja prati da li je sada zaključano, da upiti mogu
+        // da izostave takve kanale.
+        scope.launch {
+            combine(settings.pinRecord, _unlocked) { pin, open -> pin != null && !open }.distinctUntilChanged().collect { closed ->
+                try {
+                    db.lockedItemDao().setActive(closed)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Sledeća promena stanja pokušava ponovo.
+                }
+            }
+        }
         // Kanali zaključanih kategorija se ne pamte među nedavno gledanim, ni dok je otključano: što je
         // već zapamćeno briše se čim se kategorija zaključa (i posle osvežavanja liste).
         scope.launch {
@@ -83,12 +105,13 @@ class LockRepository @Inject constructor(
     }
 
     /**
-     * Da li je strim u kategoriji koja je izabrana za zaključavanje, bez obzira na to da li je PIN sada
+     * Da li je strim zaključan pojedinačno ili je u kategoriji koja je izabrana za zaključavanje, bez obzira na to da li je PIN sada
      * unet. Takav kanal ne ulazi u nedavno gledane.
      */
     suspend fun isInLockedCategory(playlistId: Long, stableKey: String): Boolean {
-        val keys = settings.lockedCategories.first()
+        val keys = lockedKeys.first()
         if (keys.isEmpty()) return false
+        if (itemKey(KIND_CHANNEL, playlistId, stableKey) in keys) return true
         return db.channelDao().categoryNamesOf(playlistId, stableKey).any { liveKey(playlistId, it) in keys }
     }
 
@@ -114,10 +137,30 @@ class LockRepository @Inject constructor(
     /** Uklanja PIN i sva zaključavanja. */
     suspend fun removePin() {
         settings.setPinRecord(null)
+        db.lockedItemDao().deleteAll()
         _unlocked.value = false
     }
 
-    suspend fun setLocked(key: String, locked: Boolean) = settings.setCategoryLocked(key, locked)
+    /**
+     * Zaključava, odnosno skida zaključavanje sa kategorije ili pojedinačnog sadržaja ([itemKey]).
+     * [name] je naziv pojedinačnog sadržaja, za spisak na ekranu roditeljske zaštite.
+     */
+    suspend fun setLocked(key: String, locked: Boolean, name: String = "") {
+        val item = parseItemKey(key)
+        if (item == null) {
+            settings.setCategoryLocked(key, locked)
+            return
+        }
+        val (kind, playlistId, itemKey) = item
+        if (!locked) {
+            db.lockedItemDao().delete(playlistId, kind, itemKey)
+            return
+        }
+        val closed = settings.pinRecord.first() != null && !_unlocked.value
+        db.lockedItemDao().insert(LockedItemEntity(playlistId, kind, itemKey, name, System.currentTimeMillis(), closed))
+        // Zaključan kanal se ne pamti među nedavno gledanim.
+        if (kind == KIND_CHANNEL) db.historyDao().delete(playlistId, itemKey)
+    }
 
     /** Ima li ičeg što je sada zaključano (PIN postoji, nije unet, bar jedna kategorija je zaključana). */
     suspend fun anythingLocked(): Boolean = activeKeysNow().isNotEmpty()
@@ -127,6 +170,7 @@ class LockRepository @Inject constructor(
         val keys = activeKeysNow()
         if (keys.isEmpty()) return false
         val channel = db.channelDao().getById(channelId) ?: return false
+        if (itemKey(KIND_CHANNEL, channel.playlistId, channel.stableKey) in keys) return true
         val categoryId = channel.categoryId ?: return false
         val category = db.categoryDao().getByPlaylist(channel.playlistId).firstOrNull { it.id == categoryId }
         return category != null && liveKey(channel.playlistId, category.name) in keys
@@ -154,5 +198,31 @@ class LockRepository @Inject constructor(
         /** Kategorija filmova ([series] = false) ili serija; ID daje Xtream server i stalan je. */
         fun vodKey(playlistId: Long, series: Boolean, categoryId: String): String =
             "${if (series) "series" else "movies"}|$playlistId|$categoryId"
+
+        const val KIND_CHANNEL = "channel"
+        const val KIND_MOVIE = "movie"
+        const val KIND_SERIES = "series"
+        private const val ITEM_PREFIX = "item|"
+
+        /**
+         * Ključ pojedinačno zaključanog sadržaja: [kind] je [KIND_CHANNEL], [KIND_MOVIE] ili
+         * [KIND_SERIES], a [key] stalni ključ kanala, odnosno ID filma ili serije sa servera.
+         */
+        fun itemKey(kind: String, playlistId: Long, key: String): String = "$ITEM_PREFIX$kind|$playlistId|$key"
+
+        /** Vrsta, lista i ključ iz [itemKey]; null kad [key] nije ključ pojedinačnog sadržaja. */
+        fun parseItemKey(key: String): Triple<String, Long, String>? {
+            if (!key.startsWith(ITEM_PREFIX)) return null
+            val parts = key.removePrefix(ITEM_PREFIX).split('|', limit = 3)
+            if (parts.size != 3) return null
+            val playlistId = parts[1].toLongOrNull() ?: return null
+            return Triple(parts[0], playlistId, parts[2])
+        }
+
+        /** ID-jevi pojedinačno zaključanih filmova ([series] = false) ili serija liste, iz skupa ključeva. */
+        fun vodItemIds(keys: Set<String>, playlistId: Long, series: Boolean): Set<Long> {
+            val prefix = itemKey(if (series) KIND_SERIES else KIND_MOVIE, playlistId, "")
+            return keys.asSequence().filter { it.startsWith(prefix) }.mapNotNull { it.removePrefix(prefix).toLongOrNull() }.toSet()
+        }
     }
 }

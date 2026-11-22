@@ -181,8 +181,11 @@ fun TvPinGate(
 fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku.
+    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku. Dok se zatvara, ostaje
+    // spisak, da unos PIN-a ne sevne na trenutak.
+    var closing by remember { mutableStateOf(false) }
     val lockAgain = {
+        closing = true
         viewModel.lockAgain()
         AppMessages.show(context, R.string.parental_locked)
         onBack()
@@ -209,7 +212,7 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
         when {
             state.loading -> Unit
 
-            state.step == ParentalStep.MANAGE -> {
+            state.step == ParentalStep.MANAGE || closing -> {
                 val locked = stringResource(R.string.parental_locked)
                 val open = stringResource(R.string.parental_unlocked)
                 var filter by rememberSaveable { mutableStateOf("") }
@@ -219,6 +222,7 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
                 val channels = remember(state.channels, needle) { found(state.channels) }
                 val movies = remember(state.movies, needle) { found(state.movies) }
                 val series = remember(state.series, needle) { found(state.series) }
+                val single = remember(state.single, needle) { found(state.single) }
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(0.75f),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -254,7 +258,7 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
                                 .padding(top = 8.dp),
                         )
                     }
-                    if (channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
+                    if (single.isEmpty() && channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
                         item(key = "nothing-found") {
                             Text(
                                 text = stringResource(R.string.search_empty_categories),
@@ -264,6 +268,7 @@ fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltView
                             )
                         }
                     }
+                    section("single", R.string.parental_single, single, locked, open, viewModel::toggle)
                     section("channels", R.string.player_channels, channels, locked, open, viewModel::toggle)
                     section("movies", R.string.vod_movies, movies, locked, open, viewModel::toggle)
                     section("series", R.string.vod_series, series, locked, open, viewModel::toggle)

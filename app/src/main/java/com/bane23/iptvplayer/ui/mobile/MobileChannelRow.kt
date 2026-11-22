@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -176,6 +177,8 @@ fun MobileChannelCard(
     onHide: ((Channel) -> Unit)? = null,
     // Uklanjanje iz nedavno gledanih se nudi samo u grupi „Nedavno”.
     onRemoveRecent: ((Channel) -> Unit)? = null,
+    // Zaključavanje kanala (roditeljska zaštita) se nudi samo u spisku Uživo.
+    lock: ItemLock? = null,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
@@ -308,6 +311,16 @@ fun MobileChannelCard(
                         onClick = {
                             menuOpen = false
                             onHide(channel)
+                        },
+                    )
+                }
+                lock?.actions?.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(action.label)) },
+                        leadingIcon = { Spacer(modifier = Modifier.size(24.dp)) },
+                        onClick = {
+                            menuOpen = false
+                            lock.run(action)
                         },
                     )
                 }

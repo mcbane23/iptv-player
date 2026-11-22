@@ -50,4 +50,13 @@ class QuickLockStateTest {
         assertNull(QuickLockState().vodKey(series = false, categoryId = "12"))
         assertEquals(LockRepository.vodKey(4, true, "12"), QuickLockState(playlistId = 4).vodKey(series = true, categoryId = "12"))
     }
+
+    @Test
+    fun `a single channel, movie or series offers only its own lock`() {
+        val item = LockRepository.itemKey(LockRepository.KIND_MOVIE, 1, "5")
+        val locked = QuickLockState(hasPin = true, unlocked = true, lockedKeys = setOf(item))
+        assertEquals(listOf(LockAction.REMOVE), locked.itemActions(item))
+        assertEquals(listOf(LockAction.LOCK), QuickLockState(hasPin = true, lockedKeys = setOf(key)).itemActions(item))
+        assertEquals(emptyList<LockAction>(), locked.itemActions(null))
+    }
 }

@@ -138,8 +138,11 @@ fun MobilePinGate(
 fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku.
+    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku. Dok se zatvara, ostaje
+    // spisak, da unos PIN-a ne sevne na trenutak.
+    var closing by remember { mutableStateOf(false) }
     val lockAgain = {
+        closing = true
         viewModel.lockAgain()
         AppMessages.show(context, R.string.parental_locked)
         onBack()
@@ -159,7 +162,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
             when {
                 state.loading -> CircularProgressIndicator(modifier = Modifier.padding(24.dp))
 
-                state.step == ParentalStep.MANAGE -> {
+                state.step == ParentalStep.MANAGE || closing -> {
                     var filter by rememberSaveable { mutableStateOf("") }
                     val needle = remember(filter) { VodSearch.normalize(filter) }
                     fun found(items: List<LockItem>) =
@@ -167,6 +170,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
                     val channels = remember(state.channels, needle) { found(state.channels) }
                     val movies = remember(state.movies, needle) { found(state.movies) }
                     val series = remember(state.series, needle) { found(state.series) }
+                    val single = remember(state.single, needle) { found(state.single) }
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item(key = "hint") {
                             Text(
@@ -205,7 +209,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
                                     .padding(start = 16.dp, end = 16.dp, top = 16.dp),
                             )
                         }
-                        if (channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
+                        if (single.isEmpty() && channels.isEmpty() && movies.isEmpty() && series.isEmpty() && needle.isNotEmpty()) {
                             item(key = "nothing-found") {
                                 Text(
                                     text = stringResource(R.string.search_empty_categories),
@@ -215,6 +219,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
                                 )
                             }
                         }
+                        section("single", R.string.parental_single, single, viewModel::toggle)
                         section("channels", R.string.player_channels, channels, viewModel::toggle)
                         section("movies", R.string.vod_movies, movies, viewModel::toggle)
                         section("series", R.string.vod_series, series, viewModel::toggle)

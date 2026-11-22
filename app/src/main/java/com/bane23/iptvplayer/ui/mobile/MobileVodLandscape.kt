@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.vodItem
 import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -223,6 +224,7 @@ fun MobileVodLandscape(
                                 favorite = true,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                lock = lockMenu.vodItem(series, item.id, item.name),
                             )
                         }
                     }
@@ -250,6 +252,7 @@ fun MobileVodLandscape(
                                 favorite = item.id in favoriteIds,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                lock = lockMenu.vodItem(series, item.id, item.name),
                             )
                         }
                     }
