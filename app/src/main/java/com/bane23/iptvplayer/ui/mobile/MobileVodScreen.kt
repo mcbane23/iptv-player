@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.remember
@@ -149,16 +150,23 @@ fun MobileVodScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            SectionTopBar(title = title, onBack = onBack) {
-                VodSortButton(sort = state.sort, onSort = viewModel::setSort)
-                FilterButton(
-                    title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
-                    count = state.filter.count,
-                    choices = vodFilterChoices(state.filter, viewModel::setFilter),
-                    onReset = { viewModel.setFilter(VodFilter()) },
-                )
-                ToolbarIcon(AppIcons.Search, searchLabel, onSearch)
+            val topBar: @Composable () -> Unit = {
+                SectionTopBar(title = title, onBack = onBack) {
+                    VodSortButton(sort = state.sort, onSort = viewModel::setSort)
+                    FilterButton(
+                        title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
+                        count = state.filter.count,
+                        choices = vodFilterChoices(state.filter, viewModel::setFilter),
+                        onReset = { viewModel.setFilter(VodFilter()) },
+                    )
+                    ToolbarIcon(AppIcons.Search, searchLabel, onSearch)
+                }
             }
+            // Dok se posteri listaju, naslov i čipovi se sklanjaju; tada su deo vrha koji se skuplja.
+            val browsing = !state.loadingCategories && !state.categoriesFailed && state.categories.isNotEmpty()
+            if (!browsing) topBar()
+            val header = rememberCollapsingHeaderState { gridState.canScrollForward }
+            LaunchedEffect(shownGroup) { header.expand() }
 
             when {
                 state.loadingCategories -> VodLoading(
@@ -170,7 +178,7 @@ fun MobileVodScreen(
                 state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
                 state.categories.isEmpty() -> EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
-                else -> Column(modifier = Modifier.weight(1f)) {
+                else -> Column(modifier = Modifier.weight(1f).nestedScroll(header.connection)) {
                     // Prečice kao u Uživo, odmah ispod naslova i uvek na mestu: Favoriti (zvezdica),
                     // „Nastavi gledanje” i čip kategorije, koji nosi naziv izabrane i otvara spisak svih.
                     val inContinue = showingContinue && continueItems.isNotEmpty()
@@ -181,6 +189,18 @@ fun MobileVodScreen(
                         state.loadingItems || state.itemsFailed -> null
                         else -> state.items.size
                     }
+                    val shownLabel = when {
+                        inContinue -> stringResource(R.string.vod_continue_watching)
+                        showingFavorites -> favoritesLabel
+                        else -> state.selected?.name
+                    }
+                    CollapsingHeader(
+                        state = header,
+                        title = title,
+                        detail = listOfNotNull(shownLabel, shownCount?.toString()).joinToString(" · ").ifEmpty { null },
+                    ) {
+                    Column {
+                    topBar()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -225,6 +245,8 @@ fun MobileVodScreen(
                             onClick = { pickerOpen = true },
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                    }
                     }
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 104.dp),

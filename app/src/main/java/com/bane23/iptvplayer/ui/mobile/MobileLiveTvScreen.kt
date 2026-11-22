@@ -45,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -269,7 +270,9 @@ fun MobileLiveTvScreen(
             }
             // Položen telefon sa učitanom listom nema zaglavlje: visina ide kanalima, kao na TV-u.
             val twoPane = landscape && !state.loading && playlistId != null
-            if (!twoPane) SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
+            // Uspravno sa učitanom listom naslov je deo vrha koji se sklanja dok se kanali listaju.
+            val collapsing = !landscape && !state.loading && playlistId != null
+            if (!twoPane && !collapsing) SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
 
             when {
                 state.loading -> MobileChannelSkeletonList()
@@ -468,6 +471,23 @@ fun MobileLiveTvScreen(
                     } else {
                         // Favoriti, Nedavno i Svi imaju svoje čipove, pa su u spisku samo prave kategorije.
                         val pickerGroups = state.categories.map { PickerGroup(it.id.toString(), it.name, count = it.channelCount) }
+                        val header = rememberCollapsingHeaderState { listState.canScrollForward }
+                        LaunchedEffect(selected) { header.expand() }
+                        val groupName = when (selected) {
+                            ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
+                            ChannelGroups.RECENT -> stringResource(R.string.category_chip_recent)
+                            ALL_CHANNELS -> stringResource(R.string.category_chip_all)
+                            else -> state.favoriteList(selected)?.name
+                                ?: state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
+                        }
+                        Column(modifier = Modifier.weight(1f).nestedScroll(header.connection)) {
+                        CollapsingHeader(
+                            state = header,
+                            title = stringResource(R.string.nav_live),
+                            detail = "$groupName · $headingCount",
+                        ) {
+                        Column {
+                        SectionTopBar(title = stringResource(R.string.nav_live)) { toolbar(true) }
                         QuickGroupChips(
                             selected = selected,
                             inFavorites = inFavorites,
@@ -488,6 +508,11 @@ fun MobileLiveTvScreen(
                             },
                             onMore = { pickerOpen = true },
                         )
+                        favoriteTabs(Modifier.padding(horizontal = 16.dp))
+                        }
+                        }
+                        channelGrid(Modifier.weight(1f))
+                        }
                         if (pickerOpen) {
                             CategoryPickerDialog(
                                 title = stringResource(R.string.nav_live),
@@ -512,8 +537,6 @@ fun MobileLiveTvScreen(
                                 ),
                             )
                         }
-                        favoriteTabs(Modifier.padding(horizontal = 16.dp))
-                        channelGrid(Modifier.weight(1f))
                     }
                 }
             }
