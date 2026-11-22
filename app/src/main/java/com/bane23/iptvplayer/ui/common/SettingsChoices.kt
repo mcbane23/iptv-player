@@ -68,6 +68,12 @@ data class SettingChoice(
     fun cycle() {
         if (options.isNotEmpty()) onSelect((selected + 1) % options.size)
     }
+
+    /** Korak na susednu vrednost ([delta] je -1 ili 1), bez prelaska ukrug: na kraju spiska ne radi ništa. */
+    fun step(delta: Int) {
+        val target = (selected + delta).coerceIn(0, options.lastIndex.coerceAtLeast(0))
+        if (target != selected) onSelect(target)
+    }
 }
 
 /** Jezici koji se nude za zvuk i titlove (ISO 639-1). Nazivi se prikazuju na jeziku uređaja. */

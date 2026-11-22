@@ -4,6 +4,8 @@ import com.bane23.iptvplayer.ui.common.player.MAX_SUBTITLE_SHIFT_MS
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.ui.common.AppMessages
 import com.bane23.iptvplayer.cast.CastMedia
 import com.bane23.iptvplayer.cast.CastVodItem
 import com.bane23.iptvplayer.data.prefs.SettingsStore
@@ -114,7 +116,7 @@ data class OnlineSubtitlesState(
 /** Plejer za filmove i epizode: premotavanje, pamćenje pozicije i prelazak na sledeću epizodu. */
 @HiltViewModel
 class VodPlayerViewModel @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
     private val repository: VodRepository,
     private val settings: SettingsStore,
     private val archive: ArchiveRepository,
@@ -403,12 +405,23 @@ class VodPlayerViewModel @Inject constructor(
 
     fun retry() = engine.retry()
 
+    /** Sadržaj koji ne može da se premotava: umesto povratka na početak ostaje gde je, uz kratku poruku. */
+    private fun seekBlocked(): Boolean {
+        if (!engine.seekBlocked) return false
+        scrubJob?.cancel()
+        _ui.update { it.copy(scrubMs = null) }
+        AppMessages.show(context, R.string.vod_seek_unavailable)
+        return true
+    }
+
     fun seekBy(deltaMs: Long) {
+        if (seekBlocked()) return
         engine.seekBy(deltaMs)
         _ui.update { it.copy(positionMs = (it.positionMs + deltaMs).coerceIn(0, it.durationMs.coerceAtLeast(0))) }
     }
 
     fun seekTo(positionMs: Long) {
+        if (seekBlocked()) return
         scrubJob?.cancel()
         engine.seekTo(positionMs)
         _ui.update { it.copy(positionMs = positionMs, scrubMs = null) }
@@ -421,7 +434,7 @@ class VodPlayerViewModel @Inject constructor(
      */
     fun scrubBy(deltaMs: Long) {
         val state = _ui.value
-        if (state.durationMs <= 0) return
+        if (state.durationMs <= 0 || seekBlocked()) return
         val from = state.scrubMs ?: state.positionMs
         val target = (from + deltaMs).coerceIn(0, state.durationMs)
         _ui.update {

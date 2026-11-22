@@ -385,8 +385,9 @@ fun TvChoicePanel(
 }
 
 /**
- * Stavke menija „Podešavanja”; sadržaj oblačića iznad trake (PlayerMenuBubble). OK na stavci
- * prelazi na sledeću vrednost, a meni ostaje otvoren; Nazad ga zatvara (to rešava ekran plejera).
+ * Stavke menija „Podešavanja”; sadržaj oblačića iznad trake (PlayerMenuBubble). Stavka sa više
+ * vrednosti se menja strelicama levo/desno (OK je ne menja), a prekidač tasterom OK. Meni ostaje
+ * otvoren; Nazad ga zatvara (to rešava ekran plejera).
  */
 @Composable
 fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modifier) {
@@ -414,7 +415,16 @@ fun TvQuickSettingsPanel(choices: List<SettingChoice>, modifier: Modifier = Modi
                     TvMenuSwitch(choice.checked)
                 }
             } else {
-                TvMenuTextRow(text = choice.title, value = choice.value, onClick = { choice.cycle() }, modifier = focusModifier)
+                TvStepRow(
+                    choice = StepChoice(
+                        title = choice.title,
+                        value = choice.value,
+                        canDecrease = choice.selected > 0,
+                        canIncrease = choice.selected < choice.options.lastIndex,
+                        onStep = choice::step,
+                    ),
+                    modifier = focusModifier,
+                )
             }
         }
         // Napomene uz stavke koje ne važe odmah (bafer).

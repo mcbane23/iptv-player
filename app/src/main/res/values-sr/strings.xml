@@ -177,6 +177,7 @@
     <string name="vod_mark_season_watched">Označi sezonu %1$d kao odgledanu</string>
     <string name="vod_mark_season_unwatched">Poništi odgledanu sezonu %1$d</string>
     <string name="vod_progress">%1$s od %2$s</string>
+    <string name="vod_seek_unavailable">Ovaj snimak ne može da se premotava</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
     <string name="next_card_countdown">Sledeća epizoda za %1$d s</string>

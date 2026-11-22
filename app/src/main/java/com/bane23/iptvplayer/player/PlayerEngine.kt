@@ -13,6 +13,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -20,6 +21,7 @@ import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -105,6 +107,9 @@ data class PlaybackState(
     val video: VideoInfo = VideoInfo(),
 )
 
+/** Najveća brzina puštanja sa zvukom; iznad nje snimak ide bez zvuka. */
+const val MAX_SPEED_WITH_SOUND = 2f
+
 /**
  * Omotač oko ExoPlayer-a: puštanje strima, automatski ponovni pokušaj kad strim pukne,
  * izbor zvuka i titlova. Ne zna ništa o kanalima ni o UI-ju.
@@ -136,7 +141,24 @@ class PlayerEngine(
     @Volatile
     private var videoTunneled = false
 
-    private val renderersFactory = DefaultRenderersFactory(appContext)
+    /** Brzina puštanja je drugačija od obične; tada zvuk ne sme da ide neraspakovan ni kroz tunel. */
+    private var speedChanged = false
+
+    /** Zvuk koji se sada pušta ide neraspakovan ka TV-u ili pojačalu. */
+    private var audioPassthrough = false
+
+    /** Izlaz zvuka ovog plejera; postoji od trenutka kad se plejer napravi. */
+    @Volatile
+    private var audioGate: PassthroughGate? = null
+
+    private val renderersFactory = object : DefaultRenderersFactory(appContext) {
+        override fun buildAudioSink(
+            context: Context,
+            enableFloatOutput: Boolean,
+            enableAudioTrackPlaybackParams: Boolean,
+        ): AudioSink? = super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
+            ?.let { sink -> PassthroughGate(sink).also { audioGate = it } }
+    }
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
         .setMediaCodecSelector(
@@ -272,6 +294,13 @@ class PlayerEngine(
             _state.update { it.copy(video = it.video.copy(container = container)) }
         }
 
+        override fun onAudioTrackInitialized(
+            eventTime: AnalyticsListener.EventTime,
+            audioTrackConfig: AudioSink.AudioTrackConfig,
+        ) {
+            audioPassthrough = !Util.isEncodingLinearPcm(audioTrackConfig.encoding)
+        }
+
         override fun onAudioUnderrun(
             eventTime: AnalyticsListener.EventTime,
             bufferSize: Int,
@@ -393,8 +422,14 @@ class PlayerEngine(
         play(current, if (seekable) resumePositionMs else null)
     }
 
+    /**
+     * Sadržaj je učitan, a ne može da se premotava (npr. fajl bez indeksa ili server koji ga šalje
+     * samo od početka). Premotavanje bi takav sadržaj vratilo na početak, pa se i ne pokušava.
+     */
+    val seekBlocked: Boolean get() = seekable && wasReady && !player.isCurrentMediaItemSeekable
+
     fun seekTo(positionMs: Long) {
-        if (!seekable) return
+        if (!seekable || seekBlocked) return
         val duration = durationMs
         val target = if (duration > 0) positionMs.coerceIn(0, duration) else positionMs.coerceAtLeast(0)
         resumePositionMs = target
@@ -429,9 +464,25 @@ class PlayerEngine(
         player.pause()
     }
 
-    /** Brzina puštanja (1 = obična). Ostaje i kad se sadržaj pripremi iznova ili pređe na sledeću epizodu. */
+    /**
+     * Brzina puštanja (1 = obična). Ostaje i kad se sadržaj pripremi iznova ili pređe na sledeću epizodu.
+     * Iznad [MAX_SPEED_WITH_SOUND] snimak ide bez zvuka, jer se tada više ništa ne razume.
+     *
+     * Zvuk koji ide neraspakovan ka TV-u ili pojačalu, kao i tunel režim, uvek idu običnom brzinom.
+     * Zato se oba isključuju dok je brzina drugačija od obične; ako je takav zvuk baš sada u toku,
+     * sadržaj se priprema iznova i nastavlja sa istog mesta.
+     */
     fun setSpeed(speed: Float) {
         player.setPlaybackSpeed(speed)
+        player.volume = if (speed > MAX_SPEED_WITH_SOUND) 0f else 1f
+        val changed = speed != 1f
+        if (changed == speedChanged) return
+        speedChanged = changed
+        applyTunneling()
+        val gate = audioGate ?: return
+        gate.pcmOnly = changed
+        val reload = if (changed) audioPassthrough else gate.refused
+        if (reload && seekable && source != null) prepareAgain()
     }
 
     /**
@@ -542,6 +593,11 @@ class PlayerEngine(
         decoderMode = mode
         applyTunneling()
         if (source == null) return
+        prepareAgain()
+    }
+
+    /** Priprema trenutni sadržaj iznova, da se dekoderi ponovo izaberu; film ili epizoda nastavljaju sa istog mesta. */
+    private fun prepareAgain() {
         retryJob?.cancel()
         rememberPosition()
         attempts = 0
@@ -557,7 +613,9 @@ class PlayerEngine(
      */
     private fun applyTunneling() {
         val selector = player.trackSelector as? DefaultTrackSelector ?: return
-        selector.setParameters(selector.buildUponParameters().setTunnelingEnabled(!shared && decoderMode == DecoderMode.TUNNEL))
+        selector.setParameters(
+            selector.buildUponParameters().setTunnelingEnabled(!shared && !speedChanged && decoderMode == DecoderMode.TUNNEL),
+        )
     }
 
     fun release() {
@@ -593,6 +651,7 @@ class PlayerEngine(
         httpFactory.setUserAgent(current.userAgent)
         httpFactory.setDefaultRequestProperties(headers)
         val item = MediaItem.fromUri(url)
+        audioGate?.refused = false
         if (seekable) {
             player.setMediaItem(item, resumePositionMs)
         } else {

@@ -13,8 +13,8 @@ import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import java.text.DecimalFormat
 
-/** Brzine puštanja koje se nude za filmove i epizode. */
-val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+/** Brzine puštanja koje se nude za filmove i epizode. Iznad 2× snimak ide bez zvuka (vidi PlayerEngine.setSpeed). */
+val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f, 4f, 6f, 8f)
 
 /** Brzina kao tekst, npr. „1,25×”. */
 fun speedLabel(speed: Float): String = DecimalFormat("0.##").format(speed.toDouble()) + "×"
