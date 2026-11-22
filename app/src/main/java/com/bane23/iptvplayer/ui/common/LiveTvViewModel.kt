@@ -455,6 +455,21 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setAppFullScreen(enabled) }
     }
 
+    val screenPosition: StateFlow<String?> = settings.screenPosition
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setScreenPosition(position: ScreenPosition) {
+        viewModelScope.launch { settings.setScreenPosition(position.name) }
+    }
+
+    /** null dok se ne pročita, da se poruka ne pojavi pa odmah nestane. */
+    val rotateHintShown: StateFlow<Boolean?> = settings.rotateHintShown
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setRotateHintShown() {
+        viewModelScope.launch { settings.setRotateHintShown() }
+    }
+
     val playerBrightnessSwipe: StateFlow<Boolean> = settings.playerBrightnessSwipe
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 

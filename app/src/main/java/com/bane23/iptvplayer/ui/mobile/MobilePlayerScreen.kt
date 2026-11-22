@@ -172,6 +172,7 @@ fun MobilePlayerScreen(
         onExit = onClose,
     )
     ImmersiveMode()
+    PlayerOrientation()
     PlayerPictureInPicture(playback.status, viewModel::togglePlayPause)
 
     // Kontrole se same sklanjaju posle nekoliko sekundi gledanja.
@@ -359,6 +360,15 @@ fun MobilePlayerScreen(
                     )
                 }
             }
+        }
+        // Samo prvi put: poruka da postoji položen prikaz.
+        if (!inPip && !locked) {
+            RotateHint(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .safeDrawingPadding()
+                    .padding(top = 76.dp),
+            )
         }
         PlayerLevelIndicator(levels, belowTopRow = controlsVisible && panel == Panel.NONE)
     }

@@ -486,6 +486,21 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[UPDATE_CHANNEL] = tag }
     }
 
+    /** Telefon: položaj ekrana cele aplikacije (ime vrednosti iz ScreenPosition); null znači da prati telefon. */
+    val screenPosition: Flow<String?> = dataStore.data.map { it[SCREEN_POSITION] }.distinctUntilChanged()
+
+    suspend fun setScreenPosition(name: String) {
+        dataStore.edit { it[SCREEN_POSITION] = name }
+    }
+
+    /** Telefon: poruka u plejeru da postoji položen prikaz je već prikazana (prikazuje se samo prvi put). */
+    val rotateHintShown: Flow<Boolean> =
+        dataStore.data.map { it[ROTATE_HINT_SHOWN] ?: false }.distinctUntilChanged()
+
+    suspend fun setRotateHintShown() {
+        dataStore.edit { it[ROTATE_HINT_SHOWN] = true }
+    }
+
     /** Uputstvo na TV-u kako se kanal dodaje u omiljene je već prikazano (prikazuje se samo prvi put). */
     val tvFavoriteHintShown: Flow<Boolean> =
         dataStore.data.map { it[TV_FAVORITE_HINT_SHOWN] ?: false }.distinctUntilChanged()
@@ -644,6 +659,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
         val APP_THEME = stringPreferencesKey("app_theme")
+        val SCREEN_POSITION = stringPreferencesKey("screen_position")
+        val ROTATE_HINT_SHOWN = booleanPreferencesKey("rotate_hint_shown")
         val TV_RAIL_ICONS_ONLY = booleanPreferencesKey("tv_rail_icons_only")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
@@ -677,7 +694,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             SUBTITLE_BACKGROUND, RESUME_LAST_CHANNEL, TV_CHANNEL_PREVIEW, TV_VOD_PREVIEW, DRAW_UNDER_CUTOUT, APP_FULL_SCREEN,
             PLAYER_BRIGHTNESS_SWIPE, PLAYER_VOLUME_SWIPE, BACKGROUND_PLAY, AUTOSTART, REOPEN_AFTER_UPDATE,
             AUTO_REFRESH_PLAYLISTS, VOD_LOCAL_CACHE, MATCH_FRAME_RATE, WATCH_NEXT, BLACK_THEME, TV_RAIL_ICONS_ONLY,
-            PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, AUTO_NEXT_EPISODE,
+            PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, ROTATE_HINT_SHOWN, AUTO_NEXT_EPISODE,
             RULE_HIDE_SD, RULE_HIDE_PLUS_ONE, RULE_MERGE_SAME_NAME,
         )
         val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
@@ -693,6 +710,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         )
 
         /** Podešavanja koja imaju smisla samo na istoj vrsti uređaja (telefon ili TV). */
-        val DEVICE_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS)
+        val DEVICE_KEYS: List<Preferences.Key<*>> = listOf(
+            PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS, SCREEN_POSITION,
+        )
     }
 }

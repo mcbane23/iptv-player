@@ -8,7 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.layout.Layout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -26,6 +32,9 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTitle
 /**
  * Kontrole plejera na telefonu, raspoređene isto kao na TV-u: gore nazad, naslov i dugmad
  * (slika u slici, zaključavanje), a sve ostalo dole: dugme za puštanje, traka i red dugmadi.
+ *
+ * Uspravno je slika traka na sredini ekrana, pa donje kontrole stoje odmah ispod nje umesto na
+ * dnu ekrana, a u donjem desnom uglu slike je dugme za okretanje. Položeno je to dugme u gornjem redu.
  */
 @Composable
 fun MobilePlayerControls(
@@ -38,6 +47,8 @@ fun MobilePlayerControls(
     bottom: @Composable ColumnScope.() -> Unit,
     chips: @Composable RowScope.() -> Unit,
 ) {
+    val rotation = LocalOrientationControl.current
+    val landscape = isLandscape()
     Box(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.align(Alignment.TopStart)) {
             Row(
@@ -60,25 +71,79 @@ fun MobilePlayerControls(
                 if (onPip != null) {
                     PlayerIconButton(AppIcons.PictureInPicture, stringResource(R.string.player_pip), onPip, backdrop = true)
                 }
+                if (rotation != null && landscape) {
+                    PlayerIconButton(
+                        AppIcons.ScreenRotation,
+                        stringResource(R.string.player_rotate),
+                        { rotation.rotate(landscapeNow = true) },
+                        backdrop = true,
+                    )
+                }
                 PlayerIconButton(AppIcons.Lock, stringResource(R.string.player_lock), onLock, backdrop = true)
             }
         }
 
-        Box(modifier = Modifier.align(Alignment.BottomStart)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .safeDrawingPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                bottom()
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    content = chips,
+        val bottomContent: @Composable ColumnScope.() -> Unit = {
+            bottom()
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = chips,
+            )
+        }
+        if (landscape) {
+            Box(modifier = Modifier.align(Alignment.BottomStart)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .safeDrawingPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = bottomContent,
                 )
             }
+        } else {
+            BelowPicture(
+                corner = { if (rotation != null) RotateButton({ rotation.rotate(landscapeNow = false) }) },
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+                        )
+                        .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = bottomContent,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Uspravan telefon: [content] stoji odmah ispod slike, a [corner] u njenom donjem desnom uglu.
+ * Slika je na sredini ekrana i računa se kao 16:9; kad kontrole ne bi stale do dna ekrana
+ * (kratak ekran, podeljen prozor), penju se taman koliko treba.
+ */
+@Composable
+private fun BelowPicture(corner: @Composable () -> Unit, content: @Composable () -> Unit) {
+    Layout(
+        content = {
+            Box { corner() }
+            Box { content() }
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val button = measurables[0].measure(loose)
+        val controls = measurables[1].measure(loose)
+        val pictureBottom = (constraints.maxHeight + constraints.maxWidth * 9 / 16) / 2
+        val controlsY = minOf(pictureBottom, constraints.maxHeight - controls.height).coerceAtLeast(0)
+        val margin = 8.dp.roundToPx()
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            controls.place(0, controlsY)
+            button.place(constraints.maxWidth - button.width - margin, controlsY - button.height - margin)
         }
     }
 }

@@ -106,6 +106,7 @@ fun MobileVodPlayerScreen(
         onExit = onClose,
     )
     ImmersiveMode()
+    PlayerOrientation()
     val inPip = rememberIsInPictureInPicture()
     PlayerLifecycle(
         player = viewModel.player,
@@ -411,6 +412,15 @@ fun MobileVodPlayerScreen(
 
                 VodPanel.NONE -> Unit
             }
+        }
+        // Samo prvi put: poruka da postoji položen prikaz.
+        if (!inPip && !locked) {
+            RotateHint(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .safeDrawingPadding()
+                    .padding(top = 76.dp),
+            )
         }
         PlayerLevelIndicator(levels, belowTopRow = controlsVisible)
     }

@@ -250,3 +250,14 @@ fun themeChoice(current: AppTheme?, onSelect: (AppTheme) -> Unit): SettingChoice
     group = SettingsGroup.LOOK,
     onSelect = { onSelect(AppTheme.entries[it]) },
 )
+
+/** Položaj ekrana cele aplikacije na telefonu (grupa Izgled). */
+@Composable
+fun screenPositionChoice(current: ScreenPosition, onSelect: (ScreenPosition) -> Unit): SettingChoice = SettingChoice(
+    title = stringResource(R.string.settings_screen_position),
+    summary = stringResource(R.string.settings_screen_position_summary),
+    options = ScreenPosition.entries.map { stringResource(it.label) },
+    selected = current.ordinal,
+    group = SettingsGroup.LOOK,
+    onSelect = { onSelect(ScreenPosition.entries[it]) },
+)

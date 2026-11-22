@@ -83,6 +83,12 @@
     <string name="player_subtitles_off">Isključeno</string>
     <string name="player_no_tracks">Nema dostupnih zapisa</string>
     <string name="player_pip">Slika u slici</string>
+    <string name="player_rotate">Okreni ekran</string>
+    <string name="rotate_hint_title">Veća slika u položenom prikazu</string>
+    <string name="rotate_hint_text">Okreni telefon ili dodirni dugme u uglu slike.</string>
+    <string name="rotate_hint_locked">Rotacija na telefonu je zaključana. Dodirni „Okreni” ili dugme u uglu slike.</string>
+    <string name="rotate_hint_action">Okreni</string>
+    <string name="rotate_hint_dismiss">Ne prikazuj više</string>
     <string name="aspect_fit">Uklopi</string>
     <string name="aspect_fill">Razvuci</string>
     <string name="aspect_zoom">Uvećaj</string>
@@ -667,6 +673,11 @@
     <string name="settings_theme_summary">Boja pozadine i površina: siva ili teget.</string>
     <string name="theme_gray">Siva</string>
     <string name="theme_navy">Teget</string>
+    <string name="settings_screen_position">Položaj ekrana</string>
+    <string name="settings_screen_position_summary">Kako je aplikacija okrenuta; „uvek” važi i kad je rotacija na telefonu zaključana</string>
+    <string name="screen_position_auto">Automatski (prati telefon)</string>
+    <string name="screen_position_portrait">Uvek uspravno</string>
+    <string name="screen_position_landscape">Uvek položeno</string>
     <string name="tv_rail_collapse">Samo ikonice</string>
     <string name="tv_rail_expand">Prikaži nazive u meniju</string>
     <string name="settings_black_theme">Crna tema</string>

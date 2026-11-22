@@ -84,6 +84,12 @@
     <string name="player_subtitles_off">Off</string>
     <string name="player_no_tracks">No tracks available</string>
     <string name="player_pip">Picture in picture</string>
+    <string name="player_rotate">Rotate screen</string>
+    <string name="rotate_hint_title">Bigger picture in landscape</string>
+    <string name="rotate_hint_text">Turn your phone or tap the button in the corner of the picture.</string>
+    <string name="rotate_hint_locked">Rotation is locked on this phone. Tap Rotate or the button in the corner of the picture.</string>
+    <string name="rotate_hint_action">Rotate</string>
+    <string name="rotate_hint_dismiss">Don\'t show again</string>
     <string name="aspect_fit">Fit</string>
     <string name="aspect_fill">Stretch</string>
     <string name="aspect_zoom">Zoom</string>
@@ -666,6 +672,11 @@
     <string name="settings_theme_summary">Background and surface color: gray or navy.</string>
     <string name="theme_gray">Gray</string>
     <string name="theme_navy">Navy</string>
+    <string name="settings_screen_position">Screen position</string>
+    <string name="settings_screen_position_summary">How the app is turned; \"always\" also works when rotation is locked on the phone</string>
+    <string name="screen_position_auto">Automatic (follows the phone)</string>
+    <string name="screen_position_portrait">Always portrait</string>
+    <string name="screen_position_landscape">Always landscape</string>
     <string name="tv_rail_collapse">Icons only</string>
     <string name="tv_rail_expand">Show menu names</string>
     <string name="settings_black_theme">Black theme</string>
