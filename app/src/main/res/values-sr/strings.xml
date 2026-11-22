@@ -438,6 +438,10 @@
     <string name="stream_info_keyframe_skips">preskoka %1$d</string>
     <string name="stream_info_audio_underruns">prekida zvuka %1$d</string>
     <string name="stream_info_rebuffers">učitavanja %1$d</string>
+    <string name="stream_info_seek_approximate">približno premotavanje</string>
+    <string name="stream_info_seek_measuring">premotavanje još ne (meri se)</string>
+    <string name="stream_info_seek_no_size">bez premotavanja (veličina nepoznata)</string>
+    <string name="stream_info_seek_no_range">bez premotavanja (server ne dozvoljava)</string>
     <string name="subtitle_preview_text">Ovako će izgledati titlovi</string>
     <string name="settings_subtitle_look_summary">Izgled titlova u plejeru. Izmena važi odmah.</string>
     <string name="subtitle_size_small">Mala</string>

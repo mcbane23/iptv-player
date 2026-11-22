@@ -9,6 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
@@ -16,6 +17,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -35,8 +37,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -92,6 +97,8 @@ data class VideoInfo(
     val frameRate: Float = 0f,
     /** Broj sličica u sekundi izmeren iz prikazanih slika, za strim koji ga ne javlja; 0 dok se ne izmeri. */
     val measuredFrameRate: Float = 0f,
+    /** Kako se sadržaj premotava; vidi [SeekKind]. */
+    val seek: SeekKind = SeekKind.NORMAL,
 )
 
 data class PlaybackState(
@@ -127,7 +134,11 @@ class PlayerEngine(
 ) {
 
     private val appContext = context.applicationContext
+
+    /** Približno premotavanje fajlova bez indeksa; vidi [ApproxSeekExtractor]. */
+    private val approxSeek = ApproxSeekState()
     private val httpFactory = DefaultHttpDataSource.Factory()
+        .setTransferListener(RangeGuard(approxSeek))
         // IPTV serveri često preusmeravaju sa http na https i obrnuto.
         .setAllowCrossProtocolRedirects(true)
         .setConnectTimeoutMs(15_000)
@@ -174,8 +185,10 @@ class PlayerEngine(
      * Kad slika zaostane za zvukom, plejer preskače do sledeće ključne slike; sa ovim se i I slika
      * računa kao ključna, pa se slika vraća brže umesto da stoji dok zvuk ide.
      */
-    private val extractorsFactory = DefaultExtractorsFactory()
-        .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES)
+    private val extractorsFactory = ApproxSeekExtractorsFactory(
+        DefaultExtractorsFactory().setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES),
+        approxSeek,
+    )
 
     val player: ExoPlayer = ExoPlayer.Builder(appContext, renderersFactory)
         .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(appContext, httpFactory), extractorsFactory))
@@ -201,6 +214,17 @@ class PlayerEngine(
 
     /** Pozicija od koje sledeća priprema plejera treba da krene (samo kad je [seekable]). */
     private var resumePositionMs = 0L
+
+    /**
+     * Pozicija od koje je sadržaj trebalo da krene, dok plejer ne potvrdi da može da se premotava.
+     * Fajl bez indeksa i bez trajanja postaje premotljiv tek pošto se malo učita; tada se skače ovde.
+     */
+    private var pendingResumeMs = 0L
+
+    private val _seekLost = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Server nije dozvolio skok, pa je sadržaj krenuo od početka i više ne može da se premotava. */
+    val seekLost: SharedFlow<Unit> = _seekLost.asSharedFlow()
 
     /**
      * Titlovi iz fajla dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. Plejer za njih
@@ -246,6 +270,8 @@ class PlayerEngine(
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = publishStatus()
+
+        override fun onTimelineChanged(timeline: Timeline, reason: Int) = applyPendingResume()
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
@@ -341,6 +367,8 @@ class PlayerEngine(
         if (_state.value.video.measuredFrameRate != measured) {
             _state.update { it.copy(video = it.video.copy(measuredFrameRate = measured)) }
         }
+        val seek = approxSeek.kind
+        if (_state.value.video.seek != seek) _state.update { it.copy(video = it.video.copy(seek = seek)) }
         val counters = player.videoDecoderCounters ?: return
         counters.ensureUpdated()
         val dropped = counters.droppedBufferCount
@@ -430,6 +458,7 @@ class PlayerEngine(
 
     fun seekTo(positionMs: Long) {
         if (!seekable || seekBlocked) return
+        pendingResumeMs = 0
         val duration = durationMs
         val target = if (duration > 0) positionMs.coerceIn(0, duration) else positionMs.coerceAtLeast(0)
         resumePositionMs = target
@@ -437,6 +466,14 @@ class PlayerEngine(
     }
 
     fun seekBy(deltaMs: Long) = seekTo(positionMs + deltaMs)
+
+    /** Sadržaj je postao premotljiv: ako je trebalo da krene sa zapamćenog mesta, sada skače tamo. */
+    private fun applyPendingResume() {
+        val target = pendingResumeMs
+        if (target <= 0 || !player.isCurrentMediaItemSeekable) return
+        pendingResumeMs = 0
+        if (player.currentPosition < target - RESUME_SLACK_MS) player.seekTo(target)
+    }
 
     fun togglePlayPause() {
         if (_state.value.status == PlaybackStatus.FAILED) {
@@ -482,7 +519,8 @@ class PlayerEngine(
         val gate = audioGate ?: return
         gate.pcmOnly = changed
         val reload = if (changed) audioPassthrough else gate.refused
-        if (reload && seekable && source != null) prepareAgain()
+        // Sadržaj koji ne može da se premotava bi krenuo od početka; bolje da nastavi kako ide.
+        if (reload && seekable && source != null && !seekBlocked) prepareAgain()
     }
 
     /**
@@ -592,7 +630,8 @@ class PlayerEngine(
         if (decoderMode == mode) return
         decoderMode = mode
         applyTunneling()
-        if (source == null) return
+        // Sadržaj koji ne može da se premotava bi krenuo od početka; novi dekoder važi od sledećeg puštanja.
+        if (source == null || seekBlocked) return
         prepareAgain()
     }
 
@@ -652,6 +691,7 @@ class PlayerEngine(
         httpFactory.setDefaultRequestProperties(headers)
         val item = MediaItem.fromUri(url)
         audioGate?.refused = false
+        pendingResumeMs = if (seekable) resumePositionMs else 0
         if (seekable) {
             player.setMediaItem(item, resumePositionMs)
         } else {
@@ -667,6 +707,14 @@ class PlayerEngine(
         if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
             player.seekToDefaultPosition()
             player.prepare()
+            return
+        }
+        if (approxSeek.kind == SeekKind.APPROXIMATE && rangeRefused(error)) {
+            // Server ne da fajl od sredine: sadržaj kreće od početka i dalje se vodi kao nepremotljiv.
+            current.urls.getOrNull(urlIndex)?.let { approxSeek.refused.add(Uri.parse(it).toString()) }
+            resumePositionMs = 0
+            _seekLost.tryEmit(Unit)
+            scheduleRetry(delayMs = 0)
             return
         }
         rememberPosition()
@@ -713,6 +761,8 @@ class PlayerEngine(
 
     /** Pamti dokle se stiglo, da se posle prekida ili povratka u aplikaciju nastavi odatle. */
     private fun rememberPosition() {
+        // Dok skok na zapamćeno mesto još čeka, trenutna pozicija nije ono odakle treba nastaviti.
+        if (pendingResumeMs > 0) return
         if (seekable && player.currentPosition > 0) {
             resumePositionMs = player.currentPosition
         }
@@ -775,13 +825,25 @@ class PlayerEngine(
         }
     }
 
+    /** Server je na zahtev za deo fajla poslao ceo fajl ili ga odbio. */
+    private fun rangeRefused(error: PlaybackException): Boolean {
+        var cause: Throwable? = error
+        repeat(MAX_CAUSE_DEPTH) {
+            val current = cause ?: return false
+            if (current is RangeIgnoredException) return true
+            if (current is HttpDataSource.InvalidResponseCodeException && current.responseCode == 416) return true
+            cause = current.cause
+        }
+        return false
+    }
+
     private fun classify(error: PlaybackException): PlaybackFailure = when (error.errorCode) {
         PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
         PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
         -> PlaybackFailure.NETWORK
 
         PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> {
-            val code = (error.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)
+            val code = (error.cause as? HttpDataSource.InvalidResponseCodeException)
                 ?.responseCode
             when (code) {
                 401, 403 -> PlaybackFailure.FORBIDDEN
@@ -840,6 +902,10 @@ class PlayerEngine(
         const val STATS_INTERVAL_MS = 1_000L
         const val MAX_ATTEMPTS = 3
         const val RETRY_DELAY_MS = 1_500L
+
+        /** Koliko pozicija sme da bude ispred zapamćenog mesta, a da se na njega ipak ne skače. */
+        const val RESUME_SLACK_MS = 5_000L
+        const val MAX_CAUSE_DEPTH = 8
 
         /** Oznaka grupe za titlove iz fajla u [TrackOption]; redni broj zapisa je mesto u spisku titlova. */
         const val EXTERNAL_GROUP = -1
