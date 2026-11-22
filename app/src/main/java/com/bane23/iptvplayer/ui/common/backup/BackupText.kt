@@ -3,6 +3,7 @@ package com.bane23.iptvplayer.ui.common.backup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.backup.BackupImportState
@@ -35,9 +36,10 @@ fun BackupInfo.summary(): String {
 @Composable
 fun BackupEffects(viewModel: BackupViewModel, state: BackupUiState, importState: BackupImportState) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     LaunchedEffect(state.notice) {
         val notice = state.notice ?: return@LaunchedEffect
-        val text = if (notice.arg != null) context.getString(notice.text, notice.arg) else context.getString(notice.text)
+        val text = if (notice.arg != null) resources.getString(notice.text, notice.arg) else resources.getString(notice.text)
         AppMessages.show(text, long = true)
         viewModel.noticeShown()
     }
