@@ -422,8 +422,14 @@ class PlayerEngine(
         play(current, if (seekable) resumePositionMs else null)
     }
 
+    /**
+     * Sadržaj je učitan, a ne može da se premotava (npr. fajl bez indeksa ili server koji ga šalje
+     * samo od početka). Premotavanje bi takav sadržaj vratilo na početak, pa se i ne pokušava.
+     */
+    val seekBlocked: Boolean get() = seekable && wasReady && !player.isCurrentMediaItemSeekable
+
     fun seekTo(positionMs: Long) {
-        if (!seekable) return
+        if (!seekable || seekBlocked) return
         val duration = durationMs
         val target = if (duration > 0) positionMs.coerceIn(0, duration) else positionMs.coerceAtLeast(0)
         resumePositionMs = target

@@ -178,6 +178,7 @@
     <string name="vod_mark_season_watched">Mark season %1$d as watched</string>
     <string name="vod_mark_season_unwatched">Mark season %1$d as unwatched</string>
     <string name="vod_progress">%1$s of %2$s</string>
+    <string name="vod_seek_unavailable">Seeking is not available for this video</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
     <string name="next_card_countdown">Next episode in %1$d s</string>
