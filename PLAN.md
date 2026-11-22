@@ -824,6 +824,17 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       se vidi crn ekran sa satom i datumom koji se polako sele; bilo koji taster ga gasi i fokus ostaje gde je
       bio. Podešavanja > Izgled „Čuvar ekrana”: Isključeno, 2, 5 (podrazumevano), 10 ili 15 minuta. Ne pali
       se preko plejera (pauza ima svoj ekran) ni dok se čeka telefon. Samo TV; ekran se ne drži upaljenim.
+- [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
+      kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
+      od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno
+- [x] Info traka kanala (Bane, 22. 11. 2026; plejer uživo, telefon i TV): ispod trake emisije piše koliko je
+      minuta prošlo i koliko još traje, a red „Sledeće” je ispod toga
+- [x] Arhiva pravo iz Vodiča (Bane, 22. 11. 2026; telefon i TV): završena emisija kanala sa arhivom nudi „Pusti
+      emisiju” (pušta baš nju) i „Gledaj uživo”; spisak arhive ostaje kao treća mogućnost. Kod Xtream lista se
+      emisija iz vodiča pronalazi u spisku arhive sa servera po terminu. Panel „Program” u plejeru prošle emisije
+      ne prikazuje, pa tamo ostaje red „Arhiva”
+- [x] Prekidač „Automatski pusti sledeću epizodu” (Bane, 22. 11. 2026; telefon i TV, podrazumevano uključen):
+      kad je isključen, kartica na kraju epizode i dalje nudi sledeću, ali ona ne kreće sama
 
 ## 7. Testiranje
 
@@ -838,14 +849,3 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   neće raditi bez softverskog dekodera. Predvideti izbor dekodera u podešavanjima.
 - **Velike liste**: 50.000+ stavki. Parser i liste na ekranu moraju raditi strimovano i sa straničenjem.
 - **Fokus na TV-u**: najčešći izvor grešaka u Compose for TV. Zato posebna Faza 6.
-- [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
-      kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
-      od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno
-- [x] Info traka kanala (Bane, 22. 11. 2026; plejer uživo, telefon i TV): ispod trake emisije piše koliko je
-      minuta prošlo i koliko još traje, a red „Sledeće” je ispod toga
-- [x] Arhiva pravo iz Vodiča (Bane, 22. 11. 2026; telefon i TV): završena emisija kanala sa arhivom nudi „Pusti
-      emisiju” (pušta baš nju) i „Gledaj uživo”; spisak arhive ostaje kao treća mogućnost. Kod Xtream lista se
-      emisija iz vodiča pronalazi u spisku arhive sa servera po terminu. Panel „Program” u plejeru prošle emisije
-      ne prikazuje, pa tamo ostaje red „Arhiva”
-- [x] Prekidač „Automatski pusti sledeću epizodu” (Bane, 22. 11. 2026; telefon i TV, podrazumevano uključen):
-      kad je isključen, kartica na kraju epizode i dalje nudi sledeću, ali ona ne kreće sama
