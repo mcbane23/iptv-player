@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -116,7 +117,9 @@ fun TvListRow(
                 focused = it.isFocused
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 16.dp, vertical = verticalPadding),
+            .padding(horizontal = 16.dp, vertical = verticalPadding)
+            // Red samo sa tekstom je visok kao red sa prekidačem, da svi redovi spiska budu isti.
+            .heightIn(min = TvSwitchHeight),
         verticalAlignment = Alignment.CenterVertically,
         content = { content(contentColor) },
     )
@@ -192,6 +195,9 @@ fun TvTextRow(
     }
 }
 
+/** Visina prekidača; ujedno najmanja visina sadržaja svakog reda u spisku na TV-u. */
+private val TvSwitchHeight = 22.dp
+
 /**
  * Prekidač u redu podešavanja. Samo prikazuje stanje (fokus i OK pripadaju celom redu). Uključen
  * je pun, u akcentnoj boji, sa kružićem desno; isključen je samo okvir u boji teksta sa kružićem
@@ -210,7 +216,7 @@ private fun TvSwitch(checked: Boolean, color: Color, accent: Color, onAccentRow:
     Box(
         modifier = Modifier
             .padding(start = 12.dp)
-            .size(width = 40.dp, height = 22.dp)
+            .size(width = 40.dp, height = TvSwitchHeight)
             .then(
                 if (checked) Modifier.background(track, shape) else Modifier.border(2.dp, color.copy(alpha = 0.6f), shape),
             )
