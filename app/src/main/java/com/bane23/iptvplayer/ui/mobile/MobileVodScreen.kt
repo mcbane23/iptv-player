@@ -13,8 +13,6 @@ import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +41,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.data.repo.VodCategory
 import androidx.compose.runtime.setValue
@@ -173,12 +174,19 @@ fun MobileVodScreen(
                     // Prečice kao u Uživo, odmah ispod naslova i uvek na mestu: Favoriti (zvezdica),
                     // „Nastavi gledanje” i čip kategorije, koji nosi naziv izabrane i otvara spisak svih.
                     val inContinue = showingContinue && continueItems.isNotEmpty()
+                    // Broj naslova stoji na dugmetu kategorije, pa poseban naslov nad posterima ne treba.
+                    val shownCount = when {
+                        inContinue -> continueItems.size
+                        showingFavorites -> favorites.size
+                        state.loadingItems || state.itemsFailed -> null
+                        else -> state.items.size
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         GroupChip(
                             label = favoritesLabel,
@@ -202,62 +210,28 @@ fun MobileVodScreen(
                                 label = stringResource(R.string.vod_continue_watching),
                                 selected = inContinue,
                                 onClick = { showingContinue = !showingContinue },
+                                iconOnly = AppIcons.Play,
                             )
                         }
-                        GroupChip(
-                            label = state.selected?.takeIf { !showingFavorites }?.name
-                                ?: stringResource(R.string.category_chip_more),
+                        // Jedno široko dugme: naziv onoga što mreža prikazuje, broj naslova i strelica za spisak kategorija.
+                        CategoryButton(
+                            label = when {
+                                inContinue -> stringResource(R.string.vod_continue_watching)
+                                showingFavorites -> favoritesLabel
+                                else -> state.selected?.name ?: stringResource(R.string.category_chip_more)
+                            },
+                            count = shownCount,
                             selected = !inContinue && !showingFavorites && state.selected != null,
                             onClick = { pickerOpen = true },
-                            trailing = AppIcons.ArrowDown,
+                            modifier = Modifier.weight(1f),
                         )
-                    }
-                    // Naslov nad posterima: izabrana grupa i koliko ima stavki, kao naslov nad kanalima.
-                    val headingTitle = when {
-                        inContinue -> stringResource(R.string.vod_continue_watching)
-                        showingFavorites -> favoritesLabel
-                        else -> state.selected?.name
-                    }
-                    val headingCount = when {
-                        inContinue -> continueItems.size
-                        showingFavorites -> favorites.size
-                        state.loadingItems || state.itemsFailed -> null
-                        else -> state.items.size
-                    }
-                    if (headingTitle != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = headingTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                            if (headingCount != null) {
-                                Text(
-                                    text = stringResource(R.string.vod_total, headingCount),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    modifier = Modifier
-                                        .padding(start = 10.dp)
-                                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(50))
-                                        .padding(horizontal = 10.dp, vertical = 3.dp),
-                                )
-                            }
-                        }
                     }
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 104.dp),
                         state = gridState,
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         when {
                             inContinue -> items(continueItems, key = { "c" + it.id }) { item ->
@@ -277,6 +251,7 @@ fun MobileVodScreen(
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     lock = lockMenu.vodItem(series, item.id, item.name),
+                                    compact = true,
                                 )
                             }
 
@@ -305,6 +280,7 @@ fun MobileVodScreen(
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     lock = lockMenu.vodItem(series, item.id, item.name),
+                                    compact = true,
                                 )
                             }
                         }
@@ -419,13 +395,28 @@ fun PosterTile(
     onLongClick: (() -> Unit)? = null,
     // Dugi pritisak tada otvara meni roditeljske zaštite za ovaj film, odnosno seriju.
     lock: ItemLock? = null,
+    /**
+     * Zbijen prikaz: naziv u jednom redu, a zvezdica samo na posterima koji su već u omiljenima.
+     * Dodavanje u omiljene je tada prva stavka menija na dugi pritisak.
+     */
+    compact: Boolean = false,
 ) {
     var lockMenuOpen by remember { mutableStateOf(false) }
-    val longClick = onLongClick ?: lock?.let { { lockMenuOpen = true } }
+    val favoriteInMenu = compact && favorite != null
+    val longClick = onLongClick ?: if (lock != null || favoriteInMenu) ({ lockMenuOpen = true }) else null
     Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = longClick)) {
-        if (lock != null) {
+        if (lock != null || favoriteInMenu) {
             DropdownMenu(expanded = lockMenuOpen, onDismissRequest = { lockMenuOpen = false }) {
-                lock.actions.forEach { action ->
+                if (favoriteInMenu) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(if (favorite == true) R.string.favorite_remove else R.string.favorite_add)) },
+                        onClick = {
+                            lockMenuOpen = false
+                            onToggleFavorite()
+                        },
+                    )
+                }
+                lock?.actions?.forEach { action ->
                     DropdownMenuItem(
                         text = { Text(stringResource(action.label)) },
                         onClick = {
@@ -438,7 +429,7 @@ fun PosterTile(
         }
         Box {
             Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
-            if (favorite != null) {
+            if (favorite != null && (favorite || !compact)) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -464,10 +455,57 @@ fun PosterTile(
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
-            maxLines = 2,
+            color = if (compact) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+            maxLines = if (compact) 1 else 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp),
         )
+    }
+}
+
+/**
+ * Dugme kategorije nad posterima na uspravnom telefonu: naziv, broj naslova i strelica. Zauzima
+ * ostatak reda pored čipova, pa naziv nije odsečen ivicom ekrana. Izgleda kao čip.
+ */
+@Composable
+private fun CategoryButton(
+    label: String,
+    count: Int?,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(8.dp)
+    val accent = MaterialTheme.colorScheme.primary
+    val content = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = modifier
+            .height(32.dp)
+            .clip(shape)
+            .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
+            .border(if (selected) 1.5.dp else 1.dp, if (selected) accent else MaterialTheme.colorScheme.outline, shape)
+            .clickable(onClick = onClick)
+            .padding(start = 12.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = content,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (count != null) {
+            Text(
+                text = count.toString(),
+                color = content.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Icon(AppIcons.ArrowDown, contentDescription = null, tint = content, modifier = Modifier.padding(start = 4.dp).size(18.dp))
     }
 }
 

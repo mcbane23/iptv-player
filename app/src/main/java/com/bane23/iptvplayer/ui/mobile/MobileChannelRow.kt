@@ -179,6 +179,8 @@ fun MobileChannelCard(
     onRemoveRecent: ((Channel) -> Unit)? = null,
     // Zaključavanje kanala (roditeljska zaštita) se nudi samo u spisku Uživo.
     lock: ItemLock? = null,
+    // Svi redovi iste visine: kanal bez programa to i napiše, umesto da mu red bude niži.
+    evenHeight: Boolean = false,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
@@ -240,7 +242,19 @@ fun MobileChannelCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    channel.nowProgress(now)?.let { progress ->
+                    val progress = channel.nowProgress(now)
+                    if (evenHeight && channel.nowTitle == null) {
+                        Text(
+                            text = stringResource(R.string.channel_no_programme),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = muted.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    // Mesto trake ostaje i kad je nema, da red ne bude niži.
+                    if (evenHeight && progress == null) Spacer(Modifier.height(5.dp))
+                    progress?.let { progress ->
                         // Traka u akcentnoj boji, ali tanka: jedina boja u redu.
                         Box(
                             modifier = Modifier
