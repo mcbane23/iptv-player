@@ -853,6 +853,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       „Filter” u levom panelu otvara mali prozor, vrednosti se menjaju sa Levo/Desno; telefon: ikonica filtera sa
       brojem uslova i list odozdo. Filter se pamti (posebno filmovi, serije, kanali). Filter kanala koristi kolonu
       `channels.ruleHidden` (`ChannelRulesSync`), pa važi u svim spiskovima kanala, i za omiljene
+- [x] TV Početna: veliki prikaz stavke u fokusu (Bane, 22. 11. 2026; samo TV, izgled izabran sa slike): iznad
+      redova stoje naziv, godina, ocena, žanr i opis filma ili serije sa slikom na desnoj strani; za kanal logo i
+      emisija koja traje. Naziv, godina i ocena stižu odmah iz spiska, a opis i široka slika se čitaju sa servera
+      kad fokus zastane 0,35 s i pamte se dok je ekran otvoren (`TvStartViewModel.preview`)
 
 
 ## 7. Testiranje
