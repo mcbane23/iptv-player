@@ -221,9 +221,22 @@ object Migrations {
         }
     }
 
+    /**
+     * 22 → 23: kvalitet i zemlja kanala se čuvaju u bazi, a filter kanala ima svoju kolonu, da se
+     * primenjuje jednom naredbom umesto čitanjem svih naziva.
+     */
+    private val MIGRATION_22_23 = object : Migration(22, 23) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `channels` ADD COLUMN `quality` INTEGER NOT NULL DEFAULT -1")
+            db.execSQL("ALTER TABLE `channels` ADD COLUMN `country` TEXT")
+            db.execSQL("ALTER TABLE `channels` ADD COLUMN `filterHidden` INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
         MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17,
         MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22,
+        MIGRATION_22_23,
     )
 }
