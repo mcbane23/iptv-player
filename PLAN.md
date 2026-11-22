@@ -835,3 +835,23 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       ne prikazuje, pa tamo ostaje red „Arhiva”
 - [x] Prekidač „Automatski pusti sledeću epizodu” (Bane, 22. 11. 2026; telefon i TV, podrazumevano uključen):
       kad je isključen, kartica na kraju epizode i dalje nudi sledeću, ali ona ne kreće sama
+- [x] TV Filmovi i Serije: šira mreža postera (Bane, 22. 11. 2026): čim fokus pređe na postere (OK na
+      kategoriji ili Desno), kategorije se skupe u tanku traku sa ikonicama i u red staje 7 malo manjih
+      postera umesto 5 (Bane izabrao sa slike). Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa
+      fokusom na izabranoj. OK na kategoriji je bira i prelazi na postere čim stignu. Uživo i telefon se
+      ne menjaju.
+
+
+## 7. Testiranje
+
+- Unit testovi za parsere (M3U, XMLTV) i Xtream modele se pokreću u CI-ju na svaki push.
+- Test podaci su **izmišljeni** primeri. Pravi linkovi, liste i lozinke ne ulaze u repo.
+- Ručna provera posle svake faze na telefonu i na TV-u, po spisku „Provera” iz faze.
+
+## 8. Poznati rizici
+
+- **Nema lokalnog builda**: greške u kompilaciji se vide tek u CI-ju. Zato male izmene i čest push.
+- **Raznolikost strimova**: provajderi koriste različite formate i kodeke; neki strimovi
+  neće raditi bez softverskog dekodera. Predvideti izbor dekodera u podešavanjima.
+- **Velike liste**: 50.000+ stavki. Parser i liste na ekranu moraju raditi strimovano i sa straničenjem.
+- **Fokus na TV-u**: najčešći izvor grešaka u Compose for TV. Zato posebna Faza 6.
