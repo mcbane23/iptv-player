@@ -26,11 +26,12 @@ private const val NOW_COLUMN =
         "(SELECT e.stopMs $NOW_PROGRAM) AS nowStopMs"
 
 /**
- * Korisnik nije sakrio kanal (vidi [HiddenChannelEntity]) i kanal nije pojedinačno zaključan
- * roditeljskom zaštitom (vidi [LockedItemEntity]; takav kanal se ne vidi dok se ne unese PIN).
+ * Korisnik nije sakrio kanal (vidi [HiddenChannelEntity]), nisu ga sklonila pravila za kanale
+ * (vidi [ChannelEntity.ruleHidden]) i kanal nije pojedinačno zaključan roditeljskom zaštitom (vidi
+ * [LockedItemEntity]; takav kanal se ne vidi dok se ne unese PIN).
  */
 private const val NOT_HIDDEN_CHANNEL =
-    "NOT EXISTS(SELECT 1 FROM hidden_channels hx WHERE hx.playlistId = ch.playlistId AND hx.channelKey = ch.stableKey) " +
+    "ch.ruleHidden = 0 AND NOT EXISTS(SELECT 1 FROM hidden_channels hx WHERE hx.playlistId = ch.playlistId AND hx.channelKey = ch.stableKey) " +
         "AND NOT EXISTS(SELECT 1 FROM locked_items lx WHERE lx.playlistId = ch.playlistId AND lx.kind = 'channel' " +
         "AND lx.itemKey = ch.stableKey AND lx.active = 1)"
 
@@ -89,7 +90,7 @@ private const val CATEGORY_ORDER = "ORDER BY cat.userOrder IS NULL, cat.userOrde
  */
 private const val DUPLICATE =
     "EXISTS(SELECT 1 FROM channels d WHERE d.playlistId IN $SCOPE_IDS AND d.playlistId < ch.playlistId " +
-        "AND d.name = ch.name AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND (dc.hidden = 1 OR dc.locked = 1)) " +
+        "AND d.name = ch.name AND d.ruleHidden = 0 AND NOT EXISTS(SELECT 1 FROM categories dc WHERE dc.id = d.categoryId AND (dc.hidden = 1 OR dc.locked = 1)) " +
         "AND NOT EXISTS(SELECT 1 FROM hidden_channels dh WHERE dh.playlistId = d.playlistId AND dh.channelKey = d.stableKey) " +
         "AND NOT EXISTS(SELECT 1 FROM locked_items dl WHERE dl.playlistId = d.playlistId AND dl.kind = 'channel' " +
         "AND dl.itemKey = d.stableKey AND dl.active = 1))"
@@ -235,6 +236,21 @@ interface CategoryDao {
 interface ChannelDao {
     @Insert
     suspend fun insertAll(channels: List<ChannelEntity>)
+
+    /** Svi kanali svih lista redom kojim su u listi, za računanje pravila za kanale. */
+    @Query(
+        "SELECT ch.id AS id, ch.playlistId AS playlistId, ch.name AS name, ch.ruleHidden AS hidden, " +
+            "(EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) " +
+            "OR EXISTS(SELECT 1 FROM favorite_list_items li WHERE li.playlistId = ch.playlistId " +
+            "AND li.channelKey = ch.stableKey)) AS kept FROM channels ch ORDER BY ch.playlistId, ch.sortOrder",
+    )
+    suspend fun ruleRows(): List<ChannelRuleRow>
+
+    @Query("UPDATE channels SET ruleHidden = :hidden WHERE id IN (:ids)")
+    suspend fun setRuleHidden(ids: List<Long>, hidden: Boolean)
+
+    @Query("UPDATE channels SET ruleHidden = 0 WHERE ruleHidden = 1")
+    suspend fun clearRuleHidden()
 
     @Query("SELECT COUNT(*) FROM channels WHERE playlistId = :playlistId")
     suspend fun countByPlaylist(playlistId: Long): Int

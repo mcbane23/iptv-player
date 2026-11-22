@@ -602,6 +602,12 @@
     <string name="settings_auto_refresh_summary">Liste se jednom dnevno same preuzimaju iznova, da kanali i filmovi budu sveži. Liste iz fajla se ne osvežavaju.</string>
     <string name="settings_vod_cache">Čuvaj filmove i serije na uređaju</string>
     <string name="settings_vod_cache_summary">Spiskovi filmova i serija se pamte, pa se Filmovi i Serije otvaraju odmah. Novi spiskovi stižu kad se lista osveži, jednom dnevno ili ručno.</string>
+    <string name="settings_rule_hide_sd">Sakrij SD kad postoji HD</string>
+    <string name="settings_rule_hide_sd_summary">Kanal sa oznakom SD ili bez oznake kvaliteta se ne prikazuje kad isti kanal u listi postoji u HD, FHD ili 4K. Čita se iz naziva kanala. Omiljeni kanali ostaju.</string>
+    <string name="settings_rule_plus_one">Sakrij kanale +1</string>
+    <string name="settings_rule_plus_one_summary">Kanali koji isti program puštaju sat kasnije (u nazivu imaju „+1”) se ne prikazuju. Omiljeni kanali ostaju.</string>
+    <string name="settings_rule_same_name">Spoji istoimene kanale</string>
+    <string name="settings_rule_same_name_summary">Kanal koji se u jednoj listi ponavlja sa potpuno istim nazivom prikazuje se jednom. Omiljeni kanali ostaju.</string>
     <string name="vod_loading_movies">Učitavam filmove…</string>
     <string name="vod_loading_series">Učitavam serije…</string>
     <string name="vod_loading_hint">Učitavanje može da potraje.</string>

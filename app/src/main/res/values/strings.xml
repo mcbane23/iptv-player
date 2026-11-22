@@ -601,6 +601,12 @@
     <string name="settings_auto_refresh_summary">Playlists are downloaded again once a day so channels and movies stay current. Playlists loaded from a file are not refreshed.</string>
     <string name="settings_vod_cache">Keep movies and series on this device</string>
     <string name="settings_vod_cache_summary">Movie and series lists are saved so Movies and Series open right away. New lists arrive when the playlist is refreshed, once a day or manually.</string>
+    <string name="settings_rule_hide_sd">Hide SD when HD exists</string>
+    <string name="settings_rule_hide_sd_summary">A channel marked SD, or with no quality mark, is not shown when the same channel exists in the playlist in HD, FHD or 4K. Read from the channel name. Favorite channels stay.</string>
+    <string name="settings_rule_plus_one">Hide +1 channels</string>
+    <string name="settings_rule_plus_one_summary">Channels that play the same program an hour later (with \"+1\" in the name) are not shown. Favorite channels stay.</string>
+    <string name="settings_rule_same_name">Merge channels with the same name</string>
+    <string name="settings_rule_same_name_summary">A channel that repeats in one playlist under exactly the same name is shown once. Favorite channels stay.</string>
     <string name="vod_loading_movies">Loading movies…</string>
     <string name="vod_loading_series">Loading series…</string>
     <string name="vod_loading_hint">Loading can take a while.</string>

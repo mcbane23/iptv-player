@@ -116,7 +116,15 @@ data class ChannelEntity(
      * se dodeljuje pri učitavanju vodiča, ako se naziv poklopi sa nazivom kanala u vodiču.
      */
     val epgKey: String? = null,
+    /**
+     * Kanal je sklonjen pravilima za kanale iz Podešavanja (SD kad postoji HD, kanali +1, istoimeni).
+     * Izvor istine su podešavanja; kolonu održava `ChannelRulesSync`.
+     */
+    val ruleHidden: Boolean = false,
 )
+
+/** Kanal za računanje pravila: [hidden] je sadašnje stanje kolone, [kept] znači da je među omiljenima. */
+data class ChannelRuleRow(val id: Long, val playlistId: Long, val name: String, val hidden: Boolean, val kept: Boolean)
 
 /** Emisija iz TV vodiča. Vremena su u milisekundama (UTC), već sa pomakom liste. */
 @Entity(

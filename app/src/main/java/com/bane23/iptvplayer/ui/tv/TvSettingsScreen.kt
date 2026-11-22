@@ -92,6 +92,7 @@ fun TvSettingsScreen(
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val autoNextEpisode by viewModel.autoNextEpisode.collectAsStateWithLifecycle()
+    val channelRules by viewModel.channelRules.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
@@ -229,6 +230,15 @@ fun TvSettingsScreen(
             },
             TvItem(VOD_CACHE_ROW, stringResource(R.string.settings_vod_cache), checked = vodLocalCache) {
                 viewModel.setVodLocalCache(!vodLocalCache)
+            },
+            TvItem(RULE_SD_ROW, stringResource(R.string.settings_rule_hide_sd), checked = channelRules.hideSd) {
+                viewModel.setRuleHideSd(!channelRules.hideSd)
+            },
+            TvItem(RULE_PLUS_ONE_ROW, stringResource(R.string.settings_rule_plus_one), checked = channelRules.hidePlusOne) {
+                viewModel.setRuleHidePlusOne(!channelRules.hidePlusOne)
+            },
+            TvItem(RULE_SAME_NAME_ROW, stringResource(R.string.settings_rule_same_name), checked = channelRules.mergeSameName) {
+                viewModel.setRuleMergeSameName(!channelRules.mergeSameName)
             },
         )
 
@@ -554,6 +564,9 @@ private fun FocusedSummary(
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         AUTO_NEXT_ROW -> stringResource(R.string.settings_auto_next_summary)
+        RULE_SD_ROW -> stringResource(R.string.settings_rule_hide_sd_summary)
+        RULE_PLUS_ONE_ROW -> stringResource(R.string.settings_rule_plus_one_summary)
+        RULE_SAME_NAME_ROW -> stringResource(R.string.settings_rule_same_name_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
         VOD_CACHE_ROW -> stringResource(R.string.settings_vod_cache_summary)
@@ -612,6 +625,9 @@ private const val CRASH_REPORT_ROW = -23
 private const val HIDDEN_CHANNELS_ROW = -24
 private const val BACKUP_ROW = -25
 private const val AUTO_NEXT_ROW = -26
+private const val RULE_SD_ROW = -27
+private const val RULE_PLUS_ONE_ROW = -28
+private const val RULE_SAME_NAME_ROW = -29
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

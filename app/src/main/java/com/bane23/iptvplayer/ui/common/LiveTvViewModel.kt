@@ -465,6 +465,21 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setDownloadOnMobile(enabled) }
     }
 
+    val channelRules: StateFlow<com.bane23.iptvplayer.domain.ChannelRuleSettings> = settings.channelRules
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.bane23.iptvplayer.domain.ChannelRuleSettings())
+
+    fun setRuleHideSd(enabled: Boolean) {
+        viewModelScope.launch { settings.setRuleHideSd(enabled) }
+    }
+
+    fun setRuleHidePlusOne(enabled: Boolean) {
+        viewModelScope.launch { settings.setRuleHidePlusOne(enabled) }
+    }
+
+    fun setRuleMergeSameName(enabled: Boolean) {
+        viewModelScope.launch { settings.setRuleMergeSameName(enabled) }
+    }
+
     val autoNextEpisode: StateFlow<Boolean> = settings.autoNextEpisode
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
