@@ -85,8 +85,8 @@ import kotlinx.coroutines.delay
 
 /**
  * Filmovi ili serije na TV-u: levo pretraga, „Nastavi gledanje” i kategorije (bira se sa OK),
- * desno posteri izabrane grupe. Dok je fokus među posterima, kategorije su skupljene u usku traku
- * i u red staje poster više; Levo sa prve kolone ili Nazad ih ponovo otvara (Bane).
+ * desno posteri izabrane grupe. Dok je fokus među posterima, kategorije su skupljene u tanku traku
+ * i u red staje 7 postera umesto 5; Levo sa prve kolone ili Nazad ih ponovo otvara (Bane).
  */
 @Composable
 fun TvVodScreen(
@@ -308,8 +308,8 @@ fun TvVodScreen(
         // Grupa je prazna ili se nije učitala: fokus ostaje na njoj.
         enterGrid = null
     }
-    val leftFraction = animateFloatAsState(
-        targetValue = if (categoriesOpen) CATEGORIES_OPEN_FRACTION else CATEGORIES_STRIP_FRACTION,
+    val categoriesShown = animateFloatAsState(
+        targetValue = if (categoriesOpen) 1f else 0f,
         animationSpec = tween(CATEGORIES_ANIMATION_MS),
         label = "categories",
     )
@@ -395,7 +395,7 @@ fun TvVodScreen(
             state.categories.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
             // Širinu leve kolone čita samo raspored, pa animacija ne crta iznova ni spisak ni postere.
-            else -> SplitRow(leftFraction = { leftFraction.value }, gap = 24.dp) {
+            else -> SplitRow(open = { categoriesShown.value }, gap = 24.dp) {
                 // Levo: pretraga, Favoriti i „Nastavi gledanje” stoje zakačeni na vrhu, a ispod njih
                 // polje za filtriranje i kategorije koje se skroluju.
                 Column(
@@ -409,13 +409,7 @@ fun TvVodScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     if (!categoriesOpen) {
-                        CategoryStrip(
-                            name = when {
-                                showContinue -> stringResource(R.string.vod_continue_watching)
-                                showFavorites -> favoritesLabel
-                                else -> state.selected?.name.orEmpty()
-                            },
-                        )
+                        CategoryStrip()
                         return@Column
                     }
                     TvListRow(onClick = onSearch, modifier = Modifier.focusRequester(searchRowFocus).then(toGrid)) { color ->
@@ -647,15 +641,17 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
 }
 
 /**
- * Dve kolone jedna pored druge; leva zauzima [leftFraction] širine. Udeo se čita tek pri merenju, pa
- * se pri animaciji širine sadržaj kolona ne crta iznova.
+ * Dve kolone jedna pored druge; leva je široka kao tanka traka kad je [open] 0, a kao otvorene
+ * kategorije kad je 1. Vrednost se čita tek pri merenju, pa se pri animaciji širine sadržaj kolona
+ * ne crta iznova.
  */
 @Composable
-private fun SplitRow(leftFraction: () -> Float, gap: Dp, content: @Composable () -> Unit) {
+private fun SplitRow(open: () -> Float, gap: Dp, content: @Composable () -> Unit) {
     Layout(content = content, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
         val gapPx = gap.roundToPx()
         val total = (constraints.maxWidth - gapPx).coerceAtLeast(0)
-        val leftWidth = (total * leftFraction()).roundToInt()
+        val strip = CATEGORIES_STRIP_WIDTH.roundToPx().coerceAtMost(total)
+        val leftWidth = (strip + (total * CATEGORIES_OPEN_FRACTION - strip) * open()).roundToInt().coerceIn(0, total)
         val left = measurables[0].measure(Constraints.fixed(leftWidth, constraints.maxHeight))
         val right = measurables[1].measure(Constraints.fixed(total - leftWidth, constraints.maxHeight))
         layout(constraints.maxWidth, constraints.maxHeight) {
@@ -666,29 +662,23 @@ private fun SplitRow(leftFraction: () -> Float, gap: Dp, content: @Composable ()
 }
 
 /**
- * Skupljene kategorije dok je fokus među posterima: uska traka sa nazivom izabrane grupe. Ne prima
+ * Skupljene kategorije dok je fokus među posterima: tanka traka samo sa ikonicama (Bane). Ne prima
  * fokus; otvara je Levo sa prve kolone postera ili Nazad.
  */
 @Composable
-private fun CategoryStrip(name: String) {
+private fun CategoryStrip() {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(10.dp))
             .background(colors.surfaceVariant.copy(alpha = 0.6f))
-            .padding(horizontal = 10.dp, vertical = 12.dp),
+            .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(AppIcons.ChevronLeft, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
         Icon(AppIcons.Categories, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Text(
-            text = name,
-            color = colors.primary,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
@@ -738,10 +728,10 @@ internal fun PinnedRow(
 
 private const val GRID_COLUMNS = 5
 
-// Sa skupljenim kategorijama staje poster više. Udeo trake je odmeren tako da posteri ostanu iste veličine.
-private const val GRID_COLUMNS_WIDE = 6
+// Sa skupljenim kategorijama u red staje 7 malo manjih postera (Bane, 22. 11. 2026).
+private const val GRID_COLUMNS_WIDE = 7
 private const val CATEGORIES_OPEN_FRACTION = 0.28f
-private const val CATEGORIES_STRIP_FRACTION = 0.136f
+private val CATEGORIES_STRIP_WIDTH = 44.dp
 private const val CATEGORIES_ANIMATION_MS = 180
 private const val CONTINUE_TARGET = "__continue"
 private const val FOCUSED_POSTER_SCALE = 1.08f
