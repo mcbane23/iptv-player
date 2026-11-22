@@ -107,6 +107,9 @@
     <string name="category_favorites">Favorites</string>
     <string name="category_recent">Recently watched</string>
     <string name="category_chip_all">All</string>
+    <string name="recent_remove">Remove from recently watched</string>
+    <string name="recent_clear">Clear recently watched</string>
+    <string name="recent_clear_confirm">Clear all recently watched channels?</string>
     <string name="category_chip_recent">Recent</string>
     <string name="category_chip_more">Categories</string>
     <string name="favorite_add">Add to favorites</string>
@@ -339,7 +342,7 @@
     <string name="archive_hint_tv">OK opens the archive</string>
     <string name="parental_title">Parental control</string>
     <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
-    <string name="parental_hint">Locked categories stay visible with a padlock. Channels of a locked category are hidden everywhere until the PIN is entered; movies and series ask for the PIN when opened. An entered PIN stays valid until the app is closed.</string>
+    <string name="parental_hint">Locked categories stay visible with a padlock. Channels of a locked category are hidden everywhere until the PIN is entered; movies and series ask for the PIN when opened. An entered PIN stays valid until you leave the app. Channels of locked categories are never kept in recently watched.</string>
     <string name="parental_lock_again">Lock again</string>
     <string name="parental_change_pin">Change PIN</string>
     <string name="parental_remove_pin">Remove PIN and all locks</string>

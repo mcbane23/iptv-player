@@ -262,7 +262,7 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     onClose = { if (backStack.lastOrNull() is CastPlayback) backStack.removeLastOrNull() },
                 )
             }
-            entry<ParentalControl> { TvParentalScreen() }
+            entry<ParentalControl> { TvParentalScreen(onBack = { backStack.removeLastOrNull() }) }
             entry<TraktAccount> { TvTraktScreen() }
             entry<OpenSubtitlesAccount> { TvOpenSubtitlesScreen() }
             entry<RemoteButtons> { TvRemoteButtonsScreen() }

@@ -166,6 +166,22 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
         watchPlaylistRefresh()
         watchSourceFailure()
+        watchRelock()
+    }
+
+    /**
+     * Kad se kategorije ponovo zaključaju (izlazak iz aplikacije, „Zaključaj ponovo”), a gleda se kanal
+     * iz zaključane kategorije na koji se prešlo unutar plejera, plejer prelazi na prvi slobodan kanal.
+     */
+    private fun watchRelock() {
+        viewModelScope.launch {
+            locks.activeKeys.distinctUntilChanged().collect { keys ->
+                val current = _ui.value.channel
+                if (keys.isEmpty() || current == null || !locks.isChannelLocked(current.id)) return@collect
+                val free = neighbor(current, 1)?.takeIf { it.id != current.id }
+                if (free != null) show(free) else engine.pause()
+            }
+        }
     }
 
     /**

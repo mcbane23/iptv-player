@@ -148,6 +148,10 @@ fun TvLiveTvScreen(
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
     // Meni liste omiljenih (dugi OK): za „Omiljene” nova lista, za imenovanu listu ime i brisanje.
     var favoritesMenu by remember { mutableStateOf(false) }
+    // Meni posle dugog OK na grupi „Nedavno gledano”.
+    var recentMenu by remember { mutableStateOf(false) }
+    // Šta se uklanja iz „Nedavno” dok fokus ne pređe na „Omiljene”: ID kanala ili [RECENT_CLEAR_ALL].
+    var pendingRecent by remember { mutableStateOf<Long?>(null) }
     var menuList by remember { mutableStateOf<FavoriteList?>(null) }
     var menuChannel by remember { mutableStateOf<Channel?>(null) }
     // Sused kanala kome je otvoren meni: sledeći ispod, a za poslednji kanal onaj iznad njega.
@@ -259,15 +263,48 @@ fun TvLiveTvScreen(
             onClose = { favoritesMenu = false },
         )
     }
+    if (recentMenu) {
+        TvActionDialog(
+            title = stringResource(R.string.category_recent),
+            options = listOf(stringResource(R.string.recent_clear)),
+            onSelect = { pendingRecent = RECENT_CLEAR_ALL },
+            onClose = { recentMenu = false },
+        )
+    }
+    // Kad iz „Nedavno” nestaje i poslednji kanal, nestaje i sam red grupe: fokus prvo pređe na
+    // „Omiljene”, pa se tek onda briše.
+    LaunchedEffect(pendingRecent) {
+        val target = pendingRecent ?: return@LaunchedEffect
+        var moved = false
+        var attempts = 0
+        while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            moved = favoritesFocus.tryRequestFocus()
+            attempts++
+        }
+        focusedCategory = favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES
+        if (target == RECENT_CLEAR_ALL) hiddenChannels.clearRecent() else hiddenChannels.removeFromRecent(target)
+        pendingRecent = null
+    }
     menuChannel?.let { channel ->
+        val inRecent = selectedCategory == ChannelGroups.RECENT
         TvActionDialog(
             title = channel.name,
-            options = listOf(
+            options = listOfNotNull(
                 stringResource(R.string.category_favorites),
                 stringResource(R.string.channel_hide),
+                stringResource(R.string.recent_remove).takeIf { inRecent },
             ),
             onSelect = { option ->
-                if (option == 0) {
+                if (option == 2) {
+                    if (state.recentCount <= 1) {
+                        pendingRecent = channel.id
+                    } else {
+                        // Fokus se vraća na kanal na vrhu vidljivog dela spiska, kao posle sakrivanja.
+                        hiddenChannels.removeFromRecent(channel.id)
+                        hiddenCount++
+                    }
+                } else if (option == 0) {
                     if (state.isFavoritesGroup(selectedCategory)) {
                         // Bez imenovanih lista kanal odmah izlazi iz „Omiljenih”: fokus se prvo pomeri,
                         // pa se kanal tek onda ukloni. Sa listama se otvara izbor i čeka se šta će biti.
@@ -492,6 +529,7 @@ fun TvLiveTvScreen(
                             selected = selectedCategory == ChannelGroups.RECENT,
                             onFocused = { lastChannelId = null },
                             onClick = { pickCategory(ChannelGroups.RECENT) },
+                            onLongClick = { recentMenu = true },
                             modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
                         )
                     }
@@ -810,6 +848,9 @@ private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
 private const val MOVE_SETTLE_MS = 150L
+
+/** Oznaka u `pendingRecent`: briše se cela lista nedavno gledanih, ne jedan kanal. */
+private const val RECENT_CLEAR_ALL = Long.MIN_VALUE
 private const val REMOVAL_WAIT_MS = 1500L
 
 /** Prigušen program dok se učitava program novog kanala. */

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -127,6 +128,27 @@ fun MobileLiveTvScreen(
     var listMenu by remember { mutableStateOf<FavoriteListMenu?>(null) }
     listMenu?.let { menu ->
         MobileFavoriteListMenuDialog(menu = menu, viewModel = favoriteLists, onClose = { listMenu = null })
+    }
+    // Potvrda posle dugog pritiska na „Nedavno”: brisanje cele liste nedavno gledanih.
+    var clearRecent by remember { mutableStateOf(false) }
+    if (clearRecent) {
+        AlertDialog(
+            onDismissRequest = { clearRecent = false },
+            text = { Text(stringResource(R.string.recent_clear_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        clearRecent = false
+                        hiddenChannels.clearRecent()
+                    },
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { clearRecent = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
     }
     val groups = buildList {
         add(ChannelGroups.FAVORITES)
@@ -331,6 +353,14 @@ fun MobileLiveTvScreen(
                                             hiddenChannels.hide(picked.id)
                                             AppMessages.show(context, R.string.channel_hidden, long = true)
                                         },
+                                        onRemoveRecent = if (selected == ChannelGroups.RECENT) {
+                                            { picked ->
+                                                if (picked.id == previewId) previewId = null
+                                                hiddenChannels.removeFromRecent(picked.id)
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     )
                                 }
                             }
@@ -372,6 +402,7 @@ fun MobileLiveTvScreen(
                                 onMoveToTop = viewModel::moveCategoryToTop,
                                 onManage = onCategories,
                                 onListMenu = { listMenu = FavoriteListMenu(it) },
+                                onRecentMenu = { clearRecent = true },
                                 modifier = Modifier
                                     .padding(start = 8.dp, top = 8.dp)
                                     .width(210.dp)
@@ -404,6 +435,7 @@ fun MobileLiveTvScreen(
                             inFavorites = inFavorites,
                             showRecent = state.recentCount > 0,
                             onListMenu = { listMenu = FavoriteListMenu(it) },
+                            onRecentMenu = { clearRecent = true },
                             categoryName = state.categories.firstOrNull { it.id == selected }?.name,
                             // Zvezdica je prekidač: prvi dodir prikazuje omiljene, drugi vraća prethodnu grupu.
                             onSelect = { group ->
@@ -497,6 +529,7 @@ private fun QuickGroupChips(
     inFavorites: Boolean,
     showRecent: Boolean,
     onListMenu: (FavoriteList?) -> Unit,
+    onRecentMenu: () -> Unit,
     categoryName: String?,
     onSelect: (Long) -> Unit,
     onMore: () -> Unit,
@@ -523,6 +556,7 @@ private fun QuickGroupChips(
                 label = stringResource(R.string.category_chip_recent),
                 selected = selected == ChannelGroups.RECENT,
                 onClick = { onSelect(ChannelGroups.RECENT) },
+                onLongClick = onRecentMenu,
             )
         }
         GroupChip(
@@ -689,6 +723,7 @@ private fun GroupPanel(
     onMoveToTop: (Long) -> Unit,
     onManage: () -> Unit,
     onListMenu: (FavoriteList?) -> Unit,
+    onRecentMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Spisak se otvara tamo gde je izabrana kategorija, da posle okretanja telefona bude na vidiku.
@@ -736,6 +771,7 @@ private fun GroupPanel(
                     subtitle = stringResource(R.string.vod_total, state.recentCount),
                     selected = selected == ChannelGroups.RECENT,
                     onClick = { onSelect(ChannelGroups.RECENT) },
+                    onLongClick = onRecentMenu,
                 )
             }
         }

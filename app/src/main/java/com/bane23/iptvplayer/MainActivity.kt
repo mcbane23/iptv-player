@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.data.trakt.TraktRepository
 import com.bane23.iptvplayer.ui.mobile.AppFullScreen
 import com.bane23.iptvplayer.ui.mobile.MobileApp
@@ -45,6 +46,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var trakt: TraktRepository
 
+    @Inject lateinit var locks: LockRepository
+
     /** Jezik izabran u podešavanjima važi za sve tekstove aktivnosti. */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
@@ -54,6 +57,15 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         trakt.refreshIfStale()
+    }
+
+    /**
+     * Uneti PIN važi dok se ne izađe iz aplikacije: čim ona ode u pozadinu (ili se TV ugasi ili uspava),
+     * zaključane kategorije su opet zaključane. Okretanje ekrana i slika u slici se ne računaju.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) locks.lockAgain()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
