@@ -180,6 +180,9 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.push(Player(channelId, key.categoryId)) },
                     onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
+                    onPlayArchive = { channelId, program ->
+                        backStack.push(PlayArchive(channelId, program.startMs, program.stopMs, program.title, startToken = null))
+                    },
                 )
             }
             entry<ChannelArchive> { key ->

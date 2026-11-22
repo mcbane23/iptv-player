@@ -91,6 +91,7 @@ fun TvSettingsScreen(
     val vodLocalCache by viewModel.vodLocalCache.collectAsStateWithLifecycle()
     val matchFrameRate by viewModel.matchFrameRate.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
+    val autoNextEpisode by viewModel.autoNextEpisode.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
@@ -238,6 +239,9 @@ fun TvSettingsScreen(
         ) + choiceItems(SettingsGroup.WATCHING) + listOfNotNull(
             TvItem(PAUSE_INFO_ROW, stringResource(R.string.settings_pause_info), checked = pauseInfo) {
                 viewModel.setPauseInfo(!pauseInfo)
+            },
+            TvItem(AUTO_NEXT_ROW, stringResource(R.string.settings_auto_next), checked = autoNextEpisode) {
+                viewModel.setAutoNextEpisode(!autoNextEpisode)
             },
             TvItem(TV_PREVIEW_ROW, stringResource(R.string.settings_tv_preview), checked = channelPreview) {
                 viewModel.setTvChannelPreview(!channelPreview)
@@ -549,6 +553,7 @@ private fun FocusedSummary(
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
+        AUTO_NEXT_ROW -> stringResource(R.string.settings_auto_next_summary)
         LANGUAGE_ROW -> languageSummary() + " " + stringResource(R.string.settings_language_tv_summary)
         AUTO_REFRESH_ROW -> stringResource(R.string.settings_auto_refresh_summary)
         VOD_CACHE_ROW -> stringResource(R.string.settings_vod_cache_summary)
@@ -606,6 +611,7 @@ private const val VOD_CACHE_ROW = -22
 private const val CRASH_REPORT_ROW = -23
 private const val HIDDEN_CHANNELS_ROW = -24
 private const val BACKUP_ROW = -25
+private const val AUTO_NEXT_ROW = -26
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

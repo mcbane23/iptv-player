@@ -73,7 +73,10 @@ class ArchiveRepository @Inject constructor(
             val streamId = channel.xtreamStreamId
             val urls = if (playlist.type == PlaylistType.XTREAM && streamId != null) {
                 val access = playlist.xtreamAccess() ?: return@withContext null
-                val token = startToken ?: return@withContext null
+                // Emisija izabrana u vodiču nema početak po satu servera: uzima se iz spiska arhive.
+                val token = startToken
+                    ?: ArchiveMatch.best(runCatching { programs(channelId) }.getOrDefault(emptyList()), startMs, stopMs)?.startToken
+                    ?: return@withContext null
                 val minutes = ((stopMs - startMs) + 59_999) / 60_000
                 listOf("ts", "m3u8").map { extension ->
                     XtreamUrls.timeshift(access.server, access.username, access.password, streamId, token, minutes, extension)
@@ -115,5 +118,21 @@ class ArchiveRepository @Inject constructor(
                 Catchup.isSupported(channel.catchupType, channel.catchupSource, channel.streamUrl)
             return if (supported) (channel.catchupDays ?: 1).coerceIn(1, MAX_DAYS) else null
         }
+    }
+}
+
+/** Nalaženje emisije iz vodiča u spisku arhive koji daje server. */
+object ArchiveMatch {
+    /**
+     * Emisija iz [programs] koja se najviše poklapa sa terminom od [startMs] do [stopMs], ili null
+     * kad se nijedna ne poklapa bar pola tog termina (vodič i arhiva ne moraju biti iz istog izvora).
+     */
+    fun best(programs: List<ArchiveProgram>, startMs: Long, stopMs: Long): ArchiveProgram? {
+        val length = (stopMs - startMs).coerceAtLeast(1)
+        return programs
+            .map { it to (minOf(it.stopMs, stopMs) - maxOf(it.startMs, startMs)) }
+            .filter { (_, overlap) -> overlap * 2 >= length }
+            .maxByOrNull { (_, overlap) -> overlap }
+            ?.first
     }
 }

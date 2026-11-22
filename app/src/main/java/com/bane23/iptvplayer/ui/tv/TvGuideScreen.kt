@@ -75,6 +75,7 @@ fun TvGuideScreen(
     categoryId: Long?,
     onPlay: (Long) -> Unit,
     onArchive: (Long) -> Unit,
+    onPlayArchive: (Long, Program) -> Unit,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(playlistId, categoryId) { viewModel.open(playlistId, categoryId) }
@@ -101,6 +102,29 @@ fun TvGuideScreen(
                     if (option == 0) viewModel.toggleReminder(picked.channel, program) else viewModel.toggleRecording(picked.channel, program)
                 },
                 onClose = { futureMenu = null },
+            )
+        }
+    }
+    // Završena emisija kanala sa arhivom na kojoj je pritisnut OK: pušta se ona, kanal uživo ili spisak arhive.
+    var pastMenu by remember { mutableStateOf<GuideSelection?>(null) }
+    pastMenu?.let { picked ->
+        val program = picked.program
+        if (program != null) {
+            TvActionDialog(
+                title = program.title,
+                options = listOf(
+                    stringResource(R.string.archive_play_program),
+                    stringResource(R.string.archive_watch_live),
+                    stringResource(R.string.archive_title),
+                ),
+                onSelect = { option ->
+                    when (option) {
+                        0 -> onPlayArchive(picked.channel.id, program)
+                        1 -> onPlay(picked.channel.id)
+                        else -> onArchive(picked.channel.id)
+                    }
+                },
+                onClose = { pastMenu = null },
             )
         }
     }
@@ -179,6 +203,7 @@ fun TvGuideScreen(
                         recordings = recordings,
                         reminders = reminders,
                         onFuture = { program -> futureMenu = GuideSelection(channel, program) },
+                        onPast = { program -> pastMenu = GuideSelection(channel, program) },
                         viewModel = viewModel,
                         onPlay = { onPlay(channel.id) },
                         onArchive = { onArchive(channel.id) },
@@ -223,6 +248,7 @@ private fun GuideRow(
     recordings: GuideRecordings,
     reminders: Set<String>,
     onFuture: (Program) -> Unit,
+    onPast: (Program) -> Unit,
     viewModel: GuideViewModel,
     onPlay: () -> Unit,
     onArchive: () -> Unit,
@@ -302,10 +328,10 @@ private fun GuideRow(
                     onFocused(program?.startMs)
                     viewModel.select(channel, program)
                 },
-                // Buduća emisija nudi podsetnik i snimanje; ostalo pušta kanal, odnosno arhivu.
+                // Buduća emisija nudi podsetnik i snimanje, završena (uz arhivu) puštanje; ostalo pušta kanal.
                 onClick = when {
                     program != null && program.startMs > now -> ({ onFuture(program) })
-                    hasArchive && program != null && program.stopMs <= now -> onArchive
+                    hasArchive && program != null && program.stopMs <= now -> ({ onPast(program) })
                     else -> onPlay
                 },
                 modifier = Modifier
