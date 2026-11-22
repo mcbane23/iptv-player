@@ -1,11 +1,17 @@
 package com.bane23.iptvplayer.ui.common
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.VodFilter
 import com.bane23.iptvplayer.data.repo.VodYears
+import com.bane23.iptvplayer.data.text.SearchText
 import com.bane23.iptvplayer.domain.ChannelFilter
+import com.bane23.iptvplayer.domain.ChannelRules
+import java.text.Collator
+import java.util.Locale
 
 /** Natpisi i izbori filtera; iste koriste ekrani za telefon i za TV. */
 
@@ -43,10 +49,35 @@ fun VodFilter.summary(): String = listOfNotNull(
 ).joinToString(", ")
 
 @Composable
-fun ChannelFilter.summary(): String = listOfNotNull(
-    minQuality.takeIf { it > 0 }?.let { qualityLabel(it) },
-    country,
-).joinToString(", ")
+fun ChannelFilter.summary(): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return listOfNotNull(
+        minQuality.takeIf { it > 0 }?.let { qualityLabel(it) },
+        ChannelRules.countryCode(country)?.let { Locale("", it).getDisplayCountry(locale) },
+    ).joinToString(", ")
+}
+
+/**
+ * Redni brojevi vrednosti koje odgovaraju upitu [query], po redu u spisku. Prva vrednost („Sve”)
+ * ostaje uvek. Poredi se bez kvačica i velikih slova, pa „srb” nalazi „Srbija”, a „ceska” „Češka”.
+ */
+internal fun matchingOptions(options: List<String>, query: String): List<Int> {
+    val wanted = SearchText.normalize(query)
+    if (wanted.isEmpty()) return options.indices.toList()
+    return options.indices.filter { it == 0 || SearchText.normalize(options[it]).contains(wanted) }
+}
+
+/** Zemlja za spisak: naziv na jeziku aplikacije i oznaka, npr. „Srbija (RS)”. */
+internal fun countryLabel(code: String, locale: Locale): String {
+    val name = Locale("", code).getDisplayCountry(locale)
+    return if (name.isEmpty() || name == code) code else "$name ($code)"
+}
+
+/** Oznake zemalja poređane po nazivu na jeziku [locale], po pravilima tog jezika (č, š, ž na svom mestu). */
+internal fun sortedCountries(codes: List<String>, locale: Locale): List<String> {
+    val collator = Collator.getInstance(locale)
+    return codes.distinct().sortedWith { a, b -> collator.compare(countryLabel(a, locale), countryLabel(b, locale)) }
+}
 
 /** Izbori filtera filmova i serija: godina, najmanja ocena i prekidač „Samo 4K”. */
 @Composable
@@ -78,8 +109,10 @@ fun vodFilterChoices(filter: VodFilter, onChange: (VodFilter) -> Unit): List<Set
 /** Izbori filtera kanala: kvalitet i zemlja. [countries] su oznake koje liste zaista koriste. */
 @Composable
 fun liveFilterChoices(filter: ChannelFilter, countries: List<String>, onChange: (ChannelFilter) -> Unit): List<SettingChoice> {
+    val locale = LocalConfiguration.current.locales[0]
     // Izabrana zemlja ostaje u spisku i kad je posle osvežavanja liste više nema dovoljno.
-    val offered = countries + listOfNotNull(filter.country).filter { it !in countries }
+    val chosen = ChannelRules.countryCode(filter.country)
+    val offered = remember(countries, chosen, locale) { sortedCountries(countries + listOfNotNull(chosen), locale) }
     return listOf(
         SettingChoice(
             title = stringResource(R.string.filter_quality),
@@ -91,8 +124,9 @@ fun liveFilterChoices(filter: ChannelFilter, countries: List<String>, onChange: 
         SettingChoice(
             title = stringResource(R.string.filter_country),
             summary = if (offered.isEmpty()) stringResource(R.string.filter_country_none) else "",
-            options = listOf(stringResource(R.string.filter_all)) + offered,
-            selected = filter.country?.let { offered.indexOf(it) + 1 } ?: 0,
+            options = listOf(stringResource(R.string.filter_all)) + offered.map { countryLabel(it, locale) },
+            selected = chosen?.let { offered.indexOf(it) + 1 } ?: 0,
+            list = true,
             onSelect = { onChange(filter.copy(country = offered.getOrNull(it - 1))) },
         ),
     )

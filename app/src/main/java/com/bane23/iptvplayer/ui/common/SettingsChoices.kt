@@ -47,6 +47,8 @@ data class SettingChoice(
      * otvara ova mesta, a svako mesto je obično podešavanje sa spiskom vrednosti.
      */
     val slots: List<SettingChoice> = emptyList(),
+    /** Dugačak spisak vrednosti (npr. zemlje): bira se iz spiska sa pretragom, ne dugmićima ni korakom. */
+    val list: Boolean = false,
     val onSelect: (Int) -> Unit = {},
 ) {
     /** Trenutna vrednost; za podešavanje sa mestima izabrane vrednosti redom (prva vrednost mesta znači „nije izabrano”). */

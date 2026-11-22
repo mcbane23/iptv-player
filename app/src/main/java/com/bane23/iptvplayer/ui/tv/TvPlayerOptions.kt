@@ -395,13 +395,25 @@ fun TvQuickSettingsPanel(
     modifier: Modifier = Modifier,
     /** Radnje ispod podešavanja (npr. „Poništi filter”): natpis i šta OK radi. */
     actions: List<Pair<String, () -> Unit>> = emptyList(),
+    /** Red na koji staje fokus kad se panel prikaže. */
+    focusIndex: Int = 0,
+    /** OK na podešavanju sa dugačkim spiskom ([SettingChoice.list]); dobija redni broj podešavanja. */
+    onOpenList: (Int) -> Unit = {},
 ) {
     val firstFocus = remember { FocusRequester() }
     LazyColumn(modifier = modifier.tvKeepFocus()) {
         items(choices.size) { index ->
             val choice = choices[index]
-            val focusModifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
-            if (choice.toggle) {
+            val focusModifier = if (index == focusIndex) Modifier.focusRequester(firstFocus) else Modifier
+            if (choice.list) {
+                TvMenuTextRow(
+                    text = choice.title,
+                    onClick = { onOpenList(index) },
+                    modifier = focusModifier,
+                    trailing = AppIcons.ChevronRight,
+                    value = choice.value,
+                )
+            } else if (choice.toggle) {
                 TvMenuRow(
                     onClick = { choice.flip() },
                     modifier = focusModifier.semantics {
