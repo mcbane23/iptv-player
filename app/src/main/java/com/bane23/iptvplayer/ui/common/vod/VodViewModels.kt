@@ -7,7 +7,9 @@ import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.data.repo.VodRepository
+import com.bane23.iptvplayer.data.repo.VodFilter
 import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.data.repo.filterVodItems
 import com.bane23.iptvplayer.data.repo.sortVodItems
 import com.bane23.iptvplayer.data.repo.WatchProgress
 import com.bane23.iptvplayer.data.repo.WatchTarget
@@ -51,6 +53,8 @@ data class VodBrowseUiState(
     val items: List<VodItem> = emptyList(),
     /** Redosled postera u kategoriji. */
     val sort: VodSort = VodSort.DEFAULT,
+    /** Filter postera u kategoriji (godina, ocena, 4K). */
+    val filter: VodFilter = VodFilter(),
     /**
      * Da li se sekcija otvara na „Nastavi gledanje” (kad ga ima). Netačno ako je korisnik poslednji
      * put izašao sa neke kategorije; tada se otvara ona.
@@ -112,7 +116,9 @@ class VodBrowseViewModel @Inject constructor(
         openedKind.value = if (series) VodKind.SERIES else VodKind.MOVIES
         viewModelScope.launch {
             val sort = repository.sort(kind)
-            if (sort != VodSort.DEFAULT) applySort(sort)
+            val filter = repository.filter(kind)
+            if (filter.active) _state.update { it.copy(filter = filter) }
+            if (sort != VodSort.DEFAULT || filter.active) applySort(sort)
         }
         loadCategories()
         viewModelScope.launch {
@@ -148,8 +154,9 @@ class VodBrowseViewModel @Inject constructor(
             if (_state.value.selected?.id != selected.id || _state.value.loadingItems) return
             rawItems = items
             val sort = _state.value.sort
-            val sorted = withContext(Dispatchers.Default) { sortVodItems(items, sort) }
-            if (rawItems === items && _state.value.sort == sort) _state.update { it.copy(items = sorted) }
+            val filter = _state.value.filter
+            val sorted = withContext(Dispatchers.Default) { sortVodItems(filterVodItems(items, filter), sort) }
+            if (rawItems === items && _state.value.sort == sort && _state.value.filter == filter) _state.update { it.copy(items = sorted) }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -164,12 +171,22 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch { applySort(sort) }
     }
 
+    /** Menja filter postera i pamti ga dok ga korisnik ne poništi. */
+    fun setFilter(filter: VodFilter) {
+        if (filter == _state.value.filter) return
+        _state.update { it.copy(filter = filter) }
+        viewModelScope.launch { repository.setFilter(kind, filter) }
+        viewModelScope.launch { applySort(_state.value.sort) }
+    }
+
+    /** Slaže i filtrira učitan spisak po [sort] i po filteru iz stanja. */
     private suspend fun applySort(sort: VodSort) {
         _state.update { it.copy(sort = sort) }
         val raw = rawItems
-        val sorted = withContext(Dispatchers.Default) { sortVodItems(raw, sort) }
-        // Ako je u međuvremenu izabrana druga kategorija ili redosled, ovaj rezultat više ne važi.
-        if (rawItems === raw && _state.value.sort == sort) _state.update { it.copy(items = sorted) }
+        val filter = _state.value.filter
+        val sorted = withContext(Dispatchers.Default) { sortVodItems(filterVodItems(raw, filter), sort) }
+        // Ako je u međuvremenu izabrana druga kategorija, redosled ili filter, ovaj rezultat više ne važi.
+        if (rawItems === raw && _state.value.sort == sort && _state.value.filter == filter) _state.update { it.copy(items = sorted) }
     }
 
     fun loadCategories() {
@@ -273,10 +290,11 @@ class VodBrowseViewModel @Inject constructor(
                 val items = repository.items(kind, category.id)
                 rawItems = items
                 val sort = _state.value.sort
-                val sorted = withContext(Dispatchers.Default) { sortVodItems(items, sort) }
+                val filter = _state.value.filter
+                val sorted = withContext(Dispatchers.Default) { sortVodItems(filterVodItems(items, filter), sort) }
                 _state.update { it.copy(loadingItems = false, items = sorted) }
-                // Redosled je promenjen dok se spisak slagao.
-                if (_state.value.sort != sort) applySort(_state.value.sort)
+                // Redosled ili filter je promenjen dok se spisak slagao.
+                if (_state.value.sort != sort || _state.value.filter != filter) applySort(_state.value.sort)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

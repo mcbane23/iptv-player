@@ -79,7 +79,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.tv.material3.Icon
 import com.bane23.iptvplayer.ui.common.ChannelPreviewViewModel
+import com.bane23.iptvplayer.domain.ChannelFilter
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.liveFilterChoices
+import com.bane23.iptvplayer.ui.common.summary
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.nowUntil
 import com.bane23.iptvplayer.ui.common.guide.timeRangeLeft
@@ -118,6 +121,18 @@ fun TvLiveTvScreen(
     playlistsViewModel: PlaylistsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val liveFilter by viewModel.liveFilter.collectAsStateWithLifecycle()
+    val filterCountries by viewModel.filterCountries.collectAsStateWithLifecycle()
+    var filterOpen by remember { mutableStateOf(false) }
+    if (filterOpen) {
+        TvFilterDialog(
+            title = stringResource(R.string.filter_title_channels),
+            choices = liveFilterChoices(liveFilter, filterCountries, viewModel::setLiveFilter),
+            resetLabel = stringResource(R.string.filter_reset),
+            onReset = { viewModel.setLiveFilter(ChannelFilter()) },
+            onClose = { filterOpen = false },
+        )
+    }
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
     val playlistId = state.playlistId
     // Kreće se od nedavno gledanih (bez njih od kategorije otvorene prošli put). Ključevi vraćaju izbor na početak
@@ -531,6 +546,28 @@ fun TvLiveTvScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(start = 12.dp),
                             )
+                    }
+                    // Filter kanala: dok je uključen, red je označen i piše šta je izabrano.
+                    TvListRow(
+                        onClick = {
+                            viewModel.loadFilterCountries()
+                            filterOpen = true
+                        },
+                        selected = liveFilter.active,
+                    ) { color ->
+                        Icon(AppIcons.Filter, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = if (liveFilter.active) {
+                                stringResource(R.string.filter_row_current, liveFilter.summary())
+                            } else {
+                                stringResource(R.string.filter_row)
+                            },
+                            color = color,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
                     }
                     PinnedRow(
                         icon = AppIcons.Star,

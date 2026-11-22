@@ -47,7 +47,9 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
+import com.bane23.iptvplayer.data.repo.VodFilter
 import com.bane23.iptvplayer.data.repo.VodSort
+import com.bane23.iptvplayer.ui.common.vodFilterChoices
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
 import com.bane23.iptvplayer.ui.common.vod.VodLoading
@@ -81,6 +83,7 @@ fun MobileVodLandscape(
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
     onSort: (VodSort) -> Unit,
+    onFilter: (VodFilter) -> Unit,
     onRetry: () -> Unit,
 ) {
     val favoritesLabel = stringResource(R.string.category_favorites)
@@ -198,6 +201,12 @@ fun MobileVodLandscape(
                         .padding(start = 12.dp),
                 )
                 VodSortButton(sort = state.sort, onSort = onSort)
+                FilterButton(
+                    title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
+                    count = state.filter.count,
+                    choices = vodFilterChoices(state.filter, onFilter),
+                    onReset = { onFilter(VodFilter()) },
+                )
                 ToolbarIcon(
                     AppIcons.Search,
                     stringResource(if (series) R.string.search_series else R.string.search_movies),
@@ -240,7 +249,7 @@ fun MobileVodLandscape(
 
                     state.items.isEmpty() -> EmptyState(
                         icon = if (series) AppIcons.Series else AppIcons.Movies,
-                        text = stringResource(R.string.vod_empty),
+                        text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty),
                     )
 
                     else -> PosterGrid(gridState) {

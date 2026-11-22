@@ -305,6 +305,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[vodSortKey(series)] = value }
     }
 
+    /** Filter filmova, odnosno serija (zapis iz `VodFilter.encode`); važi dok ga korisnik ne poništi. */
+    fun vodFilter(series: Boolean): Flow<String?> =
+        dataStore.data.map { it[vodFilterKey(series)] }.distinctUntilChanged()
+
+    suspend fun setVodFilter(series: Boolean, value: String) {
+        dataStore.edit { it[vodFilterKey(series)] = value }
+    }
+
+    private fun vodFilterKey(series: Boolean) = stringPreferencesKey(if (series) "vod_filter_series" else "vod_filter_movies")
+
     private fun vodSortKey(series: Boolean) = stringPreferencesKey(if (series) "vod_sort_series" else "vod_sort_movies")
 
     /**
@@ -364,6 +374,22 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             mergeSameName = prefs[RULE_MERGE_SAME_NAME] ?: false,
         )
     }.distinctUntilChanged()
+
+    /** Filter kanala u Uživo (kvalitet i zemlja); važi dok ga korisnik ne poništi. */
+    val liveFilter: Flow<com.bane23.iptvplayer.domain.ChannelFilter> = dataStore.data.map { prefs ->
+        com.bane23.iptvplayer.domain.ChannelFilter(
+            minQuality = (prefs[LIVE_FILTER_QUALITY] ?: 0).coerceIn(0, 3),
+            country = prefs[LIVE_FILTER_COUNTRY]?.takeIf { it.isNotBlank() },
+        )
+    }.distinctUntilChanged()
+
+    suspend fun setLiveFilter(filter: com.bane23.iptvplayer.domain.ChannelFilter) {
+        dataStore.edit { prefs ->
+            prefs[LIVE_FILTER_QUALITY] = filter.minQuality
+            val country = filter.country
+            if (country == null) prefs.remove(LIVE_FILTER_COUNTRY) else prefs[LIVE_FILTER_COUNTRY] = country
+        }
+    }
 
     suspend fun setRuleHideSd(enabled: Boolean) {
         dataStore.edit { it[RULE_HIDE_SD] = enabled }
@@ -622,6 +648,8 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val AUTO_NEXT_EPISODE = booleanPreferencesKey("auto_next_episode")
+        val LIVE_FILTER_QUALITY = intPreferencesKey("live_filter_quality")
+        val LIVE_FILTER_COUNTRY = stringPreferencesKey("live_filter_country")
         val RULE_HIDE_SD = booleanPreferencesKey("rule_hide_sd")
         val RULE_HIDE_PLUS_ONE = booleanPreferencesKey("rule_hide_plus_one")
         val RULE_MERGE_SAME_NAME = booleanPreferencesKey("rule_merge_same_name")

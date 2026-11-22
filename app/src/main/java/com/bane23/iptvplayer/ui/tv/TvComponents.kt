@@ -296,6 +296,43 @@ fun TvActionDialog(title: String, options: List<String>, onSelect: (Int) -> Unit
 }
 
 /**
+ * Izbor filtera u svom prozoru na sredini ekrana. Vrednosti se menjaju strelicama levo i desno, a
+ * prekidač tasterom OK, kao u meniju „Podešavanja” plejera; Nazad zatvara.
+ */
+@Composable
+fun TvFilterDialog(
+    title: String,
+    choices: List<com.bane23.iptvplayer.ui.common.SettingChoice>,
+    resetLabel: String,
+    onReset: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setWindowAnimations(0) }
+        Box(modifier = Modifier.fillMaxSize().userActivity(), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier
+                    .widthIn(min = 420.dp, max = 420.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surface,
+                        androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    )
+                    .padding(12.dp),
+            ) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 10.dp, bottom = 8.dp),
+                )
+                TvQuickSettingsPanel(choices = choices, actions = listOf(resetLabel to onReset))
+            }
+        }
+    }
+}
+
+/**
  * Traži fokus bez rušenja ako element još nije na ekranu.
  * Vraća true samo kad je fokus zaista prešao na element.
  */

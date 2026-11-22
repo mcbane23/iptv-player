@@ -24,6 +24,8 @@ import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.CategoryArrange
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.ChannelFilter
+import com.bane23.iptvplayer.domain.ChannelRules
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.domain.StreamSource
 import javax.inject.Inject
@@ -182,6 +184,19 @@ class ChannelRepository @Inject constructor(
                 .filter { hit -> SearchText.normalize(hit.name).let { needle in it || SearchText.near(it, needle) } }
                 .take(limit)
                 .toList()
+        }
+    }
+
+    /** Filter kanala u Uživo (kvalitet, zemlja). Kanale koji mu ne odgovaraju sklanja `ChannelRulesSync`. */
+    val liveFilter: Flow<ChannelFilter> get() = settings.liveFilter
+
+    suspend fun setLiveFilter(filter: ChannelFilter) = settings.setLiveFilter(filter)
+
+    /** Oznake zemalja koje liste zaista koriste ispred naziva kanala ili kategorije, najčešće prve. */
+    suspend fun filterCountries(): List<String> {
+        val rows = channelDao.ruleRows()
+        return withContext(Dispatchers.Default) {
+            ChannelRules.countries(rows.map { ChannelRules.Row(it.id, it.playlistId, it.name, it.kept, it.category) })
         }
     }
 

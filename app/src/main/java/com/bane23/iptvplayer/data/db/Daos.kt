@@ -242,7 +242,8 @@ interface ChannelDao {
         "SELECT ch.id AS id, ch.playlistId AS playlistId, ch.name AS name, ch.ruleHidden AS hidden, " +
             "(EXISTS(SELECT 1 FROM favorites f WHERE f.playlistId = ch.playlistId AND f.channelKey = ch.stableKey) " +
             "OR EXISTS(SELECT 1 FROM favorite_list_items li WHERE li.playlistId = ch.playlistId " +
-            "AND li.channelKey = ch.stableKey)) AS kept FROM channels ch ORDER BY ch.playlistId, ch.sortOrder",
+            "AND li.channelKey = ch.stableKey)) AS kept, " +
+            "(SELECT c.name FROM categories c WHERE c.id = ch.categoryId) AS category FROM channels ch ORDER BY ch.playlistId, ch.sortOrder",
     )
     suspend fun ruleRows(): List<ChannelRuleRow>
 

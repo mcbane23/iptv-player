@@ -847,6 +847,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       postera umesto 5 (Bane izabrao sa slike). Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa
       fokusom na izabranoj. OK na kategoriji je bira i prelazi na postere čim stignu. Uživo i telefon se
       ne menjaju.
+- [x] Filteri (Bane, 22. 11. 2026; telefon i TV, izgled izabran sa slika): Filmovi i Serije = godina
+      (2020. i novije, 2010. i novije, 2000. i novije, starije), najmanja ocena (6+, 7+, 8+) i „Samo 4K” (po nazivu);
+      Uživo = kvalitet (HD i bolje, FHD i bolje, 4K) i zemlja, oboje iz naziva kanala i kategorije. TV: red
+      „Filter” u levom panelu otvara mali prozor, vrednosti se menjaju sa Levo/Desno; telefon: ikonica filtera sa
+      brojem uslova i list odozdo. Filter se pamti (posebno filmovi, serije, kanali). Filter kanala koristi kolonu
+      `channels.ruleHidden` (`ChannelRulesSync`), pa važi u svim spiskovima kanala, i za omiljene
 
 
 ## 7. Testiranje

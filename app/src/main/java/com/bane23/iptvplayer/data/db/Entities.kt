@@ -124,7 +124,15 @@ data class ChannelEntity(
 )
 
 /** Kanal za računanje pravila: [hidden] je sadašnje stanje kolone, [kept] znači da je među omiljenima. */
-data class ChannelRuleRow(val id: Long, val playlistId: Long, val name: String, val hidden: Boolean, val kept: Boolean)
+data class ChannelRuleRow(
+    val id: Long,
+    val playlistId: Long,
+    val name: String,
+    val hidden: Boolean,
+    val kept: Boolean,
+    /** Naziv kategorije kanala, za oznaku zemlje u filteru. */
+    val category: String? = null,
+)
 
 /** Emisija iz TV vodiča. Vremena su u milisekundama (UTC), već sa pomakom liste. */
 @Entity(

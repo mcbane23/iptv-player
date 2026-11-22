@@ -380,6 +380,11 @@ class VodRepository @Inject constructor(
     /** Zapamćen redosled filmova, odnosno serija (isti za sve liste). */
     suspend fun sort(kind: VodKind): VodSort = VodSort.of(settings.vodSort(kind == VodKind.SERIES).first())
 
+    /** Zapamćen filter filmova, odnosno serija (isti za sve liste). */
+    suspend fun filter(kind: VodKind): VodFilter = VodFilter.decode(settings.vodFilter(kind == VodKind.SERIES).first())
+
+    suspend fun setFilter(kind: VodKind, filter: VodFilter) = settings.setVodFilter(kind == VodKind.SERIES, filter.encode())
+
     suspend fun setSort(kind: VodKind, sort: VodSort) = settings.setVodSort(kind == VodKind.SERIES, sort.name)
 
     private val VodKind.section get() = if (this == VodKind.SERIES) "series" else "movies"

@@ -15,12 +15,51 @@ data class ChannelRuleSettings(
 }
 
 /**
+ * Filter kanala u Uživo: važi u svim grupama dok ga korisnik ne poništi. Za razliku od pravila,
+ * sklanja i omiljene kanale koji mu ne odgovaraju.
+ */
+data class ChannelFilter(
+    /** Najmanji kvalitet iz naziva: 0 = svi, 1 = HD i bolje, 2 = FHD i bolje, 3 = samo 4K. */
+    val minQuality: Int = 0,
+    /** Oznaka zemlje ispred naziva kanala ili kategorije („RS”); null znači sve. */
+    val country: String? = null,
+) {
+    val count: Int get() = (if (minQuality > 0) 1 else 0) + (if (country != null) 1 else 0)
+    val active: Boolean get() = count > 0
+}
+
+/**
  * Koje kanale pravila sklanjaju iz spiskova. Sve se čita iz naziva kanala, jer liste kvalitet i
  * pomak ne šalju kao poseban podatak.
  */
 object ChannelRules {
     /** [kept]: kanal je među omiljenima, pa ga pravila ne sklanjaju. Redosled je redosled u listi. */
-    data class Row(val id: Long, val playlistId: Long, val name: String, val kept: Boolean = false)
+    data class Row(
+        val id: Long,
+        val playlistId: Long,
+        val name: String,
+        val kept: Boolean = false,
+        /** Naziv kategorije kanala, za oznaku zemlje kad je nema u nazivu kanala. */
+        val category: String? = null,
+    )
+
+    private val countryPrefix = Regex("^[\\s\\[(|*#•★-]*([A-Z]{2,3})\\s*(?:[:|\\])•★]|\\s[-–]\\s)")
+    private val notCountries = setOf("HD", "SD", "FHD", "UHD", "TV", "VIP", "PPV", "VOD", "NEW", "XXX", "FM")
+
+    /** Najmanje kanala sa istom oznakom da bi se ona ponudila kao zemlja. */
+    const val MIN_COUNTRY_CHANNELS = 5
+
+    private fun prefix(text: String?): String? =
+        text?.let { countryPrefix.find(it)?.groupValues?.get(1) }?.takeIf { it !in notCountries }
+
+    /** Oznaka zemlje ispred naziva kanala („RS: Prvi kanal”, „[RS] …”, „RS | …”), a ako je nema, ispred naziva kategorije. */
+    fun country(name: String, category: String? = null): String? = prefix(name) ?: prefix(category)
+
+    /** Oznake zemalja koje lista zaista koristi, najčešće prve. */
+    fun countries(rows: List<Row>): List<String> =
+        rows.mapNotNull { country(it.name, it.category) }.groupingBy { it }.eachCount()
+            .filter { it.value >= MIN_COUNTRY_CHANNELS }.entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .map { it.key }
 
     private const val EDGE_BEFORE = "(?<![\\p{L}\\p{N}])"
     private const val EDGE_AFTER = "(?![\\p{L}\\p{N}])"
@@ -50,11 +89,18 @@ object ChannelRules {
     /** Kanal sa vremenskim pomakom: u nazivu stoji „+1” kao zasebna oznaka („RTL +1”, ali ne „Canal+ 1”). */
     fun isPlusOne(name: String): Boolean = plusOne.containsMatchIn(upper(name))
 
-    /** ID-jevi kanala koje [rules] sklanjaju. */
-    fun hidden(rows: List<Row>, rules: ChannelRuleSettings): Set<Long> {
-        if (!rules.any) return emptySet()
+    /** ID-jevi kanala koje sklanjaju [rules] i [filter]. */
+    fun hidden(rows: List<Row>, rules: ChannelRuleSettings, filter: ChannelFilter = ChannelFilter()): Set<Long> {
+        if (!rules.any && !filter.active) return emptySet()
         val hidden = HashSet<Long>()
         var shown = rows
+        if (filter.active) {
+            shown = shown.filter { row ->
+                val stays = (filter.minQuality == 0 || quality(row.name) >= filter.minQuality) &&
+                    (filter.country == null || country(row.name, row.category) == filter.country)
+                stays.also { if (!it) hidden += row.id }
+            }
+        }
         if (rules.hidePlusOne) {
             shown = shown.filter { row -> (row.kept || !isPlusOne(row.name)).also { stays -> if (!stays) hidden += row.id } }
         }

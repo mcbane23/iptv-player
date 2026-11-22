@@ -94,7 +94,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
+import com.bane23.iptvplayer.domain.ChannelFilter
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.liveFilterChoices
 
 /** Oznaka za „Svi kanali” među čipovima (pravi ID-jevi kategorija su pozitivni, posebne grupe negativne). */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -120,6 +122,8 @@ fun MobileLiveTvScreen(
     previewViewModel: ChannelPreviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val liveFilter by viewModel.liveFilter.collectAsStateWithLifecycle()
+    val filterCountries by viewModel.filterCountries.collectAsStateWithLifecycle()
     val playlists by playlistsViewModel.state.collectAsStateWithLifecycle()
     val playlistId = state.playlistId
     // Izabrani čip; null dok korisnik ništa ne izabere (tada nedavno gledani, bez njih grupa od
@@ -253,6 +257,13 @@ fun MobileLiveTvScreen(
                     ToolbarIcon(AppIcons.Guide, stringResource(R.string.guide_title)) { onGuide(playlistId, categoryId) }
                     ToolbarIcon(AppIcons.MultiView, stringResource(R.string.multiview_title), onMultiView)
                     if (withSearch) ToolbarIcon(AppIcons.Search, stringResource(R.string.action_search), onSearch)
+                    FilterButton(
+                        title = stringResource(R.string.filter_title_channels),
+                        count = liveFilter.count,
+                        choices = liveFilterChoices(liveFilter, filterCountries, viewModel::setLiveFilter),
+                        onReset = { viewModel.setLiveFilter(ChannelFilter()) },
+                        onOpen = viewModel::loadFilterCountries,
+                    )
                 }
             }
             // Položen telefon sa učitanom listom nema zaglavlje: visina ide kanalima, kao na TV-u.
@@ -420,6 +431,14 @@ fun MobileLiveTvScreen(
                                     }
                                     PanelIcon(AppIcons.MultiView, stringResource(R.string.multiview_title), onMultiView)
                                     PanelIcon(AppIcons.Search, stringResource(R.string.search_channels), onSearch)
+                                    FilterButton(
+                                        title = stringResource(R.string.filter_title_channels),
+                                        count = liveFilter.count,
+                                        choices = liveFilterChoices(liveFilter, filterCountries, viewModel::setLiveFilter),
+                                        onReset = { viewModel.setLiveFilter(ChannelFilter()) },
+                                        onOpen = viewModel::loadFilterCountries,
+                                        compact = true,
+                                    )
                                 },
                                 onHide = viewModel::hideCategory,
                                 onMoveToTop = viewModel::moveCategoryToTop,

@@ -77,4 +77,37 @@ class ChannelRulesTest {
         val all = ChannelRuleSettings(hideSd = true, hidePlusOne = true, mergeSameName = true)
         assertEquals(emptySet<Long>(), ChannelRules.hidden(rows, all))
     }
+
+    @Test
+    fun `country comes from the channel or the category prefix`() {
+        assertEquals("XA", ChannelRules.country("XA: Prvi kanal"))
+        assertEquals("XA", ChannelRules.country("[XA] Prvi kanal"))
+        assertEquals("XB", ChannelRules.country("XB | Prvi kanal HD"))
+        assertEquals("XC", ChannelRules.country("Prvi kanal", "XC - Informativni"))
+        assertEquals(null, ChannelRules.country("Prvi kanal", "Informativni"))
+        // Oznaka kvaliteta ispred naziva nije zemlja.
+        assertEquals(null, ChannelRules.country("HD: Prvi kanal"))
+    }
+
+    @Test
+    fun `only countries with enough channels are offered`() {
+        val rows = (1L..6L).map { Row(it, 1, "XA: Kanal $it") } + (7L..9L).map { Row(it, 1, "XB: Kanal $it") } +
+            (10L..16L).map { Row(it, 1, "Kanal $it", category = "XC | Sport") } + (17L..21L).map { Row(it, 1, "XA: Jos $it") }
+        assertEquals(listOf("XA", "XC"), ChannelRules.countries(rows))
+    }
+
+    @Test
+    fun `filter hides by quality and country, favorites included`() {
+        val rows = listOf(
+            Row(1, 1, "XA: Prvi kanal", kept = true),
+            Row(2, 1, "XA: Prvi kanal HD"),
+            Row(3, 1, "XB: Drugi kanal FHD"),
+            Row(4, 1, "Treci kanal 4K", category = "XA | Filmski"),
+        )
+        val none = ChannelRuleSettings()
+        assertEquals(setOf(1L), ChannelRules.hidden(rows, none, ChannelFilter(minQuality = 1)))
+        assertEquals(setOf(1L, 2L), ChannelRules.hidden(rows, none, ChannelFilter(minQuality = 2)))
+        assertEquals(setOf(3L), ChannelRules.hidden(rows, none, ChannelFilter(country = "XA")))
+        assertEquals(setOf(1L, 2L, 3L), ChannelRules.hidden(rows, none, ChannelFilter(minQuality = 3, country = "XA")))
+    }
 }
