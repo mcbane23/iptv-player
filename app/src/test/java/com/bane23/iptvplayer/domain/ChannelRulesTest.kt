@@ -115,7 +115,7 @@ class ChannelRulesTest {
     fun `only countries with enough channels are offered`() {
         val rows = (1L..6L).map { Row(it, 1, "RS: Kanal $it") } + (7L..9L).map { Row(it, 1, "DE: Kanal $it") } +
             (10L..16L).map { Row(it, 1, "Kanal $it", category = "HR | Sport") } + (17L..21L).map { Row(it, 1, "RS: Jos $it") }
-        assertEquals(listOf("RS", "HR"), ChannelRules.countries(rows))
+        assertEquals(listOf("HR", "RS"), ChannelRules.countries(rows))
     }
 
     @Test
