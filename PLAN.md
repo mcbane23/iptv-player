@@ -862,6 +862,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       čuvaju u bazi (v23: `channels.quality`, `country`, `filterHidden`), popune se jednom posle uvoza liste,
       a promena filtera je jedna naredba nad bazom umesto čitanja naziva svih kanala. Pravila za kanale i dalje
       koriste `ruleHidden` i računaju se odvojeno
+- [x] Filter kanala: prazne kategorije se ne prikazuju (Bane, 23. 11. 2026): dok je uključen filter ili neko
+      pravilo za kanale, kategorije bez ijednog preostalog kanala nestaju iz spiska (telefon, TV, više kanala)
 - [x] TV Početna: veliki prikaz stavke u fokusu (Bane, 22. 11. 2026; samo TV, izgled izabran sa slike): iznad
       redova stoje naziv, godina, ocena, žanr i opis filma ili serije sa slikom na desnoj strani; za kanal logo i
       emisija koja traje. Naziv, godina i ocena stižu odmah iz spiska, a opis i široka slika se čitaju sa servera
