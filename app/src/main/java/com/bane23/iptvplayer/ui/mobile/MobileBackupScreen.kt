@@ -238,7 +238,7 @@ private fun PasswordField(value: String, onChange: (String) -> Unit, label: Stri
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
             autoCorrectEnabled = false,
-            keyboardType = KeyboardType.VisiblePassword,
+            keyboardType = KeyboardType.Text,
         ),
         modifier = Modifier.fillMaxWidth(),
     )
