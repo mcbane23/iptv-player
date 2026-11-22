@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -82,6 +83,7 @@ fun TvVodScreen(
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
     onCategories: () -> Unit = {},
+    onUnlock: () -> Unit = {},
     viewModel: VodBrowseViewModel = hiltViewModel(),
     // Filmovi i serije imaju odvojen opis (isti broj može biti i film i serija).
     previewViewModel: TvVodPreviewViewModel = hiltViewModel(key = "vod-preview-$series"),
@@ -107,6 +109,7 @@ fun TvVodScreen(
     val categoryListState = rememberLazyListState()
     // Meni kategorije (dugi OK): sakrij, pomeri na vrh, uredi.
     var menuCategory by remember { mutableStateOf<VodCategory?>(null) }
+    val lockMenu = rememberLockMenu(onUnlock)
     var sortOpen by remember { mutableStateOf(false) }
     // Kategorija koja čeka sakrivanje i red na koji fokus prelazi pre nego što njen red nestane.
     var pendingHide by remember { mutableStateOf<VodCategory?>(null) }
@@ -235,13 +238,15 @@ fun TvVodScreen(
         )
     }
     menuCategory?.let { category ->
+        val lockKey = lockMenu.state.vodKey(series, category.id)
+        val lockActions = lockMenu.actions(lockKey)
         TvActionDialog(
             title = category.name,
             options = listOf(
                 stringResource(R.string.category_hide),
                 stringResource(R.string.category_move_top),
                 stringResource(R.string.categories_edit),
-            ),
+            ) + lockActions.map { stringResource(it.label) },
             onSelect = { option ->
                 when (option) {
                     0 -> {
@@ -256,7 +261,9 @@ fun TvVodScreen(
                         movedToTop++
                     }
 
-                    else -> onCategories()
+                    2 -> onCategories()
+
+                    else -> lockActions.getOrNull(option - 3)?.let { lockMenu.run(it, lockKey) }
                 }
             },
             onClose = { menuCategory = null },

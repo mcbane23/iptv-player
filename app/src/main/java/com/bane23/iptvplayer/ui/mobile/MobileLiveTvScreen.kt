@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
+import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.foundation.horizontalScroll
@@ -169,6 +171,10 @@ fun MobileLiveTvScreen(
     var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
     // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
     var awaitingUnlock by rememberSaveable { mutableStateOf<Long?>(null) }
+    val lockMenu = rememberLockMenu(onUnlock = {
+        pickerOpen = false
+        onUnlock()
+    })
     val pick: (Long) -> Unit = { group ->
         if (state.isFavoritesGroup(group) && !inFavorites) beforeFavorites = selected
         chosen = group
@@ -401,6 +407,7 @@ fun MobileLiveTvScreen(
                                 onHide = viewModel::hideCategory,
                                 onMoveToTop = viewModel::moveCategoryToTop,
                                 onManage = onCategories,
+                                lockMenu = lockMenu,
                                 onListMenu = { listMenu = FavoriteListMenu(it) },
                                 onRecentMenu = { clearRecent = true },
                                 modifier = Modifier
@@ -465,6 +472,10 @@ fun MobileLiveTvScreen(
                                     onManage = {
                                         pickerOpen = false
                                         onCategories()
+                                    },
+                                    lockMenu = lockMenu,
+                                    lockKey = { key ->
+                                        state.categories.firstOrNull { it.id == key.toLongOrNull() }?.let(lockMenu.state::liveKey)
                                     },
                                 ),
                             )
@@ -722,6 +733,7 @@ private fun GroupPanel(
     onHide: (Long) -> Unit,
     onMoveToTop: (Long) -> Unit,
     onManage: () -> Unit,
+    lockMenu: LockMenu,
     onListMenu: (FavoriteList?) -> Unit,
     onRecentMenu: () -> Unit,
     modifier: Modifier = Modifier,
@@ -816,6 +828,16 @@ private fun GroupPanel(
                             onManage()
                         },
                     )
+                    val lockKey = lockMenu.state.liveKey(category)
+                    lockMenu.actions(lockKey).forEach { action ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(action.label)) },
+                            onClick = {
+                                menuOpen = false
+                                lockMenu.run(action, lockKey)
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -299,6 +299,9 @@ class VodRepository @Inject constructor(
      */
     val updates: SharedFlow<VodKind> = _updates.asSharedFlow()
 
+    /** Menja se kad se nešto zaključa ili otključa: spiskovi na ekranu tada treba da se slože iznova. */
+    val lockChanges: Flow<Set<String>> get() = locks.activeKeys
+
     /** Da li se spiskovi filmova i serija čuvaju na uređaju (Podešavanja). */
     val localCacheEnabled: Flow<Boolean> get() = settings.vodLocalCache
 

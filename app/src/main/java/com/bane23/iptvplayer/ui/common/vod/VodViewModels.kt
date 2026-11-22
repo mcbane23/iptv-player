@@ -119,6 +119,10 @@ class VodBrowseViewModel @Inject constructor(
             repository.updates.filter { it == kind }.collect { refreshQuietly() }
         }
         viewModelScope.launch {
+            // Zaključavanje i otključavanje menja katance u spisku kategorija i sadržaj izabrane.
+            repository.lockChanges.drop(1).collect { refreshQuietly() }
+        }
+        viewModelScope.launch {
             repository.localCacheEnabled.collect { enabled -> _state.update { it.copy(storedOnDevice = enabled) } }
         }
     }

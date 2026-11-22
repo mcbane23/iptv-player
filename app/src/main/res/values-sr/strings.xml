@@ -345,6 +345,12 @@
     <string name="parental_change_pin">Promeni PIN</string>
     <string name="parental_remove_pin">Ukloni PIN i sva zaključavanja</string>
     <string name="parental_locked">Zaključano</string>
+    <string name="lock_action_lock">Zaključaj</string>
+    <string name="lock_action_remove">Ukloni zaključavanje</string>
+    <string name="lock_action_unlock_all">Otključaj sve (PIN)</string>
+    <string name="lock_needs_pin">Prvo postavi PIN: Podešavanja, Roditeljska zaštita.</string>
+    <string name="lock_done_open">Zaključano. Važi kad zaključaš ponovo ili izađeš iz aplikacije.</string>
+    <string name="lock_removed">Zaključavanje uklonjeno</string>
     <string name="parental_unlocked">Slobodno</string>
     <string name="pin_enter">Unesi PIN</string>
     <string name="pin_new">Unesi novi PIN</string>

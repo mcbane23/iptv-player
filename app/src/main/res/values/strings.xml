@@ -347,6 +347,12 @@
     <string name="parental_change_pin">Change PIN</string>
     <string name="parental_remove_pin">Remove PIN and all locks</string>
     <string name="parental_locked">Locked</string>
+    <string name="lock_action_lock">Lock</string>
+    <string name="lock_action_remove">Remove lock</string>
+    <string name="lock_action_unlock_all">Unlock all (PIN)</string>
+    <string name="lock_needs_pin">Set a PIN first: Settings, Parental control.</string>
+    <string name="lock_done_open">Locked. It takes effect when you lock again or leave the app.</string>
+    <string name="lock_removed">Lock removed</string>
     <string name="parental_unlocked">Open</string>
     <string name="pin_enter">Enter PIN</string>
     <string name="pin_new">Enter a new PIN</string>
