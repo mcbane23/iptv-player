@@ -22,6 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import com.bane23.iptvplayer.R
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -307,7 +311,13 @@ fun TvFilterDialog(
     onReset: () -> Unit,
     onClose: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    // Otvoren dugačak spisak (zemlje): redni broj podešavanja, ili -1. Nazad iz spiska vraća na filter.
+    var picking by remember { mutableStateOf(-1) }
+    var lastPicked by remember { mutableStateOf(0) }
+    Dialog(
+        onDismissRequest = { if (picking >= 0) picking = -1 else onClose() },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
         Box(modifier = Modifier.fillMaxSize().userActivity(), contentAlignment = Alignment.Center) {
@@ -320,13 +330,69 @@ fun TvFilterDialog(
                     )
                     .padding(12.dp),
             ) {
+                val picked = choices.getOrNull(picking)
                 Text(
-                    text = title,
+                    text = picked?.title ?: title,
                     color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = 10.dp, bottom = 8.dp),
                 )
-                TvQuickSettingsPanel(choices = choices, actions = listOf(resetLabel to onReset))
+                if (picked != null) {
+                    TvOptionList(choice = picked, onDone = { picking = -1 })
+                } else {
+                    TvQuickSettingsPanel(
+                        choices = choices,
+                        actions = listOf(resetLabel to onReset),
+                        focusIndex = lastPicked,
+                        onOpenList = {
+                            lastPicked = it
+                            picking = it
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Dugačak spisak vrednosti jednog podešavanja (zemlje u filteru): polje za pretragu i spisak po
+ * abecedi. OK bira i vraća na filter. Fokus kreće sa izabrane vrednosti.
+ */
+@Composable
+private fun TvOptionList(choice: com.bane23.iptvplayer.ui.common.SettingChoice, onDone: () -> Unit) {
+    var query by remember { mutableStateOf("") }
+    val shown = remember(choice.options, query) { com.bane23.iptvplayer.ui.common.matchingOptions(choice.options, query) }
+    val start = remember { shown.indexOf(choice.selected).coerceAtLeast(0) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = (start - 3).coerceAtLeast(0))
+    val startFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        repeat(20) {
+            if (startFocus.tryRequestFocus()) return@LaunchedEffect
+            androidx.compose.runtime.withFrameNanos { }
+        }
+    }
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.tvKeepFocus(),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+    ) {
+        TvFilterField(value = query, onChange = { query = it }, placeholder = stringResource(R.string.filter_search))
+        androidx.compose.foundation.lazy.LazyColumn(
+            state = listState,
+            modifier = Modifier.heightIn(max = 330.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+        ) {
+            items(shown.size, key = { shown[it] }) { position ->
+                val index = shown[position]
+                TvTextRow(
+                    text = choice.options[index],
+                    onClick = {
+                        choice.onSelect(index)
+                        onDone()
+                    },
+                    modifier = if (position == start && query.isEmpty()) Modifier.focusRequester(startFocus) else Modifier,
+                    selected = index == choice.selected,
+                )
             }
         }
     }

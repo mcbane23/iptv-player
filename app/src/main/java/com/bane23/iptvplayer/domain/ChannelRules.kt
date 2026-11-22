@@ -44,22 +44,59 @@ object ChannelRules {
     )
 
     private val countryPrefix = Regex("^[\\s\\[(|*#•★-]*([A-Z]{2,3})\\s*(?:[:|\\])•★]|\\s[-–]\\s)")
-    private val notCountries = setOf("HD", "SD", "FHD", "UHD", "TV", "VIP", "PPV", "VOD", "NEW", "XXX", "FM")
 
     /** Najmanje kanala sa istom oznakom da bi se ona ponudila kao zemlja. */
     const val MIN_COUNTRY_CHANNELS = 5
 
-    private fun prefix(text: String?): String? =
-        text?.let { countryPrefix.find(it)?.groupValues?.get(1) }?.takeIf { it !in notCountries }
+    /** Oznake zemalja po ISO 3166 (dva slova), bez onih koje u listama kanala gotovo nikad nisu zemlja. */
+    private val isoCountries: Set<String> = java.util.Locale.getISOCountries().toSet() - setOf("LA", "NA", "TV", "FM", "IO", "PM", "AM", "AQ")
 
-    /** Oznaka zemlje ispred naziva kanala („RS: Prvi kanal”, „[RS] …”, „RS | …”), a ako je nema, ispred naziva kategorije. */
+    /** Oznake sa tri slova („SWE”, „NOR”) i uobičajene oznake van standarda, svedene na dva slova. */
+    private val countryAliases: Map<String, String> = buildMap {
+        for (code in java.util.Locale.getISOCountries()) {
+            val three = runCatching { java.util.Locale("", code).isO3Country }.getOrNull()
+            if (!three.isNullOrEmpty() && code in isoCountries) put(three, code)
+        }
+        put("UK", "GB")
+        put("SR", "RS")
+        put("SRB", "RS")
+        put("GER", "DE")
+        put("CRO", "HR")
+        put("SLO", "SI")
+        put("BIH", "BA")
+        put("MNE", "ME")
+        put("MKD", "MK")
+        put("NED", "NL")
+        put("SUI", "CH")
+        put("POR", "PT")
+        put("GRE", "GR")
+        put("DEN", "DK")
+        put("BUL", "BG")
+        put("USA", "US")
+    }
+
+    /**
+     * Oznaka svedena na ISO oznaku zemlje sa dva slova, ili null kad nije zemlja (naziv paketa, lige
+     * ili jezika: „SKY”, „NBA”, „LAT”).
+     */
+    fun countryCode(tag: String?): String? {
+        val text = tag?.trim()?.uppercase() ?: return null
+        return countryAliases[text] ?: text.takeIf { it in isoCountries }
+    }
+
+    private fun prefix(text: String?): String? =
+        text?.let { countryPrefix.find(it)?.groupValues?.get(1) }?.let { countryCode(it) }
+
+    /**
+     * ISO oznaka zemlje ispred naziva kanala („RS: Prvi kanal”, „[RS] …”, „RS | …”), a ako je nema,
+     * ispred naziva kategorije. Oznake koje nisu zemlje se ne računaju.
+     */
     fun country(name: String, category: String? = null): String? = prefix(name) ?: prefix(category)
 
-    /** Oznake zemalja koje lista zaista koristi, najčešće prve. */
+    /** Zemlje koje lista zaista koristi, po oznaci. Ekran ih ređa po nazivu na jeziku aplikacije. */
     fun countries(rows: List<Row>): List<String> =
         rows.mapNotNull { country(it.name, it.category) }.groupingBy { it }.eachCount()
-            .filter { it.value >= MIN_COUNTRY_CHANNELS }.entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
-            .map { it.key }
+            .filter { it.value >= MIN_COUNTRY_CHANNELS }.keys.sorted()
 
     private const val EDGE_BEFORE = "(?<![\\p{L}\\p{N}])"
     private const val EDGE_AFTER = "(?![\\p{L}\\p{N}])"
@@ -95,9 +132,11 @@ object ChannelRules {
         val hidden = HashSet<Long>()
         var shown = rows
         if (filter.active) {
+            // Ranije sačuvana oznaka koja nije zemlja više ne filtrira ništa.
+            val wanted = countryCode(filter.country)
             shown = shown.filter { row ->
                 val stays = (filter.minQuality == 0 || quality(row.name) >= filter.minQuality) &&
-                    (filter.country == null || country(row.name, row.category) == filter.country)
+                    (wanted == null || country(row.name, row.category) == wanted)
                 stays.also { if (!it) hidden += row.id }
             }
         }

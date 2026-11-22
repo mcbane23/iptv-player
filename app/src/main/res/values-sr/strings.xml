@@ -863,4 +863,6 @@
     <string name="filter_reset">Poništi filter</string>
     <string name="filter_done">Gotovo</string>
     <string name="filter_empty">Nijedna stavka ne odgovara filteru.</string>
+    <string name="filter_search">Pretraži</string>
+    <string name="filter_back">Nazad na filter</string>
 </resources>
