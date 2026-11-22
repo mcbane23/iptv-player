@@ -105,6 +105,7 @@ fun MobileHomeScreen(
     onRecordings: () -> Unit,
     onDownloads: () -> Unit,
     onTransfer: () -> Unit,
+    onBackup: () -> Unit,
     onMultiView: () -> Unit,
     recordingsViewModel: ActiveRecordingsViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
@@ -198,6 +199,7 @@ fun MobileHomeScreen(
                         onRecordings = onRecordings,
                         onDownloads = onDownloads,
                         onTransfer = onTransfer,
+                        onBackup = onBackup,
                     )
                 }
             }

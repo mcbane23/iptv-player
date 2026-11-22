@@ -85,6 +85,7 @@ fun MobileSettingsScreen(
     onRecordings: (() -> Unit)? = null,
     onDownloads: (() -> Unit)? = null,
     onTransfer: (() -> Unit)? = null,
+    onBackup: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
     hiddenViewModel: HiddenChannelsViewModel = hiltViewModel(),
@@ -123,7 +124,7 @@ fun MobileSettingsScreen(
     var openSlots by rememberSaveable { mutableStateOf<Int?>(null) }
     var openSlot by remember { mutableStateOf<Int?>(null) }
     BackHandler(enabled = openSlots != null) { openSlots = null }
-    val groups = SettingsGroup.entries.filter { it != SettingsGroup.ACCOUNTS || onTrakt != null || onTransfer != null }
+    val groups = SettingsGroup.entries.filter { it != SettingsGroup.ACCOUNTS || onTrakt != null || onTransfer != null || onBackup != null }
     // Podešavanja plejera koja pripadaju otvorenoj grupi.
     val choiceRows: @Composable () -> Unit = {
         choices.forEachIndexed { index, choice ->
@@ -358,6 +359,14 @@ fun MobileSettingsScreen(
                                         stringResource(R.string.transfer_all_title),
                                         stringResource(R.string.settings_transfer_summary),
                                         onTransfer,
+                                    )
+                                }
+                                if (onBackup != null) {
+                                    SettingsLinkRow(
+                                        AppIcons.Download,
+                                        stringResource(R.string.backup_title),
+                                        stringResource(R.string.settings_backup_summary),
+                                        onBackup,
                                     )
                                 }
                             }

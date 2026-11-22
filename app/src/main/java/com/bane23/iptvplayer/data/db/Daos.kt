@@ -418,6 +418,9 @@ interface LockedItemDao {
     @Query("DELETE FROM locked_items")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM locked_items WHERE playlistId = :playlistId ORDER BY lockedAt")
+    suspend fun byPlaylist(playlistId: Long): List<LockedItemEntity>
+
     /** Sve pojedinačno zaključano, poslednje zaključano prvo. */
     @Query("SELECT * FROM locked_items ORDER BY lockedAt DESC")
     fun observeAll(): Flow<List<LockedItemEntity>>
@@ -440,6 +443,9 @@ interface HiddenChannelDao {
 
     @Query("SELECT * FROM hidden_channels WHERE playlistId = :playlistId")
     suspend fun byPlaylist(playlistId: Long): List<HiddenChannelEntity>
+
+    @Query("DELETE FROM hidden_channels WHERE playlistId = :playlistId")
+    suspend fun deleteByPlaylist(playlistId: Long)
 }
 
 @Dao
@@ -535,6 +541,9 @@ interface FavoriteDao {
     @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey)")
     suspend fun exists(playlistId: Long, channelKey: String): Boolean
 
+    @Query("DELETE FROM favorites WHERE playlistId = :playlistId")
+    suspend fun deleteByPlaylist(playlistId: Long)
+
     /** Kanal je u „Omiljenima” ili u bar jednoj imenovanoj listi (zvezdica u plejeru). */
     @Query(
         "SELECT EXISTS(SELECT 1 FROM favorites WHERE playlistId = :playlistId AND channelKey = :channelKey) " +
@@ -566,6 +575,10 @@ interface FavoriteListDao {
 
     @Query("SELECT * FROM favorite_lists ORDER BY position, id")
     suspend fun all(): List<FavoriteListEntity>
+
+    /** Briše sve imenovane liste omiljenih, sa svime što je u njima (zamena pri uvozu). */
+    @Query("DELETE FROM favorite_lists")
+    suspend fun deleteAll()
 
     @Query("SELECT * FROM favorite_lists WHERE name = :name COLLATE NOCASE LIMIT 1")
     suspend fun byName(name: String): FavoriteListEntity?
@@ -619,6 +632,9 @@ interface HistoryDao {
 
     @Query("DELETE FROM history WHERE playlistId = :playlistId")
     suspend fun clear(playlistId: Long)
+
+    @Query("SELECT * FROM history WHERE playlistId = :playlistId ORDER BY watchedAt DESC")
+    suspend fun byPlaylist(playlistId: Long): List<HistoryEntity>
 
     /** Briše sve nedavno gledano liste [playlistId] i lista spojenih sa njom. */
     @Query("DELETE FROM history WHERE playlistId IN $SCOPE_IDS")
@@ -688,6 +704,12 @@ interface WatchProgressDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(rows: List<WatchProgressEntity>)
 
+    @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId")
+    suspend fun byPlaylist(playlistId: Long): List<WatchProgressEntity>
+
+    @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId")
+    suspend fun deleteByPlaylist(playlistId: Long)
+
     @Query("DELETE FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
     suspend fun deleteMany(playlistId: Long, kind: String, itemIds: List<Long>)
 
@@ -723,6 +745,9 @@ interface VodFavoriteDao {
     /** Dodaje samo ono što još nije u omiljenima; postojeće ostaje kako jeste. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMissing(favorites: List<VodFavoriteEntity>)
+
+    @Query("DELETE FROM vod_favorites WHERE playlistId = :playlistId")
+    suspend fun deleteByPlaylist(playlistId: Long)
 
     @Query("DELETE FROM vod_favorites WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun delete(playlistId: Long, kind: String, itemId: Long)

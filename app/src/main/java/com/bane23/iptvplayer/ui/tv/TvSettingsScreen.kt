@@ -81,6 +81,7 @@ fun TvSettingsScreen(
     onOpenSubtitles: (() -> Unit)? = null,
     onRecordings: (() -> Unit)? = null,
     onRemoteButtons: (() -> Unit)? = null,
+    onBackup: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
     hiddenViewModel: HiddenChannelsViewModel = hiltViewModel(),
@@ -264,6 +265,7 @@ fun TvSettingsScreen(
 
         SettingsGroup.ACCOUNTS -> listOfNotNull(
             onTrakt?.let { TvItem(TRAKT_ROW, stringResource(R.string.trakt_title), "›", onClick = it) },
+            onBackup?.let { TvItem(BACKUP_ROW, stringResource(R.string.backup_title), "›", onClick = it) },
             TvItem(WATCH_NEXT_ROW, stringResource(R.string.settings_watch_next), checked = watchNext) {
                 viewModel.setWatchNext(!watchNext)
             },
@@ -537,6 +539,7 @@ private fun FocusedSummary(
         CATEGORIES_ROW -> stringResource(R.string.settings_categories_summary)
         PARENTAL_ROW -> stringResource(R.string.settings_parental_summary)
         TRAKT_ROW -> stringResource(R.string.settings_trakt_summary)
+        BACKUP_ROW -> stringResource(R.string.settings_backup_summary)
         OPENSUBTITLES_ROW -> stringResource(R.string.settings_opensubtitles_summary)
         RECORDINGS_ROW -> stringResource(R.string.settings_recordings_summary)
         REMOTE_BUTTONS_ROW -> stringResource(R.string.settings_remote_buttons_summary)
@@ -602,6 +605,7 @@ private const val REMOTE_BUTTONS_ROW = -21
 private const val VOD_CACHE_ROW = -22
 private const val CRASH_REPORT_ROW = -23
 private const val HIDDEN_CHANNELS_ROW = -24
+private const val BACKUP_ROW = -25
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

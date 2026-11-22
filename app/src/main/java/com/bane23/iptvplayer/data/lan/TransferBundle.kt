@@ -59,12 +59,53 @@ data class TransferPlaylist(
     val merged: Boolean? = null,
     /** Kanali koje je korisnik sakrio. */
     val hiddenChannels: List<TransferHiddenChannel> = emptyList(),
+    // Sve ispod ide samo u izvoz u fajl; prenos sa telefona na TV ih ne šalje.
+    /** Pojedinačno zaključani kanali, filmovi i serije. */
+    val lockedItems: List<TransferLockedItem> = emptyList(),
+    /** Nedavno gledani kanali. */
+    val history: List<TransferHistory> = emptyList(),
+    /** Dokle se stiglo sa filmovima i epizodama, i šta je odgledano. */
+    val progress: List<TransferProgress> = emptyList(),
+    /** Podsetnici za emisije na kanalima ove liste. */
+    val reminders: List<TransferReminder> = emptyList(),
+    /** Sadržaj liste iz fajla ([TYPE_FILE]), sažet (gzip) pa zapisan kao Base64. */
+    val fileContent: String? = null,
 ) {
     companion object {
         const val TYPE_XTREAM = "xtream"
         const val TYPE_M3U = "m3u"
+
+        /** Lista dodata iz fajla; postoji samo u izvozu u fajl, gde sa sobom nosi i sadržaj. */
+        const val TYPE_FILE = "file"
     }
 }
+
+/** Pojedinačno zaključan sadržaj: vrsta (kao u `locked_items`), ključ i naziv za spisak. */
+@Serializable
+data class TransferLockedItem(val kind: String, val key: String, val name: String = "")
+
+/** Nedavno gledan kanal: stabilni ključ i vreme poslednjeg gledanja. */
+@Serializable
+data class TransferHistory(val key: String, val at: Long)
+
+/** Pozicija filma ili epizode; polja su ista kao u tabeli `watch_progress`. */
+@Serializable
+data class TransferProgress(
+    val kind: String,
+    val itemId: Long,
+    val seriesId: Long = 0,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    val updatedAt: Long = 0,
+    val title: String? = null,
+    val poster: String? = null,
+    val extension: String? = null,
+    val watchedAt: Long? = null,
+    val dismissedAt: Long? = null,
+)
+
+@Serializable
+data class TransferReminder(val channelKey: String, val startMs: Long, val channelName: String = "", val title: String = "")
 
 /** Imenovana lista omiljenih: naziv i stabilni ključevi kanala jedne liste koji su u njoj, redom dodavanja. */
 @Serializable

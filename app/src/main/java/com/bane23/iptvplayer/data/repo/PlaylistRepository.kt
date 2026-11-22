@@ -244,7 +244,10 @@ class PlaylistRepository @Inject constructor(
                 playlistDao.deleteById(id)
                 settings.clearPlaylistCategoryPrefs(id)
                 vodDiskCache.clear(id)
-                if (entity?.type == PlaylistType.M3U_FILE) releaseFilePermission(entity.source)
+                if (entity?.type == PlaylistType.M3U_FILE) {
+                    val stored = importedFile(entity.source)
+                    if (stored != null) stored.delete() else releaseFilePermission(entity.source)
+                }
                 // Posle uspešnog brisanja lista ostaje u `deleting`: baza javlja novi spisak sa malim
                 // zakašnjenjem, pa bi se obrisana lista inače na tren vratila u prikaz. Id se ne
                 // dodeljuje ponovo (AUTOINCREMENT), pa ne može da sakrije neku novu listu.
@@ -443,6 +446,59 @@ class PlaylistRepository @Inject constructor(
         throw PlaylistException(Kind.FILE_UNREADABLE, e)
     } catch (e: SecurityException) {
         throw PlaylistException(Kind.FILE_UNREADABLE, e)
+    }
+
+    /**
+     * Sadržaj liste iz fajla, za izvoz. Null kad fajl više ne može da se pročita ili je veći od
+     * [maxBytes].
+     */
+    suspend fun readFileContent(id: Long, maxBytes: Int): ByteArray? = withContext(Dispatchers.IO) {
+        val entity = playlistDao.getById(id)?.takeIf { it.type == PlaylistType.M3U_FILE } ?: return@withContext null
+        try {
+            openFile(entity.source).use { input ->
+                val out = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    if (out.size() + read > maxBytes) return@withContext null
+                    out.write(buffer, 0, read)
+                }
+                out.toByteArray()
+            }
+        } catch (_: PlaylistException) {
+            null
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+
+    /**
+     * Čuva sadržaj liste iz izvoza u folder aplikacije i vraća adresu tog fajla, kojom se lista
+     * zatim dodaje kao lista iz fajla. Fajl se briše kad se lista obriše.
+     */
+    suspend fun storeImportedFile(content: ByteArray): String = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, IMPORTED_DIR).apply { mkdirs() }
+        val file = File(dir, "${java.util.UUID.randomUUID()}.m3u")
+        file.writeBytes(content)
+        Uri.fromFile(file).toString()
+    }
+
+    /** Briše fajl iz [storeImportedFile] kad lista sa njim na kraju nije dodata. */
+    suspend fun discardImportedFile(uri: String) = withContext(Dispatchers.IO) {
+        importedFile(uri)?.delete()
+        Unit
+    }
+
+    /** Fajl u folderu aplikacije na koji pokazuje [uri], ili null kad je to fajl koji je izabrao korisnik. */
+    private fun importedFile(uri: String): File? {
+        val parsed = Uri.parse(uri)
+        if (parsed.scheme != "file") return null
+        val file = File(parsed.path ?: return null)
+        val dir = File(context.filesDir, IMPORTED_DIR)
+        return file.takeIf { it.parentFile?.canonicalPath == dir.canonicalPath }
     }
 
     private fun releaseFilePermission(uri: String) {
@@ -679,6 +735,9 @@ class PlaylistRepository @Inject constructor(
 
     private companion object {
         const val BATCH_SIZE = 500
+
+        /** Folder u memoriji aplikacije sa listama iz fajla koje su stigle uvozom. */
+        const val IMPORTED_DIR = "imported-lists"
         const val COPY_BUFFER = 64 * 1024
         const val MAX_EPG_SHIFT_HOURS = 14
     }

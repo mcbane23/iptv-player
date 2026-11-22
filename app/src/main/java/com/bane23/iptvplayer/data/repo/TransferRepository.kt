@@ -5,7 +5,16 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.FavoriteEntity
 import com.bane23.iptvplayer.data.db.FavoriteListEntity
 import com.bane23.iptvplayer.data.db.FavoriteListItemEntity
+import com.bane23.iptvplayer.data.backup.BackupCodec
 import com.bane23.iptvplayer.data.db.HiddenChannelEntity
+import com.bane23.iptvplayer.data.db.HistoryEntity
+import com.bane23.iptvplayer.data.db.WatchProgressEntity
+import com.bane23.iptvplayer.data.lan.TransferHistory
+import com.bane23.iptvplayer.data.lan.TransferLockedItem
+import com.bane23.iptvplayer.data.lan.TransferProgress
+import com.bane23.iptvplayer.data.lan.TransferReminder
+import com.bane23.iptvplayer.data.reminder.Reminder
+import com.bane23.iptvplayer.data.reminder.ReminderRepository
 import com.bane23.iptvplayer.data.db.PlaylistEntity
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.lan.TransferAccounts
@@ -56,12 +65,21 @@ class TransferRepository @Inject constructor(
     private val cipher: PasswordCipher,
     private val openSubtitles: OpenSubtitlesRepository,
     private val trakt: TraktRepository,
+    private val locks: LockRepository,
+    private val reminders: ReminderRepository,
 ) {
-    suspend fun exportBundle(): TransferExport = withContext(Dispatchers.IO) {
+    /**
+     * Uz [full] (izvoz u fajl) paket nosi i liste iz fajla sa sadržajem, pojedinačna zaključavanja,
+     * nedavno gledano, pozicije filmova i epizoda i podsetnike.
+     */
+    suspend fun exportBundle(full: Boolean = false): TransferExport = withContext(Dispatchers.IO) {
         var skipped = 0
         val activeId = settings.activePlaylistId.first()
+        val allReminders = if (full) reminders.reminders.first() else emptyList()
         val items = db.playlistDao().getAll().sortedBy { it.id }.mapNotNull { entity ->
-            val item = entity.toTransfer()?.copy(active = entity.id == activeId)
+            val item = entity.toTransfer(full)?.copy(active = entity.id == activeId)?.let { plain ->
+                if (full) plain.withExtras(entity.id, allReminders) else plain
+            }
             if (item == null) skipped++
             item
         }
@@ -92,12 +110,35 @@ class TransferRepository @Inject constructor(
         TransferExport(bundle, skipped)
     }
 
-    /** Lista iz fajla ostaje na telefonu, kao i lista čija lozinka ne može da se pročita. */
-    private suspend fun PlaylistEntity.toTransfer(): TransferPlaylist? {
+    /** Ono što ide samo u izvoz u fajl. */
+    private suspend fun TransferPlaylist.withExtras(playlistId: Long, allReminders: List<Reminder>) = copy(
+        lockedItems = db.lockedItemDao().byPlaylist(playlistId).map { TransferLockedItem(it.kind, it.itemKey, it.name) },
+        history = db.historyDao().byPlaylist(playlistId).map { TransferHistory(it.channelKey, it.watchedAt) },
+        progress = db.watchProgressDao().byPlaylist(playlistId).map {
+            TransferProgress(
+                kind = it.kind, itemId = it.itemId, seriesId = it.seriesId, positionMs = it.positionMs,
+                durationMs = it.durationMs, updatedAt = it.updatedAt, title = it.title, poster = it.poster,
+                extension = it.extension, watchedAt = it.watchedAt, dismissedAt = it.dismissedAt,
+            )
+        },
+        reminders = allReminders.filter { it.playlistId == playlistId }
+            .map { TransferReminder(it.channelKey, it.startMs, it.channelName, it.title) },
+    )
+
+    /**
+     * Lista iz fajla ide samo u izvoz u fajl ([full]), zajedno sa sadržajem; pri prenosu na TV ostaje
+     * na telefonu. Ne ide ni lista čija lozinka ne može da se pročita.
+     */
+    private suspend fun PlaylistEntity.toTransfer(full: Boolean): TransferPlaylist? {
+        var fileContent: String? = null
         val type = when (type) {
             PlaylistType.XTREAM -> TransferPlaylist.TYPE_XTREAM
             PlaylistType.M3U_URL -> TransferPlaylist.TYPE_M3U
-            PlaylistType.M3U_FILE -> return null
+            PlaylistType.M3U_FILE -> {
+                if (!full) return null
+                fileContent = BackupCodec.pack(playlists.readFileContent(id, MAX_FILE_LIST_BYTES) ?: return null)
+                TransferPlaylist.TYPE_FILE
+            }
         }
         val password = if (this.type == PlaylistType.XTREAM) {
             try {
@@ -114,7 +155,9 @@ class TransferRepository @Inject constructor(
         return TransferPlaylist(
             type = type,
             name = name,
-            source = source,
+            fileContent = fileContent,
+            // Adresa fajla važi samo na ovom uređaju.
+            source = if (type == TransferPlaylist.TYPE_FILE) "" else source,
             username = username.orEmpty(),
             password = password,
             userAgent = userAgent.orEmpty(),
@@ -148,8 +191,17 @@ class TransferRepository @Inject constructor(
      * Brzi deo prijema: sve što ne traži preuzimanje sa interneta (podešavanja, nalozi, liste koje TV
      * već ima) primenjuje se odmah. Nove liste se samo stavljaju u red; preuzima ih
      * [PendingImport.finish], što ume da traje minutima, pa pošiljalac na to ne čeka.
+     *
+     * Uz [replace] (uvoz iz fajla sa zamenom) se prvo briše sve čega u paketu nema.
      */
-    suspend fun beginImport(bundle: TransferBundle): PendingImport = withContext(Dispatchers.IO) {
+    suspend fun beginImport(
+        bundle: TransferBundle,
+        replace: Boolean = false,
+        favoriteListNames: List<String> = emptyList(),
+    ): PendingImport = withContext(Dispatchers.IO) {
+        if (replace) removeUnlisted(bundle)
+        // Imenovane liste omiljenih redom iz izvoza, i one u kojima nema nijednog kanala.
+        importFavoriteLists(0, favoriteListNames.map { TransferFavoriteList(it) }, System.currentTimeMillis())
         var existing = 0
         var failed = 0
         val queued = ArrayList<Pair<PlaylistType, TransferPlaylist>>()
@@ -165,6 +217,10 @@ class TransferRepository @Inject constructor(
             when {
                 match != null -> {
                     existing++
+                    if (replace) {
+                        clearUserData(match.id)
+                        if (item.active) settings.setActivePlaylistId(match.id)
+                    }
                     applyItem(match.id, item, existed = true)
                 }
 
@@ -197,9 +253,15 @@ class TransferRepository @Inject constructor(
         var failed = base.failed
         queued.forEachIndexed { index, (type, item) ->
             onProgress(index + 1, queued.size)
+            val draft = item.toDraft(type)
+            if (draft == null) {
+                failed++
+                return@forEachIndexed
+            }
             val playlistId = try {
-                playlists.addPlaylist(item.toDraft(type))
+                playlists.addPlaylist(draft)
             } catch (_: PlaylistException) {
+                if (type == PlaylistType.M3U_FILE) playlists.discardImportedFile(draft.source)
                 failed++
                 return@forEachIndexed
             }
@@ -213,7 +275,37 @@ class TransferRepository @Inject constructor(
     private fun TransferPlaylist.playlistType(): PlaylistType? = when (type) {
         TransferPlaylist.TYPE_XTREAM -> PlaylistType.XTREAM
         TransferPlaylist.TYPE_M3U -> PlaylistType.M3U_URL
+        TransferPlaylist.TYPE_FILE -> PlaylistType.M3U_FILE.takeIf { fileContent != null }
         else -> null
+    }
+
+    /** Zamena pri uvozu: briše liste kojih u paketu nema i sve imenovane liste omiljenih. */
+    private suspend fun removeUnlisted(bundle: TransferBundle) {
+        val incoming = bundle.playlists.mapNotNull { item -> item.playlistType()?.let { it to item } }
+        for (entity in db.playlistDao().getAll()) {
+            if (incoming.none { (type, item) -> entity.matches(type, item) }) playlists.deletePlaylist(entity.id)
+        }
+        db.favoriteListDao().deleteAll()
+    }
+
+    /**
+     * Zamena pri uvozu: sa liste koja ostaje briše sve što je korisnik na njoj uredio, da posle
+     * važi samo ono iz fajla. Zaključavanja ostaju dok na uređaju postoji PIN, da uvoz ne može da
+     * otključa ništa.
+     */
+    private suspend fun clearUserData(playlistId: Long) {
+        db.favoriteDao().deleteByPlaylist(playlistId)
+        db.hiddenChannelDao().deleteByPlaylist(playlistId)
+        db.vodFavoriteDao().deleteByPlaylist(playlistId)
+        db.historyDao().clear(playlistId)
+        db.watchProgressDao().deleteByPlaylist(playlistId)
+        for (reminder in reminders.reminders.first()) {
+            if (reminder.playlistId == playlistId) reminders.remove(reminder)
+        }
+        if (settings.pinRecord.first() == null) {
+            settings.clearPlaylistLocks(playlistId)
+            for (item in db.lockedItemDao().byPlaylist(playlistId)) db.lockedItemDao().delete(playlistId, item.kind, item.itemKey)
+        }
     }
 
     /** Omiljeni, liste omiljenih, sakriveni kanali, kategorije i zaključavanja jedne liste iz paketa. */
@@ -254,6 +346,7 @@ class TransferRepository @Inject constructor(
             if (existed) db.categoryDao().resetUserChanges(playlistId)
             applyCategories(playlistId, item.categories)
             item.vodCategories?.let { settings.replaceVodCategoryPrefs(playlistId, it.toPrefs()) }
+            applyExtras(playlistId, item)
             // Zaključavanja se samo dodaju, da prenos ne može da otključa nešto na TV-u.
             item.locked?.let { locks ->
                 fun clean(names: List<String>) =
@@ -263,6 +356,41 @@ class TransferRepository @Inject constructor(
                     mapOf("live" to clean(locks.live), "movies" to clean(locks.movies), "series" to clean(locks.series)),
                 )
             }
+    }
+
+    /** Deo paketa koji postoji samo u izvozu u fajl; pri prenosu sa telefona je prazan. */
+    private suspend fun applyExtras(playlistId: Long, item: TransferPlaylist) {
+        item.lockedItems.asSequence()
+            .filter { it.kind in LOCK_KINDS && it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.name.length <= MAX_TEXT }
+            .take(MAX_FAVORITES)
+            .forEach { locks.setLocked(LockRepository.itemKey(it.kind, playlistId, it.key), true, it.name) }
+        // Noviji zapis pobeđuje: ono što je na uređaju gledano posle izvoza ostaje.
+        val knownHistory = db.historyDao().byPlaylist(playlistId).associate { it.channelKey to it.watchedAt }
+        item.history.asSequence()
+            .filter { it.key.isNotEmpty() && it.key.length <= MAX_TEXT && it.at > (knownHistory[it.key] ?: 0) }
+            .take(MAX_HISTORY)
+            .forEach { db.historyDao().upsert(HistoryEntity(playlistId, it.key, it.at)) }
+        val knownProgress = db.watchProgressDao().byPlaylist(playlistId).associate { (it.kind to it.itemId) to it.updatedAt }
+        val progress = item.progress.asSequence()
+            .filter { it.kind in PROGRESS_KINDS && (it.title?.length ?: 0) <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
+            .filter { it.updatedAt > (knownProgress[it.kind to it.itemId] ?: Long.MIN_VALUE) }
+            .take(MAX_PROGRESS)
+            .map {
+                WatchProgressEntity(
+                    playlistId = playlistId, kind = it.kind, itemId = it.itemId, seriesId = it.seriesId,
+                    positionMs = it.positionMs.coerceAtLeast(0), durationMs = it.durationMs.coerceAtLeast(0),
+                    updatedAt = it.updatedAt, title = it.title, poster = it.poster,
+                    extension = it.extension?.take(MAX_LANGUAGE_LENGTH), watchedAt = it.watchedAt, dismissedAt = it.dismissedAt,
+                )
+            }
+            .toList()
+        progress.chunked(PROGRESS_CHUNK).forEach { db.watchProgressDao().upsertAll(it) }
+        val now = System.currentTimeMillis()
+        item.reminders.asSequence()
+            .filter { it.startMs > now && it.channelKey.isNotEmpty() && it.channelKey.length <= MAX_TEXT }
+            .filter { it.channelName.length <= MAX_TEXT && it.title.length <= MAX_TEXT }
+            .take(MAX_REMINDERS)
+            .forEach { reminders.add(Reminder(playlistId, it.channelKey, it.startMs, it.channelName, it.title)) }
     }
 
     /**
@@ -304,16 +432,34 @@ class TransferRepository @Inject constructor(
         }
     }
 
-    private fun PlaylistEntity.matches(type: PlaylistType, item: TransferPlaylist): Boolean =
-        this.type == type &&
-            source.trimEnd('/').equals(item.source.trim().trimEnd('/'), ignoreCase = true) &&
+    /** Lista iz fajla nema adresu koja važi na oba uređaja, pa se prepoznaje po nazivu. */
+    private fun PlaylistEntity.matches(type: PlaylistType, item: TransferPlaylist): Boolean = when {
+        this.type != type -> false
+        type == PlaylistType.M3U_FILE -> name.trim().equals(item.name.trim(), ignoreCase = true)
+        else -> source.trimEnd('/').equals(item.source.trim().trimEnd('/'), ignoreCase = true) &&
             username.orEmpty() == item.username.trim()
+    }
 
     private fun TransferPlaylist.sameSource(other: TransferPlaylist): Boolean =
-        source.trim().trimEnd('/').equals(other.source.trim().trimEnd('/'), ignoreCase = true) &&
-            username.trim() == other.username.trim()
+        if (type == TransferPlaylist.TYPE_FILE) {
+            name.trim().equals(other.name.trim(), ignoreCase = true)
+        } else {
+            source.trim().trimEnd('/').equals(other.source.trim().trimEnd('/'), ignoreCase = true) &&
+                username.trim() == other.username.trim()
+        }
 
-    private fun TransferPlaylist.toDraft(type: PlaylistType) = PlaylistDraft(
+    /** Null kad je sadržaj liste iz fajla neispravan. Za listu iz fajla sadržaj se prvo čuva na uređaju. */
+    private suspend fun TransferPlaylist.toDraft(type: PlaylistType): PlaylistDraft? {
+        val source = if (type == PlaylistType.M3U_FILE) {
+            val content = fileContent?.let(BackupCodec::unpack)?.takeIf { it.size <= MAX_FILE_LIST_BYTES } ?: return null
+            playlists.storeImportedFile(content)
+        } else {
+            this.source
+        }
+        return draftWith(type, source)
+    }
+
+    private fun TransferPlaylist.draftWith(type: PlaylistType, source: String) = PlaylistDraft(
         type = type,
         name = name,
         source = source,
@@ -367,6 +513,15 @@ class TransferRepository @Inject constructor(
         const val MAX_LANGUAGE_LENGTH = 16
         const val MAX_ACCOUNT_FIELD = 2_000
         const val MAX_TEXT = 2_000
+        const val MAX_HISTORY = 1_000
+        const val MAX_PROGRESS = 50_000
+        const val PROGRESS_CHUNK = 500
+        const val MAX_REMINDERS = 500
+
+        /** Veća lista iz fajla ne ulazi u izvoz. */
+        const val MAX_FILE_LIST_BYTES = 20 * 1024 * 1024
+        val LOCK_KINDS = setOf(LockRepository.KIND_CHANNEL, LockRepository.KIND_MOVIE, LockRepository.KIND_SERIES)
+        val PROGRESS_KINDS = setOf("movie", "episode")
         val VOD_KINDS = setOf("movie", "series")
         val ENUM_NAME = Regex("[A-Z_]{1,32}")
 

@@ -501,7 +501,71 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         }
     }
 
+    /**
+     * Sva podešavanja koja idu u izvoz u fajl, kao tekst po ključu: prvo opšta, pa ona vezana za
+     * uređaj. Ono što korisnik nije menjao se ne izvozi, pa posle uvoza važi podrazumevano.
+     */
+    suspend fun exportPrefs(): Pair<Map<String, String>, Map<String, String>> {
+        val prefs = dataStore.data.first()
+        fun collect(keys: List<Preferences.Key<*>>): Map<String, String> = buildMap {
+            for (key in keys) {
+                when (val value = prefs[key]) {
+                    null -> Unit
+                    is Set<*> -> put(key.name, value.joinToString(SET_SEPARATOR))
+                    else -> put(key.name, value.toString())
+                }
+            }
+        }
+        return collect(GENERAL_KEYS + remoteButtonKeys()) to collect(DEVICE_KEYS)
+    }
+
+    /**
+     * Upisuje podešavanja iz izvoza. Nepoznati ključevi i vrednosti pogrešne vrste se preskaču. Uz
+     * [replace] se podešavanja kojih u izvozu nema vraćaju na podrazumevano; [device] je null kad
+     * izvoz potiče sa druge vrste uređaja, pa se podešavanja vezana za uređaj ne diraju.
+     */
+    suspend fun importPrefs(general: Map<String, String>, device: Map<String, String>?, replace: Boolean) {
+        dataStore.edit { prefs ->
+            fun apply(keys: List<Preferences.Key<*>>, values: Map<String, String>) {
+                for (key in keys) {
+                    val text = values[key.name]?.takeIf { it.length <= MAX_IMPORTED_VALUE }
+                    if (text == null) {
+                        if (replace) prefs.remove(key)
+                        continue
+                    }
+                    storeText(prefs, key, text)
+                }
+            }
+            apply(GENERAL_KEYS + remoteButtonKeys(), general)
+            if (device != null) apply(DEVICE_KEYS, device)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun storeText(prefs: androidx.datastore.preferences.core.MutablePreferences, key: Preferences.Key<*>, text: String) {
+        when (key) {
+            in BOOLEAN_KEYS -> text.toBooleanStrictOrNull()?.let { prefs[key as Preferences.Key<Boolean>] = it }
+            in INT_KEYS -> text.toIntOrNull()?.let { prefs[key as Preferences.Key<Int>] = it }
+            in SET_KEYS -> prefs[key as Preferences.Key<Set<String>>] = text.split(SET_SEPARATOR).filter { it.isNotEmpty() }.toSet()
+            else -> prefs[key as Preferences.Key<String>] = text
+        }
+    }
+
+    private fun remoteButtonKeys(): List<Preferences.Key<*>> = RemoteButton.entries.map { remoteButtonKey(it) }
+
+    /** Briše sva zaključavanja kategorija liste (zamena pri uvozu na uređaju bez PIN-a). */
+    suspend fun clearPlaylistLocks(playlistId: Long) {
+        dataStore.edit { prefs ->
+            val locked = prefs[LOCKED_CATEGORIES] ?: return@edit
+            prefs[LOCKED_CATEGORIES] = locked.filterNot { key -> LOCK_SECTIONS.any { key.startsWith("$it|$playlistId|") } }.toSet()
+        }
+    }
+
     private companion object {
+        /** Razdvaja članove skupa u izvozu; ne pojavljuje se u vrednostima. */
+        const val SET_SEPARATOR = "\u001E"
+        const val MAX_IMPORTED_VALUE = 20_000
+
         val PLAYER_BUFFER = stringPreferencesKey("player_buffer")
         val PLAYER_DECODER = stringPreferencesKey("player_decoder")
         val PLAYER_SEEK_STEP = intPreferencesKey("player_seek_step")
@@ -546,5 +610,28 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val SCREENSAVER_MINUTES = intPreferencesKey("screensaver_minutes")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
+        val VOD_SORT_MOVIES = stringPreferencesKey("vod_sort_movies")
+        val VOD_SORT_SERIES = stringPreferencesKey("vod_sort_series")
+
+        val BOOLEAN_KEYS: List<Preferences.Key<*>> = listOf(
+            SUBTITLE_BACKGROUND, RESUME_LAST_CHANNEL, TV_CHANNEL_PREVIEW, TV_VOD_PREVIEW, DRAW_UNDER_CUTOUT, APP_FULL_SCREEN,
+            PLAYER_BRIGHTNESS_SWIPE, PLAYER_VOLUME_SWIPE, BACKGROUND_PLAY, AUTOSTART, REOPEN_AFTER_UPDATE,
+            AUTO_REFRESH_PLAYLISTS, VOD_LOCAL_CACHE, MATCH_FRAME_RATE, WATCH_NEXT, BLACK_THEME, TV_RAIL_ICONS_ONLY,
+            PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN,
+        )
+        val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
+        val SET_KEYS: List<Preferences.Key<*>> = listOf(CAST_PEERS)
+
+        /**
+         * Podešavanja koja idu u izvoz i važe na svakom uređaju. Liste, zaključavanja, uređenje
+         * kategorija i podsetnici nisu ovde: oni zavise od liste i putuju uz nju.
+         */
+        val GENERAL_KEYS: List<Preferences.Key<*>> = BOOLEAN_KEYS + INT_KEYS + listOf(
+            PLAYER_BUFFER, SUBTITLE_SIZE, SUBTITLE_POSITION, PLAYER_AUDIO_LANGUAGE, PLAYER_SUBTITLE_LANGUAGE, APP_THEME,
+            RECENT_SEARCHES, ACCENT_COLOR, UPDATE_CHANNEL, VOD_SORT_MOVIES, VOD_SORT_SERIES,
+        )
+
+        /** Podešavanja koja imaju smisla samo na istoj vrsti uređaja (telefon ili TV). */
+        val DEVICE_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS)
     }
 }

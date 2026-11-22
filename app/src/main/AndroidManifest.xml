@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Snimci i preuzeto idu u Downloads/Glowbox. Od Androida 11 za to ne treba dozvola; na starijim treba. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+    <!--
+        TV: uvoz podešavanja čita fajl iz Downloads/Glowbox koji ova instalacija nije sama napravila
+        (prenet sa drugog uređaja ili ostao od ranije instalacije). Od Androida 11 to traži pristup
+        svim fajlovima, koji korisnik sam uključuje na sistemskom ekranu.
+    -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <!-- Preuzimanje na telefon ide samo preko Wi-Fi mreže, pa aplikacija mora da zna na kojoj je mreži. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- TV: upis započetih filmova i serija u red „Nastavite sa gledanjem” na početnom ekranu uređaja. -->
