@@ -121,13 +121,22 @@ fun TvPlaylistsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (state.playlists.any { it.merged }) {
-                    item(key = "merge-hint") {
-                        Text(
-                            text = stringResource(R.string.playlists_merge_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                // Spajanje ima smisla tek kad postoje bar dve liste.
+                if (state.playlists.size > 1) {
+                    item(key = "merge") {
+                        Column {
+                            TvTextRow(
+                                text = stringResource(R.string.playlists_merge),
+                                onClick = { viewModel.setAllMerged(!state.merged) },
+                                checked = state.merged,
+                            )
+                            Text(
+                                text = stringResource(R.string.playlists_merge_summary),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                            )
+                        }
                     }
                 }
                 items(state.playlists, key = { it.id }) { playlist ->
@@ -143,8 +152,6 @@ fun TvPlaylistsScreen(
                         rowModifier = (if (playlist.id == editedId) Modifier.focusRequester(editedFocus) else Modifier)
                             .then(if (playlist.isActive) Modifier.focusRequester(activeFocus) else Modifier),
                         onDelete = { viewModel.delete(playlist.id) },
-                        // Spajanje ima smisla tek kad postoje bar dve liste.
-                        onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
                     )
                 }
             }
@@ -191,7 +198,6 @@ private fun TvPlaylistRow(
     onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onMerge: (() -> Unit)?,
     rowModifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -207,9 +213,6 @@ private fun TvPlaylistRow(
         val actions = buildList<Pair<String, () -> Unit>> {
             add(stringResource(R.string.action_refresh) to { if (!refreshing) onRefresh() })
             add(stringResource(R.string.action_edit) to { if (!refreshing) onEdit() })
-            if (onMerge != null) {
-                add(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge) to onMerge)
-            }
             // Brisanje se i ovde potvrđuje u samom redu liste.
             add(
                 stringResource(R.string.action_delete) to {
@@ -317,11 +320,6 @@ private fun TvPlaylistRow(
                     }
                     TvOutlinedButton(onClick = { if (!refreshing) onEdit() }) {
                         Text(stringResource(R.string.action_edit))
-                    }
-                    if (onMerge != null) {
-                        TvOutlinedButton(onClick = onMerge) {
-                            Text(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge))
-                        }
                     }
                     TvOutlinedButton(
                         onClick = { if (!refreshing) confirmDelete = true },

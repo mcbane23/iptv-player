@@ -163,9 +163,13 @@ interface PlaylistDao {
     @Query("UPDATE playlists SET accountExpiresAt = :expiresAt, maxConnections = :maxConnections WHERE id = :id")
     suspend fun setAccountInfo(id: Long, expiresAt: Long?, maxConnections: Int?)
 
-    /** Označava da li se kanali liste prikazuju zajedno sa ostalim spojenim listama. */
-    @Query("UPDATE playlists SET merged = :merged WHERE id = :id")
-    suspend fun setMerged(id: Long, merged: Boolean)
+    /** Spajanje lista je jedno za sve: kanali svih lista se prikazuju zajedno ili se vidi samo aktivna. */
+    @Query("UPDATE playlists SET merged = :merged")
+    suspend fun setAllMerged(merged: Boolean)
+
+    /** Da li su liste spojene. */
+    @Query("SELECT EXISTS(SELECT 1 FROM playlists WHERE merged = 1)")
+    suspend fun anyMerged(): Boolean
 
     @Query("DELETE FROM playlists WHERE id = :id")
     suspend fun deleteById(id: Long)

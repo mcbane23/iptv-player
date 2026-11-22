@@ -551,10 +551,8 @@
     <string name="category_move_done">Done</string>
     <string name="categories_move_hint">Up and down move the category “%1$s”; hold the arrow to move faster. Press OK or Back when it is in place.</string>
     <string name="playlist_switch">Playlist: %1$s</string>
-    <string name="playlist_merged">Merged</string>
-    <string name="playlist_merge">Merge with other playlists</string>
-    <string name="playlist_unmerge">Do not merge</string>
-    <string name="playlists_merge_hint">When the active playlist is merged, channels of all merged playlists are shown together. Movies and series always come from the active playlist.</string>
+    <string name="playlists_merge">Merge channels of all playlists</string>
+    <string name="playlists_merge_summary">Live, the guide and search show channels of all playlists together. Off: only the active playlist. Movies and series always come from the active playlist.</string>
     <string name="playlists_tv_hint">OK selects the playlist. Hold OK on a playlist for options: refresh, edit, delete.</string>
     <string name="playlists_select_hint">Tap a playlist to make it the active one.</string>
     <string name="playlist_advanced_show">Advanced settings</string>

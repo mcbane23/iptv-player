@@ -550,10 +550,8 @@
     <string name="category_move_done">Gotovo</string>
     <string name="categories_move_hint">Strelice gore i dole pomeraju kategoriju „%1$s”; držite strelicu za brže pomeranje. OK ili Nazad kad je na svom mestu.</string>
     <string name="playlist_switch">Lista: %1$s</string>
-    <string name="playlist_merged">Spojena</string>
-    <string name="playlist_merge">Spoji sa drugim listama</string>
-    <string name="playlist_unmerge">Ne spajaj</string>
-    <string name="playlists_merge_hint">Kad je aktivna lista spojena, kanali svih spojenih lista se prikazuju zajedno. Filmovi i serije su uvek iz aktivne liste.</string>
+    <string name="playlists_merge">Spoji kanale svih lista</string>
+    <string name="playlists_merge_summary">Uživo, vodič i pretraga prikazuju kanale svih lista zajedno. Isključeno: samo aktivna lista. Filmovi i serije su uvek iz aktivne liste.</string>
     <string name="playlists_tv_hint">OK bira listu. Drži OK na listi za opcije: osveži, izmeni, obriši.</string>
     <string name="playlists_select_hint">Dodirnite listu da je izaberete kao aktivnu.</string>
     <string name="playlist_advanced_show">Napredna podešavanja</string>

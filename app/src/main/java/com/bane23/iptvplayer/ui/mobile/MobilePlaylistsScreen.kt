@@ -3,6 +3,9 @@ package com.bane23.iptvplayer.ui.mobile
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -86,13 +89,10 @@ fun MobilePlaylistsScreen(
                             )
                         }
                     }
-                    if (state.playlists.any { it.merged }) {
-                        item(key = "merge-hint") {
-                            Text(
-                                text = stringResource(R.string.playlists_merge_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    // Spajanje ima smisla tek kad postoje bar dve liste.
+                    if (state.playlists.size > 1) {
+                        item(key = "merge") {
+                            MergeSwitch(checked = state.merged, onChange = viewModel::setAllMerged)
                         }
                     }
                     items(state.playlists, key = { it.id }) { playlist ->
@@ -103,8 +103,6 @@ fun MobilePlaylistsScreen(
                             onRefresh = { viewModel.refresh(playlist.id) },
                             onEdit = { onEdit(playlist.id) },
                             onDelete = { pendingDelete = playlist },
-                            // Spajanje ima smisla tek kad postoje bar dve liste.
-                            onMerge = { viewModel.setMerged(playlist.id, !playlist.merged) }.takeIf { state.playlists.size > 1 },
                         )
                     }
                 }
@@ -141,6 +139,30 @@ fun MobilePlaylistsScreen(
     }
 }
 
+/** Jedan prekidač za sve liste: naziv, opis ispod njega i prekidač desno. */
+@Composable
+private fun MergeSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.playlists_merge), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(R.string.playlists_merge_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = checked, onCheckedChange = null, modifier = Modifier.padding(start = 16.dp))
+        }
+    }
+}
+
 /**
  * Lista: naziv, oznaka aktivne liste i kratki podaci. Dodir na karticu bira listu kao aktivnu;
  * Osveži, Izmeni i Obriši su u meniju iza tri tačke.
@@ -153,7 +175,6 @@ private fun PlaylistCard(
     onRefresh: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onMerge: (() -> Unit)?,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Card(onClick = { if (!playlist.isActive) onSelect() }, modifier = Modifier.fillMaxWidth()) {
@@ -239,18 +260,6 @@ private fun PlaylistCard(
                                 onEdit()
                             },
                         )
-                        if (onMerge != null) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(stringResource(if (playlist.merged) R.string.playlist_unmerge else R.string.playlist_merge))
-                                },
-                                leadingIcon = { Icon(AppIcons.Playlists, contentDescription = null) },
-                                onClick = {
-                                    menuOpen = false
-                                    onMerge()
-                                },
-                            )
-                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_delete)) },
                             leadingIcon = { Icon(AppIcons.Delete, contentDescription = null) },

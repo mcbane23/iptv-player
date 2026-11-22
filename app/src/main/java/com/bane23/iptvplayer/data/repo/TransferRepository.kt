@@ -231,8 +231,8 @@ class TransferRepository @Inject constructor(
                 .forEachIndexed { position, hidden ->
                     db.hiddenChannelDao().insert(HiddenChannelEntity(playlistId, hidden.key, hidden.name, now + position))
                 }
-            // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu.
-            item.merged?.let { db.playlistDao().setMerged(playlistId, it) }
+            // Telefon je glavni: spajanje lista je na TV-u isto kao na telefonu, i važi za sve liste.
+            item.merged?.let { db.playlistDao().setAllMerged(it) }
             db.vodFavoriteDao().insertMissing(
                 item.vodFavorites.asSequence()
                     .filter { it.kind in VOD_KINDS && it.name.length <= MAX_TEXT && (it.poster?.length ?: 0) <= MAX_TEXT }
