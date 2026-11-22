@@ -19,6 +19,7 @@ import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.data.db.HistoryEntity
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.text.SearchText
 import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.CategoryArrange
@@ -151,19 +152,49 @@ class ChannelRepository @Inject constructor(
     fun search(playlistId: Long, query: String): Flow<PagingData<Channel>> {
         val text = query.trim()
         if (text.isEmpty()) return flowOf(PagingData.empty())
-        val escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        return Pager(
-            config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = true),
-            pagingSourceFactory = { channelDao.searchPagingSource(playlistId, "%$escaped%", System.currentTimeMillis()) },
-        ).flow.map { page -> page.map { it.toDomain() } }
+        val pattern = likePattern(text)
+        return flow {
+            // Kanali koji odgovaraju uz promašeno slovo nalaze se jednom, pre listanja rezultata.
+            val nearIds = nearChannels(playlistId, text, NEAR_LIMIT).map { it.id }
+            emitAll(
+                Pager(
+                    config = PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = true),
+                    pagingSourceFactory = {
+                        channelDao.searchPagingSource(playlistId, pattern, nearIds, System.currentTimeMillis())
+                    },
+                ).flow.map { page -> page.map { it.toDomain() } },
+            )
+        }
+    }
+
+    /**
+     * Kanali čiji naziv ne sadrži [query] slovo po slovo, ali ga sadrži kad se zanemare kvačice ili
+     * jedno promašeno slovo; najviše [limit]. Tačne pogotke daje baza, pa se ovde preskaču.
+     */
+    private suspend fun nearChannels(playlistId: Long, query: String, limit: Int): List<ChannelHit> {
+        val text = query.trim()
+        val needle = SearchText.normalize(text)
+        if (needle.isEmpty() || limit <= 0) return emptyList()
+        val names = channelDao.searchNames(playlistId)
+        return withContext(Dispatchers.Default) {
+            names.asSequence()
+                .filter { !it.name.contains(text, ignoreCase = true) }
+                .filter { hit -> SearchText.normalize(hit.name).let { needle in it || SearchText.near(it, needle) } }
+                .take(limit)
+                .toList()
+        }
     }
 
     private fun likePattern(query: String): String =
         "%" + query.trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 
     /** Prvih [limit] kanala čiji naziv sadrži [query], za zajedničku pretragu. */
-    suspend fun searchTop(playlistId: Long, query: String, limit: Int): List<ChannelHit> =
-        channelDao.searchTop(playlistId, likePattern(query), limit)
+    suspend fun searchTop(playlistId: Long, query: String, limit: Int): List<ChannelHit> {
+        val exact = channelDao.searchTop(playlistId, likePattern(query), limit)
+        if (exact.size >= limit) return exact
+        val known = exact.mapTo(HashSet()) { it.id }
+        return exact + nearChannels(playlistId, query, limit).filter { it.id !in known }.take(limit - exact.size)
+    }
 
     /** Emisije iz vodiča (u toku ili buduće) čiji naslov sadrži [query]. */
     suspend fun searchPrograms(playlistId: Long, query: String, limit: Int): List<ProgramHit> =
@@ -406,6 +437,9 @@ class ChannelRepository @Inject constructor(
 
     private companion object {
         const val PAGE_SIZE = 60
+
+        /** Najviše kanala koji se u pretrazi nude uz promašeno slovo (ograničenje broja vrednosti u upitu). */
+        const val NEAR_LIMIT = 200
         const val HISTORY_SIZE = 50
         const val SECTION_LIVE = "live"
     }

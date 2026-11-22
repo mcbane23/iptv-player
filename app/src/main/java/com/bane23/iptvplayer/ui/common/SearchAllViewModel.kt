@@ -153,7 +153,7 @@ class SearchAllViewModel @Inject constructor(
             return emptyList()
         }
         return withContext(Dispatchers.Default) {
-            all.asSequence().filter { (name, _) -> needle in name }.map { it.second }.take(GROUP_LIMIT).toList()
+            com.bane23.iptvplayer.data.text.SearchText.search(all, needle, GROUP_LIMIT)
         }
     }
 

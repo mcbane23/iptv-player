@@ -42,6 +42,7 @@ import androidx.paging.compose.itemKey
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Channel
+import com.bane23.iptvplayer.domain.Program
 import com.bane23.iptvplayer.ui.common.guide.GuideCell
 import com.bane23.iptvplayer.ui.common.guide.GuideSelection
 import com.bane23.iptvplayer.ui.common.guide.GuideRecordings
@@ -63,6 +64,7 @@ fun MobileGuideScreen(
     categoryId: Long?,
     onPlay: (Long) -> Unit,
     onArchive: (Long) -> Unit,
+    onPlayArchive: (Long, Program) -> Unit,
     onBack: () -> Unit,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
@@ -167,6 +169,9 @@ fun MobileGuideScreen(
                     onRecord = record,
                     onPlay = { onPlay(selection.channel.id) },
                     onArchive = { onArchive(selection.channel.id) },
+                    // Završena emisija kanala sa arhivom može da se pusti pravo odavde.
+                    onPlayProgram = program?.takeIf { selection.hasArchive && it.stopMs <= now }
+                        ?.let { past -> { onPlayArchive(selection.channel.id, past) } },
                     onClose = viewModel::clearSelection,
                 )
             }
@@ -271,6 +276,7 @@ private fun SelectionPanel(
     onRecord: () -> Unit,
     onPlay: () -> Unit,
     onArchive: () -> Unit,
+    onPlayProgram: (() -> Unit)?,
     onClose: () -> Unit,
 ) {
     val program = selection.program
@@ -325,7 +331,13 @@ private fun SelectionPanel(
                 if (selection.hasArchive) {
                     TextButton(onClick = onArchive) { Text(stringResource(R.string.archive_title)) }
                 }
-                Button(onClick = onPlay) { Text(stringResource(R.string.guide_watch)) }
+                if (onPlayProgram != null) {
+                    // Prvo dugme pušta baš tu emisiju, a kanal uživo je odmah pored.
+                    TextButton(onClick = onPlay) { Text(stringResource(R.string.archive_watch_live), maxLines = 1) }
+                    Button(onClick = onPlayProgram) { Text(stringResource(R.string.archive_play_program), maxLines = 1) }
+                } else {
+                    Button(onClick = onPlay) { Text(stringResource(R.string.guide_watch)) }
+                }
             }
         }
     }

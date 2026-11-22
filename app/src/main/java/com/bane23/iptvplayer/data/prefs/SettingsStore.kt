@@ -356,6 +356,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     private fun remoteButtonKey(button: RemoteButton) = stringPreferencesKey("remote_button_${button.name.lowercase()}")
 
+    /** Serije: sledeća epizoda kreće sama kad se tekuća završi. Isključeno: kartica je samo nudi. */
+    val autoNextEpisode: Flow<Boolean> = dataStore.data.map { it[AUTO_NEXT_EPISODE] ?: true }.distinctUntilChanged()
+
+    suspend fun setAutoNextEpisode(enabled: Boolean) {
+        dataStore.edit { it[AUTO_NEXT_EPISODE] = enabled }
+    }
+
     /** Ekran pauze: posle nekoliko sekundi pauze naslov, opis i sat umesto kontrola. */
     val pauseInfo: Flow<Boolean> = dataStore.data.map { it[PAUSE_INFO] ?: true }.distinctUntilChanged()
 
@@ -593,6 +600,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val TV_RAIL_ICONS_ONLY = booleanPreferencesKey("tv_rail_icons_only")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
+        val AUTO_NEXT_EPISODE = booleanPreferencesKey("auto_next_episode")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
@@ -617,7 +625,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             SUBTITLE_BACKGROUND, RESUME_LAST_CHANNEL, TV_CHANNEL_PREVIEW, TV_VOD_PREVIEW, DRAW_UNDER_CUTOUT, APP_FULL_SCREEN,
             PLAYER_BRIGHTNESS_SWIPE, PLAYER_VOLUME_SWIPE, BACKGROUND_PLAY, AUTOSTART, REOPEN_AFTER_UPDATE,
             AUTO_REFRESH_PLAYLISTS, VOD_LOCAL_CACHE, MATCH_FRAME_RATE, WATCH_NEXT, BLACK_THEME, TV_RAIL_ICONS_ONLY,
-            PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN,
+            PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, AUTO_NEXT_EPISODE,
         )
         val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
         val SET_KEYS: List<Preferences.Key<*>> = listOf(CAST_PEERS)

@@ -294,13 +294,28 @@ interface ChannelDao {
     @Query("SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN $RECENT_CHANNELS LIMIT :limit")
     suspend fun recentTop(playlistId: Long, now: Long, limit: Int): List<ChannelWithFavorite>
 
-    /** Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. */
+    /**
+     * Pretraga po nazivu kroz sve kategorije. U [pattern] su `%`, `_` i `\` već zaštićeni. [nearIds]
+     * su kanali čiji naziv odgovara uz promašeno slovo ili kvačicu; idu iza tačnih pogodaka.
+     */
     @Query(
         "SELECT ch.*, $FAVORITE_COLUMN, $NOW_COLUMN FROM channels ch WHERE $IN_SCOPE " +
-            "AND ch.name LIKE :pattern ESCAPE '\\' $NOT_HIDDEN AND NOT $DUPLICATE " +
-            "ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
+            "AND (ch.name LIKE :pattern ESCAPE '\\' OR ch.id IN (:nearIds)) $NOT_HIDDEN AND NOT $DUPLICATE " +
+            "ORDER BY (ch.name LIKE :pattern ESCAPE '\\') DESC, ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
     )
-    fun searchPagingSource(playlistId: Long, pattern: String, now: Long): PagingSource<Int, ChannelWithFavorite>
+    fun searchPagingSource(
+        playlistId: Long,
+        pattern: String,
+        nearIds: List<Long>,
+        now: Long,
+    ): PagingSource<Int, ChannelWithFavorite>
+
+    /** Svi kanali koji smeju da se vide u pretrazi, za traženje uz promašeno slovo. */
+    @Query(
+        "SELECT ch.id AS id, ch.name AS name, ch.logo AS logo FROM channels ch WHERE $IN_SCOPE " +
+            "$NOT_HIDDEN AND NOT $DUPLICATE ORDER BY ch.name COLLATE NOCASE, ch.playlistId, ch.sortOrder",
+    )
+    suspend fun searchNames(playlistId: Long): List<ChannelHit>
 
     /** Prvih [limit] kanala čiji naziv odgovara, za zajedničku pretragu. Isti strim se računa jednom. */
     @Query(

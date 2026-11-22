@@ -100,6 +100,7 @@ fun MobileSettingsScreen(
     val volumeSlider by viewModel.playerVolumeSwipe.collectAsStateWithLifecycle()
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
+    val autoNextEpisode by viewModel.autoNextEpisode.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
@@ -254,6 +255,12 @@ fun MobileSettingsScreen(
                                     summary = stringResource(R.string.settings_pause_info_summary),
                                     checked = pauseInfo,
                                     onChange = viewModel::setPauseInfo,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_auto_next),
+                                    summary = stringResource(R.string.settings_auto_next_summary),
+                                    checked = autoNextEpisode,
+                                    onChange = viewModel::setAutoNextEpisode,
                                 )
                                 SettingsSwitchRow(
                                     title = stringResource(R.string.settings_background_play),

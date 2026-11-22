@@ -125,6 +125,9 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     onPlay = { channelId, categoryId -> backStack.push(Player(channelId, categoryId)) },
                     onSearch = { backStack.push(Search) },
                     onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
+                    onPlayArchive = { channelId, program ->
+                        backStack.push(PlayArchive(channelId, program.startMs, program.stopMs, program.title, startToken = null))
+                    },
                     onOpenVod = { item, series ->
                         if (series) {
                             backStack.push(SeriesDetails(item.id, item.name, item.poster))
@@ -180,6 +183,9 @@ fun TvApp(watchLink: WatchNextLink? = null, onWatchLinkHandled: () -> Unit = {})
                     categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.push(Player(channelId, key.categoryId)) },
                     onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
+                    onPlayArchive = { channelId, program ->
+                        backStack.push(PlayArchive(channelId, program.startMs, program.stopMs, program.title, startToken = null))
+                    },
                 )
             }
             entry<ChannelArchive> { key ->

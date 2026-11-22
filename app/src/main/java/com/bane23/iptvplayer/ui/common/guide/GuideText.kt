@@ -41,6 +41,28 @@ fun NowNext.nowLine(): String? = now?.let { stringResource(R.string.epg_now, it.
 @Composable
 fun NowNext.nextLine(): String? = next?.let { stringResource(R.string.epg_next, formatTime(it.startMs), it.title) }
 
+/**
+ * Koliko je minuta emisije prošlo i koliko još traje, u trenutku [now]. Preostalo se zaokružuje
+ * naviše, da pred kraj ne piše „još 0 min”. Null kad emisija u tom trenutku ne traje.
+ */
+fun programMinutes(startMs: Long, stopMs: Long, now: Long): Pair<Int, Int>? {
+    if (now < startMs || now >= stopMs) return null
+    val elapsed = ((now - startMs) / 60_000L).toInt()
+    val left = ((stopMs - now + 59_999L) / 60_000L).toInt()
+    return elapsed to left
+}
+
+/**
+ * Tekst ispod trake emisije u plejeru: „Prošlo 25 min, još 35 min”, a u drugom redu „Sledeće: …”.
+ * Null kad nema nijednog od ta dva podatka.
+ */
+@Composable
+fun NowNext.infoLines(nowMs: Long): String? {
+    val progress = now?.let { programMinutes(it.startMs, it.stopMs, nowMs) }
+        ?.let { (elapsed, left) -> stringResource(R.string.epg_progress, elapsed, left) }
+    return listOfNotNull(progress, nextLine()).takeIf { it.isNotEmpty() }?.joinToString("\n")
+}
+
 /** Poruka o stanju vodiča koja se prikazuje ispod naslova ekrana. */
 @Composable
 fun EpgStatus.message(): String = when {
