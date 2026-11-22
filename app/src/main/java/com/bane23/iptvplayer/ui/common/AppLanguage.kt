@@ -58,6 +58,11 @@ object AppLocale {
         context.findActivity()?.recreate()
     }
 
+    /** Pravi aktivnost iznova kad je jezik promenjen mimo [change] (uvoz podešavanja iz fajla). */
+    fun recreate(context: Context) {
+        context.findActivity()?.recreate()
+    }
+
     private tailrec fun Context.findActivity(): Activity? = when (this) {
         is Activity -> this
         is ContextWrapper -> baseContext.findActivity()

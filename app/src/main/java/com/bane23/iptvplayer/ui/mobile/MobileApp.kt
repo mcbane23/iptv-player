@@ -51,6 +51,7 @@ import com.bane23.iptvplayer.ui.common.navigation.Playlists
 import com.bane23.iptvplayer.ui.common.navigation.Search
 import com.bane23.iptvplayer.ui.common.navigation.SendToTv
 import com.bane23.iptvplayer.ui.common.navigation.TransferToTv
+import com.bane23.iptvplayer.ui.common.navigation.BackupRestore
 import com.bane23.iptvplayer.ui.common.navigation.SeriesDetails
 import com.bane23.iptvplayer.ui.common.navigation.VodSearch
 
@@ -117,6 +118,7 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     onUnlock = { backStack.push(Unlock) },
                     onTrakt = { backStack.push(TraktAccount) },
                     onTransfer = { backStack.push(TransferToTv) },
+                    onBackup = { backStack.push(BackupRestore) },
                     onOpenSubtitles = { backStack.push(OpenSubtitlesAccount) },
                     onRecordings = { backStack.push(Recordings) },
                     onDownloads = { backStack.push(Downloads) },
@@ -245,6 +247,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                 MobileCastRemoteScreen(
                     onClose = { if (backStack.lastOrNull() is CastRemote) backStack.removeLastOrNull() },
                 )
+            }
+            entry<BackupRestore> {
+                MobileBackupScreen(onBack = { backStack.removeLastOrNull() })
             }
             entry<TransferToTv> {
                 MobileSendToTvScreen(target = null, onClose = { backStack.removeLastOrNull() })

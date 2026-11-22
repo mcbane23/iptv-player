@@ -71,6 +71,10 @@ data class SendToTv(val target: String) : NavKey
 @Serializable
 data object TransferToTv : NavKey
 
+/** Izvoz svih lista i podešavanja u fajl i uvoz iz njega. */
+@Serializable
+data object BackupRestore : NavKey
+
 /** Arhiva kanala: spisak emisija koje su prošle i mogu da se pogledaju. */
 @Serializable
 data class ChannelArchive(val channelId: Long) : NavKey

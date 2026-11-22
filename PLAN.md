@@ -596,7 +596,17 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   zatvara (pozicija filma ostaje sačuvana, veza kod provajdera se oslobađa). Važi za kanale, filmove i serije,
   na TV-u i telefonu. Multi view drži ekran upaljen samo dok bar jedno polje pušta ili učitava sliku.
 - Odbijeno (Bane, 17. 11. 2026): pauza i premotavanje programa uživo (timeshift), nema potrebe.
-- Odbijeno (Bane, 17. 11. 2026): rezervna kopija u fajl i pojačanje zvuka preko 100%.
+- Odbijeno (Bane, 17. 11. 2026): pojačanje zvuka preko 100%. Rezervna kopija u fajl je tada takođe bila
+  odbijena, ali je Bane 22. 11. 2026. ipak zatražio (stavka ispod).
+- [x] Izvoz i uvoz u fajl (Bane, 22. 11. 2026): Podešavanja > Nalozi i uređaji > „Izvoz i uvoz”, na telefonu
+  i TV-u. U fajl ide sve: liste sa prijavama (i lista iz fajla, sa sadržajem), omiljeni i imenovane liste
+  omiljenih, sakriveni kanali, uređenje kategorija, zaključavanja i otisak PIN-a, istorija i pozicije
+  gledanja, podsetnici, OpenSubtitles i Trakt nalog, jezik i sva podešavanja. Snimci i preuzeto ne ulaze.
+  Banetove odluke: lozinka se nudi pri svakom izvozu (prazna = čitljiv JSON, uneta = ceo fajl šifrovan);
+  uvoz svaki put pita „Dopuni postojeće” ili „Zameni sve”; telefon bira fajl sistemskim biračem, TV piše u
+  Download/Glowbox i nudi fajlove iz tog foldera (za fajl koji nije sam napravio traži pristup svim
+  fajlovima); dekoder, veličina prikaza i folder snimaka se vraćaju samo na istoj vrsti uređaja. Postojeći
+  PIN i zaključavanja uvoz nikad ne skida. Format: `data/backup/Backup.kt`, oslonjen na `TransferBundle`.
 - [x] Program kanala u plejeru (Bane, 18. 11. 2026, treći krug predloga): dugme „Program” otvara raspored
       kanala koji se gleda (emisija u toku i narednih 24 sata) preko slike, na TV-u i telefonu. Buduća
       emisija nudi „Podseti me” i zakazivanje snimanja, tekuća snimanje do kraja; kanal sa arhivom ima
