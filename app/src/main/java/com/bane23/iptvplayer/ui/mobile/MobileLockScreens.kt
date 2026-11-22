@@ -40,6 +40,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Pin
+import androidx.compose.ui.platform.LocalContext
+import com.bane23.iptvplayer.ui.common.AppMessages
 import com.bane23.iptvplayer.ui.common.lock.GateStatus
 import com.bane23.iptvplayer.ui.common.lock.LockItem
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
@@ -130,6 +132,13 @@ fun MobilePinGate(
 @Composable
 fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku.
+    val lockAgain = {
+        viewModel.lockAgain()
+        AppMessages.show(context, R.string.parental_locked)
+        onBack()
+    }
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -159,7 +168,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
                             modifier = Modifier.padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            OutlinedButton(onClick = viewModel::lockAgain, modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(onClick = lockAgain, modifier = Modifier.fillMaxWidth()) {
                                 Text(stringResource(R.string.parental_lock_again))
                             }
                             OutlinedButton(onClick = viewModel::changePin, modifier = Modifier.fillMaxWidth()) {

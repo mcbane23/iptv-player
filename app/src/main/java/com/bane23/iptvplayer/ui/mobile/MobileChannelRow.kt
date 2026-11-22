@@ -174,6 +174,8 @@ fun MobileChannelCard(
     onGuide: ((Channel) -> Unit)? = null,
     // Sakrivanje kanala se nudi samo u spisku Uživo.
     onHide: ((Channel) -> Unit)? = null,
+    // Uklanjanje iz nedavno gledanih se nudi samo u grupi „Nedavno”.
+    onRemoveRecent: ((Channel) -> Unit)? = null,
 ) {
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
@@ -284,6 +286,17 @@ fun MobileChannelCard(
                         onClick = {
                             menuOpen = false
                             onGuide(channel)
+                        },
+                    )
+                }
+                if (onRemoveRecent != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.recent_remove)) },
+                        // Prazno mesto ikonice, da tekst stoji u liniji sa stavkama iznad.
+                        leadingIcon = { Spacer(modifier = Modifier.size(24.dp)) },
+                        onClick = {
+                            menuOpen = false
+                            onRemoveRecent(channel)
                         },
                     )
                 }

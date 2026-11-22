@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Sakrivanje pojedinačnih kanala i spisak sakrivenih (aktivna lista i liste spojene sa njom). */
+/** Sakrivanje pojedinačnih kanala, uklanjanje iz nedavno gledanih i spisak sakrivenih (aktivna lista i liste spojene sa njom). */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HiddenChannelsViewModel @Inject constructor(private val repository: ChannelRepository) : ViewModel() {
@@ -25,6 +25,14 @@ class HiddenChannelsViewModel @Inject constructor(private val repository: Channe
 
     fun hide(channelId: Long) {
         viewModelScope.launch { repository.hideChannel(channelId) }
+    }
+
+    fun removeFromRecent(channelId: Long) {
+        viewModelScope.launch { repository.removeFromRecent(channelId) }
+    }
+
+    fun clearRecent() {
+        viewModelScope.launch { repository.clearRecent() }
     }
 
     fun show(channel: HiddenChannelEntity) {

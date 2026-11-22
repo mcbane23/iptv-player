@@ -36,6 +36,8 @@ import androidx.tv.material3.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.domain.Pin
+import androidx.compose.ui.platform.LocalContext
+import com.bane23.iptvplayer.ui.common.AppMessages
 import com.bane23.iptvplayer.ui.common.lock.GateStatus
 import com.bane23.iptvplayer.ui.common.lock.LockItem
 import com.bane23.iptvplayer.ui.common.lock.LockTarget
@@ -174,8 +176,15 @@ fun TvPinGate(
 
 /** Roditeljska zaštita na TV-u: PIN i izbor zaključanih kategorija. */
 @Composable
-fun TvParentalScreen(viewModel: ParentalViewModel = hiltViewModel()) {
+fun TvParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Posle zaključavanja ekran se zatvara: PIN se traži tek pri sledećem ulasku.
+    val lockAgain = {
+        viewModel.lockAgain()
+        AppMessages.show(context, R.string.parental_locked)
+        onBack()
+    }
     val firstRow = remember { FocusRequester() }
     Column(
         modifier = Modifier
@@ -216,7 +225,7 @@ fun TvParentalScreen(viewModel: ParentalViewModel = hiltViewModel()) {
                     item(key = "lock-again") {
                         TvTextRow(
                             text = stringResource(R.string.parental_lock_again),
-                            onClick = viewModel::lockAgain,
+                            onClick = lockAgain,
                             modifier = Modifier.focusRequester(firstRow),
                         )
                     }

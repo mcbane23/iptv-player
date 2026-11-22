@@ -281,6 +281,11 @@ Redosled unutar faze po želji vlasnika.
       „Arhiva” prikazuje prošle emisije kanala po danima. Za Xtream spisak daje server; za M3U se pravi
       iz sačuvanog vodiča (čuva se do 7 dana unazad za kanale sa arhivom)
 - [x] Roditeljska zaštita PIN-om (zaključavanje kategorija)
+- [x] Roditeljska zaštita, pooštrena: „Zaključaj ponovo” zatvara ekran bez traženja PIN-a; uneti PIN važi
+      samo dok se ne izađe iz aplikacije (pozadina, gašenje ili uspavljivanje TV-a); kanali zaključanih
+      kategorija se nikad ne pamte u „Nedavno”
+- [x] „Nedavno gledano”: dugi pritisak (dugo OK) na kanal nudi „Ukloni iz nedavno gledanih”, a na samu
+      grupu „Obriši sve nedavno gledane” (telefon i TV)
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a
       i pošalje podatke liste (urađeno uz Fazu 6, čeka probu)
 - [x] Izvoz i uvoz podešavanja i lista (prebacivanje sa telefona na TV): sa stranice koju otvara QR kod

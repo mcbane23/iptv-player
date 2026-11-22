@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -55,28 +57,34 @@ class PinGateViewModel @Inject constructor(
     fun check(target: LockTarget) {
         if (checked) return
         checked = true
+        // Provera se ponavlja kad se stanje zaključavanja promeni: sadržaj otvoren posle PIN-a se ponovo
+        // zatvara čim se zaključa (izlazak iz aplikacije, „Zaključaj ponovo”).
         viewModelScope.launch {
-            val locked = when (target) {
-                is LockTarget.Channel -> locks.isChannelLocked(target.channelId)
-                is LockTarget.Recording -> locks.isRecordingLocked(target.recordingId)
-                LockTarget.Everything -> locks.anythingLocked()
-                is LockTarget.Vod -> try {
-                    vod.isLocked(if (target.series) VodKind.SERIES else VodKind.MOVIES, target.itemId)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // Bez spiska sa servera ne zna se da li je zaključano; tada se traži PIN.
-                    locks.activeKeysNow().isNotEmpty()
-                }
-            }
-            _state.update { it.copy(status = if (locked) GateStatus.LOCKED else GateStatus.OPEN) }
+            locks.activeKeys.distinctUntilChanged().collectLatest { evaluate(target) }
         }
+    }
+
+    private suspend fun evaluate(target: LockTarget) {
+        val locked = when (target) {
+            is LockTarget.Channel -> locks.isChannelLocked(target.channelId)
+            is LockTarget.Recording -> locks.isRecordingLocked(target.recordingId)
+            LockTarget.Everything -> locks.anythingLocked()
+            is LockTarget.Vod -> try {
+                vod.isLocked(if (target.series) VodKind.SERIES else VodKind.MOVIES, target.itemId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Bez spiska sa servera ne zna se da li je zaključano; tada se traži PIN.
+                locks.activeKeysNow().isNotEmpty()
+            }
+        }
+        _state.update { if (locked) it.copy(status = GateStatus.LOCKED) else GateUiState(GateStatus.OPEN) }
     }
 
     fun submit(pin: String) {
         viewModelScope.launch {
-            val ok = locks.unlock(pin)
-            _state.update { if (ok) GateUiState(GateStatus.OPEN) else it.copy(wrongPin = true) }
+            // Tačan PIN menja stanje zaključavanja, pa se sadržaj otvara kroz ponovljenu proveru.
+            if (!locks.unlock(pin)) _state.update { it.copy(wrongPin = true) }
         }
     }
 }

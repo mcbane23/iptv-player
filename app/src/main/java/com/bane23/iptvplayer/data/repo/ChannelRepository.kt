@@ -270,8 +270,22 @@ class ChannelRepository @Inject constructor(
     /** Beleži da je kanal upravo gledan. */
     suspend fun markWatched(channelId: Long) = db.withTransaction {
         val channel = channelDao.getById(channelId) ?: return@withTransaction
+        // Kanal iz zaključane kategorije se ne pamti, ni kad se gleda posle unosa PIN-a.
+        if (locks.isInLockedCategory(channel.playlistId, channel.stableKey)) return@withTransaction
         historyDao.upsert(HistoryEntity(channel.playlistId, channel.stableKey, System.currentTimeMillis()))
         historyDao.trim(channel.playlistId, HISTORY_SIZE)
+    }
+
+    /** Uklanja kanal iz nedavno gledanih. */
+    suspend fun removeFromRecent(channelId: Long) {
+        val channel = channelDao.getById(channelId) ?: return
+        historyDao.delete(channel.playlistId, channel.stableKey)
+    }
+
+    /** Briše sve nedavno gledane kanale aktivne liste i lista spojenih sa njom. */
+    suspend fun clearRecent() {
+        val playlistId = settings.activePlaylistId.first() ?: return
+        historyDao.clearScope(playlistId)
     }
 
     val resumeLastChannel: Flow<Boolean> = settings.resumeLastChannel

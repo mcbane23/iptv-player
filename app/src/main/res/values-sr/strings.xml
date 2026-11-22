@@ -106,6 +106,9 @@
     <string name="category_favorites">Favoriti</string>
     <string name="category_recent">Nedavno gledano</string>
     <string name="category_chip_all">Svi</string>
+    <string name="recent_remove">Ukloni iz nedavno gledanih</string>
+    <string name="recent_clear">Obriši sve nedavno gledane</string>
+    <string name="recent_clear_confirm">Obrisati sve nedavno gledane kanale?</string>
     <string name="category_chip_recent">Nedavno</string>
     <string name="category_chip_more">Kategorije</string>
     <string name="favorite_add">Dodaj u favorite</string>
@@ -337,7 +340,7 @@
     <string name="archive_hint_tv">OK otvara arhivu</string>
     <string name="parental_title">Roditeljska zaštita</string>
     <string name="parental_intro">Postavi PIN od četiri cifre. Posle toga biraš kategorije koje se otvaraju tek posle unosa PIN-a.</string>
-    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Unet PIN važi dok se aplikacija ne zatvori.</string>
+    <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Unet PIN važi dok ne izađeš iz aplikacije. Kanali zaključanih kategorija se ne pamte među nedavno gledanim.</string>
     <string name="parental_lock_again">Zaključaj ponovo</string>
     <string name="parental_change_pin">Promeni PIN</string>
     <string name="parental_remove_pin">Ukloni PIN i sva zaključavanja</string>

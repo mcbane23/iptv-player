@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
- * Roditeljska zaštita: PIN i zaključane kategorije. Tačan PIN otključava sve do gašenja
- * aplikacije (ili dok se u podešavanjima ponovo ne zaključa).
+ * Roditeljska zaštita: PIN i zaključane kategorije. Tačan PIN otključava sve dok se ne izađe iz
+ * aplikacije (vidi `MainActivity.onStop`) ili dok se u podešavanjima ponovo ne zaključa.
  */
 @Singleton
 class LockRepository @Inject constructor(
@@ -65,6 +65,31 @@ class LockRepository @Inject constructor(
                 }
             }
         }
+        // Kanali zaključanih kategorija se ne pamte među nedavno gledanim, ni dok je otključano: što je
+        // već zapamćeno briše se čim se kategorija zaključa (i posle osvežavanja liste).
+        scope.launch {
+            combine(settings.lockedCategories, db.categoryDao().observeAllLive()) { keys, categories ->
+                categories.filter { liveKey(it.playlistId, it.name) in keys }.map { it.id }.toSet()
+            }.distinctUntilChanged().collect { ids ->
+                try {
+                    ids.chunked(ID_CHUNK).forEach { db.historyDao().deleteOfCategories(it) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Sledeća promena u bazi ili podešavanjima pokušava ponovo.
+                }
+            }
+        }
+    }
+
+    /**
+     * Da li je strim u kategoriji koja je izabrana za zaključavanje, bez obzira na to da li je PIN sada
+     * unet. Takav kanal ne ulazi u nedavno gledane.
+     */
+    suspend fun isInLockedCategory(playlistId: Long, stableKey: String): Boolean {
+        val keys = settings.lockedCategories.first()
+        if (keys.isEmpty()) return false
+        return db.channelDao().categoryNamesOf(playlistId, stableKey).any { liveKey(playlistId, it) in keys }
     }
 
     /** Proverava PIN; tačan otključava zaključane kategorije. */
@@ -117,10 +142,10 @@ class LockRepository @Inject constructor(
     }
 
     companion object {
-        /** Oznaka ispred naziva kategorije koja je sada zaključana. */
         /** SQLite prima ograničen broj vrednosti u jednom upitu. */
         private const val ID_CHUNK = 500
 
+        /** Oznaka ispred naziva kategorije koja je sada zaključana. */
         const val LOCK_MARK = "\uD83D\uDD12 "
 
         /** Kategorija kanala se pamti po nazivu, jer se njen ID menja kad se lista osveži. */

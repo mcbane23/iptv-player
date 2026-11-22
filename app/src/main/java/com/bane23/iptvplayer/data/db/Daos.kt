@@ -235,6 +235,13 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun getById(id: Long): ChannelEntity?
 
+    /** Nazivi svih kategorija u kojima je strim [stableKey] (isti strim može biti u više njih). */
+    @Query(
+        "SELECT cat.name FROM channels ch JOIN categories cat ON cat.id = ch.categoryId " +
+            "WHERE ch.playlistId = :playlistId AND ch.stableKey = :stableKey",
+    )
+    suspend fun categoryNamesOf(playlistId: Long, stableKey: String): List<String>
+
     @Query("SELECT * FROM channels WHERE playlistId = :playlistId AND stableKey = :stableKey LIMIT 1")
     suspend fun byStableKey(playlistId: Long, stableKey: String): ChannelEntity?
 
@@ -582,6 +589,20 @@ interface HistoryDao {
 
     @Query("DELETE FROM history WHERE playlistId = :playlistId")
     suspend fun clear(playlistId: Long)
+
+    /** Briše sve nedavno gledano liste [playlistId] i lista spojenih sa njom. */
+    @Query("DELETE FROM history WHERE playlistId IN $SCOPE_IDS")
+    suspend fun clearScope(playlistId: Long)
+
+    @Query("DELETE FROM history WHERE playlistId = :playlistId AND channelKey = :channelKey")
+    suspend fun delete(playlistId: Long, channelKey: String)
+
+    /** Briše iz nedavno gledanih kanale koji su u nekoj od kategorija [categoryIds]. */
+    @Query(
+        "DELETE FROM history WHERE EXISTS(SELECT 1 FROM channels ch WHERE ch.playlistId = history.playlistId " +
+            "AND ch.stableKey = history.channelKey AND ch.categoryId IN (:categoryIds))",
+    )
+    suspend fun deleteOfCategories(categoryIds: List<Long>)
 }
 
 @Dao
