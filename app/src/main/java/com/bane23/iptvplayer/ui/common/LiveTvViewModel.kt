@@ -465,6 +465,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setDownloadOnMobile(enabled) }
     }
 
+    val autoNextEpisode: StateFlow<Boolean> = settings.autoNextEpisode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAutoNextEpisode(enabled: Boolean) {
+        viewModelScope.launch { settings.setAutoNextEpisode(enabled) }
+    }
+
     val pauseInfo: StateFlow<Boolean> = settings.pauseInfo
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 

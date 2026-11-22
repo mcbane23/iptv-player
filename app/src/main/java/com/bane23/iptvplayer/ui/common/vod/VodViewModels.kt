@@ -628,7 +628,7 @@ class VodSearchViewModel @Inject constructor(
                 return@launch
             }
             val results = withContext(Dispatchers.Default) {
-                items.asSequence().filter { (name, _) -> needle in name }.map { it.second }.take(MAX_RESULTS).toList()
+                com.bane23.iptvplayer.data.text.SearchText.search(items, needle, MAX_RESULTS)
             }
             _state.update { it.copy(loading = false, results = results) }
         }
@@ -644,11 +644,7 @@ class VodSearchViewModel @Inject constructor(
 
 /** Poređenje naziva za pretragu: mala slova, bez kvačica, „đ” kao „dj”. */
 object VodSearch {
-    private val marks = Regex("\\p{Mn}+")
-
-    fun normalize(text: String): String =
-        java.text.Normalizer.normalize(text.trim().lowercase().replace("đ", "dj"), java.text.Normalizer.Form.NFD)
-            .replace(marks, "")
+    fun normalize(text: String): String = com.bane23.iptvplayer.data.text.SearchText.normalize(text)
 }
 
 /** TMDB ID iz spiska na serveru; kad spisak ne može da se učita, ekran radi i bez njega. */

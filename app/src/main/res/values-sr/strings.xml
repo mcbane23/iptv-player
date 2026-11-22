@@ -152,6 +152,7 @@
     <string name="guide_not_loaded">Vodič još nije učitan.</string>
     <string name="epg_now">Sada %1$s: %2$s</string>
     <string name="epg_next">Sledeće %1$s: %2$s</string>
+    <string name="epg_progress">Prošlo %1$d min, još %2$d min</string>
     <string name="action_close">Zatvori</string>
     <string name="field_epg_url">EPG link (opciono)</string>
     <string name="field_epg_url_hint">Ostavite prazno da se koristi vodič koji dolazi uz listu</string>
@@ -185,6 +186,7 @@
     <string name="vod_seek_forward">+%1$d s</string>
     <string name="next_card_countdown">Sledeća epizoda za %1$d s</string>
     <string name="next_card_still_watching">Još gledate?</string>
+    <string name="next_card_title">Sledeća epizoda</string>
     <string name="next_card_play_now">Pusti odmah</string>
     <string name="next_card_continue">Da, nastavi</string>
     <string name="next_card_key_ok">OK: %1$s</string>
@@ -341,7 +343,9 @@
     <string name="archive_title">Arhiva</string>
     <string name="archive_empty">Za ovaj kanal još nema prošlih emisija. Spisak arhive se pravi iz TV vodiča.</string>
     <string name="archive_failed">Spisak arhive nije mogao da se učita.</string>
-    <string name="archive_hint_tv">OK otvara arhivu</string>
+    <string name="archive_hint_tv">OK: pusti emisiju ili gledaj uživo</string>
+    <string name="archive_play_program">Pusti emisiju</string>
+    <string name="archive_watch_live">Gledaj uživo</string>
     <string name="parental_title">Roditeljska zaštita</string>
     <string name="parental_intro">Postavi PIN od četiri cifre. Posle toga biraš kategorije koje se otvaraju tek posle unosa PIN-a.</string>
     <string name="parental_hint">Zaključane kategorije ostaju vidljive sa katancem. Kanali zaključane kategorije se ne vide nigde dok se ne unese PIN, a filmovi i serije traže PIN pri otvaranju. Pojedinačno zaključan kanal, film ili serija se ne vidi nigde dok se ne unese PIN. Za brzo zaključavanje i otključavanje dugo pritisni kategoriju, kanal, film ili seriju. Unet PIN važi dok ne izađeš iz aplikacije. Zaključani kanali se ne pamte među nedavno gledanim.</string>
@@ -691,6 +695,8 @@
     <string name="pause_next">Sledi u %1$s: %2$s</string>
     <string name="settings_pause_info">Ekran pauze</string>
     <string name="settings_pause_info_summary">Posle 10 sekundi pauze umesto kontrola se vide naslov, opis, koliko je ostalo i sat. Kad je isključeno, slika se samo zatamni. Prvi taster ili dodir vraća kontrole.</string>
+    <string name="settings_auto_next">Automatski pusti sledeću epizodu</string>
+    <string name="settings_auto_next_summary">Kad se epizoda završi, sledeća kreće sama. Kad je isključeno, kartica na kraju epizode je samo nudi.</string>
     <string name="downloads_title">Preuzeto</string>
     <string name="downloads_empty">Ovde su filmovi i epizode koje preuzmeš na telefon. Dugme „Preuzmi” je u detaljima filma i pored svake epizode.</string>
     <string name="download_action">Preuzmi</string>

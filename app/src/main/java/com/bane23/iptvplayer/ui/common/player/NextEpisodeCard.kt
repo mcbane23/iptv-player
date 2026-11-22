@@ -51,6 +51,8 @@ fun NextEpisodeCard(
         Text(
             text = if (card.stillWatching) {
                 stringResource(R.string.next_card_still_watching)
+            } else if (!card.auto) {
+                stringResource(R.string.next_card_title)
             } else {
                 stringResource(R.string.next_card_countdown, card.secondsLeft)
             },

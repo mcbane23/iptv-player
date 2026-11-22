@@ -143,6 +143,9 @@ fun MobileApp(sendTarget: String? = null, onSendTargetHandled: () -> Unit = {}) 
                     categoryId = key.categoryId,
                     onPlay = { channelId -> backStack.push(Player(channelId, key.categoryId)) },
                     onArchive = { channelId -> backStack.push(ChannelArchive(channelId)) },
+                    onPlayArchive = { channelId, program ->
+                        backStack.push(PlayArchive(channelId, program.startMs, program.stopMs, program.title, startToken = null))
+                    },
                     onBack = { backStack.removeLastOrNull() },
                 )
             }

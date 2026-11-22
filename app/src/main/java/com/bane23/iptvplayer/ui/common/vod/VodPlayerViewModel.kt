@@ -97,6 +97,8 @@ data class NextCard(
     val title: String,
     val secondsLeft: Int,
     val stillWatching: Boolean,
+    /** Sledeća kreće sama kad odbrojavanje istekne; false kad je to isključeno u Podešavanjima. */
+    val auto: Boolean = true,
 )
 
 /** Pretraga titlova na internetu za ono što se gleda. */
@@ -185,13 +187,14 @@ class VodPlayerViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch { settings.autoNextEpisode.collect { autoNext = it } }
         // Kad se epizoda završi, kreće sledeća.
         viewModelScope.launch {
             playback.map { it.ended }.distinctUntilChanged().collect { ended ->
                 if (ended) {
                     saveProgress(finished = true)
                     // Sledeća kreće sama, osim kad je gledalac odustao na kartici ili treba da potvrdi da još gleda.
-                    if (_ui.value.hasNext && !nextCancelled && !NextEpisode.needsConfirmation(autoAdvances)) {
+                    if (autoNext && _ui.value.hasNext && !nextCancelled && !NextEpisode.needsConfirmation(autoAdvances)) {
                         autoAdvances++
                         advance()
                     }
@@ -339,6 +342,9 @@ class VodPlayerViewModel @Inject constructor(
     /** Koliko je epizoda zaredom krenulo samo, bez ijednog dodira daljinskog ili ekrana. */
     private var autoAdvances = 0
 
+    /** Podešavanje „Automatski pusti sledeću epizodu”. */
+    private var autoNext = true
+
     private fun nextCard(positionMs: Long, durationMs: Long): NextCard? {
         if (nextCancelled) return null
         val current = item ?: return null
@@ -349,7 +355,8 @@ class VodPlayerViewModel @Inject constructor(
             episode = following.number,
             title = following.title,
             secondsLeft = seconds,
-            stillWatching = NextEpisode.needsConfirmation(autoAdvances),
+            stillWatching = autoNext && NextEpisode.needsConfirmation(autoAdvances),
+            auto = autoNext,
         )
     }
 

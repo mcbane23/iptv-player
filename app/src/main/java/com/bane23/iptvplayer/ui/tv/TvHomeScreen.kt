@@ -88,6 +88,7 @@ fun TvHomeScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
     onSearch: () -> Unit,
     onArchive: (channelId: Long) -> Unit,
+    onPlayArchive: (channelId: Long, program: com.bane23.iptvplayer.domain.Program) -> Unit,
     onOpenVod: (item: VodItem, series: Boolean) -> Unit,
     onSearchVod: (series: Boolean) -> Unit,
     onAddPlaylist: () -> Unit,
@@ -241,6 +242,7 @@ fun TvHomeScreen(
                             categoryId = null,
                             onPlay = { channelId -> onPlay(channelId, null) },
                             onArchive = onArchive,
+                            onPlayArchive = onPlayArchive,
                             viewModel = hiltViewModel<GuideViewModel>(key = "guide-$playlistId"),
                         )
                     }

@@ -67,7 +67,7 @@ import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.recording.recordingChoices
 import com.bane23.iptvplayer.ui.common.recording.rememberRecordingToggle
 import com.bane23.iptvplayer.domain.NowNext
-import com.bane23.iptvplayer.ui.common.guide.nextLine
+import com.bane23.iptvplayer.ui.common.guide.infoLines
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.PlaybackStatus
@@ -434,12 +434,12 @@ private fun LiveControls(
                     modifier = barModifier,
                 )
             }
-            nowNext.nextLine()?.let { line ->
+            nowNext.infoLines(now)?.let { line ->
                 Text(
                     text = line,
                     color = Color.White.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))

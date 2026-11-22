@@ -153,6 +153,7 @@
     <string name="guide_not_loaded">The guide has not been loaded yet.</string>
     <string name="epg_now">Now %1$s: %2$s</string>
     <string name="epg_next">Next %1$s: %2$s</string>
+    <string name="epg_progress">%1$d min in, %2$d min left</string>
     <string name="action_close">Close</string>
     <string name="field_epg_url">EPG link (optional)</string>
     <string name="field_epg_url_hint">Leave empty to use the guide that comes with the playlist</string>
@@ -186,6 +187,7 @@
     <string name="vod_seek_forward">+%1$d s</string>
     <string name="next_card_countdown">Next episode in %1$d s</string>
     <string name="next_card_still_watching">Still watching?</string>
+    <string name="next_card_title">Next episode</string>
     <string name="next_card_play_now">Play now</string>
     <string name="next_card_continue">Yes, continue</string>
     <string name="next_card_key_ok">OK: %1$s</string>
@@ -343,7 +345,9 @@
     <string name="archive_title">Archive</string>
     <string name="archive_empty">There are no past programs for this channel yet. The archive list is built from the TV guide.</string>
     <string name="archive_failed">The archive list could not be loaded.</string>
-    <string name="archive_hint_tv">OK opens the archive</string>
+    <string name="archive_hint_tv">OK: play the program or watch live</string>
+    <string name="archive_play_program">Play program</string>
+    <string name="archive_watch_live">Watch live</string>
     <string name="parental_title">Parental control</string>
     <string name="parental_intro">Set a four-digit PIN. Then choose the categories that open only after the PIN is entered.</string>
     <string name="parental_hint">Locked categories stay visible with a padlock. Channels of a locked category are hidden everywhere until the PIN is entered; movies and series ask for the PIN when opened. A channel, movie or series locked on its own is hidden everywhere until the PIN is entered. To lock or unlock quickly, long-press a category, channel, movie or series. An entered PIN stays valid until you leave the app. Locked channels are never kept in recently watched.</string>
@@ -690,6 +694,8 @@
     <string name="pause_next">Next at %1$s: %2$s</string>
     <string name="settings_pause_info">Pause screen</string>
     <string name="settings_pause_info_summary">After 10 seconds of pause the controls give way to the title, description, time left and a clock. When off, the picture just dims. The first key or touch brings the controls back.</string>
+    <string name="settings_auto_next">Play the next episode automatically</string>
+    <string name="settings_auto_next_summary">When an episode ends, the next one starts by itself. When off, the card at the end of the episode only offers it.</string>
     <string name="downloads_title">Downloads</string>
     <string name="downloads_empty">Movies and episodes you download to the phone show up here. The Download button is in movie details and next to every episode.</string>
     <string name="download_action">Download</string>
