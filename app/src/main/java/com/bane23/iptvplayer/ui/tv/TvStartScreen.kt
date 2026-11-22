@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,11 +34,15 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +50,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import coil3.compose.AsyncImage
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.data.repo.ContinueItem
 import com.bane23.iptvplayer.data.repo.VodItem
@@ -52,7 +58,9 @@ import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.ui.common.ChannelLogo
+import com.bane23.iptvplayer.ui.common.StartPreview
 import com.bane23.iptvplayer.ui.common.TvStartViewModel
+import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.vod.VodLoading
@@ -77,6 +85,7 @@ fun TvStartScreen(
     val added by viewModel.added.collectAsStateWithLifecycle()
     val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
     val favoriteSeries by viewModel.favoriteSeries.collectAsStateWithLifecycle()
+    val preview by viewModel.preview.collectAsStateWithLifecycle()
     val now by rememberNow()
     var menuContinue by remember { mutableStateOf<ContinueItem?>(null) }
     // Posle sklanjanja stavke fokus se vraća u redove, da ne ode u bočni meni.
@@ -141,11 +150,13 @@ fun TvStartScreen(
         if (rowsFocus.tryRequestFocus()) onAutoFocused()
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(top = 27.dp)) {
-        TvHeader(
-            title = stringResource(R.string.nav_home),
-            modifier = Modifier.padding(start = 48.dp, end = 48.dp, bottom = 8.dp),
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (empty || nothing) {
+            TvHeader(
+                title = stringResource(R.string.nav_home),
+                modifier = Modifier.padding(start = 48.dp, top = 27.dp, end = 48.dp, bottom = 8.dp),
+            )
+        }
         if (empty) {
             TvEmptyState(
                 icon = AppIcons.Star,
@@ -164,6 +175,7 @@ fun TvStartScreen(
             }
             return@Column
         }
+        StartHero(preview = preview, nowMs = now)
         LazyColumn(
             modifier = Modifier.fillMaxSize().focusRequester(rowsFocus).focusGroup(),
             contentPadding = PaddingValues(bottom = 27.dp),
@@ -181,7 +193,10 @@ fun TvStartScreen(
                                     returning = true
                                     onOpenVod(item.toVodItem(), item.isSeries)
                                 },
-                                onFocused = { lastFocusKey = focusKey },
+                                onFocused = {
+                                    lastFocusKey = focusKey
+                                    viewModel.focusVod(item.id, item.name, item.poster, item.isSeries)
+                                },
                                 onLongClick = { menuContinue = item },
                                 modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
                             )
@@ -203,7 +218,10 @@ fun TvStartScreen(
                                     returning = true
                                     onPlay(channel.id, group)
                                 },
-                                onFocused = { lastFocusKey = focusKey },
+                                onFocused = {
+                                    lastFocusKey = focusKey
+                                    viewModel.focusChannel(channel)
+                                },
                                 modifier = Modifier.returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
                             )
                         }
@@ -222,7 +240,10 @@ fun TvStartScreen(
                                     returning = true
                                     onOpenVod(item, false)
                                 },
-                                onFocused = { lastFocusKey = focusKey },
+                                onFocused = {
+                                    lastFocusKey = focusKey
+                                    viewModel.focusVod(item.id, item.name, item.poster, series = false, year = item.year, rating = item.rating)
+                                },
                                 favorite = item.id in favoriteMovies,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = false) },
                                 modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
@@ -243,7 +264,10 @@ fun TvStartScreen(
                                     returning = true
                                     onOpenVod(item, true)
                                 },
-                                onFocused = { lastFocusKey = focusKey },
+                                onFocused = {
+                                    lastFocusKey = focusKey
+                                    viewModel.focusVod(item.id, item.name, item.poster, series = true, year = item.year, rating = item.rating)
+                                },
                                 favorite = item.id in favoriteSeries,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = true) },
                                 modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
@@ -261,6 +285,108 @@ fun TvStartScreen(
 }
 
 /** Mala poruka ispod redova dok se red „nedavno dodato” prvi put preuzima. */
+/**
+ * Veliki prikaz stavke u fokusu, iznad redova: naziv, godina, ocena, žanr i opis filma ili serije sa
+ * slikom na desnoj strani, odnosno logo kanala i emisija koja traje. Visina je stalna, da redovi
+ * ispod ne skaču dok opis stiže. Dok fokus nije ni na jednoj stavci, tu je naslov ekrana.
+ */
+@Composable
+private fun StartHero(preview: StartPreview?, nowMs: Long) {
+    val colors = MaterialTheme.colorScheme
+    Box(modifier = Modifier.fillMaxWidth().height(HERO_HEIGHT)) {
+        val image = preview?.image
+        if (preview != null && !preview.channel && !image.isNullOrBlank()) {
+            AsyncImage(
+                model = image,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.62f)
+                    .alpha(if (preview.wide) 0.75f else 0.35f),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            0.38f to colors.background,
+                            0.75f to colors.background.copy(alpha = 0.2f),
+                            1f to Color.Transparent,
+                        ),
+                    ),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to colors.background)),
+            )
+        }
+        TvClock(modifier = Modifier.align(Alignment.TopEnd).padding(top = 27.dp, end = 48.dp))
+        if (preview == null) {
+            Text(
+                text = stringResource(R.string.nav_home),
+                style = MaterialTheme.typography.headlineMedium,
+                color = colors.onBackground,
+                modifier = Modifier.padding(start = 48.dp, top = 27.dp),
+            )
+            return@Box
+        }
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 48.dp, top = 20.dp)
+                .fillMaxWidth(0.58f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (preview.channel) {
+                ChannelLogo(url = preview.image, name = preview.title, size = 64.dp)
+            }
+            Column(modifier = Modifier.padding(start = if (preview.channel) 18.dp else 0.dp)) {
+                Text(
+                    text = preview.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = colors.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val meta = if (preview.channel) {
+                    val start = preview.startMs
+                    val stop = preview.stopMs
+                    if (start != null && stop != null && stop > nowMs) formatTime(start) + " – " + formatTime(stop) else ""
+                } else {
+                    listOfNotNull(
+                        preview.year.takeIf { it > 0 }?.toString(),
+                        preview.rating?.let { "★ $it" },
+                        preview.genre,
+                    ).joinToString(" · ")
+                }
+                if (meta.isNotEmpty()) {
+                    Text(
+                        text = meta,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                preview.text?.let { text ->
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                        maxLines = if (preview.channel) 1 else 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun LoadingRow(series: Boolean) {
     val accent = MaterialTheme.colorScheme.primary
@@ -383,6 +509,7 @@ private fun ChannelTile(
 }
 
 private val POSTER_WIDTH = 132.dp
+private val HERO_HEIGHT = 176.dp
 private val CHANNEL_WIDTH = 240.dp
 private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L

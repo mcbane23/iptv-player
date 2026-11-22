@@ -17,6 +17,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -44,6 +46,44 @@ data class StartAdded(
     val loaded: Boolean = false,
     val loading: VodKind? = null,
 )
+
+/**
+ * Stavka u fokusu na „Početnoj”, za veliki prikaz na vrhu ekrana. Za film i seriju [text] je opis, a
+ * [image] široka slika (ili poster dok ona ne stigne); za kanal je [text] emisija koja traje, sa
+ * vremenom od [startMs] do [stopMs].
+ */
+data class StartPreview(
+    val key: String,
+    val title: String,
+    val image: String? = null,
+    val wide: Boolean = false,
+    val channel: Boolean = false,
+    val year: Int = 0,
+    val rating: String? = null,
+    val genre: String? = null,
+    val text: String? = null,
+    val startMs: Long? = null,
+    val stopMs: Long? = null,
+)
+
+/** Godina iz datuma izlaska kakav šalje panel („2021-05-14”, „2021”); 0 kad je nema. */
+internal fun releaseYear(date: String?): Int =
+    date?.let { Regex("(19|20)\\d{2}").find(it) }?.value?.toIntOrNull() ?: 0
+
+/** Ocena za prikaz; null za praznu i nulu, koje paneli šalju kad ocene nema. */
+internal fun shownRating(rating: String?): String? =
+    rating?.trim()?.takeIf { text -> (text.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0 }
+
+/** Dopunjava osnovni prikaz podacima iz detalja; ono što spisak već ima ostaje. */
+internal fun StartPreview.withDetails(plot: String?, genre: String?, releaseDate: String?, rating: String?, backdrop: String?): StartPreview =
+    copy(
+        text = plot?.trim()?.takeIf { it.isNotEmpty() },
+        genre = genre?.trim()?.takeIf { it.isNotEmpty() },
+        year = if (year > 0) year else releaseYear(releaseDate),
+        rating = this.rating ?: shownRating(rating),
+        image = backdrop?.takeIf { it.isNotBlank() } ?: image,
+        wide = !backdrop.isNullOrBlank(),
+    )
 
 /** Redovi „Početne” na TV-u za aktivnu listu: nastavak gledanja, kanali i nedavno dodato. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -165,6 +205,86 @@ class TvStartViewModel @Inject constructor(
         viewModelScope.launch { vod.toggleFavorite(if (series) VodKind.SERIES else VodKind.MOVIES, item, favorite) }
     }
 
+    private class Focused(val preview: StartPreview, val vodId: Long? = null, val series: Boolean = false)
+
+    private val focused = MutableStateFlow<Focused?>(null)
+
+    /** Detalji već viđenih stavki, da se pri povratku fokusa ne čitaju ponovo sa servera. */
+    private val details = LinkedHashMap<String, StartPreview>()
+
+    /**
+     * Veliki prikaz stavke u fokusu. Ono što spisak već zna (naziv, poster, godina, ocena) stiže odmah;
+     * opis i široka slika se čitaju sa servera tek kad fokus kratko zastane, da brzo listanje reda
+     * ne šalje zahtev za svaku stavku.
+     */
+    val preview: StateFlow<StartPreview?> = focused
+        .transformLatest { target ->
+            if (target == null) {
+                emit(null)
+                return@transformLatest
+            }
+            val known = synchronized(details) { details[target.preview.key] }
+            emit(known ?: target.preview)
+            val vodId = target.vodId
+            if (known != null || vodId == null) return@transformLatest
+            delay(PREVIEW_DELAY_MS)
+            val full = try {
+                if (target.series) {
+                    val info = vod.series(vodId)
+                    target.preview.withDetails(info.plot, info.genre, info.releaseDate, info.rating, info.backdrop)
+                } else {
+                    val info = vod.movie(vodId)
+                    target.preview.withDetails(info.plot, info.genre, info.releaseDate, info.rating, info.backdrop)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return@transformLatest
+            }
+            synchronized(details) {
+                if (details.size >= PREVIEW_CACHE) details.remove(details.keys.first())
+                details[full.key] = full
+            }
+            emit(full)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    init {
+        // Druga lista ima druge filmove pod istim brojevima.
+        viewModelScope.launch {
+            vod.activePlaylistId.collect {
+                synchronized(details) { details.clear() }
+                focused.value = null
+            }
+        }
+    }
+
+    /** Fokus je na filmu ili seriji. */
+    fun focusVod(id: Long, name: String, poster: String?, series: Boolean, year: Int = 0, rating: String? = null) {
+        val key = (if (series) "s" else "m") + id
+        if (focused.value?.preview?.key == key) return
+        focused.value = Focused(
+            StartPreview(key = key, title = name, image = poster, year = year, rating = shownRating(rating)),
+            vodId = id,
+            series = series,
+        )
+    }
+
+    /** Fokus je na kanalu. */
+    fun focusChannel(channel: Channel) {
+        focused.value = Focused(
+            StartPreview(
+                key = "c" + channel.id,
+                title = channel.name,
+                image = channel.logo,
+                channel = true,
+                text = channel.nowTitle,
+                startMs = channel.nowStartMs,
+                stopMs = channel.nowStopMs,
+            ),
+        )
+    }
+
     fun dismissContinue(item: ContinueItem) {
         viewModelScope.launch { vod.dismissContinue(item) }
     }
@@ -181,5 +301,7 @@ class TvStartViewModel @Inject constructor(
         const val CHANNEL_LIMIT = 20
         const val ADDED_LIMIT = 20
         const val REFRESH_MS = 60_000L
+        const val PREVIEW_DELAY_MS = 350L
+        const val PREVIEW_CACHE = 60
     }
 }
