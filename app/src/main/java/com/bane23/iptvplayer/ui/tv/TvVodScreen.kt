@@ -4,6 +4,9 @@ import com.bane23.iptvplayer.ui.common.lock.vodItem
 import com.bane23.iptvplayer.ui.common.lock.LockAction
 import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -15,7 +18,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +43,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import kotlin.math.roundToInt
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.FocusDirection
@@ -78,7 +85,8 @@ import kotlinx.coroutines.delay
 
 /**
  * Filmovi ili serije na TV-u: levo pretraga, „Nastavi gledanje” i kategorije (bira se sa OK),
- * desno posteri izabrane grupe.
+ * desno posteri izabrane grupe. Dok je fokus među posterima, kategorije su skupljene u usku traku
+ * i u red staje poster više; Levo sa prve kolone ili Nazad ih ponovo otvara (Bane).
  */
 @Composable
 fun TvVodScreen(
@@ -146,21 +154,42 @@ fun TvVodScreen(
     val focusManager = LocalFocusManager.current
     val gridFocus = remember { FocusRequester() }
     val toItems: () -> Unit = { if (!gridFocus.tryRequestFocus()) focusManager.moveFocus(FocusDirection.Right) }
+    // Kategorije su otvorene dok je fokus levo; čim pređe na postere, skupe se u usku traku.
+    var categoriesOpen by rememberSaveable { mutableStateOf(true) }
+    var gridFocused by remember { mutableStateOf(false) }
+    val columns = if (categoriesOpen) GRID_COLUMNS else GRID_COLUMNS_WIDE
+    // Grupa izabrana sa OK koja čeka da joj posteri stignu, pa fokus prelazi na njih.
+    var enterGrid by remember { mutableStateOf<String?>(null) }
+    var reopened by remember { mutableIntStateOf(0) }
+    val searchRowFocus = remember { FocusRequester() }
+    val openCategories: () -> Unit = {
+        categoriesOpen = true
+        reopened++
+    }
+    BackHandler(enabled = !categoriesOpen && gridFocused, onBack = openCategories)
     val toGrid = Modifier.onPreviewKeyEvent { event ->
         if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
         // Kad postera nema (učitavanje, prazna kategorija), Desno radi kao i pre.
         event.type == KeyEventType.KeyDown && gridFocus.tryRequestFocus()
     }
-    // Kolona postera na kome je fokus; nije stanje, da korak kroz postere ništa ne crta iznova.
-    val focusedColumn = remember { IntArray(1) }
-    // Levo sa prve kolone postera vraća na izabranu kategoriju, a ne na red koji je u istoj visini.
+    // Mesto u mreži postera na kome je fokus; nije stanje, da korak kroz postere ništa ne crta iznova.
+    // Kolona se računa tek na taster, jer se broj kolona menja kad se kategorije skupe.
+    val focusedIndex = remember { IntArray(1) }
+    // Levo sa prve kolone postera otvara kategorije i vraća na izabranu, a ne na red koji je u istoj visini.
     val gridModifier = Modifier
         .focusRequester(gridFocus)
+        .onFocusChanged {
+            gridFocused = it.hasFocus
+            if (it.hasFocus) {
+                categoriesOpen = false
+                enterGrid = null
+            }
+        }
         .focusGroup()
         .onPreviewKeyEvent { event ->
-            if (event.key != Key.DirectionLeft || focusedColumn[0] != 0) return@onPreviewKeyEvent false
-            // Ako red izabrane kategorije nije na ekranu, Levo radi kao i pre.
-            event.type == KeyEventType.KeyDown && firstFocus.tryRequestFocus()
+            if (event.key != Key.DirectionLeft || focusedIndex[0] % columns != 0) return@onPreviewKeyEvent false
+            if (event.type == KeyEventType.KeyDown) openCategories()
+            event.type == KeyEventType.KeyDown
         }
     var movedToTop by remember { mutableIntStateOf(0) }
     var shownCategoryIds by remember { mutableStateOf(emptyList<String>()) }
@@ -176,8 +205,11 @@ fun TvVodScreen(
         val item = pendingDismiss ?: return@LaunchedEffect
         var moved = false
         var attempts = 0
+        // Fokus ide na red levo: red postoji samo dok su kategorije otvorene.
+        if (focusTargetId != null) categoriesOpen = true
         while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
             delay(FOCUS_RESTORE_STEP_MS)
+            if (focusTargetId != null) categoriesOpen = true
             moved = moveFocus.tryRequestFocus()
             attempts++
         }
@@ -208,6 +240,7 @@ fun TvVodScreen(
             focusTargetId = FAVORITES_ID
             var attempts = 0
             while (!moved && attempts < FOCUS_RESTORE_ATTEMPTS) {
+                categoriesOpen = true
                 delay(FOCUS_RESTORE_STEP_MS)
                 moved = moveFocus.tryRequestFocus()
                 attempts++
@@ -245,6 +278,41 @@ fun TvVodScreen(
         focusTargetId = null
         pendingHide = null
     }
+    // Otvaranje kategorija sa postera: fokus ide na izabranu grupu čim se njen red nacrta.
+    LaunchedEffect(reopened) {
+        if (reopened == 0) return@LaunchedEffect
+        if (!showContinue && !showFavorites) {
+            val row = shownCategoryIds.indexOf(state.selected?.id)
+            if (row > 3) runCatching { categoryListState.scrollToItem(row - 3) }
+        }
+        repeat(FOCUS_RESTORE_ATTEMPTS) {
+            delay(FOCUS_RESTORE_STEP_MS)
+            if (firstFocus.tryRequestFocus()) return@LaunchedEffect
+        }
+        // Izabrana kategorija nije u spisku (filter): fokus ide na pretragu, koja je uvek tu.
+        searchRowFocus.tryRequestFocus()
+    }
+    // OK na grupi je bira i, čim joj posteri stignu, prelazi na njih (tada se kategorije skupe).
+    val enterReady = when (enterGrid) {
+        null -> false
+        CONTINUE_TARGET -> showContinue
+        FAVORITES_ID -> showFavorites
+        else -> !showContinue && state.selected?.id == enterGrid && !state.loadingItems
+    }
+    LaunchedEffect(enterGrid, enterReady) {
+        if (!enterReady) return@LaunchedEffect
+        repeat(FOCUS_RESTORE_ATTEMPTS) {
+            if (gridFocus.tryRequestFocus()) return@LaunchedEffect
+            delay(FOCUS_RESTORE_STEP_MS)
+        }
+        // Grupa je prazna ili se nije učitala: fokus ostaje na njoj.
+        enterGrid = null
+    }
+    val leftFraction = animateFloatAsState(
+        targetValue = if (categoriesOpen) CATEGORIES_OPEN_FRACTION else CATEGORIES_STRIP_FRACTION,
+        animationSpec = tween(CATEGORIES_ANIMATION_MS),
+        label = "categories",
+    )
     LaunchedEffect(movedToTop) {
         if (movedToTop > 0) {
             // Kratka pauza da se spisak složi iznova; kategorija (i fokus) je sada na vrhu.
@@ -326,16 +394,31 @@ fun TvVodScreen(
 
             state.categories.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            // Širinu leve kolone čita samo raspored, pa animacija ne crta iznova ni spisak ni postere.
+            else -> SplitRow(leftFraction = { leftFraction.value }, gap = 24.dp) {
                 // Levo: pretraga, Favoriti i „Nastavi gledanje” stoje zakačeni na vrhu, a ispod njih
                 // polje za filtriranje i kategorije koje se skroluju.
                 Column(
                     modifier = Modifier
-                        .weight(0.28f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        // Gore ili Dole posle OK znači da korisnik bira dalje: fokus ostaje u kategorijama.
+                        .onPreviewKeyEvent { event ->
+                            if (event.key == Key.DirectionUp || event.key == Key.DirectionDown) enterGrid = null
+                            false
+                        },
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    TvListRow(onClick = onSearch, modifier = toGrid) { color ->
+                    if (!categoriesOpen) {
+                        CategoryStrip(
+                            name = when {
+                                showContinue -> stringResource(R.string.vod_continue_watching)
+                                showFavorites -> favoritesLabel
+                                else -> state.selected?.name.orEmpty()
+                            },
+                        )
+                        return@Column
+                    }
+                    TvListRow(onClick = onSearch, modifier = Modifier.focusRequester(searchRowFocus).then(toGrid)) { color ->
                         Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(if (series) R.string.search_series else R.string.search_movies),
@@ -368,6 +451,7 @@ fun TvVodScreen(
                             } else {
                                 lastItemId = null
                                 continueChosen = false
+                                enterGrid = FAVORITES_ID
                                 viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
                             }
                         },
@@ -387,6 +471,7 @@ fun TvVodScreen(
                                 } else {
                                     lastItemId = null
                                     continueChosen = true
+                                    enterGrid = CONTINUE_TARGET
                                     viewModel.rememberContinue()
                                 }
                             },
@@ -419,6 +504,7 @@ fun TvVodScreen(
                                     } else {
                                         lastItemId = null
                                         continueChosen = false
+                                        enterGrid = category.id
                                         viewModel.selectCategory(category)
                                     }
                                 },
@@ -429,18 +515,14 @@ fun TvVodScreen(
                         }
                     }
                 }
-                Column(
-                    modifier = Modifier
-                        .weight(0.72f)
-                        .fillMaxHeight(),
-                ) {
+                Column(modifier = Modifier.fillMaxHeight()) {
                     if (previewEnabled) {
                         // Pregled čita svoje stanje sam: korak kroz postere ne crta iznova ceo ekran.
                         val preview by previewViewModel.preview.collectAsStateWithLifecycle()
                         TvVodPreviewHeader(preview = preview)
                     }
                     when {
-                        showContinue -> PosterGrid(gridModifier) {
+                        showContinue -> PosterGrid(columns, gridModifier) {
                             itemsIndexed(continueItems, key = { _, item -> item.id }) { index, item ->
                                 val isLast = isLastItem(item.id) { lastItemId }
                                 PosterCard(
@@ -450,7 +532,7 @@ fun TvVodScreen(
                                     onLongClick = { menuContinue = item },
                                     onClick = { onOpen(item.toVodItem()) },
                                     onFocused = {
-                                        focusedColumn[0] = index % GRID_COLUMNS
+                                        focusedIndex[0] = index
                                         lastItemId = item.id
                                         previewViewModel.focus(item.toVodItem(), series)
                                     },
@@ -465,7 +547,7 @@ fun TvVodScreen(
 
                         showFavorites && favorites.isEmpty() -> TvEmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
 
-                        showFavorites -> PosterGrid(gridModifier) {
+                        showFavorites -> PosterGrid(columns, gridModifier) {
                             itemsIndexed(favorites, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
@@ -476,7 +558,7 @@ fun TvVodScreen(
                                     lock = posterLock(item, favorites),
                                     onClick = { onOpen(item) },
                                     onFocused = {
-                                        focusedColumn[0] = index % GRID_COLUMNS
+                                        focusedIndex[0] = index
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -498,7 +580,7 @@ fun TvVodScreen(
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                         state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
 
-                        else -> PosterGrid(gridModifier) {
+                        else -> PosterGrid(columns, gridModifier) {
                             itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
@@ -509,7 +591,7 @@ fun TvVodScreen(
                                     lock = posterLock(item, state.items),
                                     onClick = { onOpen(item) },
                                     onFocused = {
-                                        focusedColumn[0] = index % GRID_COLUMNS
+                                        focusedIndex[0] = index
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -526,6 +608,8 @@ fun TvVodScreen(
                             delay(FOCUS_RESTORE_STEP_MS)
                         }
                     }
+                    // Posteri nisu primili fokus: kategorije moraju biti otvorene da bi ga primio njihov red.
+                    categoriesOpen = true
                     // Izabrana kategorija može biti daleko niz spisak; njen red mora da postoji da bi primio fokus.
                     if (!showContinue && !showFavorites) {
                         val row = state.categories.indexOfFirst { it.id == state.selected?.id }
@@ -550,16 +634,62 @@ private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
     remember(id) { derivedStateOf { lastItemId() == id } }.value
 
 @Composable
-private fun PosterGrid(modifier: Modifier = Modifier, content: LazyGridScope.() -> Unit) {
+private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: LazyGridScope.() -> Unit) {
     LazyVerticalGrid(
         modifier = modifier,
-        columns = GridCells.Fixed(GRID_COLUMNS),
+        columns = GridCells.Fixed(columns),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         // Mesto za uvećan poster u fokusu, da ga ivica mreže ne odseče.
         contentPadding = PaddingValues(12.dp),
         content = content,
     )
+}
+
+/**
+ * Dve kolone jedna pored druge; leva zauzima [leftFraction] širine. Udeo se čita tek pri merenju, pa
+ * se pri animaciji širine sadržaj kolona ne crta iznova.
+ */
+@Composable
+private fun SplitRow(leftFraction: () -> Float, gap: Dp, content: @Composable () -> Unit) {
+    Layout(content = content, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
+        val gapPx = gap.roundToPx()
+        val total = (constraints.maxWidth - gapPx).coerceAtLeast(0)
+        val leftWidth = (total * leftFraction()).roundToInt()
+        val left = measurables[0].measure(Constraints.fixed(leftWidth, constraints.maxHeight))
+        val right = measurables[1].measure(Constraints.fixed(total - leftWidth, constraints.maxHeight))
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            left.place(0, 0)
+            right.place(leftWidth + gapPx, 0)
+        }
+    }
+}
+
+/**
+ * Skupljene kategorije dok je fokus među posterima: uska traka sa nazivom izabrane grupe. Ne prima
+ * fokus; otvara je Levo sa prve kolone postera ili Nazad.
+ */
+@Composable
+private fun CategoryStrip(name: String) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 10.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(AppIcons.ChevronLeft, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Icon(AppIcons.Categories, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Text(
+            text = name,
+            color = colors.primary,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /**
@@ -607,6 +737,13 @@ internal fun PinnedRow(
 
 
 private const val GRID_COLUMNS = 5
+
+// Sa skupljenim kategorijama staje poster više. Udeo trake je odmeren tako da posteri ostanu iste veličine.
+private const val GRID_COLUMNS_WIDE = 6
+private const val CATEGORIES_OPEN_FRACTION = 0.28f
+private const val CATEGORIES_STRIP_FRACTION = 0.136f
+private const val CATEGORIES_ANIMATION_MS = 180
+private const val CONTINUE_TARGET = "__continue"
 private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L

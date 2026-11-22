@@ -824,6 +824,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       se vidi crn ekran sa satom i datumom koji se polako sele; bilo koji taster ga gasi i fokus ostaje gde je
       bio. Podešavanja > Izgled „Čuvar ekrana”: Isključeno, 2, 5 (podrazumevano), 10 ili 15 minuta. Ne pali
       se preko plejera (pauza ima svoj ekran) ni dok se čeka telefon. Samo TV; ekran se ne drži upaljenim.
+- [x] TV Filmovi i Serije: šira mreža postera (Bane, 22. 11. 2026): čim fokus pređe na postere (OK na
+      kategoriji ili Desno), kategorije se skupe u usku traku sa nazivom izabrane grupe i u red staje 6
+      postera iste veličine umesto 5. Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa fokusom na
+      izabranoj. OK na kategoriji je bira i prelazi na postere čim stignu. Uživo i telefon se ne menjaju.
 
 ## 7. Testiranje
 
