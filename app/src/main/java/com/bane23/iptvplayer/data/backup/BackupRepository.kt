@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.storage.StorageManager
 import com.bane23.iptvplayer.BuildConfig
 import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.lan.TransferTraktLogin
@@ -63,6 +64,9 @@ sealed interface BackupImportState {
 
 /** Fajl izvoza nađen u javnom folderu aplikacije. */
 data class BackupFileInfo(val path: String, val name: String, val modifiedAt: Long)
+
+/** Stavka pregledača fajlova na TV-u: memorija, folder ili fajl izvoza. */
+data class BackupBrowseEntry(val path: String, val name: String, val isDirectory: Boolean, val modifiedAt: Long = 0)
 
 /**
  * Izvoz svih lista, podešavanja i naloga u fajl i uvoz iz njega. Uvoz radi u pozadini i nastavlja se
@@ -166,6 +170,48 @@ class BackupRepository @Inject constructor(
         }
     }
 
+    /**
+     * Memorije uređaja za pregledač fajlova na TV-u: unutrašnja, pa USB i kartice koje su trenutno
+     * priključene. Naziv je onaj koji im daje sistem.
+     */
+    suspend fun storageRoots(): List<BackupBrowseEntry> = withContext(Dispatchers.IO) {
+        val storage = context.getSystemService(StorageManager::class.java)
+        try {
+            context.getExternalFilesDirs(null)
+                .filterNotNull()
+                .mapNotNull { dir ->
+                    // Folder aplikacije je <memorija>/Android/data/<paket>/files.
+                    val root = dir.absolutePath.substringBefore("/Android/", "").takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                    val label = try {
+                        storage?.getStorageVolume(dir)?.getDescription(context)
+                    } catch (_: Exception) {
+                        null
+                    }
+                    BackupBrowseEntry(root, label?.takeIf { it.isNotBlank() } ?: File(root).name, isDirectory = true)
+                }
+                .distinctBy { it.path }
+        } catch (_: SecurityException) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Sadržaj foldera za pregledač: prvo podfolderi, pa fajlovi izvoza, po nazivu. Skriveni folderi
+     * i ostali fajlovi se ne prikazuju. Vraća null kad folder ne može da se pročita.
+     */
+    suspend fun listFolder(path: String): List<BackupBrowseEntry>? = withContext(Dispatchers.IO) {
+        try {
+            val children = File(path).listFiles() ?: return@withContext null
+            children
+                .filter { !it.name.startsWith(".") && (it.isDirectory || it.name.endsWith(".${BackupCodec.EXTENSION}", ignoreCase = true)) }
+                .map { BackupBrowseEntry(it.absolutePath, it.name, it.isDirectory, it.lastModified()) }
+                .sortedWith(compareByDescending<BackupBrowseEntry> { it.isDirectory }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .take(MAX_BROWSE_ENTRIES)
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+
     /** Tekst fajla koji je korisnik izabrao; null kad ne može da se pročita ili je prevelik. */
     suspend fun readText(uri: Uri): String? = withContext(Dispatchers.IO) {
         try {
@@ -264,5 +310,6 @@ class BackupRepository @Inject constructor(
     private companion object {
         const val FILE_PREFIX = "glowbox-export-"
         const val MAX_TOKEN = 2_000
+        const val MAX_BROWSE_ENTRIES = 500
     }
 }

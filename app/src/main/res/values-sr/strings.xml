@@ -829,6 +829,11 @@
     <string name="backup_tv_allow_files_summary">Bez toga aplikacija vidi samo fajlove koje je sama napravila, a ne i fajl prenet sa drugog uređaja ili ostao od ranije instalacije. Na sistemskom ekranu koji se otvori uključi pristup svim fajlovima za Glowbox.</string>
     <string name="backup_tv_allow_files_missing">Ovaj uređaj nema ekran za tu dozvolu. Mogu da se uvezu samo fajlovi koje je napravila ova instalacija.</string>
     <string name="backup_tv_refresh">Osveži spisak fajlova</string>
+    <string name="backup_tv_browse">Izaberi fajl iz drugog foldera</string>
+    <string name="backup_tv_browse_summary">Pregled foldera na ovom uređaju i na priključenom USB-u, za fajl koji nije u Download/Glowbox</string>
+    <string name="backup_tv_browse_pick_storage">Izaberi memoriju</string>
+    <string name="backup_tv_browse_empty">Ovde nema foldera ni fajlova izvoza.</string>
+    <string name="backup_tv_browse_unreadable">Ovaj folder ne može da se otvori.</string>
     <string name="backup_restore_from_file">Vrati iz fajla</string>
     <!-- Filteri -->
     <string name="filter_row">Filter</string>
