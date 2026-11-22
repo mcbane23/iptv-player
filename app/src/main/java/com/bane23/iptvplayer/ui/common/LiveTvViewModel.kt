@@ -391,6 +391,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setUiScale(scale.name) }
     }
 
+    /** 0 dok se podešavanje ne učita, da se čuvar ekrana ne upali pre vremena. */
+    val screensaverMinutes: StateFlow<Int> = settings.screensaverMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun setScreensaverMinutes(minutes: Int) {
+        viewModelScope.launch { settings.setScreensaverMinutes(minutes) }
+    }
+
     val tvChannelPreview: StateFlow<Boolean> = settings.tvChannelPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

@@ -219,6 +219,7 @@ internal fun UpdateAlert(content: AlertContent) {
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxSize()
+                .userActivity()
                 // Dodir pored kartice zatvara; pointerInput umesto clickable da na TV-u ne prima fokus.
                 .pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
                 .padding(24.dp),
