@@ -53,6 +53,9 @@ class IptvApplication : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var watchNext: WatchNextSync
 
+    @Inject
+    lateinit var channelRules: com.bane23.iptvplayer.data.repo.ChannelRulesSync
+
     /** Jezik izabran u podešavanjima važi i za tekstove van aktivnosti (obaveštenja, kratke poruke). */
     override fun attachBaseContext(base: Context) {
         // Pre svega ostalog, da se zabeleži i pad pri samom pokretanju.
@@ -64,6 +67,8 @@ class IptvApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         epgScheduler.schedulePeriodic()
         epgScheduler.schedulePlaylistRefresh()
+        // Pravila za kanale (SD kad postoji HD, kanali +1, istoimeni) prate podešavanja i osvežavanje lista.
+        channelRules.start()
         // Budilnici podsetnika ne preživljavaju gašenje uređaja.
         CoroutineScope(Dispatchers.IO).launch { reminders.restoreAlarms() }
         // Pri svakom pokretanju preuzima se ono što je na Trakt nalogu gledano drugde.

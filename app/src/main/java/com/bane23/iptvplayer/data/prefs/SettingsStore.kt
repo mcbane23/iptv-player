@@ -356,6 +356,27 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     private fun remoteButtonKey(button: RemoteButton) = stringPreferencesKey("remote_button_${button.name.lowercase()}")
 
+    /** Pravila za kanale; sva su isključena dok ih korisnik ne uključi. */
+    val channelRules: Flow<com.bane23.iptvplayer.domain.ChannelRuleSettings> = dataStore.data.map { prefs ->
+        com.bane23.iptvplayer.domain.ChannelRuleSettings(
+            hideSd = prefs[RULE_HIDE_SD] ?: false,
+            hidePlusOne = prefs[RULE_HIDE_PLUS_ONE] ?: false,
+            mergeSameName = prefs[RULE_MERGE_SAME_NAME] ?: false,
+        )
+    }.distinctUntilChanged()
+
+    suspend fun setRuleHideSd(enabled: Boolean) {
+        dataStore.edit { it[RULE_HIDE_SD] = enabled }
+    }
+
+    suspend fun setRuleHidePlusOne(enabled: Boolean) {
+        dataStore.edit { it[RULE_HIDE_PLUS_ONE] = enabled }
+    }
+
+    suspend fun setRuleMergeSameName(enabled: Boolean) {
+        dataStore.edit { it[RULE_MERGE_SAME_NAME] = enabled }
+    }
+
     /** Serije: sledeća epizoda kreće sama kad se tekuća završi. Isključeno: kartica je samo nudi. */
     val autoNextEpisode: Flow<Boolean> = dataStore.data.map { it[AUTO_NEXT_EPISODE] ?: true }.distinctUntilChanged()
 
@@ -601,6 +622,9 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         val PAUSE_INFO = booleanPreferencesKey("pause_info")
         val AUTO_NEXT_EPISODE = booleanPreferencesKey("auto_next_episode")
+        val RULE_HIDE_SD = booleanPreferencesKey("rule_hide_sd")
+        val RULE_HIDE_PLUS_ONE = booleanPreferencesKey("rule_hide_plus_one")
+        val RULE_MERGE_SAME_NAME = booleanPreferencesKey("rule_merge_same_name")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
@@ -626,6 +650,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             PLAYER_BRIGHTNESS_SWIPE, PLAYER_VOLUME_SWIPE, BACKGROUND_PLAY, AUTOSTART, REOPEN_AFTER_UPDATE,
             AUTO_REFRESH_PLAYLISTS, VOD_LOCAL_CACHE, MATCH_FRAME_RATE, WATCH_NEXT, BLACK_THEME, TV_RAIL_ICONS_ONLY,
             PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, AUTO_NEXT_EPISODE,
+            RULE_HIDE_SD, RULE_HIDE_PLUS_ONE, RULE_MERGE_SAME_NAME,
         )
         val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
         val SET_KEYS: List<Preferences.Key<*>> = listOf(CAST_PEERS)

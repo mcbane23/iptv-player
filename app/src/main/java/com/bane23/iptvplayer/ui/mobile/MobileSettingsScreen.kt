@@ -101,6 +101,7 @@ fun MobileSettingsScreen(
     val backgroundPlay by viewModel.backgroundPlay.collectAsStateWithLifecycle()
     val pauseInfo by viewModel.pauseInfo.collectAsStateWithLifecycle()
     val autoNextEpisode by viewModel.autoNextEpisode.collectAsStateWithLifecycle()
+    val channelRules by viewModel.channelRules.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
@@ -239,6 +240,24 @@ fun MobileSettingsScreen(
                                     summary = stringResource(R.string.settings_vod_cache_summary),
                                     checked = vodLocalCache,
                                     onChange = viewModel::setVodLocalCache,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_rule_hide_sd),
+                                    summary = stringResource(R.string.settings_rule_hide_sd_summary),
+                                    checked = channelRules.hideSd,
+                                    onChange = viewModel::setRuleHideSd,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_rule_plus_one),
+                                    summary = stringResource(R.string.settings_rule_plus_one_summary),
+                                    checked = channelRules.hidePlusOne,
+                                    onChange = viewModel::setRuleHidePlusOne,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_rule_same_name),
+                                    summary = stringResource(R.string.settings_rule_same_name_summary),
+                                    checked = channelRules.mergeSameName,
+                                    onChange = viewModel::setRuleMergeSameName,
                                 )
                             }
 

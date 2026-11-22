@@ -837,6 +837,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       ne prikazuje, pa tamo ostaje red „Arhiva”
 - [x] Prekidač „Automatski pusti sledeću epizodu” (Bane, 22. 11. 2026; telefon i TV, podrazumevano uključen):
       kad je isključen, kartica na kraju epizode i dalje nudi sledeću, ali ona ne kreće sama
+- [x] Pravila za kanale (Bane, 22. 11. 2026; telefon i TV, Podešavanja > Sadržaj, sva tri isključena dok se ne
+      uključe): „Sakrij SD kad postoji HD” (kanal sa oznakom SD ili bez oznake, kad isti u listi postoji u HD,
+      FHD ili 4K), „Sakrij kanale +1” i „Spoji istoimene kanale” (isti naziv u jednoj listi prikazuje se jednom).
+      Sve se čita iz naziva kanala (`domain/ChannelRules.kt`); omiljeni kanali se ne sklanjaju. Baza v22, kolona
+      `channels.ruleHidden`, održava je `ChannelRulesSync` posle promene pravila i posle osvežavanja liste
 - [x] TV Filmovi i Serije: šira mreža postera (Bane, 22. 11. 2026): čim fokus pređe na postere (OK na
       kategoriji ili Desno), kategorije se skupe u tanku traku sa ikonicama i u red staje 7 malo manjih
       postera umesto 5 (Bane izabrao sa slike). Levo sa prve kolone ili Nazad ponovo otvara kategorije, sa
