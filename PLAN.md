@@ -284,6 +284,12 @@ Redosled unutar faze po želji vlasnika.
 - [x] Roditeljska zaštita, pooštrena: „Zaključaj ponovo” zatvara ekran bez traženja PIN-a; uneti PIN važi
       samo dok se ne izađe iz aplikacije (pozadina, gašenje ili uspavljivanje TV-a); kanali zaključanih
       kategorija se nikad ne pamte u „Nedavno”
+- [x] Roditeljska zaštita, lakše korišćenje (Bane, 22. 11. 2026; telefon i TV): pretraga kategorija na ekranu
+      roditeljske zaštite; dugi pritisak (dugi OK) na kategoriju u Uživo, Filmovima i Serijama nudi „Zaključaj”,
+      odnosno „Ukloni zaključavanje”, i brzo „Otključaj sve (PIN)” / „Zaključaj ponovo”; pojedinačan kanal, film
+      ili serija se zaključava iz svog menija i ne vidi se nigde dok se ne unese PIN (tabela `locked_items`,
+      spisak „Pojedinačno zaključano” na ekranu roditeljske zaštite). Na TV-u dugi OK na poster u Filmovima i
+      Serijama otvara meni (omiljeni, zaključaj). „Zaključaj ponovo” više ne prikaže unos PIN-a na trenutak
 - [x] „Nedavno gledano”: dugi pritisak (dugo OK) na kanal nudi „Ukloni iz nedavno gledanih”, a na samu
       grupu „Obriši sve nedavno gledane” (telefon i TV)
 - [x] Dodavanje liste na TV preko telefona: TV prikaže QR kod, telefon u istoj mreži otvori stranicu sa TV-a

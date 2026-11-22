@@ -165,6 +165,7 @@ fun MobileHomeScreen(
                             onOpen = { onOpenVod(it, false) },
                             onSearch = { onSearchVod(false) },
                             onCategories = { onCategories(CategorySection.MOVIES) },
+                            onUnlock = onUnlock,
                             viewModel = viewModel,
                         )
                     }
@@ -177,6 +178,7 @@ fun MobileHomeScreen(
                             onOpen = { onOpenVod(it, true) },
                             onSearch = { onSearchVod(true) },
                             onCategories = { onCategories(CategorySection.SERIES) },
+                            onUnlock = onUnlock,
                             viewModel = viewModel,
                         )
                     }

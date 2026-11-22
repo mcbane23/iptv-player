@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.vodItem
+import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -73,6 +75,7 @@ fun MobileVodLandscape(
     onHideCategory: (VodCategory) -> Unit,
     onMoveCategoryToTop: (VodCategory) -> Unit,
     onCategories: () -> Unit,
+    lockMenu: LockMenu,
     onToggleFavorite: (VodItem) -> Unit,
     onDismissContinue: (ContinueItem) -> Unit,
     onOpen: (VodItem) -> Unit,
@@ -91,6 +94,8 @@ fun MobileVodLandscape(
         onHide = { key -> state.categories.firstOrNull { it.id == key }?.let(onHideCategory) },
         onMoveToTop = { key -> state.categories.firstOrNull { it.id == key }?.let(onMoveCategoryToTop) },
         onManage = onCategories,
+        lockMenu = lockMenu,
+        lockKey = { key -> lockMenu.state.vodKey(series, key) },
     )
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     val title = stringResource(if (series) R.string.vod_series else R.string.vod_movies)
@@ -219,6 +224,7 @@ fun MobileVodLandscape(
                                 favorite = true,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                lock = lockMenu.vodItem(series, item.id, item.name),
                             )
                         }
                     }
@@ -246,6 +252,7 @@ fun MobileVodLandscape(
                                 favorite = item.id in favoriteIds,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                lock = lockMenu.vodItem(series, item.id, item.name),
                             )
                         }
                     }

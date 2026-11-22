@@ -250,6 +250,7 @@ fun TvHomeScreen(
                         onOpen = { onOpenVod(it, false) },
                         onSearch = { onSearchVod(false) },
                         onCategories = { onCategories(CategorySection.MOVIES) },
+                        onUnlock = onUnlock,
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "movies-$playlistId"),
                     )
 
@@ -258,6 +259,7 @@ fun TvHomeScreen(
                         onOpen = { onOpenVod(it, true) },
                         onSearch = { onSearchVod(true) },
                         onCategories = { onCategories(CategorySection.SERIES) },
+                        onUnlock = onUnlock,
                         viewModel = hiltViewModel<VodBrowseViewModel>(key = "series-$playlistId"),
                     )
 

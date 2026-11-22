@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.lock.channel
+import com.bane23.iptvplayer.ui.common.lock.LockAction
+import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import com.bane23.iptvplayer.ui.common.KeepNowPlayingFresh
 import com.bane23.iptvplayer.ui.common.AppMessages
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -176,6 +179,7 @@ fun TvLiveTvScreen(
     // OK na kategoriji je bira; drugi OK na već izabranoj ide na kanale, kao Desno (Bane).
     // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
     var awaitingUnlock by rememberSaveable { mutableStateOf<Long?>(null) }
+    val lockMenu = rememberLockMenu(onUnlock)
     val pickCategory: (Long) -> Unit = { id ->
         if (state.categories.any { it.id == id && it.locked }) {
             // Kanali zaključane kategorije se ne vide, pa OK na njoj prvo traži PIN.
@@ -288,15 +292,23 @@ fun TvLiveTvScreen(
     }
     menuChannel?.let { channel ->
         val inRecent = selectedCategory == ChannelGroups.RECENT
+        val channelLock = lockMenu.channel(channel)
+        val lockBase = if (inRecent) 3 else 2
         TvActionDialog(
             title = channel.name,
             options = listOfNotNull(
                 stringResource(R.string.category_favorites),
                 stringResource(R.string.channel_hide),
                 stringResource(R.string.recent_remove).takeIf { inRecent },
-            ),
+            ) + channelLock?.actions.orEmpty().map { stringResource(it.label) },
             onSelect = { option ->
-                if (option == 2) {
+                if (option >= lockBase) {
+                    channelLock?.actions?.getOrNull(option - lockBase)?.let { action ->
+                        channelLock.run(action)
+                        // Kanal zaključan dok PIN nije unet odmah nestaje iz spiska, kao sakriven.
+                        if (action == LockAction.LOCK && lockMenu.state.hasPin && !lockMenu.state.unlocked) hiddenCount++
+                    }
+                } else if (option == 2) {
                     if (state.recentCount <= 1) {
                         pendingRecent = channel.id
                     } else {
@@ -371,13 +383,15 @@ fun TvLiveTvScreen(
         }
     }
     menuCategory?.let { category ->
+        val lockKey = lockMenu.state.liveKey(category)
+        val lockActions = lockMenu.actions(lockKey)
         TvActionDialog(
             title = category.name,
             options = listOf(
                 stringResource(R.string.category_hide),
                 stringResource(R.string.category_move_top),
                 stringResource(R.string.categories_edit),
-            ),
+            ) + lockActions.map { stringResource(it.label) },
             onSelect = { option ->
                 when (option) {
                     0 -> {
@@ -392,7 +406,9 @@ fun TvLiveTvScreen(
                         movedToTop++
                     }
 
-                    else -> onCategories()
+                    2 -> onCategories()
+
+                    else -> lockActions.getOrNull(option - 3)?.let { lockMenu.run(it, lockKey) }
                 }
             },
             onClose = { menuCategory = null },

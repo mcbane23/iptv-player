@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -56,6 +57,9 @@ class CategoryActions(
     val onHide: (key: String) -> Unit,
     val onMoveToTop: (key: String) -> Unit,
     val onManage: () -> Unit,
+    /** Stavke roditeljske zaštite; [lockKey] daje ključ zaključavanja kategorije iz spiska. */
+    val lockMenu: LockMenu? = null,
+    val lockKey: (key: String) -> String? = { null },
 )
 
 /**
@@ -219,7 +223,7 @@ fun CategoryPickerDialog(
     }
 }
 
-/** Meni kategorije (dugi pritisak): Sakrij, Pomeri na vrh, Uredi kategorije. */
+/** Meni kategorije (dugi pritisak): Sakrij, Pomeri na vrh, Uredi kategorije i roditeljska zaštita. */
 @Composable
 fun CategoryActionMenu(expanded: Boolean, actions: CategoryActions, key: String, onDismiss: () -> Unit) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
@@ -244,5 +248,17 @@ fun CategoryActionMenu(expanded: Boolean, actions: CategoryActions, key: String,
                 actions.onManage()
             },
         )
+        actions.lockMenu?.let { menu ->
+            val lockKey = actions.lockKey(key)
+            menu.actions(lockKey).forEach { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(action.label)) },
+                    onClick = {
+                        onDismiss()
+                        menu.run(action, lockKey)
+                    },
+                )
+            }
+        }
     }
 }

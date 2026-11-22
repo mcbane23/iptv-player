@@ -299,6 +299,9 @@ class VodRepository @Inject constructor(
      */
     val updates: SharedFlow<VodKind> = _updates.asSharedFlow()
 
+    /** Menja se kad se nešto zaključa ili otključa: spiskovi na ekranu tada treba da se slože iznova. */
+    val lockChanges: Flow<Set<String>> get() = locks.activeKeys
+
     /** Da li se spiskovi filmova i serija čuvaju na uređaju (Podešavanja). */
     val localCacheEnabled: Flow<Boolean> get() = settings.vodLocalCache
 
@@ -410,10 +413,10 @@ class VodRepository @Inject constructor(
         return if (hidden.isEmpty()) all else all.filter { it.id !in hidden }
     }
 
-    /** Da li film, odnosno serija, pripada kategoriji koja je sada zaključana. */
+    /** Da li je film, odnosno serija, sada zaključan: pojedinačno ili kroz svoju kategoriju. */
     suspend fun isLocked(kind: VodKind, itemId: Long): Boolean = itemId in lockedIds(kind)
 
-    /** ID-jevi filmova, odnosno serija, iz kategorija koje su sada zaključane. */
+    /** ID-jevi filmova, odnosno serija, koji su sada zaključani pojedinačno ili kroz kategoriju. */
     private suspend fun lockedIds(kind: VodKind): Set<Long> {
         val keys = locks.activeKeysNow()
         if (keys.isEmpty()) return emptySet()
@@ -421,7 +424,7 @@ class VodRepository @Inject constructor(
         val series = kind == VodKind.SERIES
         val prefix = LockRepository.vodKey(playlistId, series, "")
         val categoryIds = keys.filter { it.startsWith(prefix) }.map { it.removePrefix(prefix) }
-        val ids = HashSet<Long>()
+        val ids = HashSet<Long>(LockRepository.vodItemIds(keys, playlistId, series))
         for (categoryId in categoryIds) loadItems(kind, categoryId).mapTo(ids) { it.id }
         return ids
     }

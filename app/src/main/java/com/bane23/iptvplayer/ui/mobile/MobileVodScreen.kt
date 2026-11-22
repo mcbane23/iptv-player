@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import com.bane23.iptvplayer.ui.common.lock.vodItem
+import com.bane23.iptvplayer.ui.common.lock.ItemLock
+import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -72,6 +75,7 @@ fun MobileVodScreen(
     onSearch: () -> Unit,
     onBack: (() -> Unit)? = null,
     onCategories: () -> Unit = {},
+    onUnlock: () -> Unit = {},
     viewModel: VodBrowseViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
@@ -81,6 +85,10 @@ fun MobileVodScreen(
     val favoriteIds = remember(favorites) { favorites.mapTo(HashSet()) { it.id } }
     val watched by viewModel.watched.collectAsStateWithLifecycle()
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    val lockMenu = rememberLockMenu(onUnlock = {
+        pickerOpen = false
+        onUnlock()
+    })
     // Uspravno: „Nastavi gledanje” je čip, kao zakačen red na TV-u; dok je izabran, mreža prikazuje te naslove.
     var showingContinue by rememberSaveable { mutableStateOf(false) }
     // Kategorija koja je bila izabrana pre favorita, da drugi dodir na zvezdicu vrati na nju.
@@ -119,6 +127,7 @@ fun MobileVodScreen(
             onHideCategory = viewModel::hideCategory,
             onMoveCategoryToTop = viewModel::moveCategoryToTop,
             onCategories = onCategories,
+            lockMenu = lockMenu,
             onToggleFavorite = viewModel::toggleFavorite,
             onDismissContinue = viewModel::dismissContinue,
             onOpen = onOpen,
@@ -258,6 +267,7 @@ fun MobileVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    lock = lockMenu.vodItem(series, item.id, item.name),
                                 )
                             }
 
@@ -285,6 +295,7 @@ fun MobileVodScreen(
                                     favorite = item.id in favoriteIds,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    lock = lockMenu.vodItem(series, item.id, item.name),
                                 )
                             }
                         }
@@ -314,6 +325,8 @@ fun MobileVodScreen(
                     pickerOpen = false
                     onCategories()
                 },
+                lockMenu = lockMenu,
+                lockKey = { key -> lockMenu.state.vodKey(series, key) },
             ),
         )
     }
@@ -395,8 +408,25 @@ fun PosterTile(
     watched: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
+    // Dugi pritisak tada otvara meni roditeljske zaštite za ovaj film, odnosno seriju.
+    lock: ItemLock? = null,
 ) {
-    Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+    var lockMenuOpen by remember { mutableStateOf(false) }
+    val longClick = onLongClick ?: lock?.let { { lockMenuOpen = true } }
+    Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = longClick)) {
+        if (lock != null) {
+            DropdownMenu(expanded = lockMenuOpen, onDismissRequest = { lockMenuOpen = false }) {
+                lock.actions.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(action.label)) },
+                        onClick = {
+                            lockMenuOpen = false
+                            lock.run(action)
+                        },
+                    )
+                }
+            }
+        }
         Box {
             Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite != null) {

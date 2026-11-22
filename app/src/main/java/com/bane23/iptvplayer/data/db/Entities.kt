@@ -274,6 +274,33 @@ data class HiddenChannelEntity(
     val hiddenAt: Long,
 )
 
+/**
+ * Pojedinačno zaključan kanal, film ili serija (roditeljska zaštita). [kind] je `channel`, `movie` ili
+ * `series`; [itemKey] je stalni ključ kanala, odnosno ID filma ili serije sa servera. [active] kaže da
+ * je sada zaključano (PIN postoji i nije unet), da upiti mogu da izostave takav kanal; [name] služi
+ * za spisak na ekranu roditeljske zaštite.
+ */
+@Entity(
+    tableName = "locked_items",
+    primaryKeys = ["playlistId", "kind", "itemKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class LockedItemEntity(
+    val playlistId: Long,
+    val kind: String,
+    val itemKey: String,
+    val name: String,
+    val lockedAt: Long,
+    val active: Boolean,
+)
+
 /** Lista omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala. */
 @Entity(tableName = "favorite_lists")
 data class FavoriteListEntity(
