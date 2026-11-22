@@ -52,8 +52,7 @@ fun Playlist.summary(): String {
         val time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
         stringResource(R.string.playlist_refreshed_at, time)
     }
-    val mergedLabel = if (merged) stringResource(R.string.playlist_merged) else null
-    return listOfNotNull(mergedLabel, type.label(), channels, refreshed).joinToString(" · ")
+    return listOfNotNull(type.label(), channels, refreshed).joinToString(" · ")
 }
 
 /** Xtream nalog ističe za manje od ovoliko dana: podatak o isteku se ističe bojom. */

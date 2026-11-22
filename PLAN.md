@@ -596,6 +596,11 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       lista nije spojena, pa se vidi samo aktivna. Filmovi i serije su uvek iz aktivne liste. Baza v14
       (`playlists.merged`). Oznaka se ne prenosi pri prenosu na TV; roditeljska zaštita nudi samo
       kategorije aktivne liste
+- [x] Spajanje lista jednim prekidačem (Bane, 22. 11. 2026): umesto stavke u opcijama svake liste, na vrhu
+      ekrana Liste (telefon i TV) stoji jedan prekidač „Spoji kanale svih lista” sa opisom. Uključen:
+      kanali svih lista zajedno, bez obzira na to koja je aktivna; isključen: samo aktivna lista. Nova
+      lista se sama pridružuje spoju. Baza v20: ko je imao spojene bar dve liste dobija sve spojene.
+      Prenos na TV prenosi i stanje prekidača
 - [x] Detalji filma i serije (Bane, 18. 11. 2026, treći krug predloga): kad provajder šalje široku sliku
       (`backdrop_path`), ona je pozadina preko celog ekrana (TV), odnosno zaglavlja (telefon); inače
       ostaje poster kao do sada. Žanrovi su pločice, ocena je prva u redu podataka, a dugme „Trejler”

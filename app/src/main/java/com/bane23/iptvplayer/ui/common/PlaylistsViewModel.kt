@@ -22,7 +22,10 @@ data class PlaylistsUiState(
     /** Liste koje se trenutno osvežavaju. */
     val refreshing: Set<Long> = emptySet(),
     val error: PlaylistError? = null,
-)
+) {
+    /** Kanali svih lista se prikazuju zajedno. */
+    val merged: Boolean get() = playlists.any { it.merged }
+}
 
 @HiltViewModel
 class PlaylistsViewModel @Inject constructor(
@@ -59,9 +62,9 @@ class PlaylistsViewModel @Inject constructor(
         viewModelScope.launch { repository.setActivePlaylist(id) }
     }
 
-    /** Uključuje listu u spojeni prikaz kanala, odnosno isključuje je. */
-    fun setMerged(id: Long, merged: Boolean) {
-        viewModelScope.launch { repository.setMerged(id, merged) }
+    /** Spaja kanale svih lista u jedan prikaz, odnosno vraća prikaz samo aktivne liste. */
+    fun setAllMerged(merged: Boolean) {
+        viewModelScope.launch { repository.setAllMerged(merged) }
     }
 
     fun dismissError() {

@@ -150,8 +150,10 @@ class PlaylistRepository @Inject constructor(
         val entity = draft.toNewEntity()
         val id = fetchContent(entity).use { fetched ->
             db.withTransaction {
-                val newId = playlistDao.insert(entity)
-                writeContent(entity.copy(id = newId), fetched)
+                // Nova lista se pridružuje spoju ako su liste spojene.
+                val joined = entity.copy(merged = playlistDao.anyMerged())
+                val newId = playlistDao.insert(joined)
+                writeContent(joined.copy(id = newId), fetched)
                 newId
             }
         }
@@ -257,10 +259,10 @@ class PlaylistRepository @Inject constructor(
     suspend fun setActivePlaylist(id: Long) = settings.setActivePlaylistId(id)
 
     /**
-     * Uključuje listu u spojeni prikaz, odnosno isključuje je. Kad je aktivna lista spojena, kanali
-     * svih spojenih lista se u Uživo, vodiču i pretrazi prikazuju zajedno.
+     * Spaja sve liste, odnosno razdvaja ih. Kad su spojene, kanali svih lista se u Uživo, vodiču i
+     * pretrazi prikazuju zajedno; inače se vidi samo aktivna lista.
      */
-    suspend fun setMerged(id: Long, merged: Boolean) = withContext(Dispatchers.IO) { playlistDao.setMerged(id, merged) }
+    suspend fun setAllMerged(merged: Boolean) = withContext(Dispatchers.IO) { playlistDao.setAllMerged(merged) }
 
     // ---------------------------------------------------------------------------------------
 
