@@ -70,7 +70,8 @@ fun TvVodSearchScreen(
             keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
             modifier = Modifier
                 .fillMaxWidth(0.6f)
-                .focusRequester(fieldFocus),
+                .focusRequester(fieldFocus)
+                    .tvFieldExit(),
         )
         when {
             state.failed -> Column(modifier = Modifier.padding(top = 24.dp)) {

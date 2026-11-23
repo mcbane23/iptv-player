@@ -136,7 +136,16 @@ fun TvStartScreen(
     }
 
     val channels = channelRow?.channels.orEmpty()
-    val nothing = channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty()
+    // Red kanala stiže malo posle ostalih. Ostali redovi ga kratko sačekaju, da ih on ne gurne nadole
+    // kad se pojavi; ako kasni duže, prikazuju se bez njega.
+    var channelsWaited by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(CHANNELS_WAIT_MS)
+        channelsWaited = true
+    }
+    val holdRows = channelRow == null && !channelsWaited
+    val nothing = holdRows ||
+        (channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty())
     val empty = channelRow != null && nothing && added.loaded
     // Poruka o učitavanju tek posle kratkog čekanja, da ne zatreperi kad redovi stignu odmah.
     var waited by remember { mutableStateOf(false) }
@@ -173,7 +182,7 @@ fun TvStartScreen(
             return@Column
         }
         if (nothing) {
-            if (waited) {
+            if (waited && !holdRows) {
                 VodLoading(
                     series = added.loading == VodKind.SERIES,
                     accent = MaterialTheme.colorScheme.primary,
@@ -511,3 +520,4 @@ private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L
 private const val RETURN_FOCUS_FRAMES = 30
 private const val LOADING_DELAY_MS = 300L
+private const val CHANNELS_WAIT_MS = 700L

@@ -202,6 +202,9 @@ fun TvVodScreen(
             if (it.hasFocus) {
                 categoriesOpen = false
                 enterGrid = null
+            } else {
+                // Naslov iznad postera ne ostaje na filmu sa koga je fokus otišao.
+                previewViewModel.clear()
             }
         }
         .focusGroup()

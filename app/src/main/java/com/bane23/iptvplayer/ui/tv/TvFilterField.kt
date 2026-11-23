@@ -113,6 +113,7 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(fieldFocus)
+                        .tvFieldExit()
                         .onFocusChanged {
                             // Prvi poziv stiže pre nego što polje dobije fokus, pa se gleda samo gubitak fokusa.
                             if (it.isFocused) fieldHadFocus = true

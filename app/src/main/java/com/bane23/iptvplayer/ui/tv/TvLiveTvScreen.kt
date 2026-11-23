@@ -857,7 +857,20 @@ fun TvLiveTvScreen(
                         // U plejeru je kanal možda promenjen: fokus ide na poslednji gledani. Ako ga u ovom
                         // spisku nema (ili još nije učitan), ostaje kanal koji je otvoren.
                         val watched = viewModel.lastWatchedChannelId()
-                        if (watched != null && watched != opened) {
+                        if (selectedCategory == ChannelGroups.RECENT) {
+                            // U „Nedavno” gledani kanal prelazi na vrh spiska. Fokus čeka da novi redosled stigne
+                            // i ide na vrh; inače bi red sa fokusom nestao ispod njega i fokus bi pao na bočni meni.
+                            val target = watched ?: opened
+                            lastChannelId = target
+                            var attempts = 0
+                            while (channels.itemSnapshotList.firstOrNull()?.id != target && attempts < FOCUS_RESTORE_ATTEMPTS) {
+                                delay(FOCUS_RESTORE_STEP_MS)
+                                attempts++
+                            }
+                            runCatching { channelListState.scrollToItem(0) }
+                            // Kanala nema u „Nedavno” (npr. iz zaključane je kategorije): fokus ide na grupu.
+                            if (channels.itemSnapshotList.none { it?.id == target }) lastChannelId = null
+                        } else if (watched != null && watched != opened) {
                             lastChannelId = watched
                             repeat(FOCUS_RESTORE_ATTEMPTS) {
                                 delay(FOCUS_RESTORE_STEP_MS)

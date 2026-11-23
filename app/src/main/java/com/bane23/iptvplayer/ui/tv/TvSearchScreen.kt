@@ -80,7 +80,8 @@ fun TvSearchScreen(
             keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
             modifier = Modifier
                 .fillMaxWidth(0.6f)
-                .focusRequester(fieldFocus),
+                .focusRequester(fieldFocus)
+                    .tvFieldExit(),
         )
         if (state.query.isNotBlank() && results.itemCount == 0 && programs.isEmpty() &&
             results.loadState.refresh is LoadState.NotLoading
