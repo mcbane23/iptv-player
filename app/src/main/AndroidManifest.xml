@@ -73,8 +73,11 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.IptvPlayer">
 
+        <!-- Jedna instanca: povratak preko ikonice (ili obaveštenja, linka, ponovnog otvaranja posle
+             ažuriranja) uvek vraća postojeći ekran, npr. pauziran plejer, a ne otvara novu početnu stranu. -->
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode"
             android:exported="true"
             android:supportsPictureInPicture="true">
