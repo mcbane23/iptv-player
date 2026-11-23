@@ -18,6 +18,10 @@ enum class AppTheme(
 ) {
     GRAY(Background, Surface, SurfaceVariant, GrayPlaceholders),
     NAVY(NavyBackground, NavySurface, NavySurfaceVariant, NavyPlaceholders),
+    GRAPHITE(GraphiteBackground, GraphiteSurface, GraphiteSurfaceVariant, GraphitePlaceholders),
+    MIDNIGHT(MidnightBackground, MidnightSurface, MidnightSurfaceVariant, MidnightPlaceholders),
+    FOREST(ForestBackground, ForestSurface, ForestSurfaceVariant, ForestPlaceholders),
+    BURGUNDY(BurgundyBackground, BurgundySurface, BurgundySurfaceVariant, BurgundyPlaceholders),
     ;
 
     companion object {
@@ -40,5 +44,9 @@ fun AppTheme.label(): String = stringResource(
     when (this) {
         AppTheme.GRAY -> R.string.theme_gray
         AppTheme.NAVY -> R.string.theme_navy
+        AppTheme.GRAPHITE -> R.string.theme_graphite
+        AppTheme.MIDNIGHT -> R.string.theme_midnight
+        AppTheme.FOREST -> R.string.theme_forest
+        AppTheme.BURGUNDY -> R.string.theme_burgundy
     },
 )

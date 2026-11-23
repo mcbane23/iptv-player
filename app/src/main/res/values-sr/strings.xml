@@ -675,9 +675,13 @@
     <string name="settings_accent_color_summary">Boja dugmadi, oznaka i sjaja u pozadini</string>
     <string name="update_check_summary">Traži noviju verziju i nudi da je instalira. Liste i podešavanja ostaju.</string>
     <string name="settings_theme">Tema</string>
-    <string name="settings_theme_summary">Boja pozadine i površina: siva ili teget.</string>
+    <string name="settings_theme_summary">Boja pozadine i površina: siva, teget, grafit, ponoć, šuma ili bordo.</string>
     <string name="theme_gray">Siva</string>
     <string name="theme_navy">Teget</string>
+    <string name="theme_graphite">Grafit</string>
+    <string name="theme_midnight">Ponoć</string>
+    <string name="theme_forest">Šuma</string>
+    <string name="theme_burgundy">Bordo</string>
     <string name="settings_screen_position">Položaj ekrana</string>
     <string name="settings_screen_position_summary">Kako je aplikacija okrenuta; „uvek” važi i kad je rotacija na telefonu zaključana</string>
     <string name="screen_position_auto">Automatski (prati telefon)</string>

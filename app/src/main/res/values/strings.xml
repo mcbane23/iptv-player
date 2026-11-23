@@ -674,9 +674,13 @@
     <string name="settings_accent_color_summary">Color of buttons, highlights and the background glow</string>
     <string name="update_check_summary">Looks for a newer version and offers to install it. Playlists and settings stay.</string>
     <string name="settings_theme">Theme</string>
-    <string name="settings_theme_summary">Background and surface color: gray or navy.</string>
+    <string name="settings_theme_summary">Background and surface color: gray, navy, graphite, midnight, forest or burgundy.</string>
     <string name="theme_gray">Gray</string>
     <string name="theme_navy">Navy</string>
+    <string name="theme_graphite">Graphite</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_forest">Forest</string>
+    <string name="theme_burgundy">Burgundy</string>
     <string name="settings_screen_position">Screen position</string>
     <string name="settings_screen_position_summary">How the app is turned; \"always\" also works when rotation is locked on the phone</string>
     <string name="screen_position_auto">Automatic (follows the phone)</string>
