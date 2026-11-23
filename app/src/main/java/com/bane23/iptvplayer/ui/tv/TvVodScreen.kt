@@ -739,23 +739,26 @@ private fun SplitRow(open: () -> Float, gap: Dp, content: @Composable () -> Unit
 }
 
 /**
- * Skupljene kategorije dok je fokus među posterima: tanka traka samo sa ikonicama (Bane). Ne prima
+ * Skupljene kategorije dok je fokus među posterima: mala kapsula samo sa ikonicama (Bane). Ne prima
  * fokus; otvara je Levo sa prve kolone postera ili Nazad.
  */
 @Composable
 private fun CategoryStrip() {
     val colors = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(Glass.RowShape)
-            .glass()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(AppIcons.ChevronLeft, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Icon(AppIcons.Categories, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+    // Mala kapsula visoka koliko ikonice, u sredini po visini kao i bočni meni (Bane).
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(Glass.RowShape)
+                .glass()
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(AppIcons.ChevronLeft, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            Icon(AppIcons.Categories, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
     }
 }
 
