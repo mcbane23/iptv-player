@@ -18,6 +18,7 @@ import com.bane23.iptvplayer.data.xtream.XtreamUrls
 import com.bane23.iptvplayer.data.xtream.XtreamVodParser
 import com.bane23.iptvplayer.data.xtream.XtreamVodStream
 import com.bane23.iptvplayer.domain.CategoryArrange
+import com.bane23.iptvplayer.domain.ChannelRules
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.domain.StreamSource
 import java.io.IOException
@@ -156,12 +157,31 @@ internal fun mergeContinue(movies: List<ContinueItem>, series: List<ContinueItem
     (movies + series).sortedByDescending { it.updatedAt }.take(limit)
 
 /**
- * Od više verzija iste serije (isti TMDB ID) ostavlja samo one čije su epizode gledane u aplikaciji
- * ([watchedSeriesIds]); serije bez ijedne gledane verzije ostaju sa svim verzijama.
+ * Koliko je verzija serije „engleska”: 0 za EN, 1 za UK/GB, 2 za US, null kad nije engleska. Gleda se
+ * oznaka ispred naziva („NL - …”), a kad je nema, oznaka ispred naziva kategorije ili reč „English” u njemu.
  */
-internal fun watchedVersions(series: List<VodItem>, watchedSeriesIds: Set<Long>): List<VodItem> {
-    val watchedTmdb = series.filter { it.id in watchedSeriesIds }.mapNotNullTo(HashSet()) { it.tmdbId }
-    return series.filter { it.tmdbId !in watchedTmdb || it.id in watchedSeriesIds }
+internal fun englishRank(name: String, category: String?): Int? {
+    val tag = ChannelRules.prefixTag(name) ?: ChannelRules.prefixTag(category)
+    if (tag != null) return ENGLISH_TAGS[tag.uppercase()]
+    return if (category != null && ENGLISH_WORD.containsMatchIn(category)) 0 else null
+}
+
+private val ENGLISH_TAGS = mapOf("EN" to 0, "ENG" to 0, "UK" to 1, "GB" to 1, "GBR" to 1, "US" to 2, "USA" to 2)
+private val ENGLISH_WORD = Regex("(?<![\\p{L}])ENGLISH(?![\\p{L}])", RegexOption.IGNORE_CASE)
+
+/**
+ * Od više verzija iste serije (isti TMDB ID) bira koje idu u omiljene: one gledane u aplikaciji
+ * ([watchedSeriesIds]), a ako takvih nema, jednu, englesku ako postoji (redom EN, UK/GB, US), inače
+ * prvu iz spiska. [categoryNames]: naziv kategorije po ID-ju.
+ */
+internal fun preferredVersions(
+    series: List<VodItem>,
+    watchedSeriesIds: Set<Long>,
+    categoryNames: Map<String, String> = emptyMap(),
+): List<VodItem> = series.groupBy { it.tmdbId }.values.flatMap { versions ->
+    versions.filter { it.id in watchedSeriesIds }.ifEmpty {
+        listOf(versions.minBy { englishRank(it.name, it.categoryId?.let(categoryNames::get)) ?: Int.MAX_VALUE })
+    }
 }
 
 /**
@@ -845,14 +865,14 @@ class VodRepository @Inject constructor(
     /**
      * Dodaje u omiljene serije liste [playlistId] sa datim TMDB ID-jevima (započete na Trakt nalogu),
      * tako da poslednja u spisku bude prva u omiljenima. Kad provajder istu seriju ima u više verzija
-     * (npr. po jezicima), dodaje se samo ona koja je gledana u aplikaciji, ako takva postoji. Vraća TMDB ID-jeve koji su nađeni u spisku
+     * (npr. po jezicima), dodaje se ona gledana u aplikaciji, a inače jedna, po [preferredVersions]. Vraća TMDB ID-jeve koji su nađeni u spisku
      * serija; ostalih kod provajdera nema (ili su u zaključanoj kategoriji).
      */
     suspend fun addSeriesFavorites(playlistId: Long, tmdbIds: List<Long>): Set<Long> = withContext(Dispatchers.IO) {
         if (session().playlistId != playlistId) return@withContext emptySet()
         val wanted = tmdbIds.withIndex().associate { (index, id) -> id to index }
         val matches = allItems(VodKind.SERIES).filter { it.tmdbId != null && wanted.containsKey(it.tmdbId) }.distinctBy { it.id }
-        val found = watchedVersions(matches, progressDao.seriesWithProgress(playlistId).toSet())
+        val found = preferredVersions(matches, progressDao.seriesWithProgress(playlistId).toSet(), seriesCategoryNames())
         val now = System.currentTimeMillis()
         favoriteDao.insertMissing(
             found.map { item ->
@@ -868,6 +888,59 @@ class VodRepository @Inject constructor(
             },
         )
         found.mapNotNullTo(HashSet()) { it.tmdbId }
+    }
+
+    /**
+     * Jednokratno čišćenje omiljenih liste [playlistId]: od serija koje je Trakt dodao ([autoTmdbIds]) u
+     * više verzija ostaje samo engleska koju bira [preferredVersions]. Serija čija je neka verzija gledana
+     * u aplikaciji, ili koja nema englesku verziju, ili je u omiljenima samo jednom, ostaje kakva jeste.
+     * Vraća false kad lista nije aktivna, pa čišćenje treba ponoviti kasnije.
+     */
+    suspend fun trimAutoSeriesFavorites(playlistId: Long, autoTmdbIds: Set<Long>): Boolean = withContext(Dispatchers.IO) {
+        if (autoTmdbIds.isEmpty()) return@withContext true
+        if (session().playlistId != playlistId) return@withContext false
+        val versions = allItems(VodKind.SERIES).filter { it.tmdbId != null && it.tmdbId in autoTmdbIds }.distinctBy { it.id }
+        val tmdbOf = versions.associate { it.id to it.tmdbId!! }
+        val favorites = favoriteDao.getByPlaylist(playlistId).filter { it.kind == KIND_SERIES && it.itemId in tmdbOf }
+        val groups = favorites.groupBy { tmdbOf.getValue(it.itemId) }.filterValues { it.size > 1 }
+        if (groups.isEmpty()) return@withContext true
+        val watched = progressDao.seriesWithProgress(playlistId).toSet()
+        val categories = seriesCategoryNames()
+        val byTmdb = versions.groupBy { it.tmdbId!! }
+        db.withTransaction {
+            for ((tmdbId, saved) in groups) {
+                val all = byTmdb.getValue(tmdbId)
+                if (all.any { it.id in watched }) continue
+                val chosen = preferredVersions(all, watched, categories).single()
+                if (englishRank(chosen.name, chosen.categoryId?.let(categories::get)) == null) continue
+                for (favorite in saved) {
+                    if (favorite.itemId != chosen.id) favoriteDao.delete(playlistId, KIND_SERIES, favorite.itemId)
+                }
+                favoriteDao.insertMissing(
+                    listOf(
+                        VodFavoriteEntity(
+                            playlistId = playlistId,
+                            kind = KIND_SERIES,
+                            itemId = chosen.id,
+                            name = chosen.name,
+                            poster = chosen.poster,
+                            extension = null,
+                            addedAt = saved.maxOf { it.addedAt },
+                        ),
+                    ),
+                )
+            }
+        }
+        true
+    }
+
+    /** Nazivi kategorija serija po ID-ju; prazno kad ih panel trenutno ne šalje. */
+    private suspend fun seriesCategoryNames(): Map<String, String> = try {
+        allCategories(VodKind.SERIES).associate { it.id to it.name }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: IOException) {
+        emptyMap()
     }
 
     private val VodKind.favoriteKind: String get() = if (this == VodKind.MOVIES) KIND_MOVIE else KIND_SERIES

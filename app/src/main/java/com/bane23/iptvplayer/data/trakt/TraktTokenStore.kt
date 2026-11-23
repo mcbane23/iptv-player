@@ -94,6 +94,13 @@ class TraktTokenStore @Inject constructor(
         dataStore.edit { it[AUTO_FAVORITES] = it[AUTO_FAVORITES].orEmpty() + keys }
     }
 
+    /** Liste (ID-jevi) čije su omiljene serije već jednom očišćene od viška jezičkih verzija. */
+    suspend fun trimmedPlaylists(): Set<String> = dataStore.data.first()[TRIMMED_PLAYLISTS].orEmpty()
+
+    suspend fun markTrimmed(playlistId: Long) {
+        dataStore.edit { it[TRIMMED_PLAYLISTS] = it[TRIMMED_PLAYLISTS].orEmpty() + playlistId.toString() }
+    }
+
     /**
      * Koliko je sinhronizacija zaredom započeto a nije završeno, jer se aplikacija usred nje ugasila.
      * Posle [MAX_UNFINISHED_SYNCS] takvih automatska sinhronizacija miruje (vidi [autoSyncPaused]), da
@@ -131,8 +138,10 @@ class TraktTokenStore @Inject constructor(
     suspend fun clear() {
         dataStore.edit { prefs ->
             val autoFavorites = prefs[AUTO_FAVORITES]
+            val trimmed = prefs[TRIMMED_PLAYLISTS]
             prefs.clear()
             if (autoFavorites != null) prefs[AUTO_FAVORITES] = autoFavorites
+            if (trimmed != null) prefs[TRIMMED_PLAYLISTS] = trimmed
         }
     }
 
@@ -152,5 +161,6 @@ class TraktTokenStore @Inject constructor(
         private val LAST_SYNC = longPreferencesKey("last_sync")
         private val LAST_PLAYBACK = longPreferencesKey("last_playback")
         private val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
+        private val TRIMMED_PLAYLISTS = stringSetPreferencesKey("trimmed_language_versions")
     }
 }
