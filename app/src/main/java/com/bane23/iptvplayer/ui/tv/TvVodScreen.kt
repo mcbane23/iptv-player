@@ -1,5 +1,13 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.bane23.iptvplayer.ui.common.lock.vodItem
 import com.bane23.iptvplayer.ui.common.lock.LockAction
 import com.bane23.iptvplayer.ui.common.lock.ItemLock
@@ -7,7 +15,6 @@ import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -48,7 +55,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import kotlin.math.roundToInt
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -966,22 +972,17 @@ fun PosterCard(
     ) {
         // Poster je za usluge pristupačnosti jedna celina sa nazivom (vidi tvItemSemantics).
         Column(modifier = Modifier.tvItemSemantics(name)) {
-        Box {
-            Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
-            if (favorite) {
-                Icon(
-                    imageVector = AppIcons.Star,
-                    contentDescription = null,
-                    tint = Color(0xFFFFD166),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(26.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        .padding(4.dp),
-                )
-            }
-        }
+        // Zvezdica omiljenog se crta preko postera, bez posebnog sloja (lakše listanje na TV-u).
+        val star = rememberVectorPainter(AppIcons.Star)
+        Poster(
+            url = poster,
+            name = name,
+            progress = progress,
+            watched = watched,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (favorite) Modifier.drawWithContent { drawContent(); drawFavoriteStar(star) } else Modifier),
+        )
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
@@ -1004,3 +1005,22 @@ private fun Note(text: String) {
         modifier = Modifier.padding(vertical = 16.dp),
     )
 }
+
+/** Zvezdica u gornjem desnom uglu postera: tamni krug 26 dp, 4 dp od ivice, zvezda 18 dp u sredini. */
+private fun ContentDrawScope.drawFavoriteStar(star: VectorPainter) {
+    val margin = 4.dp.toPx()
+    val circle = 26.dp.toPx()
+    val icon = 18.dp.toPx()
+    val left = size.width - margin - circle
+    drawCircle(
+        color = Color.Black.copy(alpha = 0.5f),
+        radius = circle / 2,
+        center = Offset(left + circle / 2, margin + circle / 2),
+    )
+    val inset = (circle - icon) / 2
+    translate(left = left + inset, top = margin + inset) {
+        with(star) { draw(Size(icon, icon), colorFilter = ColorFilter.tint(FAVORITE_STAR)) }
+    }
+}
+
+private val FAVORITE_STAR = Color(0xFFFFD166)

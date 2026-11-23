@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.Spacer
 import com.bane23.iptvplayer.ui.common.lock.channel
 import com.bane23.iptvplayer.ui.common.lock.LockAction
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
@@ -965,19 +967,16 @@ private val FavoriteGold = Color(0xFFFFD166)
 /** Diskretna traka koliko je emisija odmakla ([progress] od 0 do 1). */
 @Composable
 fun TvProgressBar(progress: Float, trackColor: Color, barColor: Color, modifier: Modifier = Modifier) {
-    Box(
+    // Jedan sloj koji sam crta i podlogu i traku, umesto dva.
+    Spacer(
         modifier = modifier
             .fillMaxWidth()
             .height(2.dp)
-            .background(trackColor),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progress)
-                .fillMaxHeight()
-                .background(barColor),
-        )
-    }
+            .drawBehind {
+                drawRect(trackColor)
+                drawRect(barColor, size = size.copy(width = size.width * progress.coerceIn(0f, 1f)))
+            },
+    )
 }
 
 /**
