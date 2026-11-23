@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.bane23.iptvplayer.ui.common.userActivity
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusDirection
@@ -100,6 +102,10 @@ fun TvListRow(
     container: Color = Color.Transparent,
     card: Boolean = true,
     verticalPadding: Dp = 10.dp,
+    // Naziv reda za usluge pristupačnosti. Kad je zadat, sadržaj reda je za njih jedna celina sa tim
+    // nazivom, umesto desetak delova (logo, tekstovi, traka); to bitno ubrzava listanje na TV-u na kome
+    // radi neka takva usluga (zatamnjivanje ekrana, launcher), jer se opis ekrana pravi pri svakom koraku.
+    description: String? = null,
     content: @Composable RowScope.(contentColor: Color) -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -131,9 +137,27 @@ fun TvListRow(
             // Red samo sa tekstom je visok kao red sa prekidačem, da svi redovi spiska budu isti.
             .heightIn(min = TvSwitchHeight),
         verticalAlignment = Alignment.CenterVertically,
-        content = { content(contentColor) },
+        content = {
+            if (description == null) {
+                content(contentColor)
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().tvItemSemantics(description),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = { content(contentColor) },
+                )
+            }
+        },
     )
 }
+
+/**
+ * Stavka spiska je za usluge pristupačnosti jedna celina sa nazivom [description]: delovi unutar nje
+ * se ne opisuju posebno. Na TV-u sa uključenom takvom uslugom Compose pri svakom koraku fokusa iznova
+ * prolazi kroz sve opisane delove ekrana, pa manje delova znači glatko listanje.
+ */
+fun Modifier.tvItemSemantics(description: String): Modifier =
+    clearAndSetSemantics { contentDescription = description }
 
 /**
  * Red sa jednim tekstom i, po želji, tekstom na desnoj strani (npr. broj kanala). Kad je zadat
@@ -166,6 +190,7 @@ fun TvTextRow(
         onFocused = onFocused,
         onLongClick = onLongClick,
         card = card,
+        description = if (trailing != null) "$text, $trailing" else text,
     ) { color ->
         if (icon != null) {
             androidx.tv.material3.Icon(

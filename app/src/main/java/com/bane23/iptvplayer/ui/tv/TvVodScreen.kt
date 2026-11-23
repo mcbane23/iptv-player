@@ -781,6 +781,7 @@ internal fun PinnedRow(
         onFocused = onFocused,
         onLongClick = onLongClick,
         modifier = modifier,
+        description = "$title, $subtitle",
     ) { color ->
         // Ikonica je u akcentnoj boji, kao na telefonu; na fokusiranom redu prati boju teksta.
         Icon(icon, contentDescription = null, tint = if (color == colors.onPrimary) color else colors.primary, modifier = Modifier.size(22.dp))
@@ -941,6 +942,8 @@ fun PosterCard(
             )
             .padding(5.dp),
     ) {
+        // Poster je za usluge pristupačnosti jedna celina sa nazivom (vidi tvItemSemantics).
+        Column(modifier = Modifier.tvItemSemantics(name)) {
         Box {
             Poster(url = poster, name = name, progress = progress, watched = watched, modifier = Modifier.fillMaxWidth())
             if (favorite) {
@@ -966,6 +969,7 @@ fun PosterCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp),
         )
+        }
     }
 }
 

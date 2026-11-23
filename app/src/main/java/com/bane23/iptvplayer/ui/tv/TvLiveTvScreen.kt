@@ -763,6 +763,7 @@ fun TvLiveTvScreen(
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
+                            description = channel?.let { listOfNotNull(it.number?.toString(), it.name, it.nowTitle).joinToString(", ") }.orEmpty(),
                         ) { color ->
                             Text(
                                 text = channel?.number?.toString().orEmpty(),
