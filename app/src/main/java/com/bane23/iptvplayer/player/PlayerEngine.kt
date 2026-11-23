@@ -917,7 +917,7 @@ class PlayerEngine(
         val mime = format.sampleMimeType ?: return null
         if (!MimeTypes.isVideo(mime)) return null
         val supported = try {
-            MediaCodecUtil.getDecoderInfos(mime, false, false).any { it.isFormatSupported(format) }
+            MediaCodecUtil.getDecoderInfos(mime, false, false).any { it.isFormatSupported(appContext, format) }
         } catch (e: MediaCodecUtil.DecoderQueryException) {
             return null
         }
