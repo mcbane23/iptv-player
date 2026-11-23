@@ -102,6 +102,7 @@ class MainActivity : ComponentActivity() {
         val savedAccent = runBlocking { settingsStore.accentColor.first() }
         val savedBlack = runBlocking { settingsStore.blackTheme.first() }
         val savedTheme = runBlocking { settingsStore.appTheme.first() }
+        val savedClassic = runBlocking { settingsStore.classicLook.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
         val savedScale = runBlocking { settingsStore.uiScale.first() }
         // I ceo ekran na telefonu, da se trake pri pokretanju ne pojave pa tek onda sakriju.
@@ -114,7 +115,13 @@ class MainActivity : ComponentActivity() {
             val scale by settingsStore.uiScale.collectAsStateWithLifecycle(initialValue = savedScale)
             val black by settingsStore.blackTheme.collectAsStateWithLifecycle(initialValue = savedBlack)
             val theme by settingsStore.appTheme.collectAsStateWithLifecycle(initialValue = savedTheme)
-            IptvTheme(accent = AccentColor.fromName(accent), theme = AppTheme.fromName(theme), black = black) {
+            val classic by settingsStore.classicLook.collectAsStateWithLifecycle(initialValue = savedClassic)
+            IptvTheme(
+                accent = AccentColor.fromName(accent),
+                theme = AppTheme.fromName(theme),
+                black = black,
+                classic = classic,
+            ) {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
                     if (isTv) {
                         // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.

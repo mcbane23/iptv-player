@@ -95,6 +95,7 @@ fun TvSettingsScreen(
     val channelRules by viewModel.channelRules.collectAsStateWithLifecycle()
     val watchNext by viewModel.watchNext.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
+    val classicLook by viewModel.classicLook.collectAsStateWithLifecycle()
     val channelPreview by viewModel.tvChannelPreview.collectAsStateWithLifecycle()
     val vodPreview by viewModel.tvVodPreview.collectAsStateWithLifecycle()
     val autostart by viewModel.autostart.collectAsStateWithLifecycle()
@@ -267,6 +268,9 @@ fun TvSettingsScreen(
         SettingsGroup.LOOK -> choiceItems(SettingsGroup.LOOK) + listOf(
             TvItem(BLACK_THEME_ROW, stringResource(R.string.settings_black_theme), checked = blackTheme) {
                 viewModel.setBlackTheme(!blackTheme)
+            },
+            TvItem(CLASSIC_LOOK_ROW, stringResource(R.string.settings_classic_look), checked = classicLook == true) {
+                viewModel.setClassicLook(classicLook != true)
             },
             TvItem(VOD_PREVIEW_ROW, stringResource(R.string.settings_tv_vod_preview), checked = vodPreview) {
                 viewModel.setTvVodPreview(!vodPreview)
@@ -562,6 +566,7 @@ private fun FocusedSummary(
         UPDATE_CHECK_ROW -> stringResource(R.string.update_check_summary)
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
+        CLASSIC_LOOK_ROW -> stringResource(R.string.settings_classic_look_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         AUTO_NEXT_ROW -> stringResource(R.string.settings_auto_next_summary)
         RULE_SD_ROW -> stringResource(R.string.settings_rule_hide_sd_summary)
@@ -628,6 +633,7 @@ private const val AUTO_NEXT_ROW = -26
 private const val RULE_SD_ROW = -27
 private const val RULE_PLUS_ONE_ROW = -28
 private const val RULE_SAME_NAME_ROW = -29
+private const val CLASSIC_LOOK_ROW = -30
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

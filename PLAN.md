@@ -658,6 +658,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] Fokus na TV-u je ponovo pun u boji aplikacije sa tamnim sadržajem (Bane, 23. 11. 2026, izabrao: providan
       fokus sa okvirom se slabo razlikovao od izabrane stavke); sve ostalo ostaje stakleno. Polje za unos
       u fokusu ima samo okvir
+- [x] Prekidač „Klasičan izgled” u Podešavanja > Izgled (Bane, 23. 11. 2026, telefon i TV): bez stakla,
+      neprovidne pločice bez ivice i ravna pozadina, raspored isti. Na TV-u je podrazumevano uključen (brzina
+      mu je važnija od efekata), na telefonu isključen. Vezan je za vrstu uređaja u izvozu podešavanja
 - [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i

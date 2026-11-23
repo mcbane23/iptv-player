@@ -17,6 +17,7 @@ import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
+import com.bane23.iptvplayer.ui.common.DeviceType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,6 +41,7 @@ data class VodCategoryPrefs(
 class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     private val dataStore = context.settingsDataStore
+    private val isTv = DeviceType.isTv(context)
 
     /** Lista koju je korisnik izabrao kao aktivnu, ili null ako nijedna nije izabrana. */
     val activePlaylistId: Flow<Long?> =
@@ -424,6 +426,16 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[BLACK_THEME] = enabled }
     }
 
+    /**
+     * Klasičan izgled, bez stakla: neprovidne pločice i ravna pozadina (brže na slabijim uređajima). Dok
+     * korisnik ne izabere sam, na TV-u je uključen, a na telefonu isključen (Bane, 23. 11. 2026).
+     */
+    val classicLook: Flow<Boolean> = dataStore.data.map { it[CLASSIC_LOOK] ?: isTv }.distinctUntilChanged()
+
+    suspend fun setClassicLook(enabled: Boolean) {
+        dataStore.edit { it[CLASSIC_LOOK] = enabled }
+    }
+
     /** Ime teme aplikacije koju je korisnik izabrao (vidi `AppTheme`), ili null za podrazumevanu. */
     val appTheme: Flow<String?> = dataStore.data.map { it[APP_THEME] }.distinctUntilChanged()
 
@@ -613,7 +625,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     @Suppress("UNCHECKED_CAST")
     private fun storeText(prefs: androidx.datastore.preferences.core.MutablePreferences, key: Preferences.Key<*>, text: String) {
         when (key) {
-            in BOOLEAN_KEYS -> text.toBooleanStrictOrNull()?.let { prefs[key as Preferences.Key<Boolean>] = it }
+            in BOOLEAN_KEYS, CLASSIC_LOOK -> text.toBooleanStrictOrNull()?.let { prefs[key as Preferences.Key<Boolean>] = it }
             in INT_KEYS -> text.toIntOrNull()?.let { prefs[key as Preferences.Key<Int>] = it }
             in SET_KEYS -> prefs[key as Preferences.Key<Set<String>>] = text.split(SET_SEPARATOR).filter { it.isNotEmpty() }.toSet()
             else -> prefs[key as Preferences.Key<String>] = text
@@ -658,6 +670,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
+        val CLASSIC_LOOK = booleanPreferencesKey("classic_look")
         val APP_THEME = stringPreferencesKey("app_theme")
         val SCREEN_POSITION = stringPreferencesKey("screen_position")
         val ROTATE_HINT_SHOWN = booleanPreferencesKey("rotate_hint_shown")
@@ -711,7 +724,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
         /** Podešavanja koja imaju smisla samo na istoj vrsti uređaja (telefon ili TV). */
         val DEVICE_KEYS: List<Preferences.Key<*>> = listOf(
-            PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS, SCREEN_POSITION,
+            PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS, SCREEN_POSITION, CLASSIC_LOOK,
         )
     }
 }
