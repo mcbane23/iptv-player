@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
+import com.bane23.iptvplayer.player.LoudnessLevel
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
@@ -181,6 +182,18 @@ fun playerSettingChoices(settings: PlayerSettings, viewModel: SettingsViewModel)
                     set = { viewModel.setAudioLanguage(slot, it) },
                 )
             },
+        ),
+        SettingChoice(
+            title = stringResource(R.string.settings_loudness),
+            summary = stringResource(R.string.settings_loudness_summary),
+            options = listOf(
+                stringResource(R.string.setting_off),
+                stringResource(R.string.loudness_light),
+                stringResource(R.string.loudness_strong),
+            ),
+            selected = LoudnessLevel.entries.indexOf(settings.loudness),
+            group = SettingsGroup.SUBTITLES,
+            onSelect = { viewModel.setLoudness(LoudnessLevel.entries[it]) },
         ),
         SettingChoice(
             title = stringResource(R.string.settings_subtitle_size),
