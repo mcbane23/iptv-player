@@ -305,7 +305,7 @@
     <string name="settings_ui_scale_summary">Sitniji tekst i stavke, da više stane na ekran. Dodirni za sledeću veličinu.</string>
     <string name="settings_ui_scale_tv_summary">Sitniji tekst i stavke, da više stane na ekran. Pritisni OK i izaberi veličinu. Promena se vidi odmah.</string>
     <string name="settings_screensaver">Čuvar ekrana</string>
-    <string name="settings_screensaver_summary">Kad izabrano vreme ne pritisneš nijedan taster, vide se sat i datum koji se polako pomeraju, a iza njih razliven poster iz omiljenih filmova i serija (ili poslednje gledanih). Ne pali se dok je otvoren plejer. Bilo koji taster ga gasi i vraća te gde si bio. Pritisni OK i izaberi vreme.</string>
+    <string name="settings_screensaver_summary">Kad izabrano vreme ne pritisneš nijedan taster, vide se sat i datum koji svaki minut promene mesto, a iza njih razliven poster iz omiljenih filmova i serija (ili poslednje gledanih). Ne pali se dok je otvoren plejer. Bilo koji taster ga gasi i vraća te gde si bio. Pritisni OK i izaberi vreme.</string>
     <string name="settings_screensaver_off">Isključeno</string>
     <string name="settings_screensaver_minutes">%1$d min</string>
     <string name="accent_orange">Narandžasta</string>

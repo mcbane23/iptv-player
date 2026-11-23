@@ -852,6 +852,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
 - [x] TV: poster u pozadini čuvara ekrana (Bane, 23. 11. 2026, izgled A): umesto crne pozadine razliven i
       zatamnjen poster iz omiljenih filmova i serija (ako ih nema, iz poslednje gledanih, bez zaključanih); na
       minut se sporo pretopi u sledeći. Bez postera ostaje crno. Razlivanje se radi jednom na maloj slici.
+      Sat i datum više ne klize stalno (na TV-u ~70 ms rada po kadru i iskidana slova), nego svaki minut
+      preskoče na novo mesto uz kratko gašenje i paljenje; između toga se ništa ne crta.
 - [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
       kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
       od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno
