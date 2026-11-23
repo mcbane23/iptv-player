@@ -102,7 +102,7 @@
     <string name="playback_error_network">The channel cannot be played. Check your internet connection.</string>
     <string name="playback_error_not_found">This channel is currently unavailable.</string>
     <string name="playback_error_forbidden">The server refused access to this channel. The account may be in use on another device or expired.</string>
-    <string name="playback_error_unsupported">This device cannot play this channel\'s format.</string>
+    <string name="playback_error_unsupported">This device cannot play this video\'s format.</string>
     <string name="playback_error_unknown">The channel cannot be played.</string>
     <string name="playback_error_source">The channel address could not be built. Edit the playlist and enter the password again.</string>
 

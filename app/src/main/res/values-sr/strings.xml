@@ -101,7 +101,7 @@
     <string name="playback_error_network">Kanal ne može da se pusti. Proverite internet vezu.</string>
     <string name="playback_error_not_found">Ovaj kanal trenutno nije dostupan.</string>
     <string name="playback_error_forbidden">Server je odbio pristup kanalu. Nalog se možda koristi na drugom uređaju ili je istekao.</string>
-    <string name="playback_error_unsupported">Ovaj uređaj ne može da pusti format ovog kanala.</string>
+    <string name="playback_error_unsupported">Ovaj uređaj ne može da pusti format ovog snimka.</string>
     <string name="playback_error_unknown">Kanal ne može da se pusti.</string>
     <string name="playback_error_source">Adresa kanala ne može da se sastavi. Izmenite listu i unesite lozinku ponovo.</string>
 
