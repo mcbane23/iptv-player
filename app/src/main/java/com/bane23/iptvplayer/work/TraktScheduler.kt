@@ -10,6 +10,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -23,6 +24,10 @@ class TraktScheduler @Inject constructor(@ApplicationContext private val context
     @Volatile
     private var lastRequestedMs = 0L
 
+    /** Kada je razmena pozicija poslednji put tražena (vreme od paljenja uređaja); 0: još nije. */
+    @Volatile
+    private var lastPlaybackRequestMs = 0L
+
     private val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
     /** Sinhronizacija što pre: posle promene oznake, posle prijave i pri pokretanju aplikacije. */
@@ -34,6 +39,29 @@ class TraktScheduler @Inject constructor(@ApplicationContext private val context
             .build()
         // Promena tokom slanja čeka da se ono završi, pa ide sledeća sinhronizacija.
         WorkManager.getInstance(context).enqueueUniqueWork(ONE_TIME_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+    }
+
+    /**
+     * Samo razmena pozicija prekinutog gledanja (kratka): posle izlaska iz plejera ili duže pauze i
+     * pri svakom povratku u aplikaciju. Više zahteva u kratkom roku se spaja u jedan.
+     */
+    fun syncPlaybackSoon() {
+        val now = SystemClock.elapsedRealtime()
+        val last = lastPlaybackRequestMs
+        if (last != 0L && now - last < PLAYBACK_DEBOUNCE_MS) return
+        lastPlaybackRequestMs = now
+        val request = OneTimeWorkRequestBuilder<TraktSyncWorker>()
+            .setConstraints(network)
+            .setInputData(workDataOf(TraktSyncWorker.PLAYBACK_ONLY to true))
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(PLAYBACK_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+    }
+
+    /** Pozicija koja čeka slanje ide odmah, bez spajanja sa prethodnim zahtevom. */
+    fun sendPlaybackNow() {
+        lastPlaybackRequestMs = 0L
+        syncPlaybackSoon()
     }
 
     /** Sinhronizacija samo ako poslednja nije tražena u poslednjih nekoliko minuta. */
@@ -53,6 +81,7 @@ class TraktScheduler @Inject constructor(@ApplicationContext private val context
     fun cancel() {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_WORK)
         WorkManager.getInstance(context).cancelUniqueWork(ONE_TIME_WORK)
+        WorkManager.getInstance(context).cancelUniqueWork(PLAYBACK_WORK)
     }
 
     private companion object {
@@ -61,5 +90,7 @@ class TraktScheduler @Inject constructor(@ApplicationContext private val context
         const val BACKOFF_SECONDS = 30L
         const val PERIODIC_WORK = "trakt-sync-periodic"
         const val ONE_TIME_WORK = "trakt-sync"
+        const val PLAYBACK_WORK = "trakt-playback"
+        const val PLAYBACK_DEBOUNCE_MS = 15_000L
     }
 }

@@ -23,14 +23,18 @@ class TraktSyncWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val repository = EntryPointAccessors
             .fromApplication(applicationContext, Dependencies::class.java)
             .traktRepository()
-        return when (repository.sync(automatic = true)) {
+        val playbackOnly = inputData.getBoolean(PLAYBACK_ONLY, false)
+        val result = if (playbackOnly) repository.syncPlayback() else repository.sync(automatic = true)
+        return when (result) {
             // Mreža ili Trakt trenutno ne rade: WorkManager pokušava ponovo, sve ređe.
             TraktSyncResult.FAILED -> if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
             else -> Result.success()
         }
     }
 
-    private companion object {
-        const val MAX_ATTEMPTS = 5
+    companion object {
+        /** Samo razmena pozicija prekinutog gledanja, bez spiskova odgledanog. */
+        const val PLAYBACK_ONLY = "playback_only"
+        private const val MAX_ATTEMPTS = 5
     }
 }

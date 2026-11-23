@@ -31,7 +31,8 @@ class TraktQueue @Inject constructor(
     suspend fun playbackChanged(playlistId: Long, kind: String, itemId: Long, seriesId: Long, progress: Float) {
         if (!tokens.isAvailable || !tokens.isSignedIn()) return
         dao.setPlayback(TraktPlaybackPendingEntity(playlistId, kind, itemId, seriesId, progress, System.currentTimeMillis()))
-        scheduler.syncSoon()
+        // Samo pozicija, bez spiskova odgledanog: kratko je, pa drugi uređaj odmah ima novo mesto.
+        scheduler.sendPlaybackNow()
     }
 
     /** Odbacuje poziciju filma ili epizode koja još čeka slanje (korisnik ne želi nastavak). */
