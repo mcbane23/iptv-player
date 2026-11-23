@@ -256,12 +256,15 @@ interface ChannelDao {
     /** Kanali kojima kvalitet i zemlja još nisu izračunati (posle uvoza ili osvežavanja liste). */
     @Query(
         "SELECT ch.id AS id, ch.name AS name, (SELECT c.name FROM categories c WHERE c.id = ch.categoryId) AS category " +
-            "FROM channels ch WHERE ch.quality < 0",
+            "FROM channels ch WHERE ch.quality < 0 OR ch.variantKey IS NULL",
     )
     suspend fun unclassified(): List<ChannelUnclassifiedRow>
 
     @Query("UPDATE channels SET quality = :quality, country = :country WHERE id IN (:ids)")
     suspend fun classify(ids: List<Long>, quality: Int, country: String?)
+
+    @Query("UPDATE channels SET variantKey = :variantKey WHERE id IN (:ids)")
+    suspend fun setVariantKey(ids: List<Long>, variantKey: String)
 
     /**
      * Primenjuje filter kanala jednom naredbom: sklanja kanale ispod [minQuality] i one koji nisu iz
@@ -449,6 +452,21 @@ interface ChannelDao {
     )
     suspend fun sources(playlistId: Long, name: String): List<ChannelSourceRow>
 
+    /**
+     * Verzije kanala `:channelId`: kanali sa istim ključem (isti kanal u drugom kvalitetu, vidi
+     * `ChannelRules.variantKey`) u listi `:playlistId` i listama spojenim sa njom, sa izmerenim
+     * kvalitetom. Prvo iz same liste, redom iz liste.
+     */
+    @Query(
+        "SELECT ch.id AS id, ch.playlistId AS playlistId, p.name AS playlistName, ch.name AS name, " +
+            "ch.stableKey AS stableKey, COALESCE(q.height, 0) AS height, COALESCE(q.bitrate, 0) AS bitrate " +
+            "FROM channels ch JOIN playlists p ON p.id = ch.playlistId " +
+            "LEFT JOIN channel_quality q ON q.playlistId = ch.playlistId AND q.stableKey = ch.stableKey " +
+            "WHERE ch.variantKey = (SELECT v.variantKey FROM channels v WHERE v.id = :channelId) AND $IN_SCOPE " +
+            "ORDER BY ch.playlistId != :playlistId, ch.playlistId, ch.sortOrder LIMIT :limit",
+    )
+    suspend fun variants(playlistId: Long, channelId: Long, limit: Int): List<ChannelVariantRow>
+
     @Query("UPDATE channels SET epgKey = :epgKey WHERE id = :id")
     suspend fun setEpgKeyOf(id: Long, epgKey: String?)
 
@@ -462,6 +480,19 @@ interface ChannelDao {
 
     @Query("DELETE FROM channels WHERE playlistId = :playlistId")
     suspend fun deleteByPlaylist(playlistId: Long)
+}
+
+/** Izmerena rezolucija i protok kanala (vidi [ChannelQualityEntity]). */
+@Dao
+interface ChannelQualityDao {
+    @Query("SELECT * FROM channel_quality WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun get(playlistId: Long, stableKey: String): ChannelQualityEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(quality: ChannelQualityEntity)
+
+    @Query("UPDATE channel_quality SET bitrate = :bitrate WHERE playlistId = :playlistId AND stableKey = :stableKey")
+    suspend fun setBitrate(playlistId: Long, stableKey: String, bitrate: Int)
 }
 
 @Dao

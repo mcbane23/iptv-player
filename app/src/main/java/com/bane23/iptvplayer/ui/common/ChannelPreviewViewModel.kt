@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,9 +38,14 @@ class ChannelPreviewViewModel @Inject constructor(
     private val epg: EpgRepository,
     private val settings: SettingsStore,
     private val locks: LockRepository,
+    dataSaver: com.bane23.iptvplayer.data.saver.DataSaver,
 ) : ViewModel() {
 
-    val enabled: StateFlow<Boolean> = settings.tvChannelPreview
+    /**
+     * Da li pregled pušta sliku. Na telefonu je nema ni dok važi štednja mobilnih podataka: pregled
+     * troši isto koliko i gledanje kanala. Program kanala se prikazuje i tada.
+     */
+    val enabled: StateFlow<Boolean> = combine(settings.tvChannelPreview, dataSaver.active) { preview, saving -> preview && !saving }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     private var engine: PlayerEngine? = null

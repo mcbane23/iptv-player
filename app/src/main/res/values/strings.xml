@@ -705,6 +705,8 @@
     <string name="player_source_current">%1$s · playing now</string>
     <string name="player_source_failed">%1$s · not responding</string>
     <string name="player_source_switched">The channel did not respond. Switched to playlist %1$s.</string>
+    <string name="player_source_switched_version">The channel did not respond. Playing version %1$s.</string>
+    <string name="player_source_data_saver">Mobile data: playing the %1$s version.</string>
     <string name="favorite_pick_title">Favorites: %1$s</string>
     <string name="favorite_pick_subtitle">Choose the lists this channel is in.</string>
     <string name="favorite_list_new">New list</string>
@@ -749,6 +751,16 @@
     <string name="settings_downloads_summary">Movies and episodes downloaded for watching offline</string>
     <string name="settings_download_mobile">Download over mobile data</string>
     <string name="settings_download_mobile_summary">While off, movies and episodes download over Wi-Fi only, and wait when there is none.</string>
+    <string name="settings_data_saver">Save mobile data</string>
+    <string name="settings_data_saver_summary">On mobile internet, plays the 720p version of a channel when one exists, and the channel preview in the list has no picture. Nothing changes on Wi-Fi. You can always pick a better version in the player, under “Sources”.</string>
+    <string name="settings_quality_scan">Measure quality of favorite channels</string>
+    <string name="settings_quality_scan_summary">On Wi-Fi, briefly opens every version of your favorite channels and remembers its real resolution, so the saver knows which one to play. Other channels are remembered as you watch them.</string>
+    <string name="settings_quality_scan_start">Measure</string>
+    <string name="settings_quality_scan_running">%1$d of %2$d · Stop</string>
+    <string name="quality_scan_done">Measuring finished. Channel versions measured: %1$d of %2$d.</string>
+    <string name="quality_scan_needs_wifi">Measuring only works on Wi-Fi.</string>
+    <string name="quality_scan_no_favorites">There are no favorite channels to measure.</string>
+    <string name="quality_scan_all_known">All versions of your favorite channels are already measured.</string>
     <string name="remote_buttons_title">Remote buttons</string>
     <string name="settings_remote_buttons_summary">Choose what the colour buttons, channel up and down, menu and long OK do while you watch a channel.</string>
     <string name="remote_button_red">Red button</string>

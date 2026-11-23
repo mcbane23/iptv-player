@@ -372,7 +372,24 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
     private val vodDiskCache: com.bane23.iptvplayer.data.repo.VodDiskCache,
+    private val qualityScanner: com.bane23.iptvplayer.data.saver.QualityScanner,
 ) : ViewModel() {
+
+    /** Štednja mobilnih podataka (telefon): na mobilnom internetu ide verzija kanala od 720p kad postoji. */
+    val dataSaver: StateFlow<Boolean> = settings.dataSaver
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setDataSaver(enabled: Boolean) {
+        viewModelScope.launch { settings.setDataSaver(enabled) }
+    }
+
+    /** Merenje kvaliteta omiljenih kanala; traje i kad se izađe iz Podešavanja. */
+    val qualityScan: StateFlow<com.bane23.iptvplayer.data.saver.QualityScanState> = qualityScanner.state
+
+    /** Dugme za merenje: pokreće ga, a dok traje, prekida ga. */
+    fun toggleQualityScan() {
+        if (qualityScanner.state.value.running) qualityScanner.cancel() else qualityScanner.start()
+    }
 
     /** Tajmer gašenja u minutima; 0 dok je isključen. */
     val sleepTimerMinutes: StateFlow<Int> = sleepTimer.minutes

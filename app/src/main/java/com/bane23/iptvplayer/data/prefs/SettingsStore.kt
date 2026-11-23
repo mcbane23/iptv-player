@@ -59,6 +59,17 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[RESUME_LAST_CHANNEL] = enabled }
     }
 
+    /**
+     * Štednja mobilnih podataka (samo telefon): na mobilnom internetu se pušta verzija kanala od 720p
+     * kad postoji, a pregled kanala u spisku ostaje bez slike. Uključeno dok korisnik ne isključi.
+     */
+    val dataSaver: Flow<Boolean> =
+        dataStore.data.map { it[DATA_SAVER] ?: true }.distinctUntilChanged()
+
+    suspend fun setDataSaver(enabled: Boolean) {
+        dataStore.edit { it[DATA_SAVER] = enabled }
+    }
+
     /** Da li Uživo na TV-u pušta mali pregled (bez zvuka) kanala na kome je fokus. */
     val tvChannelPreview: Flow<Boolean> =
         dataStore.data.map { it[TV_CHANNEL_PREVIEW] ?: true }.distinctUntilChanged()
@@ -683,6 +694,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val RULE_HIDE_PLUS_ONE = booleanPreferencesKey("rule_hide_plus_one")
         val RULE_MERGE_SAME_NAME = booleanPreferencesKey("rule_merge_same_name")
         val DOWNLOAD_ON_MOBILE = booleanPreferencesKey("download_on_mobile")
+        val DATA_SAVER = booleanPreferencesKey("data_saver")
         val CAST_KEY = stringPreferencesKey("cast_key")
         val RECORDING_DIR = stringPreferencesKey("recording_dir")
         val CAST_PEERS = stringSetPreferencesKey("cast_peers")
@@ -707,7 +719,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             PLAYER_BRIGHTNESS_SWIPE, PLAYER_VOLUME_SWIPE, BACKGROUND_PLAY, AUTOSTART, REOPEN_AFTER_UPDATE,
             AUTO_REFRESH_PLAYLISTS, VOD_LOCAL_CACHE, MATCH_FRAME_RATE, WATCH_NEXT, BLACK_THEME, TV_RAIL_ICONS_ONLY,
             PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, ROTATE_HINT_SHOWN, AUTO_NEXT_EPISODE,
-            RULE_HIDE_SD, RULE_HIDE_PLUS_ONE, RULE_MERGE_SAME_NAME,
+            RULE_HIDE_SD, RULE_HIDE_PLUS_ONE, RULE_MERGE_SAME_NAME, DATA_SAVER,
         )
         val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
         val SET_KEYS: List<Preferences.Key<*>> = listOf(CAST_PEERS)

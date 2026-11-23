@@ -902,6 +902,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       skoka se nađe početak bloka i po potrebi skoči još jednom, bliže. Fajl bez trajanja postaje
       premotljiv posle dvadesetak sekundi učitavanja. Nastavak gledanja, promena dekodera i brzine više
       ne vraćaju takav fajl na početak. Ako server ne da fajl od sredine, ostaje poruka kao do sada.
+- [x] Štednja mobilnih podataka (Bane, 23. 11. 2026; samo telefon): provajder šalje svaki kanal u
+      jednom kvalitetu, pa se na mobilnom internetu umesto izabranog kanala pušta njegova verzija od
+      720p, kad postoji. Isti kanal = isti naziv bez oznake zemlje, kvaliteta, RAW i VIP, u istoj zemlji,
+      u svim kategorijama liste i spojenih lista. Stvarna rezolucija i protok se pamte kad se kanal
+      pusti (oznake u nazivima nisu pouzdane), a dugme u Podešavanjima > Slika i veza ih na Wi-Fi mreži
+      izmeri za omiljene kanale. Prekidač „Štedi mobilne podatke” je uključen. Meni „Izvori” u plejeru
+      (telefon i TV) nudi sve verzije sa rezolucijom. Pregled kanala u spisku je tada bez slike.
 
 ## 7. Testiranje
 

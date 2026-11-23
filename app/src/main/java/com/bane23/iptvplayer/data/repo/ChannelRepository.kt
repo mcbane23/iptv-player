@@ -10,6 +10,7 @@ import com.bane23.iptvplayer.data.crypto.PasswordCipher
 import com.bane23.iptvplayer.data.db.AppDatabase
 import androidx.room.withTransaction
 import com.bane23.iptvplayer.data.db.ChannelEntity
+import com.bane23.iptvplayer.data.db.ChannelQualityEntity
 import com.bane23.iptvplayer.data.db.HiddenChannelEntity
 import com.bane23.iptvplayer.data.db.ChannelWithFavorite
 import com.bane23.iptvplayer.data.db.FavoriteEntity
@@ -42,7 +43,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /** Jedan izvor kanala: kanal [channelId] iz liste [playlistName], vidi [ChannelRepository.sources]. */
-data class ChannelSource(val channelId: Long, val playlistId: Long, val playlistName: String)
+data class ChannelSource(
+    val channelId: Long,
+    val playlistId: Long,
+    val playlistName: String,
+    /** Naziv kanala ovog izvora; razlikuje se od naziva kanala koji se gleda kad je izvor druga verzija (kvalitet). */
+    val name: String = "",
+    /** Izmerena visina slike (npr. 720); 0 dok izvor nijednom nije pušten ni izmeren. */
+    val height: Int = 0,
+    /** Izmeren protok u bitovima u sekundi; 0 dok nije izmeren. */
+    val bitrate: Int = 0,
+)
 
 /** Ulaz UI sloja za kategorije, kanale i adrese strimova. */
 @Singleton
@@ -59,6 +70,7 @@ class ChannelRepository @Inject constructor(
     private val hiddenChannelDao = db.hiddenChannelDao()
     private val favoriteListDao = db.favoriteListDao()
     private val historyDao = db.historyDao()
+    private val qualityDao = db.channelQualityDao()
 
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
 
@@ -403,14 +415,58 @@ class ChannelRepository @Inject constructor(
             ?: channelDao.last(channel.playlistId, categoryId))?.toDomain()
 
     /**
-     * Izvori kanala: on sam i kanali sa potpuno istim nazivom u listama spojenim sa njegovom, po jedan
-     * iz svake liste. Prvi je uvek sam [channel]. Bez spojenih lista spisak ima samo njega.
+     * Izvori kanala. Prvi je uvek sam [channel]; slede kanali sa potpuno istim nazivom u listama
+     * spojenim sa njegovom (po jedan iz svake liste), pa ostale verzije istog kanala: isti kanal u
+     * drugom kvalitetu, u bilo kojoj kategoriji tih lista. Uz svaki izvor ide izmeren kvalitet, ako se zna.
      */
-    suspend fun sources(channel: Channel): List<ChannelSource> =
-        channelDao.sources(channel.playlistId, channel.name).map { row ->
-            val own = row.playlistId == channel.playlistId
-            ChannelSource(if (own) channel.id else row.id, row.playlistId, row.playlistName)
-        }.ifEmpty { listOf(ChannelSource(channel.id, channel.playlistId, "")) }
+    suspend fun sources(channel: Channel): List<ChannelSource> {
+        val variants = channelDao.variants(channel.playlistId, channel.id, MAX_VARIANTS)
+        val known = variants.associateBy { it.id }
+        val sameName = channelDao.sources(channel.playlistId, channel.name)
+        val result = ArrayList<ChannelSource>()
+        val seenIds = HashSet<Long>()
+        // Isti strim u više kategorija (isti stableKey) je jedan izvor.
+        val seenStreams = HashSet<Pair<Long, String>>()
+        fun add(id: Long, playlistId: Long, playlistName: String, name: String) {
+            if (result.size >= MAX_SOURCES || id in seenIds) return
+            val row = known[id]
+            if (row != null && !seenStreams.add(row.playlistId to row.stableKey)) return
+            seenIds.add(id)
+            result += ChannelSource(id, playlistId, playlistName, name, row?.height ?: 0, row?.bitrate ?: 0)
+        }
+        val own = known[channel.id]
+        val ownPlaylist = sameName.firstOrNull { it.playlistId == channel.playlistId }?.playlistName ?: own?.playlistName.orEmpty()
+        if (channel.stableKey.isNotEmpty()) seenStreams.add(channel.playlistId to channel.stableKey)
+        seenIds.add(channel.id)
+        result += ChannelSource(channel.id, channel.playlistId, ownPlaylist, channel.name, own?.height ?: 0, own?.bitrate ?: 0)
+        sameName.filter { it.playlistId != channel.playlistId }.forEach { add(it.id, it.playlistId, it.playlistName, channel.name) }
+        variants.forEach { add(it.id, it.playlistId, it.playlistName, it.name) }
+        return result
+    }
+
+    /** Pamti stvarnu rezoluciju kanala (izmerenu dok se pušta). Protok ostaje samo ako se rezolucija nije promenila. */
+    suspend fun saveQuality(channelId: Long, width: Int, height: Int) {
+        if (height <= 0) return
+        val channel = channelDao.getById(channelId) ?: return
+        val old = qualityDao.get(channel.playlistId, channel.stableKey)
+        qualityDao.put(
+            ChannelQualityEntity(
+                playlistId = channel.playlistId,
+                stableKey = channel.stableKey,
+                width = width,
+                height = height,
+                bitrate = old?.takeIf { it.height == height }?.bitrate ?: 0,
+                measuredAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    /** Pamti izmeren protok kanala kome je rezolucija već upisana. */
+    suspend fun saveBitrate(channelId: Long, bitrate: Int) {
+        if (bitrate <= 0) return
+        val channel = channelDao.getById(channelId) ?: return
+        qualityDao.setBitrate(channel.playlistId, channel.stableKey, bitrate)
+    }
 
     suspend fun byNumber(playlistId: Long, number: Int): Channel? =
         channelDao.byNumber(playlistId, number)?.toDomain()
@@ -463,6 +519,10 @@ class ChannelRepository @Inject constructor(
         /** Najviše kanala koji se u pretrazi nude uz promašeno slovo (ograničenje broja vrednosti u upitu). */
         const val NEAR_LIMIT = 200
         const val HISTORY_SIZE = 50
+
+        /** Najviše verzija istog kanala koje se čitaju iz baze, i najviše izvora koji se nude u plejeru. */
+        const val MAX_VARIANTS = 40
+        const val MAX_SOURCES = 12
         const val SECTION_LIVE = "live"
     }
 }
