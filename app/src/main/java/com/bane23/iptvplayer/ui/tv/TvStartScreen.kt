@@ -523,7 +523,10 @@ private fun ChannelTile(
             .combinedClickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .tvItemSemantics(listOfNotNull(channel.name, channel.nowTitle).joinToString(", "))
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ChannelLogo(url = channel.logo, name = channel.name, size = 40.dp)
