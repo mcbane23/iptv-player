@@ -703,8 +703,11 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
                 // kolona se menja. Red se traži tek kad širina mreže stane, inače fokusiran red posle animacije
                 // ostane iznad vidljivog dela i Gore nema kuda (Bane: Dole, Levo u kategorije, pa Desno nazad).
                 awaitStableWidth(gridState)
-                val first = gridState.layoutInfo.visibleItemsInfo.firstOrNull()
-                val target = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                // Spisak „vidljivih” sadrži i postere složene iznad ekrana (fokusiran ili zadržan poster), pa
+                // se vrh meri od prvog stvarno vidljivog postera, a ne od prvog u spisku.
+                val items = gridState.layoutInfo.visibleItemsInfo
+                val first = items.firstOrNull { it.index == gridState.firstVisibleItemIndex }
+                val target = items.firstOrNull { it.index == index }
                 val onTop = first != null && target != null && target.row == first.row &&
                     gridState.firstVisibleItemScrollOffset == 0
                 if (!onTop) gridState.animateScrollToItem(index)
