@@ -1,6 +1,7 @@
 package com.bane23.iptvplayer.ui.tv
 
 import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -130,7 +131,8 @@ private object BlurDimTransformation : Transformation() {
     override val cacheKey: String = "screensaverBlurDim1"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
-        val software = if (input.config == Bitmap.Config.HARDWARE) input.copy(Bitmap.Config.ARGB_8888, false) else input
+        val hardware = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && input.config == Bitmap.Config.HARDWARE
+        val software = if (hardware) input.copy(Bitmap.Config.ARGB_8888, false) else input
         val cropHeight = (software.width * BACKDROP_HEIGHT / BACKDROP_WIDTH).coerceAtMost(software.height)
         val cropWidth = (cropHeight * BACKDROP_WIDTH / BACKDROP_HEIGHT).coerceAtMost(software.width)
         val cropped = Bitmap.createBitmap(
