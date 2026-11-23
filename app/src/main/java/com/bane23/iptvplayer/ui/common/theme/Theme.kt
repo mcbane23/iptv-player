@@ -71,18 +71,28 @@ private val TvType = TvTypography().run {
 /**
  * Tamna tema aplikacije sa akcentnom bojom [accent] koju bira korisnik i bojama pozadine iz [theme].
  * Postavlja i Material3 (telefon) i TV Material temu. Sa [black] je pozadina potpuno crna (za OLED
- * ekrane i mračnu sobu), a površine su za nijansu tamnije.
+ * ekrane i mračnu sobu), a površine su za nijansu tamnije. Sa [classic] je izgled bez stakla (vidi
+ * [Glass.classic]).
  */
 @Composable
 fun IptvTheme(
     accent: AccentColor = AccentColor.DEFAULT,
     theme: AppTheme = AppTheme.DEFAULT,
     black: Boolean = false,
+    classic: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val background = if (black) BlackBackground else theme.background
     val surface = if (black) BlackSurface else theme.surface
     val surfaceVariant = if (black) BlackSurfaceVariant else theme.surfaceVariant
+    // Izgled bez stakla: pomoćnici iz Glass.kt čitaju ovo stanje, pa se postavlja pre crtanja sadržaja.
+    // Obična pločica je kao red u spisku pre „Stakla” (60% boje površine preko pozadine), ali neprovidna.
+    remember(classic, background, surfaceVariant) {
+        Glass.classicFill = lerp(background, surfaceVariant, 0.6f)
+        Glass.classicFillStrong = surfaceVariant
+        Glass.classic = classic
+        classic
+    }
     // Dijalozi, meniji, kartice i dugmad za izbor iz Material biblioteke prate temu i boju aplikacije
     // (podrazumevane su sivo-ljubičaste), da se nijedan deo ne izdvaja iz izgleda „Staklo”.
     val mobileColors = remember(accent, theme, black) {

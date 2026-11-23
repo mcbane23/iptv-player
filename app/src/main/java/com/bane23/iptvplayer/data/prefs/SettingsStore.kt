@@ -424,6 +424,17 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[BLACK_THEME] = enabled }
     }
 
+    /**
+     * Klasičan izgled, bez stakla: neprovidne pločice i ravna pozadina. Isključen dok ga korisnik ne
+     * uključi, na telefonu i na TV-u (Bane, 23. 11. 2026: merenje na projektoru je pokazalo da „Staklo”
+     * nije sporije, pa TV i telefon izgledaju isto).
+     */
+    val classicLook: Flow<Boolean> = dataStore.data.map { it[CLASSIC_LOOK] ?: false }.distinctUntilChanged()
+
+    suspend fun setClassicLook(enabled: Boolean) {
+        dataStore.edit { it[CLASSIC_LOOK] = enabled }
+    }
+
     /** Ime teme aplikacije koju je korisnik izabrao (vidi `AppTheme`), ili null za podrazumevanu. */
     val appTheme: Flow<String?> = dataStore.data.map { it[APP_THEME] }.distinctUntilChanged()
 
@@ -613,7 +624,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     @Suppress("UNCHECKED_CAST")
     private fun storeText(prefs: androidx.datastore.preferences.core.MutablePreferences, key: Preferences.Key<*>, text: String) {
         when (key) {
-            in BOOLEAN_KEYS -> text.toBooleanStrictOrNull()?.let { prefs[key as Preferences.Key<Boolean>] = it }
+            in BOOLEAN_KEYS, CLASSIC_LOOK -> text.toBooleanStrictOrNull()?.let { prefs[key as Preferences.Key<Boolean>] = it }
             in INT_KEYS -> text.toIntOrNull()?.let { prefs[key as Preferences.Key<Int>] = it }
             in SET_KEYS -> prefs[key as Preferences.Key<Set<String>>] = text.split(SET_SEPARATOR).filter { it.isNotEmpty() }.toSet()
             else -> prefs[key as Preferences.Key<String>] = text
@@ -658,6 +669,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val MATCH_FRAME_RATE = booleanPreferencesKey("match_frame_rate")
         val WATCH_NEXT = booleanPreferencesKey("watch_next")
         val BLACK_THEME = booleanPreferencesKey("black_theme")
+        val CLASSIC_LOOK = booleanPreferencesKey("classic_look")
         val APP_THEME = stringPreferencesKey("app_theme")
         val SCREEN_POSITION = stringPreferencesKey("screen_position")
         val ROTATE_HINT_SHOWN = booleanPreferencesKey("rotate_hint_shown")
@@ -711,7 +723,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
         /** Podešavanja koja imaju smisla samo na istoj vrsti uređaja (telefon ili TV). */
         val DEVICE_KEYS: List<Preferences.Key<*>> = listOf(
-            PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS, SCREEN_POSITION,
+            PLAYER_DECODER, UI_SCALE, RECORDING_DIR, CAST_KEY, CAST_PEERS, SCREEN_POSITION, CLASSIC_LOOK,
         )
     }
 }

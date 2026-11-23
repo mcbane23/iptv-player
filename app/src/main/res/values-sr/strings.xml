@@ -692,6 +692,8 @@
     <string name="tv_rail_expand">Prikaži nazive u meniju</string>
     <string name="settings_black_theme">Crna tema</string>
     <string name="settings_black_theme_summary">Pozadina je potpuno crna umesto boje izabrane teme, bez sjaja u uglu. Prijatnije u mračnoj sobi i štedi OLED ekran.</string>
+    <string name="settings_classic_look">Klasičan izgled</string>
+    <string name="settings_classic_look_summary">Bez staklenih efekata: neprovidne pločice i ravna pozadina, raspored ostaje isti. Brže na slabijim uređajima.</string>
     <string name="epg_link_action">Poveži program</string>
     <string name="epg_link_title">Program za „%1$s”</string>
     <string name="epg_link_subtitle">Izaberi kanal iz vodiča čiji program odgovara</string>

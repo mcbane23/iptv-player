@@ -496,7 +496,7 @@ private fun ChannelTile(
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val shape = Glass.RowShape
-    val content = colors.onSurface
+    val content = if (focused) colors.onPrimary else colors.onSurface
     Box(
         modifier = modifier
             .padding(horizontal = 5.dp)
@@ -541,7 +541,7 @@ private fun ChannelTile(
                     .align(Alignment.BottomStart)
                     .fillMaxWidth(progress)
                     .height(3.dp)
-                    .background(colors.primary.copy(alpha = 0.8f)),
+                    .background(if (focused) colors.onPrimary.copy(alpha = 0.6f) else colors.primary.copy(alpha = 0.8f)),
             )
         }
     }

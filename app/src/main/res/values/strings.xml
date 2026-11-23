@@ -691,6 +691,8 @@
     <string name="tv_rail_expand">Show menu names</string>
     <string name="settings_black_theme">Black theme</string>
     <string name="settings_black_theme_summary">The background is pure black instead of the chosen theme color, with no glow in the corner. Easier on the eyes in a dark room and gentler on OLED screens.</string>
+    <string name="settings_classic_look">Classic look</string>
+    <string name="settings_classic_look_summary">No glass effects: solid tiles and a flat background, the layout stays the same. Faster on weaker devices.</string>
     <string name="epg_link_action">Link guide</string>
     <string name="epg_link_title">Guide for \"%1$s\"</string>
     <string name="epg_link_subtitle">Pick the guide channel whose schedule matches</string>

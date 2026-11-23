@@ -68,8 +68,9 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
-            .focusHalo(focused, colors.primary)
-            .glassState(colors.primary, focused, selected = false, shape = shape)
+            // Polje za unos u fokusu dobija samo okvir: tekst koji se kuca ostaje čitljiv na staklu.
+            .glass(shape)
+            .then(if (focused) Modifier.border(2.dp, colors.primary, shape) else Modifier)
             .then(
                 if (editing) {
                     Modifier

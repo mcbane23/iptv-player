@@ -415,7 +415,11 @@ private fun GuideBox(
     ) {
         Text(
             text = text,
-            color = if (muted && !focused) colors.onSurfaceVariant else colors.onSurface,
+            color = when {
+                focused -> colors.onPrimary
+                muted -> colors.onSurfaceVariant
+                else -> colors.onSurface
+            },
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
