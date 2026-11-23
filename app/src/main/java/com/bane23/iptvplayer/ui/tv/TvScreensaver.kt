@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,10 +51,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.random.Random
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 /**
  * Čuvar ekrana na TV-u: kad se izabrano vreme ne pritisne nijedan taster, preko svega se prikazuje
@@ -119,35 +118,38 @@ private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> 
     }
 }
 
-/** Sat i datum koji polako klize od jednog do drugog nasumičnog mesta, da ništa ne stoji na istom mestu. */
+/**
+ * Sat i datum koji svaki minut preskoče na novo nasumično mesto (sa kratkim gašenjem i paljenjem),
+ * da ništa ne stoji na istom mestu. Između skokova se ništa ne crta: neprekidno klizanje je na TV-u
+ * držalo procesor zauzetim celim kadrom svakih ~70 ms.
+ */
 @Composable
 private fun DriftingClock() {
     val clock by rememberClockText()
     val date = remember(clock) { dateText() }
     var area by remember { mutableStateOf(IntSize.Zero) }
     var content by remember { mutableStateOf(IntSize.Zero) }
-    val x = remember { Animatable(Random.nextFloat()) }
-    val y = remember { Animatable(Random.nextFloat()) }
+    var x by remember { mutableFloatStateOf(Random.nextFloat()) }
+    var y by remember { mutableFloatStateOf(Random.nextFloat()) }
+    val alpha = remember { Animatable(1f) }
     LaunchedEffect(Unit) {
         while (true) {
-            // Zastoj između dva pomeranja; ujedno čuva petlju ako su animacije na uređaju isključene.
-            delay(DRIFT_REST_MS)
-            val nextX = Random.nextFloat()
-            val nextY = Random.nextFloat()
-            coroutineScope {
-                launch { x.animateTo(nextX, tween(DRIFT_MOVE_MS, easing = LinearEasing)) }
-                launch { y.animateTo(nextY, tween(DRIFT_MOVE_MS, easing = LinearEasing)) }
-            }
+            delay(DRIFT_STEP_MS)
+            alpha.animateTo(0f, tween(DRIFT_FADE_MS, easing = LinearEasing))
+            x = Random.nextFloat()
+            y = Random.nextFloat()
+            alpha.animateTo(1f, tween(DRIFT_FADE_MS, easing = LinearEasing))
         }
     }
     Box(modifier = Modifier.fillMaxSize().onSizeChanged { area = it }) {
         Column(
             modifier = Modifier
                 .onSizeChanged { content = it }
-                // Pomeranje samo u fazi crtanja, bez ponovnog slaganja ekrana.
+                // Pomeranje i providnost samo u fazi crtanja, bez ponovnog slaganja ekrana.
                 .graphicsLayer {
-                    translationX = (area.width - content.width).coerceAtLeast(0) * x.value
-                    translationY = (area.height - content.height).coerceAtLeast(0) * y.value
+                    this.alpha = alpha.value
+                    translationX = (area.width - content.width).coerceAtLeast(0) * x
+                    translationY = (area.height - content.height).coerceAtLeast(0) * y
                 },
         ) {
             BasicText(
@@ -174,5 +176,5 @@ private fun dateText(): String {
 private val ClockColor = Color(0xFFE6E9ED)
 private val DateColor = Color(0xFFB4BCC6)
 private const val MINUTE_MS = 60_000L
-private const val DRIFT_REST_MS = 15_000L
-private const val DRIFT_MOVE_MS = 30_000
+private const val DRIFT_STEP_MS = 60_000L
+private const val DRIFT_FADE_MS = 600
