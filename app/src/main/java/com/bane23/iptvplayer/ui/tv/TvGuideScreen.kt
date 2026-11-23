@@ -328,6 +328,9 @@ private fun GuideRow(
         val targetIndex = shiftTarget?.let { start ->
             cells.indexOfFirst { it.program?.startMs == start }.takeIf { it >= 0 }
         } ?: lastIndex
+        // Kanal bez programa u ovom periodu: u praznoj pločici piše da programa nema, da vodič ne izgleda prazno.
+        val noProgramme = cells.isNotEmpty() && cells.all { it.program == null }
+        val noProgrammeText = stringResource(R.string.guide_no_programme)
         cells.forEachIndexed { index, cell ->
             val program = cell.program
             val marked = program != null && recordings.marks(channel, program, now)
@@ -335,8 +338,10 @@ private fun GuideRow(
                 text = when {
                     marked -> "● ${program?.title.orEmpty()}"
                     program != null && GuideRecordings.key(channel, program.startMs) in reminders -> "🔔 ${program.title}"
+                    noProgramme && index == 0 -> noProgrammeText
                     else -> program?.title.orEmpty()
                 },
+                muted = noProgramme,
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
                 onFocused = {
                     onFocused(program?.startMs)
@@ -382,6 +387,8 @@ private fun GuideBox(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    // Prigušen tekst (natpis da kanal nema program); u fokusu je uobičajene boje.
+    muted: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -408,7 +415,7 @@ private fun GuideBox(
     ) {
         Text(
             text = text,
-            color = colors.onSurface,
+            color = if (muted && !focused) colors.onSurfaceVariant else colors.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
