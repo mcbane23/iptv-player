@@ -59,6 +59,9 @@ import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
 import com.bane23.iptvplayer.ui.common.guide.timeRange
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.runtime.snapshotFlow
 import com.bane23.iptvplayer.ui.common.theme.Glass
 import com.bane23.iptvplayer.ui.common.theme.glass
 import com.bane23.iptvplayer.ui.common.theme.glassSelected
@@ -236,6 +239,11 @@ fun TvGuideScreen(
     LaunchedEffect(Unit) {
         // Fokus ide na zapamćen kanal (pri prvom ulasku na prvi kanal) čim njegov red stigne. Ako red
         // ne stigne na ekran, od toga se odustaje i fokus ide na dugmad gore, da daljinski ne ostane bez fokusa.
+        // Kod velikih lista prvi kanali stižu tek posle sekundu-dve: odbrojavanje kreće kad spisak stigne
+        // (najduže se čeka [LIST_WAIT_MS]), inače bi fokus otišao na „Ranije” pre nego što redovi postoje.
+        withTimeoutOrNull(LIST_WAIT_MS) {
+            snapshotFlow { channels.itemCount > 0 && channels.peek(0) != null }.first { it }
+        }
         delay(FOCUS_RESTORE_TIMEOUT_MS)
         if (restoreChannelId != null || focusFirstRow) {
             restoreChannelId = null
@@ -320,6 +328,9 @@ private fun GuideRow(
         val targetIndex = shiftTarget?.let { start ->
             cells.indexOfFirst { it.program?.startMs == start }.takeIf { it >= 0 }
         } ?: lastIndex
+        // Kanal bez programa u ovom periodu: u praznoj pločici piše da programa nema, da vodič ne izgleda prazno.
+        val noProgramme = cells.isNotEmpty() && cells.all { it.program == null }
+        val noProgrammeText = stringResource(R.string.guide_no_programme)
         cells.forEachIndexed { index, cell ->
             val program = cell.program
             val marked = program != null && recordings.marks(channel, program, now)
@@ -327,8 +338,10 @@ private fun GuideRow(
                 text = when {
                     marked -> "● ${program?.title.orEmpty()}"
                     program != null && GuideRecordings.key(channel, program.startMs) in reminders -> "🔔 ${program.title}"
+                    noProgramme && index == 0 -> noProgrammeText
                     else -> program?.title.orEmpty()
                 },
+                muted = noProgramme,
                 highlighted = program != null && program.startMs <= now && program.stopMs > now,
                 onFocused = {
                     onFocused(program?.startMs)
@@ -374,6 +387,8 @@ private fun GuideBox(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    // Prigušen tekst (natpis da kanal nema program); u fokusu je uobičajene boje.
+    muted: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
@@ -400,7 +415,11 @@ private fun GuideBox(
     ) {
         Text(
             text = text,
-            color = if (focused) colors.onPrimary else colors.onSurface,
+            color = when {
+                focused -> colors.onPrimary
+                muted -> colors.onSurfaceVariant
+                else -> colors.onSurface
+            },
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -456,6 +475,7 @@ private fun SelectionPanel(selected: () -> GuideSelection?) {
 }
 
 private const val FOCUS_RESTORE_TIMEOUT_MS = 1_500L
+private const val LIST_WAIT_MS = 6_000L
 
 /** Umesto početka emisije: fokus ide na emisiju koja upravo traje. */
 private const val NOW_PROGRAM = Long.MIN_VALUE

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <!--
+            Samo test verzija: dozvoljava merenje brzine preko adb-a (simpleperf, perfetto) na pravom
+            uređaju, bez debug builda. Zvanično izdanje ovo nema.
+        -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="q" />
+    </application>
+</manifest>

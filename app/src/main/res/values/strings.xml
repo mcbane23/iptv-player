@@ -113,6 +113,7 @@
     <string name="category_favorites">Favorites</string>
     <string name="category_recent">Recently watched</string>
     <string name="category_chip_all">All</string>
+    <string name="guide_no_programme">No programme</string>
     <string name="channel_no_programme">No programme information</string>
     <string name="recent_remove">Remove from recently watched</string>
     <string name="recent_clear">Clear recently watched</string>

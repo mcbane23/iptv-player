@@ -72,6 +72,12 @@ class TvVodPreviewViewModel @Inject constructor(
         }
     }
 
+    /** Fokus je izašao iz postera (bočni meni, kategorije): zaglavlje više ne opisuje ništa. */
+    fun clear() {
+        job?.cancel()
+        _preview.value = null
+    }
+
     private companion object {
         const val DETAILS_DELAY_MS = 600L
     }

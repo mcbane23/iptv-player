@@ -112,6 +112,7 @@
     <string name="category_favorites">Favoriti</string>
     <string name="category_recent">Nedavno gledano</string>
     <string name="category_chip_all">Svi</string>
+    <string name="guide_no_programme">Nema programa</string>
     <string name="channel_no_programme">Nema podataka o programu</string>
     <string name="recent_remove">Ukloni iz nedavno gledanih</string>
     <string name="recent_clear">Obriši sve nedavno gledane</string>

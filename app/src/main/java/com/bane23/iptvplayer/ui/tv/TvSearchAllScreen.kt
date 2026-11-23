@@ -134,7 +134,8 @@ fun TvSearchAllScreen(
                 }),
                 modifier = Modifier
                     .weight(1f)
-                    .focusRequester(fieldFocus),
+                    .focusRequester(fieldFocus)
+                    .tvFieldExit(),
             )
             if (canVoice) {
                 TvButton(onClick = { runCatching { voice.launch(voiceIntent) } }) {

@@ -38,6 +38,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.bane23.iptvplayer.R
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onStart
+import androidx.paging.LoadState
+import androidx.paging.LoadStates
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -241,13 +244,18 @@ class ChannelListViewModel @Inject constructor(
     private val repository: ChannelRepository,
 ) : ViewModel() {
 
-    private data class Selection(val playlistId: Long, val categoryId: Long?)
+    private data class Selection(val playlistId: Long, val categoryId: Long?, val clearWhileLoading: Boolean)
 
     private val selection = MutableStateFlow<Selection?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val channels: Flow<PagingData<Channel>> = selection.filterNotNull()
-        .flatMapLatest { repository.channels(it.playlistId, it.categoryId) }
+        .flatMapLatest { picked ->
+            val list = repository.channels(picked.playlistId, picked.categoryId)
+            // Kanali prethodne grupe ne ostaju na ekranu dok se nova čita: prvo stiže prazan spisak u
+            // stanju učitavanja, pa ekran umesto starih kanala crta obrise redova.
+            if (picked.clearWhileLoading) list.onStart { emit(LoadingList) } else list
+        }
         .cachedIn(viewModelScope)
 
     /**
@@ -263,8 +271,19 @@ class ChannelListViewModel @Inject constructor(
         viewModelScope.launch { channels.collectLatest { warmList.collectFrom(it) } }
     }
 
-    fun select(playlistId: Long, categoryId: Long?) {
-        selection.value = Selection(playlistId, categoryId)
+    /** Sa [clearWhileLoading] se pri promeni grupe stari kanali odmah sklanjaju (TV), umesto da ostanu dok novi ne stignu. */
+    fun select(playlistId: Long, categoryId: Long?, clearWhileLoading: Boolean = false) {
+        selection.value = Selection(playlistId, categoryId, clearWhileLoading)
+    }
+
+    private companion object {
+        val LoadingList: PagingData<Channel> = PagingData.empty(
+            sourceLoadStates = LoadStates(
+                refresh = LoadState.Loading,
+                prepend = LoadState.NotLoading(endOfPaginationReached = false),
+                append = LoadState.NotLoading(endOfPaginationReached = false),
+            ),
+        )
     }
 }
 

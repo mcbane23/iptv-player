@@ -66,6 +66,13 @@ import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.bane23.iptvplayer.ui.common.theme.fadeMask
 import com.bane23.iptvplayer.ui.common.theme.Glass
 import com.bane23.iptvplayer.ui.common.theme.glass
@@ -78,7 +85,7 @@ import com.bane23.iptvplayer.ui.common.theme.focusHalo
  * „Početna” na TV-u: redovi „Nastavi gledanje”, omiljeni kanali sa emisijom koja je sada na
  * programu i nedavno dodati filmovi i serije. Red bez sadržaja se ne prikazuje.
  */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TvStartScreen(
     onPlay: (channelId: Long, categoryId: Long?) -> Unit,
@@ -136,7 +143,16 @@ fun TvStartScreen(
     }
 
     val channels = channelRow?.channels.orEmpty()
-    val nothing = channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty()
+    // Red kanala stiže malo posle ostalih. Ostali redovi ga kratko sačekaju, da ih on ne gurne nadole
+    // kad se pojavi; ako kasni duže, prikazuju se bez njega.
+    var channelsWaited by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(CHANNELS_WAIT_MS)
+        channelsWaited = true
+    }
+    val holdRows = channelRow == null && !channelsWaited
+    val nothing = holdRows ||
+        (channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty())
     val empty = channelRow != null && nothing && added.loaded
     // Poruka o učitavanju tek posle kratkog čekanja, da ne zatreperi kad redovi stignu odmah.
     var waited by remember { mutableStateOf(false) }
@@ -173,7 +189,7 @@ fun TvStartScreen(
             return@Column
         }
         if (nothing) {
-            if (waited) {
+            if (waited && !holdRows) {
                 VodLoading(
                     series = added.loading == VodKind.SERIES,
                     accent = MaterialTheme.colorScheme.primary,
@@ -183,13 +199,26 @@ fun TvStartScreen(
             return@Column
         }
         StartHero(preview = preview, nowMs = now)
+        // Redovi se pomeraju red po red: red sa fokusom je uvek ceo na vrhu, ispod zaglavlja (Bane).
+        // Spisak se zato ne pomera sam za fokusom, nego ga [showRow] dovodi na red čim stavka dobije fokus.
+        val rowsState = rememberLazyListState()
+        val rowsScope = rememberCoroutineScope()
+        val edgeSpec = LocalBringIntoViewSpec.current
+        val showRow: (String) -> Unit = { rowKey ->
+            val row = rowsState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == rowKey }
+            if (row != null && (row.index != rowsState.firstVisibleItemIndex || rowsState.firstVisibleItemScrollOffset != 0)) {
+                rowsScope.launch { rowsState.animateScrollToItem(row.index) }
+            }
+        }
+        CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll) {
         LazyColumn(
+            state = rowsState,
             modifier = Modifier.fillMaxSize().focusRequester(rowsFocus).focusGroup(),
             contentPadding = PaddingValues(bottom = 27.dp),
         ) {
             if (continueItems.isNotEmpty()) {
                 item(key = "continue") {
-                    StartRow(stringResource(R.string.vod_continue_watching)) {
+                    StartRow(stringResource(R.string.vod_continue_watching), edgeSpec) {
                         items(continueItems, key = { (if (it.isSeries) "s" else "m") + it.id }) { item ->
                             val focusKey = "continue-" + (if (item.isSeries) "s" else "m") + item.id
                             PosterCard(
@@ -202,6 +231,7 @@ fun TvStartScreen(
                                 },
                                 onFocused = {
                                     lastFocusKey = focusKey
+                                    showRow("continue")
                                     viewModel.focusVod(item.id, item.name, item.poster, item.isSeries)
                                 },
                                 onLongClick = { menuContinue = item },
@@ -215,7 +245,7 @@ fun TvStartScreen(
                 item(key = "channels") {
                     val group = channelRow?.group ?: ChannelGroups.FAVORITES
                     val title = if (group == ChannelGroups.FAVORITES) R.string.home_favorite_channels else R.string.home_recent_channels
-                    StartRow(stringResource(title)) {
+                    StartRow(stringResource(title), edgeSpec) {
                         items(channels, key = { it.id }) { channel ->
                             val focusKey = "channel-${channel.id}"
                             ChannelTile(
@@ -227,6 +257,7 @@ fun TvStartScreen(
                                 },
                                 onFocused = {
                                     lastFocusKey = focusKey
+                                    showRow("channels")
                                     viewModel.focusChannel(channel)
                                 },
                                 modifier = Modifier.returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
@@ -237,7 +268,7 @@ fun TvStartScreen(
             }
             if (added.movies.isNotEmpty()) {
                 item(key = "movies") {
-                    StartRow(stringResource(R.string.home_added_movies)) {
+                    StartRow(stringResource(R.string.home_added_movies), edgeSpec) {
                         items(added.movies, key = { it.id }) { item ->
                             val focusKey = "movies-${item.id}"
                             PosterCard(
@@ -249,6 +280,7 @@ fun TvStartScreen(
                                 },
                                 onFocused = {
                                     lastFocusKey = focusKey
+                                    showRow("movies")
                                     viewModel.focusVod(item.id, item.name, item.poster, series = false, year = item.year, rating = item.rating)
                                 },
                                 favorite = item.id in favoriteMovies,
@@ -261,7 +293,7 @@ fun TvStartScreen(
             }
             if (added.series.isNotEmpty()) {
                 item(key = "series") {
-                    StartRow(stringResource(R.string.home_added_series)) {
+                    StartRow(stringResource(R.string.home_added_series), edgeSpec) {
                         items(added.series, key = { it.id }) { item ->
                             val focusKey = "series-${item.id}"
                             PosterCard(
@@ -273,6 +305,7 @@ fun TvStartScreen(
                                 },
                                 onFocused = {
                                     lastFocusKey = focusKey
+                                    showRow("series")
                                     viewModel.focusVod(item.id, item.name, item.poster, series = true, year = item.year, rating = item.rating)
                                 },
                                 favorite = item.id in favoriteSeries,
@@ -287,6 +320,9 @@ fun TvStartScreen(
             added.loading?.let { kind ->
                 item(key = "loading") { LoadingRow(series = kind == VodKind.SERIES) }
             }
+            // Prazno mesto na kraju, da i poslednji red može da dođe na vrh.
+            item(key = "end") { Spacer(modifier = Modifier.fillParentMaxHeight()) }
+        }
         }
     }
 }
@@ -406,9 +442,14 @@ private fun LoadingRow(series: Boolean) {
 }
 
 /** Jedan red „Početne”: naslov i vodoravan spisak. Fokus se pri povratku u red vraća na istu stavku. */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun StartRow(title: String, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+private fun StartRow(
+    title: String,
+    // Vodoravno se red i dalje pomera za fokusom, kao svi spiskovi na TV-u.
+    scrollSpec: BringIntoViewSpec,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+) {
     Column(modifier = Modifier.padding(top = 10.dp)) {
         Text(
             text = title,
@@ -418,13 +459,15 @@ private fun StartRow(title: String, content: androidx.compose.foundation.lazy.La
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 48.dp),
         )
-        LazyRow(
-            modifier = Modifier.fillMaxWidth().focusRestorer(),
-            // Mesto za uvećan poster u fokusu i margina za overscan.
-            contentPadding = PaddingValues(horizontal = 43.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            content = content,
-        )
+        CompositionLocalProvider(LocalBringIntoViewSpec provides scrollSpec) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().focusRestorer(),
+                // Mesto za uvećan poster u fokusu i margina za overscan.
+                contentPadding = PaddingValues(horizontal = 43.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = content,
+            )
+        }
     }
 }
 
@@ -511,3 +554,4 @@ private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L
 private const val RETURN_FOCUS_FRAMES = 30
 private const val LOADING_DELAY_MS = 300L
+private const val CHANNELS_WAIT_MS = 700L
