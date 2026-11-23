@@ -400,7 +400,7 @@ private fun GuideBox(
     ) {
         Text(
             text = text,
-            color = colors.onSurface,
+            color = if (focused) colors.onPrimary else colors.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
  * Izgled „Staklo” (Bane, 23. 11. 2026): sve pločice u aplikaciji su poluprovidne, sa tankom svetlom
  * ivicom, kao meniji u plejeru. Pozadina se ne zamućuje (skupo na slabijim TV uređajima), pločica je
  * samo blago svetlija od onoga što je iza nje. Izabrano je providna boja aplikacije sa ivicom u toj
- * boji, a fokus na TV-u okvir u boji sa mekim oreolom. Svaki novi ekran koristi ove modifikatore
+ * boji, a fokus na TV-u pločica puna u toj boji sa mekim oreolom. Svaki novi ekran koristi ove modifikatore
  * umesto svojih boja i okvira.
  */
 object Glass {
@@ -49,7 +49,6 @@ object Glass {
 
     const val SELECTED_FILL = 0.20f
     const val SELECTED_BORDER = 0.65f
-    const val FOCUSED_FILL = 0.26f
     const val HALO = 0.16f
 }
 
@@ -63,11 +62,12 @@ fun Modifier.glassSelected(accent: Color, shape: Shape = Glass.RowShape): Modifi
         .border(1.dp, accent.copy(alpha = Glass.SELECTED_BORDER), shape)
 
 /**
- * Pločica sa fokusom na TV-u: okvir u boji [accent] i providna podloga. Oreol oko nje crta
- * [focusHalo], koji mora da stoji pre odsecanja (clip) u nizu modifikatora.
+ * Pločica sa fokusom na TV-u: cela u boji [accent], a sadržaj na njoj je taman (`onPrimary`). Bane je
+ * to izabrao 23. 11. 2026, pošto se providan fokus sa okvirom na TV-u slabo razlikovao od izabrane
+ * stavke; puna boja je i najjeftinija za crtanje. Oreol oko nje crta [focusHalo], koji mora da stoji
+ * pre odsecanja (clip) u nizu modifikatora.
  */
-fun Modifier.glassFocused(accent: Color, shape: Shape = Glass.RowShape): Modifier =
-    background(accent.copy(alpha = Glass.FOCUSED_FILL), shape).border(2.dp, accent, shape)
+fun Modifier.glassFocused(accent: Color, shape: Shape = Glass.RowShape): Modifier = background(accent, shape)
 
 /**
  * Podloga pločice u jednom pozivu: fokus, izabrano ili obično staklo. Sa [plain] obična pločica nema
