@@ -323,12 +323,26 @@ class TraktRepository @Inject constructor(
     }
 
     /**
-     * Započete serije sa naloga dodaje u omiljene aktivne liste, svaku samo jednom. Kad spisak
-     * serija trenutno nije dostupan, pokušava se pri sledećoj sinhronizaciji.
+     * Započete serije sa naloga dodaje u omiljene aktivne liste, svaku samo jednom. Pre toga, jednom po
+     * listi, iz omiljenih skloni višak jezičkih verzija koje su ranije dodate. Kad spisak serija trenutno
+     * nije dostupan, pokušava se pri sledećoj sinhronizaciji.
      */
     private suspend fun favoriteStartedShows(shows: List<WatchedShow>) {
         val playlistId = settings.activePlaylistId.first() ?: return
         val done = tokens.autoFavorites()
+        if (playlistId.toString() !in tokens.trimmedPlaylists()) {
+            val auto = done.mapNotNullTo(HashSet()) { key ->
+                key.takeIf { it.startsWith("$playlistId/") }?.substringAfter('/')?.toLongOrNull()
+            }
+            val trimmed = try {
+                panel { vod.trimAutoSeriesFavorites(playlistId, auto) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IOException) {
+                false
+            }
+            if (trimmed) tokens.markTrimmed(playlistId)
+        }
         val fresh = TraktPayloads.startedShows(shows).filter { "$playlistId/$it" !in done }
         if (fresh.isEmpty()) return
         val added = try {

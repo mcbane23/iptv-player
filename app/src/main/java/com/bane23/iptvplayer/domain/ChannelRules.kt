@@ -94,8 +94,10 @@ object ChannelRules {
         return countryAliases[text] ?: text.takeIf { it in isoCountries }
     }
 
-    private fun prefix(text: String?): String? =
-        text?.let { countryPrefix.find(it)?.groupValues?.get(1) }?.let { countryCode(it) }
+    /** Oznaka od dva ili tri velika slova ispred teksta („NL - …”, „[EN] …”), i kad nije zemlja. */
+    fun prefixTag(text: String?): String? = text?.let { countryPrefix.find(it)?.groupValues?.get(1) }
+
+    private fun prefix(text: String?): String? = prefixTag(text)?.let { countryCode(it) }
 
     /**
      * ISO oznaka zemlje ispred naziva kanala („RS: Prvi kanal”, „[RS] …”, „RS | …”), a ako je nema,
