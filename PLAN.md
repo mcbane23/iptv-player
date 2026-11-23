@@ -655,6 +655,13 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       `ui/common/theme/Glass.kt`; novi ekrani koriste njih i `AppScaffold`, ne svoje boje i okvire
 - [x] Pozadina „Stakla” se crta iz jedne male, unapred nacrtane slike umesto tri preliva u svakom kadru
       (23. 11. 2026, merenje na projektoru: listanje se posle „Stakla” osetno usporilo). Izgled je isti
+- [x] Fokus na TV-u je ponovo pun u boji aplikacije sa tamnim sadržajem (Bane, 23. 11. 2026, izabrao: providan
+      fokus sa okvirom se slabo razlikovao od izabrane stavke); sve ostalo ostaje stakleno. Polje za unos
+      u fokusu ima samo okvir
+- [x] Prekidač „Klasičan izgled” u Podešavanja > Izgled (Bane, 23. 11. 2026, telefon i TV): bez stakla,
+      neprovidne pločice bez ivice i ravna pozadina, raspored isti. Podrazumevano isključen i na TV-u: merenje
+      na projektoru je pokazalo da „Staklo” nije sporije kad se aplikacija prevede na uređaju. Vezan je za
+      vrstu uređaja u izvozu podešavanja
 - [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i

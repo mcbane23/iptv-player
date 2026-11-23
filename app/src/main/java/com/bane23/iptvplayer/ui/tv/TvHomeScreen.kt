@@ -434,7 +434,7 @@ fun TvHomeScreen(
 }
 
 /**
- * Stavka bočnog menija. Fokusirana stavka ima okvir i providnu podlogu u akcentnoj boji, izabrana
+ * Stavka bočnog menija. Fokusirana stavka je puna u akcentnoj boji sa tamnim sadržajem, izabrana
  * sekcija ikonicu u akcentnoj boji na blagoj podlozi, a [tint] daje stavci svoju boju (crvena dok se
  * snima). Naziv se vidi samo kad je meni raširen.
  */
@@ -454,7 +454,7 @@ private fun RailItem(
     val focused = hasFocus && showFocus
     val colors = MaterialTheme.colorScheme
     val content = when {
-        focused -> colors.onSurface
+        focused -> colors.onPrimary
         tint != null -> tint
         selected -> colors.primary
         else -> colors.onSurfaceVariant

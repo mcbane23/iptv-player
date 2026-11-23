@@ -30,8 +30,10 @@ import androidx.compose.ui.graphics.lerp
  */
 fun Modifier.glowBackground(accent: Color, background: Color): Modifier = composed {
     val cache = remember { GlowCache() }
+    // Klasičan izgled: ravna boja, bez preliva.
+    val flat = Glass.classic
     drawBehind {
-        if (background == BlackBackground || size.isEmpty()) {
+        if (flat || background == BlackBackground || size.isEmpty()) {
             drawRect(background)
         } else {
             drawImage(

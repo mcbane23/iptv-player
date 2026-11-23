@@ -110,6 +110,7 @@ fun MobileSettingsScreen(
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
+    val classicLook by viewModel.classicLook.collectAsStateWithLifecycle()
     val uiScale = UiScale.fromName(viewModel.uiScale.collectAsStateWithLifecycle().value, isTv = false)
     val screenPosition by viewModel.screenPosition.collectAsStateWithLifecycle()
     val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
@@ -328,6 +329,12 @@ fun MobileSettingsScreen(
                                     summary = stringResource(R.string.settings_black_theme_summary),
                                     checked = blackTheme,
                                     onChange = viewModel::setBlackTheme,
+                                )
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_classic_look),
+                                    summary = stringResource(R.string.settings_classic_look_summary),
+                                    checked = classicLook,
+                                    onChange = viewModel::setClassicLook,
                                 )
                                 // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
                                 SettingsValueRow(

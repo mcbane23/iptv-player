@@ -1198,7 +1198,7 @@ private fun TvTabChip(
     Text(
         text = text,
         color = when {
-            focused -> colors.onSurface
+            focused -> colors.onPrimary
             selected -> colors.primary
             else -> colors.onSurface
         },

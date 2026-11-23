@@ -844,7 +844,7 @@ fun PosterCard(
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
-            // Okvir u boji sa mekim oreolom, kao fokus svuda u izgledu „Staklo”.
+            // Podloga u boji sa mekim oreolom, kao fokus svuda u izgledu „Staklo”; naziv na njoj je taman.
             .focusHalo(focused, accent, radius = 12.dp)
             .then(if (focused) Modifier.glassFocused(accent, shape) else Modifier)
             .onPreviewKeyEvent { event ->
@@ -910,7 +910,7 @@ fun PosterCard(
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
-            color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+            color = if (focused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             minLines = 2,
             overflow = TextOverflow.Ellipsis,
