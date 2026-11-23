@@ -46,6 +46,18 @@ class PreferredVersionsTest {
     }
 
     @Test
+    fun `amazon versions count as english after the others`() {
+        val all = listOf(
+            series(1, 100, "DE - Nivo (US)"),
+            series(2, 100, "4K-AMZ - Nivo"),
+            series(3, 200, "AMZ - Grad"),
+            series(4, 200, "US - Grad"),
+        )
+        assertEquals(listOf(2L, 4L), preferredVersions(all, emptySet()).map { it.id })
+        assertEquals(3, englishRank("AMZ | Nivo", null))
+    }
+
+    @Test
     fun `tag in the name wins over the category`() {
         assertNull(englishRank("DE - Reka", "EN | Serije"))
         assertEquals(1, englishRank("GB - Reka", "DE | Serije"))
