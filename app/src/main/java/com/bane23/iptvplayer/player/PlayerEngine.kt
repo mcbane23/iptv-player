@@ -21,6 +21,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
@@ -54,6 +55,14 @@ enum class PlaybackStatus { IDLE, LOADING, PLAYING, PAUSED, RETRYING, FAILED }
 
 /** Zašto strim ne može da se pusti, u obliku koji UI prevodi u poruku. */
 enum class PlaybackFailure { NETWORK, NOT_FOUND, FORBIDDEN, UNSUPPORTED, UNKNOWN }
+
+/** Greške dekodera posle kojih se proverava da li uređaj uopšte ume da pusti taj snimak. */
+private val DECODER_ERRORS = setOf(
+    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+    PlaybackException.ERROR_CODE_DECODING_FAILED,
+    PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+    PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
+)
 
 /** Jedan audio zapis ili titl koji korisnik može da izabere. */
 data class TrackOption(
@@ -759,6 +768,18 @@ class PlayerEngine(
             scheduleRetry(delayMs = 0)
             return
         }
+        cannotDecode(error)?.let { format ->
+            // Uređaj nema dekoder za ovaj snimak (npr. 4K HEVC na slabijem TV-u): ponovni pokušaji ne pomažu,
+            // pa se odmah javlja da format nije podržan, umesto „Veza prekinuta” (Bane).
+            _state.update {
+                it.copy(
+                    status = PlaybackStatus.FAILED,
+                    failure = PlaybackFailure.UNSUPPORTED,
+                    failureDetail = listOf(format, describe(error)).joinToString(" · "),
+                )
+            }
+            return
+        }
         if (needsStereo(error)) {
             // Uređaj ne može da otvori izlaz za 5.1 (ili više kanala): isti sadržaj odmah iznova, spojen u stereo.
             StereoDownmix.enabled = true
@@ -884,6 +905,24 @@ class PlayerEngine(
             cause = current.cause
         }
         return false
+    }
+
+    /**
+     * Opis snimka (npr. „video/hevc 3840×2160”) kad greška dekodera slike potiče od toga što nijedan dekoder
+     * na uređaju ne prima taj format; inače null, pa se greška obrađuje kao i ostale (ponovni pokušaj).
+     */
+    private fun cannotDecode(error: PlaybackException): String? {
+        if (error.errorCode !in DECODER_ERRORS) return null
+        val format = (error as? ExoPlaybackException)?.rendererFormat ?: player.videoFormat ?: return null
+        val mime = format.sampleMimeType ?: return null
+        if (!MimeTypes.isVideo(mime)) return null
+        val supported = try {
+            MediaCodecUtil.getDecoderInfos(mime, false, false).any { it.isFormatSupported(format) }
+        } catch (e: MediaCodecUtil.DecoderQueryException) {
+            return null
+        }
+        if (supported) return null
+        return if (format.width > 0 && format.height > 0) "$mime ${format.width}×${format.height}" else mime
     }
 
     private fun needsStereo(error: PlaybackException): Boolean {
