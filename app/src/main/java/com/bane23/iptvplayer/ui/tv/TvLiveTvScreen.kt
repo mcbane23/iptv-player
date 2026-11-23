@@ -93,6 +93,7 @@ import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import com.bane23.iptvplayer.ui.common.rememberNow
 import kotlinx.coroutines.delay
+import androidx.paging.LoadState
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.KeyEventType
@@ -243,7 +244,7 @@ fun TvLiveTvScreen(
     }
     LaunchedEffect(playlistId, selectedCategory) {
         if (playlistId != null) {
-            channelsViewModel.select(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS })
+            channelsViewModel.select(playlistId, selectedCategory.takeIf { it != ALL_CHANNELS }, clearWhileLoading = true)
         }
     }
     // Izbor se pamti tek kad se korisnik zadrži na kategoriji, ne pri svakom prolasku preko nje.
@@ -685,7 +686,29 @@ fun TvLiveTvScreen(
                 // Redni broj reda sa fokusom; nije stanje, da korak kroz kanale ništa ne crta iznova.
                 val focusedRow = remember { IntArray(1) { -1 } }
                 val edgeMargin = with(LocalDensity.current) { EDGE_MARGIN.toPx() }
-                LazyColumn(
+                // Nova grupa se još čita (velike liste i po par sekundi): obrisi redova umesto kanala prethodne grupe.
+                val switching = channels.itemCount == 0 && channels.loadState.refresh is LoadState.Loading
+                // Nova grupa kreće od vrha spiska. Povratak iz plejera ne menja grupu, pa mesto ostaje.
+                val shownCategory = remember { LongArray(1) { selectedCategory } }
+                LaunchedEffect(selectedCategory) {
+                    if (shownCategory[0] != selectedCategory) {
+                        shownCategory[0] = selectedCategory
+                        runCatching { channelListState.scrollToItem(0) }
+                    }
+                }
+                if (switching && !selectedLocked) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        repeat(SKELETON_ROWS) {
+                            Row(
+                                modifier = Modifier.padding(start = 62.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                SkeletonLogo(size = 32.dp)
+                                SkeletonTextLines(modifier = Modifier.weight(1f).padding(start = 16.dp))
+                            }
+                        }
+                    }
+                } else LazyColumn(
                     state = channelListState,
                     modifier = Modifier
                         .fillMaxSize()

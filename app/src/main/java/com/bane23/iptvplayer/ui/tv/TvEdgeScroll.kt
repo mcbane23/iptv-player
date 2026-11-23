@@ -115,3 +115,12 @@ fun Modifier.tvHeldKeyScroll(state: LazyListState, marginPx: Float, focusedIndex
 
 /** Nešto više od visine jednog reda, da se iza fokusa vidi sledeći red ili naslov odeljka. */
 internal val EDGE_MARGIN = 56.dp
+
+/**
+ * Spisak se ne pomera sam za fokusom. Za spiskove koji se pomeraju red po red (Početna, mreža postera):
+ * ekran sam dovodi red sa fokusom na vrh, pa gornji red nikad nije isečen (Bane, 23. 11. 2026).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+internal val NoFocusScroll = object : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+}

@@ -50,6 +50,13 @@ import androidx.compose.ui.unit.Dp
 import kotlin.math.roundToInt
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.launch
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -554,7 +561,7 @@ fun TvVodScreen(
                         TvVodPreviewHeader(preview = preview)
                     }
                     when {
-                        showContinue -> PosterGrid(columns, gridModifier) {
+                        showContinue -> PosterGrid(columns, gridModifier) { showRow ->
                             itemsIndexed(continueItems, key = { _, item -> item.id }) { index, item ->
                                 val isLast = isLastItem(item.id) { lastItemId }
                                 PosterCard(
@@ -565,6 +572,7 @@ fun TvVodScreen(
                                     onClick = { onOpen(item.toVodItem()) },
                                     onFocused = {
                                         focusedIndex[0] = index
+                                        showRow(index)
                                         lastItemId = item.id
                                         previewViewModel.focus(item.toVodItem(), series)
                                     },
@@ -579,7 +587,7 @@ fun TvVodScreen(
 
                         showFavorites && favorites.isEmpty() -> TvEmptyState(icon = AppIcons.StarOutline, text = stringResource(R.string.vod_favorites_empty))
 
-                        showFavorites -> PosterGrid(columns, gridModifier) {
+                        showFavorites -> PosterGrid(columns, gridModifier) { showRow ->
                             itemsIndexed(favorites, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
@@ -591,6 +599,7 @@ fun TvVodScreen(
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         focusedIndex[0] = index
+                                        showRow(index)
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -612,7 +621,7 @@ fun TvVodScreen(
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                         state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty))
 
-                        else -> PosterGrid(columns, gridModifier) {
+                        else -> PosterGrid(columns, gridModifier) { showRow ->
                             itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
@@ -624,6 +633,7 @@ fun TvVodScreen(
                                     onClick = { onOpen(item) },
                                     onFocused = {
                                         focusedIndex[0] = index
+                                        showRow(index)
                                         lastItemId = item.id
                                         previewViewModel.focus(item, series)
                                     },
@@ -665,17 +675,46 @@ fun TvVodScreen(
 private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
     remember(id) { derivedStateOf { lastItemId() == id } }.value
 
+/**
+ * Mreža postera koja se pomera red po red: red sa fokusom je uvek ceo na vrhu, ispod zaglavlja, pa
+ * gornji red nikad nije isečen (Bane, 23. 11. 2026). Mreža se zato ne pomera sama za fokusom; poster
+ * kad dobije fokus zove `showRow` sa svojim rednim brojem.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: LazyGridScope.() -> Unit) {
-    LazyVerticalGrid(
-        modifier = modifier,
-        columns = GridCells.Fixed(columns),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        // Mesto za uvećan poster u fokusu, da ga ivica mreže ne odseče.
-        contentPadding = PaddingValues(12.dp),
-        content = content,
-    )
+private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: LazyGridScope.(showRow: (Int) -> Unit) -> Unit) {
+    val gridState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
+    val showRow: (Int) -> Unit = remember(gridState) {
+        { index ->
+            scope.launch {
+                // Broj kolona se menja kad fokus uđe među postere; red se traži tek kad se mreža složi.
+                withFrameNanos { }
+                val first = gridState.layoutInfo.visibleItemsInfo.firstOrNull()
+                val target = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                val onTop = first != null && target != null && target.row == first.row &&
+                    gridState.firstVisibleItemScrollOffset == 0
+                if (!onTop) gridState.animateScrollToItem(index)
+            }
+        }
+    }
+    BoxWithConstraints(modifier = modifier) {
+        // Prazno mesto na dnu, da i poslednji red može da dođe na vrh: visina mreže bez jednog reda postera.
+        val columnWidth = (maxWidth - GRID_PADDING * 2 - GRID_GAP * (columns - 1)) / columns
+        val rowHeight = (columnWidth - POSTER_INSET * 2) * POSTER_HEIGHT_RATIO + POSTER_TEXT_HEIGHT
+        val bottom = (maxHeight - GRID_PADDING - rowHeight).coerceAtLeast(GRID_PADDING)
+        CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll) {
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(columns),
+                horizontalArrangement = Arrangement.spacedBy(GRID_GAP),
+                verticalArrangement = Arrangement.spacedBy(GRID_GAP),
+                // Mesto za uvećan poster u fokusu, da ga ivica mreže ne odseče.
+                contentPadding = PaddingValues(start = GRID_PADDING, top = GRID_PADDING, end = GRID_PADDING, bottom = bottom),
+                content = { content(showRow) },
+            )
+        }
+    }
 }
 
 /**
@@ -765,6 +804,14 @@ internal fun PinnedRow(
 
 
 private const val GRID_COLUMNS = 5
+private val GRID_PADDING = 12.dp
+private val GRID_GAP = 12.dp
+
+// Mere postera u mreži, za računanje visine jednog reda: razmak oko postera, odnos visine i širine
+// slike i visina naziva u dva reda sa razmacima.
+private val POSTER_INSET = 5.dp
+private const val POSTER_HEIGHT_RATIO = 1.5f
+private val POSTER_TEXT_HEIGHT = 46.dp
 
 // Sa skupljenim kategorijama u red staje 7 malo manjih postera (Bane, 22. 11. 2026).
 private const val GRID_COLUMNS_WIDE = 7
