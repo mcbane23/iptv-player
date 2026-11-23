@@ -154,6 +154,10 @@ class PlayerEngine(
     @Volatile
     private var decoderMode = settings.decoder
 
+    /** Izabrano izjednačavanje jačine zvuka; vidi [setLoudness]. */
+    @Volatile
+    private var loudness = settings.loudness.also { LoudnessNormalization.level = it }
+
     /** Da li je poslednji izabrani dekoder slike tražen za tunel režim; čita se kad dekoder krene. */
     @Volatile
     private var videoTunneled = false
@@ -177,9 +181,15 @@ class PlayerEngine(
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
             // Višekanalni zvuk se spaja u stereo kad uređaj ne može da ga pusti (vidi [StereoDownmix]).
-            .setAudioProcessors(arrayOf(StereoDownmixProcessor()))
+            // Posle spajanja u stereo se izjednačava jačina (vidi [LoudnessNormalizerProcessor]).
+            .setAudioProcessors(arrayOf(StereoDownmixProcessor(), LoudnessNormalizerProcessor()))
             .build()
-            .let { sink -> PassthroughGate(sink).also { audioGate = it } }
+            .let { sink ->
+                PassthroughGate(sink).also {
+                    it.preferPcm = loudness != LoudnessLevel.OFF
+                    audioGate = it
+                }
+            }
     }
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
@@ -404,6 +414,8 @@ class PlayerEngine(
                 PlaybackActivity.set(this@PlayerEngine, busy && !local)
             }
         }
+        // Izjednačavanje zvuka može da se promeni i u toku gledanja (brzi meni plejera).
+        scope.launch { LoudnessNormalization.selected.collect(::setLoudness) }
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
         // U prikazu više kanala se broj sličica ne ispisuje, pa se tamo ni ne meri.
@@ -649,6 +661,20 @@ class PlayerEngine(
         // Sadržaj koji ne može da se premotava bi krenuo od početka; novi dekoder važi od sledećeg puštanja.
         if (source == null || seekBlocked) return
         prepareAgain()
+    }
+
+    /**
+     * Prati izabrano izjednačavanje jačine zvuka ([LoudnessNormalization]). Raspakovan zvuk se menja
+     * odmah; ako zvuk baš sada ide neraspakovan ka TV-u ili pojačalu, a izjednačavanje se uključi,
+     * sadržaj se priprema iznova da bi se zvuk raspakovao. Pri isključivanju takav zvuk ostaje raspakovan do sledećeg puštanja.
+     */
+    private fun setLoudness(level: LoudnessLevel) {
+        if (loudness == level) return
+        val wasOff = loudness == LoudnessLevel.OFF
+        loudness = level
+        val gate = audioGate ?: return
+        gate.preferPcm = level != LoudnessLevel.OFF
+        if (wasOff && audioPassthrough && source != null && !seekBlocked) prepareAgain()
     }
 
     /** Priprema trenutni sadržaj iznova, da se dekoderi ponovo izaberu; film ili epizoda nastavljaju sa istog mesta. */

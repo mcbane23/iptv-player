@@ -237,6 +237,10 @@
     <string name="settings_audio_language_2">Drugi jezik zvuka</string>
     <string name="settings_audio_language_3">Treći jezik zvuka</string>
     <string name="settings_audio_language_summary">Kad strim ima više zvučnih zapisa, pušta se prvi dostupan od ova tri jezika. Izbor u plejeru važi samo za ono što gledate.</string>
+    <string name="settings_loudness">Izjednačavanje jačine zvuka</string>
+    <string name="settings_loudness_summary">Tiši kanali, filmovi i serije se pojačaju, a glasniji stišaju, da sve svira približno isto. Jako i unutar filma stišava glasne scene. Dolby zvuk se tada ne šalje neraspakovan na risiver.</string>
+    <string name="loudness_light">Blago</string>
+    <string name="loudness_strong">Jako</string>
     <string name="settings_subtitle_language_1">Prvi jezik titla</string>
     <string name="settings_subtitle_language_2">Drugi jezik titla</string>
     <string name="settings_subtitle_language_3">Treći jezik titla</string>
@@ -787,7 +791,7 @@
     <string name="settings_group_watching">Gledanje</string>
     <string name="settings_group_watching_summary">Pokretanje, premotavanje, pauza i kontrole u plejeru</string>
     <string name="settings_group_subtitles">Titlovi i zvuk</string>
-    <string name="settings_group_subtitles_summary">Jezik titlova i zvuka, izgled titlova, OpenSubtitles</string>
+    <string name="settings_group_subtitles_summary">Jezik titlova i zvuka, jačina zvuka, izgled titlova, OpenSubtitles</string>
     <string name="settings_group_look">Izgled</string>
     <string name="settings_group_look_summary">Boja, tema i veličina prikaza</string>
     <string name="settings_group_recordings">Snimci i preuzimanja</string>

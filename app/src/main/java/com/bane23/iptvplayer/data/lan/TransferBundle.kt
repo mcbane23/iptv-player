@@ -168,6 +168,7 @@ data class TransferSettings(
     val subtitleBackground: Boolean? = null,
     val subtitleSize: String? = null,
     val subtitlePosition: String? = null,
+    val loudness: String? = null,
     val autoRefreshPlaylists: Boolean? = null,
     val accentColor: String? = null,
     val vodSortMovies: String? = null,

@@ -233,6 +233,7 @@ Cilj: izbor kategorije, izbor kanala, gledanje.
 - [x] Pauza i puštanje (17. 11. 2026): sadržaj koji je korisnik pauzirao ostaje pauziran kad se aplikacija vrati iz pozadine; na telefonu dupli dodir na sliku pauzira i pušta (u filmovima i serijama srednja trećina, leva i desna i dalje premotavaju); kad se slušalice odvoje (Bluetooth ili kabl), plejer se pauzira
 - [x] Telefon: puštanje u pozadini (17. 11. 2026), opcija u Podešavanjima, podrazumevano isključena: zvuk nastavlja kad se ekran ugasi ili aplikacija ode u pozadinu, uz obaveštenje sa pauzom i zaustavljanjem (rade i dugmad na slušalicama). Pauziran sadržaj se i dalje zaustavlja, a zatvaranje malog prozora (PiP) zaustavlja puštanje. Na TV-u opcije nema
 - [x] TV: D-pad gore/dole menja kanal, OK otvara listu, brojevi biraju kanal
+- [x] Izjednačavanje jačine zvuka (23. 11. 2026): kanali, filmovi i serije sviraju približno istom jačinom; Isključeno, Blago (podrazumevano) ili Jako, u Podešavanjima (Titlovi i zvuk) i u brzim podešavanjima plejera; dok je uključeno, Dolby zvuk se raspakuje u aplikaciji kad uređaj ima dekoder
 
 ### Faza 3: Favoriti, istorija, pretraga
 

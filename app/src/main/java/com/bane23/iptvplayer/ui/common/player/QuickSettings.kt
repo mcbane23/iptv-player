@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
+import com.bane23.iptvplayer.player.LoudnessLevel
 import com.bane23.iptvplayer.player.SleepTimer
 import com.bane23.iptvplayer.ui.common.SettingChoice
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
@@ -102,10 +103,22 @@ fun quickSettingChoices(
         selected = BufferSize.entries.indexOf(settings.buffer),
         onSelect = { settingsViewModel.setBuffer(BufferSize.entries[it]) },
     )
+    val loudnessChoice = SettingChoice(
+        title = stringResource(R.string.settings_loudness),
+        summary = "",
+        options = listOf(
+            stringResource(R.string.setting_off),
+            stringResource(R.string.loudness_light),
+            stringResource(R.string.loudness_strong),
+        ),
+        selected = LoudnessLevel.entries.indexOf(settings.loudness),
+        onSelect = { settingsViewModel.setLoudness(LoudnessLevel.entries[it]) },
+    )
     // Isti redosled na telefonu i na TV-u. Veličina i pomeranje titla su u meniju „Titlovi”.
     val shared = listOfNotNull(
         aspectChoice,
         decoderChoice,
+        loudnessChoice,
         sleepChoice,
         speedChoice,
         bufferChoice,

@@ -6,6 +6,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioSink
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 
 /**
  * Stoji ispred izlaza zvuka i po potrebi zabranjuje da zvuk ide neraspakovan ka TV-u ili pojačalu
@@ -20,13 +21,27 @@ internal class PassthroughGate(sink: AudioSink) : ForwardingAudioSink(sink) {
     @Volatile
     var pcmOnly = false
 
-    /** Od poslednjeg brisanja je bar jednom odbijen zvuk koji bi inače išao neraspakovan. */
+    /**
+     * Raspakovan zvuk je poželjan (izjednačavanje jačine radi samo nad njim), ali samo ako uređaj ima
+     * dekoder za taj zvuk; bez dekodera zvuk i dalje ide neraspakovan, da se ne izgubi. Važi od
+     * sledeće pripreme sadržaja.
+     */
+    @Volatile
+    var preferPcm = false
+
+    /**
+     * Od poslednjeg brisanja je bar jednom zbog [pcmOnly] odbijen zvuk koji bi inače išao
+     * neraspakovan (i koji [preferPcm] ne bi odbio).
+     */
     @Volatile
     var refused = false
 
     private fun refuses(format: Format): Boolean {
-        if (!pcmOnly || format.sampleMimeType == MimeTypes.AUDIO_RAW) return false
-        refused = true
+        val mime = format.sampleMimeType
+        if (mime == MimeTypes.AUDIO_RAW) return false
+        val preferred = preferPcm && mime != null && canDecode(mime)
+        if (!pcmOnly && !preferred) return false
+        if (!preferred) refused = true
         return true
     }
 
@@ -35,5 +50,13 @@ internal class PassthroughGate(sink: AudioSink) : ForwardingAudioSink(sink) {
     override fun getFormatSupport(format: Format): Int {
         val support = super.getFormatSupport(format)
         return if (support != AudioSink.SINK_FORMAT_UNSUPPORTED && refuses(format)) AudioSink.SINK_FORMAT_UNSUPPORTED else support
+    }
+
+    private companion object {
+        private val decodable = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
+        fun canDecode(mime: String): Boolean = decodable.getOrPut(mime) {
+            runCatching { MediaCodecUtil.getDecoderInfos(mime, false, false).isNotEmpty() }.getOrDefault(false)
+        }
     }
 }
