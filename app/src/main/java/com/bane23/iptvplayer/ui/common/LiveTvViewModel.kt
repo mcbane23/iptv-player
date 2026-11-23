@@ -557,9 +557,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setBlackTheme(enabled) }
     }
 
-    /** null dok se ne učita, da prekidač ne pokaže pogrešno stanje (podrazumevano zavisi od uređaja). */
-    val classicLook: StateFlow<Boolean?> = settings.classicLook
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val classicLook: StateFlow<Boolean> = settings.classicLook
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setClassicLook(enabled: Boolean) {
         viewModelScope.launch { settings.setClassicLook(enabled) }

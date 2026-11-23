@@ -269,8 +269,8 @@ fun TvSettingsScreen(
             TvItem(BLACK_THEME_ROW, stringResource(R.string.settings_black_theme), checked = blackTheme) {
                 viewModel.setBlackTheme(!blackTheme)
             },
-            TvItem(CLASSIC_LOOK_ROW, stringResource(R.string.settings_classic_look), checked = classicLook == true) {
-                viewModel.setClassicLook(classicLook != true)
+            TvItem(CLASSIC_LOOK_ROW, stringResource(R.string.settings_classic_look), checked = classicLook) {
+                viewModel.setClassicLook(!classicLook)
             },
             TvItem(VOD_PREVIEW_ROW, stringResource(R.string.settings_tv_vod_preview), checked = vodPreview) {
                 viewModel.setTvVodPreview(!vodPreview)

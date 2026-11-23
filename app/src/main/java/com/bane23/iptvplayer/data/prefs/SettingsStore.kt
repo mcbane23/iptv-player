@@ -17,7 +17,6 @@ import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
-import com.bane23.iptvplayer.ui.common.DeviceType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,7 +40,6 @@ data class VodCategoryPrefs(
 class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     private val dataStore = context.settingsDataStore
-    private val isTv = DeviceType.isTv(context)
 
     /** Lista koju je korisnik izabrao kao aktivnu, ili null ako nijedna nije izabrana. */
     val activePlaylistId: Flow<Long?> =
@@ -427,10 +425,11 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
     }
 
     /**
-     * Klasičan izgled, bez stakla: neprovidne pločice i ravna pozadina (brže na slabijim uređajima). Dok
-     * korisnik ne izabere sam, na TV-u je uključen, a na telefonu isključen (Bane, 23. 11. 2026).
+     * Klasičan izgled, bez stakla: neprovidne pločice i ravna pozadina. Isključen dok ga korisnik ne
+     * uključi, na telefonu i na TV-u (Bane, 23. 11. 2026: merenje na projektoru je pokazalo da „Staklo”
+     * nije sporije, pa TV i telefon izgledaju isto).
      */
-    val classicLook: Flow<Boolean> = dataStore.data.map { it[CLASSIC_LOOK] ?: isTv }.distinctUntilChanged()
+    val classicLook: Flow<Boolean> = dataStore.data.map { it[CLASSIC_LOOK] ?: false }.distinctUntilChanged()
 
     suspend fun setClassicLook(enabled: Boolean) {
         dataStore.edit { it[CLASSIC_LOOK] = enabled }

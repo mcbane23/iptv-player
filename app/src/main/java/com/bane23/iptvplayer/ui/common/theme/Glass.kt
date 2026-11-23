@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
  */
 object Glass {
     /**
-     * Klasičan izgled (prekidač u Podešavanja > Izgled; na TV-u podrazumevan): bez stakla. Pločice su
+     * Klasičan izgled (prekidač u Podešavanja > Izgled, podrazumevano isključen): bez stakla. Pločice su
      * neprovidne i bez ivice, pozadina je ravna boja, fokus nema oreol. Raspored je isti. Služi slabijim
      * uređajima, gde poluprovidni slojevi preko celog ekrana usporavaju listanje. Postavlja ga
      * `IptvTheme`, zajedno sa bojama [classicFill] i [classicFillStrong] iz teme.

@@ -333,7 +333,7 @@ fun MobileSettingsScreen(
                                 SettingsSwitchRow(
                                     title = stringResource(R.string.settings_classic_look),
                                     summary = stringResource(R.string.settings_classic_look_summary),
-                                    checked = classicLook == true,
+                                    checked = classicLook,
                                     onChange = viewModel::setClassicLook,
                                 )
                                 // Svaki dodir prelazi na sledeću veličinu; promena se vidi odmah.
