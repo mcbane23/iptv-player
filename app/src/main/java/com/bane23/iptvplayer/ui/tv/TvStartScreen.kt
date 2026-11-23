@@ -72,6 +72,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.launch
 import com.bane23.iptvplayer.ui.common.theme.fadeMask
 import com.bane23.iptvplayer.ui.common.theme.Glass
@@ -204,10 +205,20 @@ fun TvStartScreen(
         val rowsState = rememberLazyListState()
         val rowsScope = rememberCoroutineScope()
         val edgeSpec = LocalBringIntoViewSpec.current
+        // Redni broj reda se računa iz toga koji redovi postoje, a ne iz onoga što je na ekranu: red iznad,
+        // na koji fokus pređe strelicom Gore, u tom trenutku još nije među vidljivim redovima.
+        val rowKeys by rememberUpdatedState(
+            listOfNotNull(
+                "continue".takeIf { continueItems.isNotEmpty() },
+                "channels".takeIf { channels.isNotEmpty() },
+                "movies".takeIf { added.movies.isNotEmpty() },
+                "series".takeIf { added.series.isNotEmpty() },
+            ),
+        )
         val showRow: (String) -> Unit = { rowKey ->
-            val row = rowsState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == rowKey }
-            if (row != null && (row.index != rowsState.firstVisibleItemIndex || rowsState.firstVisibleItemScrollOffset != 0)) {
-                rowsScope.launch { rowsState.animateScrollToItem(row.index) }
+            val index = rowKeys.indexOf(rowKey)
+            if (index >= 0 && (index != rowsState.firstVisibleItemIndex || rowsState.firstVisibleItemScrollOffset != 0)) {
+                rowsScope.launch { rowsState.animateScrollToItem(index) }
             }
         }
         CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll) {
