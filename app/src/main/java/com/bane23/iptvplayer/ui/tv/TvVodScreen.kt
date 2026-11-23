@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
@@ -698,8 +699,10 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
         { index ->
             focused[0] = index
             scope.launch {
-                // Broj kolona se menja kad fokus uđe među postere; red se traži tek kad se mreža složi.
-                withFrameNanos { }
+                // Kad fokus uđe među postere, kategorije se skupljaju i mreža se širi kroz animaciju, a broj
+                // kolona se menja. Red se traži tek kad širina mreže stane, inače fokusiran red posle animacije
+                // ostane iznad vidljivog dela i Gore nema kuda (Bane: Dole, Levo u kategorije, pa Desno nazad).
+                awaitStableWidth(gridState)
                 val first = gridState.layoutInfo.visibleItemsInfo.firstOrNull()
                 val target = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
                 val onTop = first != null && target != null && target.row == first.row &&
@@ -741,6 +744,21 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
         }
     }
 }
+
+/** Čeka da se širina mreže ne menja dva kadra zaredom (kraj animacije kategorija), najviše oko jedne sekunde. */
+private suspend fun awaitStableWidth(state: LazyGridState) {
+    var last = -1
+    var stable = 0
+    repeat(MAX_SETTLE_FRAMES) {
+        withFrameNanos { }
+        val width = state.layoutInfo.viewportSize.width
+        stable = if (width == last) stable + 1 else 0
+        last = width
+        if (stable >= 2) return
+    }
+}
+
+private const val MAX_SETTLE_FRAMES = 60
 
 /**
  * Dve kolone jedna pored druge; leva je široka kao tanka traka kad je [open] 0, a kao otvorene
