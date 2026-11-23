@@ -202,8 +202,10 @@ fun TvVodScreen(
     BackHandler(enabled = !categoriesOpen && gridFocused, onBack = openCategories)
     val toGrid = Modifier.onPreviewKeyEvent { event ->
         if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
-        // Kad postera nema (učitavanje, prazna kategorija), Desno radi kao i pre.
-        event.type == KeyEventType.KeyDown && gridFocus.tryRequestFocus()
+        // Povratak u istu kategoriju vraća fokus na poster sa koga se otišlo (njegov red dolazi na vrh); u
+        // novoj kategoriji tog postera nema, pa fokus ide na prvi poster (Bane). Kad postera nema
+        // (učitavanje, prazna kategorija), Desno radi kao i pre.
+        event.type == KeyEventType.KeyDown && (posterFocus.tryRequestFocus() || gridFocus.tryRequestFocus())
     }
     // Mesto u mreži postera na kome je fokus; nije stanje, da korak kroz postere ništa ne crta iznova.
     // Kolona se računa tek na taster, jer se broj kolona menja kad se kategorije skupe.
