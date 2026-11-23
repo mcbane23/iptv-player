@@ -34,4 +34,36 @@ val NavyPlaceholders = PlaceholderColors(
     logo = NavySurfaceVariant,
 )
 
+val GraphitePlaceholders = PlaceholderColors(
+    image = Color(0xFF232323),
+    gradientTop = Color(0xFF303030),
+    gradientBottom = Color(0xFF1A1A1A),
+    skeleton = Color(0xFF262626),
+    logo = GraphiteSurfaceVariant,
+)
+
+val MidnightPlaceholders = PlaceholderColors(
+    image = Color(0xFF221F3B),
+    gradientTop = Color(0xFF2F2B52),
+    gradientBottom = Color(0xFF18152B),
+    skeleton = Color(0xFF252140),
+    logo = MidnightSurfaceVariant,
+)
+
+val ForestPlaceholders = PlaceholderColors(
+    image = Color(0xFF182A24),
+    gradientTop = Color(0xFF233B33),
+    gradientBottom = Color(0xFF111F1A),
+    skeleton = Color(0xFF1A2E27),
+    logo = ForestSurfaceVariant,
+)
+
+val BurgundyPlaceholders = PlaceholderColors(
+    image = Color(0xFF2D1920),
+    gradientTop = Color(0xFF41242E),
+    gradientBottom = Color(0xFF1F1217),
+    skeleton = Color(0xFF311C23),
+    logo = BurgundySurfaceVariant,
+)
+
 val LocalPlaceholderColors = staticCompositionLocalOf { GrayPlaceholders }

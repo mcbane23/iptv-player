@@ -645,6 +645,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       i TV, bira se sa spiska): Siva (podrazumevana) i Teget. Neonske teme iz 1.0.11 su uklonjene (Bane);
       ko ih je izabrao dobija istu boju bez neona. Donji meni na telefonu nema podlogu oko ikone izabrane
       kartice. Crna tema ostaje poseban prekidač i radi uz svaku temu
+- [x] Četiri nove teme (Bane, 23. 11. 2026): Grafit, Ponoć, Šuma i Bordo, pored Sive (podrazumevana) i
+      Teget, na istom spisku „Tema” (telefon i TV). Menjaju samo boju pozadine, površina i mesta bez slike
 - [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i

@@ -22,3 +22,20 @@ val Error = Color(0xFFFF8A80)
 val NavyBackground = Color(0xFF0A1430)
 val NavySurface = Color(0xFF122048)
 val NavySurfaceVariant = Color(0xFF1B2D60)
+
+// Mirne tamne teme (Bane, 23. 11. 2026): iste uloge kao gore, svaka u svojoj nijansi.
+val GraphiteBackground = Color(0xFF121212)
+val GraphiteSurface = Color(0xFF1E1E1E)
+val GraphiteSurfaceVariant = Color(0xFF2A2A2A)
+
+val MidnightBackground = Color(0xFF12101F)
+val MidnightSurface = Color(0xFF1D1A33)
+val MidnightSurfaceVariant = Color(0xFF2A2647)
+
+val ForestBackground = Color(0xFF0C1613)
+val ForestSurface = Color(0xFF14241F)
+val ForestSurfaceVariant = Color(0xFF1E332C)
+
+val BurgundyBackground = Color(0xFF170D11)
+val BurgundySurface = Color(0xFF27151B)
+val BurgundySurfaceVariant = Color(0xFF381F27)
