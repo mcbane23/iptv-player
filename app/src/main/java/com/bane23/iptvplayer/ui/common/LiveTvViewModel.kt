@@ -415,6 +415,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setSubtitlePosition(position) }
     }
 
+    /** Važi odmah i za plejer koji je otvoren. */
+    fun setLoudness(level: com.bane23.iptvplayer.player.LoudnessLevel) {
+        com.bane23.iptvplayer.player.LoudnessNormalization.level = level
+        viewModelScope.launch { settings.setLoudness(level) }
+    }
+
     fun setSeekStep(seconds: Int) {
         viewModelScope.launch { settings.setSeekStep(seconds) }
     }
