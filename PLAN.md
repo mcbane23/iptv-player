@@ -647,6 +647,12 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       kartice. Crna tema ostaje poseban prekidač i radi uz svaku temu
 - [x] Četiri nove teme (Bane, 23. 11. 2026): Grafit, Ponoć, Šuma i Bordo, pored Sive (podrazumevana) i
       Teget, na istom spisku „Tema” (telefon i TV). Menjaju samo boju pozadine, površina i mesta bez slike
+- [x] Izgled „Staklo” (Bane, 23. 11. 2026, izabrao sa slika; zamenjuje dosadašnji izgled svuda, telefon i
+      TV, svi ekrani odjednom): pozadina je tamni preliv sa dva meka svetla, sve pločice su poluprovidne sa
+      tankom svetlom ivicom kao meniji u plejeru (bez zamućenja, zbog brzine na TV-u), izabrano je providna
+      boja aplikacije sa ivicom u toj boji, fokus na TV-u je okvir u boji sa mekim oreolom, a meni je
+      lebdeća kapsula (donji i bočni na telefonu, bočni na TV-u). Zajednički delovi su u
+      `ui/common/theme/Glass.kt`; novi ekrani koriste njih i `AppScaffold`, ne svoje boje i okvire
 - [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i

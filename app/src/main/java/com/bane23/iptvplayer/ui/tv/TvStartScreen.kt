@@ -66,6 +66,13 @@ import com.bane23.iptvplayer.ui.common.rememberNow
 import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.fadeMask
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /**
  * „Početna” na TV-u: redovi „Nastavi gledanje”, omiljeni kanali sa emisijom koja je sada na
@@ -304,23 +311,12 @@ private fun StartHero(preview: StartPreview?, nowMs: Long) {
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight()
                     .fillMaxWidth(0.62f)
-                    .alpha(if (preview.wide) 0.75f else 0.35f),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            0.38f to colors.background,
-                            0.75f to colors.background.copy(alpha = 0.2f),
-                            1f to Color.Transparent,
-                        ),
+                    // Slika se ka levo i nadole pretapa u pozadinu ekrana (preliv), bez ravne boje preko nje.
+                    .fadeMask(
+                        opacity = if (preview.wide) 0.75f else 0.35f,
+                        Brush.horizontalGradient(0f to Color.Transparent, 0.6f to Color.Black.copy(alpha = 0.8f), 1f to Color.Black),
+                        Brush.verticalGradient(0.55f to Color.Black, 1f to Color.Transparent),
                     ),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to colors.background)),
             )
         }
         TvClock(modifier = Modifier.align(Alignment.TopEnd).padding(top = 27.dp, end = 48.dp))
@@ -456,16 +452,16 @@ private fun ChannelTile(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(10.dp)
-    val content = if (focused) colors.onPrimary else colors.onSurface
+    val shape = Glass.RowShape
+    val content = colors.onSurface
     Box(
         modifier = modifier
             .padding(horizontal = 5.dp)
             .width(CHANNEL_WIDTH)
             .height(CHANNEL_HEIGHT)
+            .focusHalo(focused, colors.primary)
             .clip(shape)
-            .background(if (focused) colors.primary else colors.surface)
-            .border(3.dp, if (focused) colors.primary else androidx.compose.ui.graphics.Color.Transparent, shape)
+            .glassState(colors.primary, focused, selected = false, shape = shape)
             .onFocusChanged {
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
@@ -502,7 +498,7 @@ private fun ChannelTile(
                     .align(Alignment.BottomStart)
                     .fillMaxWidth(progress)
                     .height(3.dp)
-                    .background(if (focused) colors.onPrimary.copy(alpha = 0.6f) else colors.primary.copy(alpha = 0.8f)),
+                    .background(colors.primary.copy(alpha = 0.8f)),
             )
         }
     }

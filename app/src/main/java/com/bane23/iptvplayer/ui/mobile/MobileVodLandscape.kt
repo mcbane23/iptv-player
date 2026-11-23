@@ -57,6 +57,9 @@ import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseUiState
 import com.bane23.iptvplayer.ui.common.vod.WatchedMarks
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /**
  * Filmovi ili serije na telefonu u landscape-u, u dve kolone: levo Favoriti i „Nastavi gledanje”
@@ -297,12 +300,12 @@ private fun PaneRow(
     onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    val content = if (selected) colors.onPrimary else colors.onSurface
+    val content = if (selected) colors.primary else colors.onSurface
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) colors.primary else colors.surfaceVariant.copy(alpha = 0.6f))
+            .clip(Glass.RowShape)
+            .then(if (selected) Modifier.glassSelected(colors.primary) else Modifier.glass())
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -345,8 +348,8 @@ private fun FilterField(value: String, onChange: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(colors.surface)
+            .clip(Glass.RowShape)
+            .glass()
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

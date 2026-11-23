@@ -72,6 +72,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @HiltViewModel
 class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : ViewModel() {
@@ -297,7 +298,7 @@ private fun WhatsNew(notes: List<String>, modifier: Modifier = Modifier) {
             .border(
                 width = 2.dp,
                 color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = MaterialTheme.shapes.small,
+                shape = RoundedCornerShape(12.dp),
             )
             .onFocusChanged { focused = it.isFocused }
             .onKeyEvent { event ->

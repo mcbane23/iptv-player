@@ -54,6 +54,7 @@ import com.bane23.iptvplayer.data.xtream.MovieDetails
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.formatDuration
+import com.bane23.iptvplayer.ui.common.theme.Glass
 
 /**
  * Poster filma ili serije u odnosu 2:3. Dok se učitava ostaje tamno polje; ako postera nema ili ne
@@ -72,7 +73,7 @@ fun Poster(
     Box(
         modifier = modifier
             .aspectRatio(POSTER_RATIO)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(Glass.PosterShape)
             .background(LocalPlaceholderColors.current.image),
     ) {
         if (!url.isNullOrBlank() && !failed) {

@@ -45,6 +45,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.VodSearch
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import androidx.compose.foundation.BorderStroke
 
 /** Stavka u izboru kategorije. [icon] se prikazuje ispred naziva (npr. zvezdica za omiljene). */
 data class PickerGroup(val key: String, val label: String, val icon: ImageVector? = null, val count: Int? = null)
@@ -76,8 +78,9 @@ fun CategoryButton(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        shape = Glass.RowShape,
+        color = Glass.Fill,
+        border = BorderStroke(1.dp, Glass.Border),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding, vertical = 4.dp),

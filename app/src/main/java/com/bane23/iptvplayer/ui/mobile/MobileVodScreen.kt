@@ -67,6 +67,9 @@ import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /**
  * Filmovi ili serije na telefonu: čipovi (Favoriti, „Nastavi gledanje”, kategorija) kao u Uživo,
@@ -497,15 +500,14 @@ private fun CategoryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(8.dp)
+    val shape = Glass.PillShape
     val accent = MaterialTheme.colorScheme.primary
     val content = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = modifier
             .height(32.dp)
             .clip(shape)
-            .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
-            .border(if (selected) 1.5.dp else 1.dp, if (selected) accent else MaterialTheme.colorScheme.outline, shape)
+            .then(if (selected) Modifier.glassSelected(accent, shape) else Modifier.glass(shape))
             .clickable(onClick = onClick)
             .padding(start = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

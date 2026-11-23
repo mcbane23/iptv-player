@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -307,7 +306,7 @@ private fun Picker(picker: MultiPicker, viewModel: MultiViewViewModel) {
     val favoriteLists by viewModel.favoriteLists.collectAsStateWithLifecycle()
     val favoritesName = stringResource(R.string.category_favorites)
     val channels = viewModel.pickerChannels.collectAsLazyPagingItems()
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

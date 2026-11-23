@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,6 +59,9 @@ import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
 import com.bane23.iptvplayer.ui.common.guide.timeRange
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /** Na telefonu se odjednom vidi sat i po programa. */
 private const val WINDOW_MS = 90 * 60_000L
@@ -97,7 +99,7 @@ fun MobileGuideScreen(
     val listAt = if (now >= ui.windowStart && now < ui.windowStart + LIST_SLOT_MS) now else ui.windowStart
 
     Box {
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -250,8 +252,8 @@ private fun GuideListRow(
             .padding(horizontal = 12.dp)
             .fillMaxWidth()
             .height(LIST_ROW_HEIGHT)
-            .clip(RoundedCornerShape(10.dp))
-            .background(colors.surface.copy(alpha = 0.6f))
+            .clip(Glass.RowShape)
+            .glass()
             .clickable(onClick = onPlay)
             .padding(start = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -360,22 +362,26 @@ private fun GuideRow(
                 } else {
                     val live = program.startMs <= now && program.stopMs > now
                     val selected = selection?.channel?.id == channel.id && selection.program == program
-                    val background = when {
-                        selected -> MaterialTheme.colorScheme.primary
-                        live -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    }
+                    val cellShape = RoundedCornerShape(8.dp)
+                    val accent = MaterialTheme.colorScheme.primary
                     val textColor = when {
-                        selected -> MaterialTheme.colorScheme.onPrimary
-                        live -> MaterialTheme.colorScheme.onPrimaryContainer
+                        selected -> accent
+                        live -> MaterialTheme.colorScheme.onSurface
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                     Box(
                         modifier = Modifier
                             .weight(cell.weight)
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(background)
+                            .clip(cellShape)
+                            .then(
+                                when {
+                                    selected -> Modifier.glassSelected(accent, cellShape)
+                                    // Emisija koja je u toku je svetlija pločica, bez boje.
+                                    live -> Modifier.glass(cellShape, strong = true)
+                                    else -> Modifier.glass(cellShape)
+                                },
+                            )
                             .clickable { viewModel.select(channel, program) }
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                     ) {
@@ -402,8 +408,8 @@ private fun EmptyCell(modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .clip(RoundedCornerShape(8.dp))
+            .background(Glass.Fill.copy(alpha = 0.03f))
             .clickable(onClick = onClick),
     )
 }

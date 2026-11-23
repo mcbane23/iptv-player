@@ -39,6 +39,8 @@ import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
 import com.bane23.iptvplayer.ui.common.player.statusMessage
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
 
 /**
  * Plejer za sadržaj poslat sa telefona. Njime se upravlja sa telefona; na daljinskom TV-a OK
@@ -131,7 +133,7 @@ fun TvCastPairingCode(code: String?, onExpired: () -> Unit, modifier: Modifier =
     Column(
         modifier = modifier
             .padding(horizontal = 48.dp, vertical = 27.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .glass(Glass.CardShape, strong = true)
             .padding(horizontal = 28.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -163,7 +165,7 @@ fun TvIncomingTransfer(transfer: IncomingTransfer?, onDone: () -> Unit, modifier
     Column(
         modifier = modifier
             .padding(horizontal = 48.dp, vertical = 27.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+            .glass(Glass.CardShape, strong = true)
             .padding(horizontal = 28.dp, vertical = 20.dp),
     ) {
         Text(

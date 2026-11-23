@@ -55,6 +55,7 @@ import com.bane23.iptvplayer.ui.common.multiview.label
 import com.bane23.iptvplayer.ui.common.player.AspectMode
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.VideoSurface
+import com.bane23.iptvplayer.ui.common.theme.Glass
 
 /**
  * Više kanala odjednom na TV-u: 2 ili 4 polja preko celog ekrana. Zvuk ide sa polja koje ima
@@ -202,7 +203,8 @@ private fun TileMenu(
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.36f)
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface, Glass.CardShape)
+                .border(1.dp, Glass.Border, Glass.CardShape)
                 .padding(12.dp)
                 .onPreviewKeyEvent { event ->
                     val step = when (event.nativeKeyEvent.keyCode) {

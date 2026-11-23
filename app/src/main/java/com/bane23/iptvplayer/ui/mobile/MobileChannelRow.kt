@@ -41,6 +41,9 @@ import com.bane23.iptvplayer.ui.common.SkeletonLogo
 import com.bane23.iptvplayer.ui.common.SkeletonTextLines
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.rememberNow
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /**
  * Red sa kanalom na telefonu: broj, logo, naziv, emisija koja je sada na programu sa trakom
@@ -185,14 +188,14 @@ fun MobileChannelCard(
     val now by rememberNow()
     var menuOpen by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val content = if (selected) colors.onPrimary else colors.onSurface
-    val muted = if (selected) colors.onPrimary.copy(alpha = 0.7f) else colors.onSurfaceVariant
+    val content = if (selected) colors.primary else colors.onSurface
+    val muted = colors.onSurfaceVariant
     Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(if (selected) colors.primary else colors.surface.copy(alpha = 0.6f))
+                .then(if (selected) Modifier.glassSelected(colors.primary, CardShape) else Modifier.glass(CardShape))
                 .combinedClickable(
                     enabled = channel != null,
                     onClick = { channel?.let(onClick) },
@@ -267,7 +270,7 @@ fun MobileChannelCard(
                                 modifier = Modifier
                                     .fillMaxWidth(progress)
                                     .fillMaxHeight()
-                                    .background(if (selected) colors.onPrimary.copy(alpha = 0.5f) else colors.primary.copy(alpha = 0.85f)),
+                                    .background(colors.primary.copy(alpha = 0.85f)),
                             )
                         }
                     }
@@ -276,7 +279,7 @@ fun MobileChannelCard(
                     Icon(
                         imageVector = AppIcons.Star,
                         contentDescription = stringResource(R.string.category_favorites),
-                        tint = if (selected) content else FavoriteColor,
+                        tint = FavoriteColor,
                         modifier = Modifier
                             .padding(start = 8.dp)
                             .size(16.dp),
@@ -343,7 +346,7 @@ fun MobileChannelCard(
     }
 }
 
-private val CardShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+private val CardShape = Glass.RowShape
 
 /** Logo u redu kanala: manji nego u pretrazi, da na ekran stane više kanala. */
 private val CardLogoSize = 32.dp

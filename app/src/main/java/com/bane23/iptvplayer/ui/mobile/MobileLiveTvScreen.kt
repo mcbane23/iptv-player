@@ -99,6 +99,9 @@ import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.domain.ChannelFilter
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.liveFilterChoices
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /** Oznaka za „Svi kanali” među čipovima (pravi ID-jevi kategorija su pozitivni, posebne grupe negativne). */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -792,8 +795,8 @@ private fun GroupPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .clip(Glass.RowShape)
+                    .glass()
                     .padding(start = 2.dp, end = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 content = header,
@@ -896,12 +899,12 @@ private fun PanelRow(
     onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    val content = if (selected) colors.onPrimary else colors.onSurface
+    val content = if (selected) colors.primary else colors.onSurface
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) colors.primary else colors.surfaceVariant.copy(alpha = 0.6f))
+            .clip(Glass.RowShape)
+            .then(if (selected) Modifier.glassSelected(colors.primary) else Modifier.glass())
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
