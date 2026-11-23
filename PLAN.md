@@ -653,6 +653,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       boja aplikacije sa ivicom u toj boji, fokus na TV-u je okvir u boji sa mekim oreolom, a meni je
       lebdeća kapsula (donji i bočni na telefonu, bočni na TV-u). Zajednički delovi su u
       `ui/common/theme/Glass.kt`; novi ekrani koriste njih i `AppScaffold`, ne svoje boje i okvire
+- [x] Pozadina „Stakla” se crta iz jedne male, unapred nacrtane slike umesto tri preliva u svakom kadru
+      (23. 11. 2026, merenje na projektoru: listanje se posle „Stakla” osetno usporilo). Izgled je isti
 - [x] TV Uživo: kategorija se bira tek na OK, ne dok fokus prolazi preko nje (Bane, 19. 11. 2026)
 - [x] Početni prikaz Podešavanja i Uživo (Bane, 19. 11. 2026; telefon i TV): Podešavanja se posle prelaska
       na drugu karticu i povratka otvaraju na celom meniju, ne na poslednjoj grupi. Uživo se pri pokretanju i
