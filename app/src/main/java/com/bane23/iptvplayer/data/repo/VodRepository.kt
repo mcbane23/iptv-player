@@ -157,21 +157,27 @@ internal fun mergeContinue(movies: List<ContinueItem>, series: List<ContinueItem
     (movies + series).sortedByDescending { it.updatedAt }.take(limit)
 
 /**
- * Koliko je verzija serije „engleska”: 0 za EN, 1 za UK/GB, 2 za US, null kad nije engleska. Gleda se
+ * Koliko je verzija serije „engleska”: 0 za EN, 1 za UK/GB, 2 za US, 3 za AMZ, null kad nije engleska. Gleda se
  * oznaka ispred naziva („NL - …”), a kad je nema, oznaka ispred naziva kategorije ili reč „English” u njemu.
  */
 internal fun englishRank(name: String, category: String?): Int? {
-    val tag = ChannelRules.prefixTag(name) ?: ChannelRules.prefixTag(category)
+    val tag = ChannelRules.prefixTag(name.withoutQuality()) ?: ChannelRules.prefixTag(category?.withoutQuality())
     if (tag != null) return ENGLISH_TAGS[tag.uppercase()]
     return if (category != null && ENGLISH_WORD.containsMatchIn(category)) 0 else null
 }
 
-private val ENGLISH_TAGS = mapOf("EN" to 0, "ENG" to 0, "UK" to 1, "GB" to 1, "GBR" to 1, "US" to 2, "USA" to 2)
+/** AMZ: Amazon, čije su serije na engleskom. */
+private val ENGLISH_TAGS = mapOf("EN" to 0, "ENG" to 0, "UK" to 1, "GB" to 1, "GBR" to 1, "US" to 2, "USA" to 2, "AMZ" to 3)
+
+/** Oznaka kvaliteta ispred oznake jezika („4K-AMZ - …”). */
+private val QUALITY_LEAD = Regex("^[\\s\\[(]*(?:4K|UHD|FHD)[\\s-]+(?=[A-Z]{2,3}\\s*(?:[:|\\])]|\\s[-–]\\s))")
+
+private fun String.withoutQuality(): String = QUALITY_LEAD.replace(this, "")
 private val ENGLISH_WORD = Regex("(?<![\\p{L}])ENGLISH(?![\\p{L}])", RegexOption.IGNORE_CASE)
 
 /**
  * Od više verzija iste serije (isti TMDB ID) bira koje idu u omiljene: one gledane u aplikaciji
- * ([watchedSeriesIds]), a ako takvih nema, jednu, englesku ako postoji (redom EN, UK/GB, US), inače
+ * ([watchedSeriesIds]), a ako takvih nema, jednu, englesku ako postoji (redom EN, UK/GB, US, AMZ), inače
  * prvu iz spiska. [categoryNames]: naziv kategorije po ID-ju.
  */
 internal fun preferredVersions(
