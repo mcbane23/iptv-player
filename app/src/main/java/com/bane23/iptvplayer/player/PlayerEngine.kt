@@ -414,6 +414,8 @@ class PlayerEngine(
                 PlaybackActivity.set(this@PlayerEngine, busy && !local)
             }
         }
+        // Izjednačavanje zvuka može da se promeni i u toku gledanja (brzi meni plejera).
+        scope.launch { LoudnessNormalization.selected.collect(::setLoudness) }
         player.addListener(listener)
         player.addAnalyticsListener(analyticsListener)
         // U prikazu više kanala se broj sličica ne ispisuje, pa se tamo ni ne meri.
@@ -662,12 +664,11 @@ class PlayerEngine(
     }
 
     /**
-     * Menja izjednačavanje jačine zvuka. Raspakovan zvuk se menja odmah; ako zvuk baš sada ide
-     * neraspakovan ka TV-u ili pojačalu, a izjednačavanje se uključi, sadržaj se priprema iznova da bi
-     * se zvuk raspakovao. Pri isključivanju takav zvuk ostaje raspakovan do sledećeg puštanja.
+     * Prati izabrano izjednačavanje jačine zvuka ([LoudnessNormalization]). Raspakovan zvuk se menja
+     * odmah; ako zvuk baš sada ide neraspakovan ka TV-u ili pojačalu, a izjednačavanje se uključi,
+     * sadržaj se priprema iznova da bi se zvuk raspakovao. Pri isključivanju takav zvuk ostaje raspakovan do sledećeg puštanja.
      */
-    fun setLoudness(level: LoudnessLevel) {
-        LoudnessNormalization.level = level
+    private fun setLoudness(level: LoudnessLevel) {
         if (loudness == level) return
         val wasOff = loudness == LoudnessLevel.OFF
         loudness = level

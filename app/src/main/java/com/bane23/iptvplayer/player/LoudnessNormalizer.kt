@@ -5,6 +5,7 @@ import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.nio.ByteBuffer
 import kotlin.math.abs
 import kotlin.math.exp
@@ -22,10 +23,18 @@ enum class LoudnessLevel {
     STRONG,
 }
 
-/** Trenutno izabran nivo; plejer ga postavlja iz podešavanja, a obrada zvuka čita pri svakom bloku. */
-internal object LoudnessNormalization {
-    @Volatile
-    var level = LoudnessLevel.OFF
+/**
+ * Trenutno izabran nivo. Plejer ga postavlja iz podešavanja kad se otvori, brzi meni plejera ga menja
+ * u toku gledanja, a obrada zvuka ga čita pri svakom bloku.
+ */
+object LoudnessNormalization {
+    val selected = MutableStateFlow(LoudnessLevel.OFF)
+
+    var level: LoudnessLevel
+        get() = selected.value
+        set(value) {
+            selected.value = value
+        }
 }
 
 /**
