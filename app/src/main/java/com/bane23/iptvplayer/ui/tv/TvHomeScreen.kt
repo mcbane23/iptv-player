@@ -298,6 +298,8 @@ fun TvHomeScreen(
         Column(
             modifier = Modifier
                 .zIndex(1f)
+                // Meni stoji u sredini po visini ekrana, na svim TV ekranima isto (Bane).
+                .align(Alignment.CenterStart)
                 .width(railWidth)
                 // Meni je lebdeća staklena kapsula, visoka koliko i njene stavke (izgled „Staklo”).
                 .padding(start = 10.dp, top = 16.dp, bottom = 16.dp)
@@ -311,7 +313,6 @@ fun TvHomeScreen(
                 // Kad fokus uđe u meni, ide na izabranu sekciju, a ne na najbližu stavku.
                 .focusRestorer(selectedFocus)
                 .focusGroup()
-                // Prva stavka je u visini naslova sekcije (27 dp od vrha ekrana).
                 .padding(horizontal = 11.dp, vertical = 11.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
