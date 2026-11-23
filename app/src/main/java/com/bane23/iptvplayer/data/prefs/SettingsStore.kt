@@ -14,6 +14,7 @@ import com.bane23.iptvplayer.domain.RemoteAction
 import com.bane23.iptvplayer.domain.RemoteButton
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
+import com.bane23.iptvplayer.player.LoudnessLevel
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
@@ -544,6 +545,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             subtitleSize = SubtitleSize.entries.firstOrNull { it.name == prefs[SUBTITLE_SIZE] } ?: SubtitleSize.NORMAL,
             subtitlePosition = SubtitlePosition.entries.firstOrNull { it.name == prefs[SUBTITLE_POSITION] }
                 ?: SubtitlePosition.LOW,
+            loudness = LoudnessLevel.entries.firstOrNull { it.name == prefs[PLAYER_LOUDNESS] } ?: PlayerSettings().loudness,
         )
     }.distinctUntilChanged()
 
@@ -569,6 +571,10 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
 
     suspend fun setSubtitlePosition(position: SubtitlePosition) {
         dataStore.edit { it[SUBTITLE_POSITION] = position.name }
+    }
+
+    suspend fun setLoudness(level: LoudnessLevel) {
+        dataStore.edit { it[PLAYER_LOUDNESS] = level.name }
     }
 
     /** Jezik zvuka na mestu [slot] (0 = prvi po važnosti); prazno prazni to mesto. */
@@ -663,6 +669,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val SUBTITLE_BACKGROUND = booleanPreferencesKey("subtitle_background")
         val SUBTITLE_SIZE = stringPreferencesKey("subtitle_size")
         val SUBTITLE_POSITION = stringPreferencesKey("subtitle_position")
+        val PLAYER_LOUDNESS = stringPreferencesKey("player_loudness")
         val PLAYER_AUDIO_LANGUAGE = stringPreferencesKey("player_audio_language")
         val PLAYER_SUBTITLE_LANGUAGE = stringPreferencesKey("player_subtitle_language")
         val RESUME_LAST_CHANNEL = booleanPreferencesKey("resume_last_channel")
@@ -729,7 +736,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
          * kategorija i podsetnici nisu ovde: oni zavise od liste i putuju uz nju.
          */
         val GENERAL_KEYS: List<Preferences.Key<*>> = BOOLEAN_KEYS + INT_KEYS + listOf(
-            PLAYER_BUFFER, SUBTITLE_SIZE, SUBTITLE_POSITION, PLAYER_AUDIO_LANGUAGE, PLAYER_SUBTITLE_LANGUAGE, APP_THEME,
+            PLAYER_BUFFER, SUBTITLE_SIZE, SUBTITLE_POSITION, PLAYER_LOUDNESS, PLAYER_AUDIO_LANGUAGE, PLAYER_SUBTITLE_LANGUAGE, APP_THEME,
             RECENT_SEARCHES, ACCENT_COLOR, UPDATE_CHANNEL, VOD_SORT_MOVIES, VOD_SORT_SERIES,
         )
 

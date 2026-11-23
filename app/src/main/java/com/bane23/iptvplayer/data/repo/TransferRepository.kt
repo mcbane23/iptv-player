@@ -39,6 +39,7 @@ import com.bane23.iptvplayer.domain.PlaylistDraft
 import com.bane23.iptvplayer.domain.PlaylistException
 import com.bane23.iptvplayer.domain.PlaylistType
 import com.bane23.iptvplayer.player.BufferSize
+import com.bane23.iptvplayer.player.LoudnessLevel
 import com.bane23.iptvplayer.player.PlayerSettings
 import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
@@ -97,6 +98,7 @@ class TransferRepository @Inject constructor(
                 subtitleBackground = player.subtitleBackground,
                 subtitleSize = player.subtitleSize.name,
                 subtitlePosition = player.subtitlePosition.name,
+                loudness = player.loudness.name,
                 autoRefreshPlaylists = settings.autoRefreshPlaylists.first(),
                 accentColor = settings.accentColor.first(),
                 vodSortMovies = settings.vodSort(series = false).first(),
@@ -498,6 +500,7 @@ class TransferRepository @Inject constructor(
         incoming.subtitleBackground?.let { settings.setSubtitleBackground(it) }
         SubtitleSize.entries.firstOrNull { it.name == incoming.subtitleSize }?.let { settings.setSubtitleSize(it) }
         SubtitlePosition.entries.firstOrNull { it.name == incoming.subtitlePosition }?.let { settings.setSubtitlePosition(it) }
+        LoudnessLevel.entries.firstOrNull { it.name == incoming.loudness }?.let { settings.setLoudness(it) }
         incoming.autoRefreshPlaylists?.let { settings.setAutoRefreshPlaylists(it) }
         // Nepoznato ime boje aplikacija sama zamenjuje podrazumevanom.
         incoming.accentColor?.takeIf { ENUM_NAME.matches(it) }?.let { settings.setAccentColor(it) }

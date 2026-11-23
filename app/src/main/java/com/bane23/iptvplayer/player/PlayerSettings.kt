@@ -44,6 +44,8 @@ data class PlayerSettings(
     val subtitleBackground: Boolean = true,
     val subtitleSize: SubtitleSize = SubtitleSize.NORMAL,
     val subtitlePosition: SubtitlePosition = SubtitlePosition.LOW,
+    /** Izjednačavanje jačine zvuka između kanala, filmova i serija. */
+    val loudness: LoudnessLevel = LoudnessLevel.LIGHT,
 ) {
     /** Izabrani jezici zvuka po redu važnosti, bez praznih mesta i ponavljanja. */
     val audioLanguages: List<String> get() = languagePriority(audioLanguageSlots)
