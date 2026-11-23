@@ -30,38 +30,40 @@ import com.bane23.iptvplayer.ui.common.theme.LocalPlaceholderColors
 @Composable
 fun ChannelLogo(url: String?, name: String?, modifier: Modifier = Modifier, size: Dp = 40.dp) {
     var failed by remember(url) { mutableStateOf(FailedImages.contains(url)) }
-    Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
-        if (!url.isNullOrBlank() && !failed) {
-            AsyncImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                onError = {
-                    FailedImages.add(url, it)
-                    failed = true
-                },
-                modifier = Modifier.size(size),
+    // Bez okvira oko slike: svaki logo je jedan sloj manje, a na TV-u se pri svakom koraku fokusa
+    // prolazi kroz sve slojeve na ekranu.
+    if (!url.isNullOrBlank() && !failed) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            onError = {
+                FailedImages.add(url, it)
+                failed = true
+            },
+            modifier = modifier.size(size),
+        )
+    } else if (!name.isNullOrBlank()) {
+        val initials = remember(name) { channelInitials(name) }
+        Box(
+            modifier = modifier
+                .size(size)
+                .background(LocalPlaceholderColors.current.logo, RoundedCornerShape(size * 0.22f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            BasicText(
+                text = initials,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                style = TextStyle(
+                    color = OnSurfaceVariant,
+                    // Četiri znaka moraju da stanu u širinu, pa su duže oznake sitnije.
+                    fontSize = (size.value * if (initials.length > 3) 0.26f else 0.32f).sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
             )
-        } else if (!name.isNullOrBlank()) {
-            val initials = remember(name) { channelInitials(name) }
-            Box(
-                modifier = Modifier
-                    .size(size)
-                    .background(LocalPlaceholderColors.current.logo, RoundedCornerShape(size * 0.22f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                BasicText(
-                    text = initials,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                    style = TextStyle(
-                        color = OnSurfaceVariant,
-                        // Četiri znaka moraju da stanu u širinu, pa su duže oznake sitnije.
-                        fontSize = (size.value * if (initials.length > 3) 0.26f else 0.32f).sp,
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                )
-            }
         }
+    } else {
+        Box(modifier = modifier.size(size))
     }
 }
