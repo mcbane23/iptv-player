@@ -66,7 +66,7 @@ class RangeIgnoredException : RuntimeException("Server ignored the Range request
  * i odbacio sve do traženog mesta, što kod sporog servera traje minutima.
  */
 @OptIn(UnstableApi::class)
-class RangeGuard(private val state: ApproxSeekState) : TransferListener {
+class RangeGuard(private val state: ApproxSeekState, private val onBytes: (Int) -> Unit = {}) : TransferListener {
     override fun onTransferInitializing(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) = Unit
 
     override fun onTransferStart(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) {
@@ -74,7 +74,9 @@ class RangeGuard(private val state: ApproxSeekState) : TransferListener {
         if (source is HttpDataSource && source.responseCode == 200) throw RangeIgnoredException()
     }
 
-    override fun onBytesTransferred(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean, bytesTransferred: Int) = Unit
+    override fun onBytesTransferred(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean, bytesTransferred: Int) {
+        if (isNetwork) onBytes(bytesTransferred)
+    }
 
     override fun onTransferEnd(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) = Unit
 }

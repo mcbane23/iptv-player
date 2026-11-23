@@ -86,6 +86,7 @@ data class CategoryEntity(
         Index("playlistId", "number"),
         Index("playlistId", "stableKey"),
         Index("playlistId", "epgKey"),
+        Index("variantKey"),
     ],
 )
 data class ChannelEntity(
@@ -130,6 +131,48 @@ data class ChannelEntity(
     val country: String? = null,
     /** Kanal je sklonjen filterom kanala iz Uživo (kvalitet, zemlja). Kolonu održava `ChannelRulesSync`. */
     val filterHidden: Boolean = false,
+    /**
+     * Ključ istog kanala u drugom kvalitetu (vidi `ChannelRules.variantKey`); null dok ga
+     * `ChannelRulesSync` ne izračuna. Po njemu plejer nalazi ostale verzije kanala.
+     */
+    val variantKey: String? = null,
+)
+
+/**
+ * Stvarna rezolucija i protok kanala, izmereni kad se kanal pusti ili pri merenju omiljenih. Vezano
+ * za [stableKey], pa ostaje i posle osvežavanja liste. Po ovome štednja mobilnih podataka bira verziju.
+ */
+@Entity(
+    tableName = "channel_quality",
+    primaryKeys = ["playlistId", "stableKey"],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class ChannelQualityEntity(
+    val playlistId: Long,
+    val stableKey: String,
+    val width: Int,
+    val height: Int,
+    /** Protok u bitovima u sekundi; 0 dok nije izmeren. */
+    val bitrate: Int = 0,
+    val measuredAt: Long,
+)
+
+/** Verzija kanala (isti kanal u drugom kvalitetu ili u spojenoj listi) sa izmerenim kvalitetom; 0 = nije izmeren. */
+data class ChannelVariantRow(
+    val id: Long,
+    val playlistId: Long,
+    val playlistName: String,
+    val name: String,
+    val stableKey: String,
+    val height: Int,
+    val bitrate: Int,
 )
 
 /** Kanal kome kvalitet i zemlja još nisu izračunati. */

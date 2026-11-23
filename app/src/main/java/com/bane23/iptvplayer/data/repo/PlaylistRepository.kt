@@ -706,8 +706,16 @@ class PlaylistRepository @Inject constructor(
             val channel = build(categoryId, total)
             val current = filter ?: settings.liveFilter.first().also { filter = it }
             val quality = ChannelRules.quality(channel.name)
-            val country = ChannelRules.country(channel.name, categoryId?.let { categoryNames[it] })
-            batch.add(channel.copy(quality = quality, country = country, filterHidden = current.hides(quality, country)))
+            val category = categoryId?.let { categoryNames[it] }
+            val country = ChannelRules.country(channel.name, category)
+            batch.add(
+                channel.copy(
+                    quality = quality,
+                    country = country,
+                    filterHidden = current.hides(quality, country),
+                    variantKey = ChannelRules.variantKey(channel.name, category),
+                ),
+            )
             total++
             if (batch.size >= BATCH_SIZE) flush()
         }

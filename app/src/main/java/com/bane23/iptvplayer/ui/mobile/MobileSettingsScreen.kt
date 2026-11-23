@@ -38,6 +38,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import com.bane23.iptvplayer.ui.common.AppMessages
+import com.bane23.iptvplayer.data.saver.QualityScanState
+import com.bane23.iptvplayer.data.saver.QualityScanResult
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -107,6 +112,9 @@ fun MobileSettingsScreen(
     val autoNextEpisode by viewModel.autoNextEpisode.collectAsStateWithLifecycle()
     val channelRules by viewModel.channelRules.collectAsStateWithLifecycle()
     val downloadOnMobile by viewModel.downloadOnMobile.collectAsStateWithLifecycle()
+    val dataSaver by viewModel.dataSaver.collectAsStateWithLifecycle()
+    val qualityScan by viewModel.qualityScan.collectAsStateWithLifecycle()
+    QualityScanNotices(qualityScan)
     val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
     val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
     val blackTheme by viewModel.blackTheme.collectAsStateWithLifecycle()
@@ -410,7 +418,24 @@ fun MobileSettingsScreen(
                                 }
                             }
 
-                            SettingsGroup.PICTURE -> choiceRows()
+                            SettingsGroup.PICTURE -> {
+                                choiceRows()
+                                SettingsSwitchRow(
+                                    title = stringResource(R.string.settings_data_saver),
+                                    summary = stringResource(R.string.settings_data_saver_summary),
+                                    checked = dataSaver,
+                                    onChange = viewModel::setDataSaver,
+                                )
+                                val scanStart = stringResource(R.string.settings_quality_scan_start)
+                                val scanRunning = stringResource(R.string.settings_quality_scan_running, qualityScan.done, qualityScan.total)
+                                SettingsValueRow(
+                                    title = stringResource(R.string.settings_quality_scan),
+                                    summary = stringResource(R.string.settings_quality_scan_summary),
+                                    value = if (qualityScan.running) scanRunning else scanStart,
+                                    options = listOf(scanStart, scanRunning),
+                                    onClick = viewModel::toggleQualityScan,
+                                )
+                            }
 
                             SettingsGroup.ABOUT -> {
                                 SettingsValueRow(
@@ -739,5 +764,24 @@ private fun SettingsLinkRow(
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/** Kratka poruka kad se merenje kvaliteta omiljenih kanala završi, ili zašto nije ni počelo. */
+@Composable
+private fun QualityScanNotices(scan: QualityScanState) {
+    val resources = LocalResources.current
+    var shown by rememberSaveable { mutableStateOf(scan.finishedSeq) }
+    LaunchedEffect(scan.finishedSeq) {
+        if (scan.finishedSeq == shown) return@LaunchedEffect
+        shown = scan.finishedSeq
+        val text = when (scan.result) {
+            QualityScanResult.DONE -> resources.getString(R.string.quality_scan_done, scan.measured, scan.total)
+            QualityScanResult.NEEDS_WIFI -> resources.getString(R.string.quality_scan_needs_wifi)
+            QualityScanResult.NO_FAVORITES -> resources.getString(R.string.quality_scan_no_favorites)
+            QualityScanResult.ALL_KNOWN -> resources.getString(R.string.quality_scan_all_known)
+            null -> return@LaunchedEffect
+        }
+        AppMessages.show(text, long = true)
     }
 }

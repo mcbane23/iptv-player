@@ -25,7 +25,8 @@ import kotlinx.coroutines.sync.withLock
  * kanala iz Uživo (kvalitet, zemlja), da upiti mogu da izostave takve kanale. Pravila se računaju
  * iznova kad se promeni neko pravilo i kad se neka lista učita ili osveži. Filter se primenjuje
  * jednom naredbom nad kolonama `quality` i `country`, koje se popune jednom posle uvoza liste, pa je
- * promena filtera brza i na sporim uređajima. Kanali se ne brišu: isključivanje ih vraća.
+ * promena filtera brza i na sporim uređajima. Kanali se ne brišu: isključivanje ih vraća. Uz kvalitet
+ * i zemlju upisuje se i `variantKey`, po kome plejer nalazi isti kanal u drugom kvalitetu.
  */
 @Singleton
 class ChannelRulesSync @Inject constructor(
@@ -69,7 +70,7 @@ class ChannelRulesSync @Inject constructor(
     }
 
     /**
-     * Upisuje kvalitet i zemlju kanalima koji ih još nemaju (posle uvoza ili osvežavanja liste), da
+     * Upisuje kvalitet, zemlju i ključ verzije kanalima koji ih još nemaju (posle uvoza ili osvežavanja liste), da
      * filter posle toga radi samo nad kolonama. Kad nema novih kanala, ovo je jedan kratak upit.
      */
     private suspend fun classify() = classifying.withLock {
@@ -77,8 +78,11 @@ class ChannelRulesSync @Inject constructor(
         val rows = dao.unclassified()
         if (rows.isEmpty()) return@withLock
         val groups = rows.groupBy({ ChannelRules.quality(it.name) to ChannelRules.country(it.name, it.category) }, { it.id })
+        // Ključ istog kanala u drugom kvalitetu, za verzije kanala u plejeru (štednja mobilnih podataka).
+        val variants = rows.groupBy({ ChannelRules.variantKey(it.name, it.category) }, { it.id })
         db.withTransaction {
             for ((key, ids) in groups) ids.chunked(ID_CHUNK).forEach { dao.classify(it, key.first, key.second) }
+            for ((key, ids) in variants) ids.chunked(ID_CHUNK).forEach { dao.setVariantKey(it, key) }
         }
     }
 

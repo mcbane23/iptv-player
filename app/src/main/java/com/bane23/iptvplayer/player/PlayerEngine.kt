@@ -137,8 +137,13 @@ class PlayerEngine(
 
     /** Približno premotavanje fajlova bez indeksa; vidi [ApproxSeekExtractor]. */
     private val approxSeek = ApproxSeekState()
+    private val loadedBytes = java.util.concurrent.atomic.AtomicLong()
+
+    /** Koliko je bajtova ovaj plejer do sada preuzeo sa mreže; iz razlike u vremenu se meri protok strima. */
+    val bytesLoaded: Long get() = loadedBytes.get()
+
     private val httpFactory = DefaultHttpDataSource.Factory()
-        .setTransferListener(RangeGuard(approxSeek))
+        .setTransferListener(RangeGuard(approxSeek) { loadedBytes.addAndGet(it.toLong()) })
         // IPTV serveri često preusmeravaju sa http na https i obrnuto.
         .setAllowCrossProtocolRedirects(true)
         .setConnectTimeoutMs(15_000)
@@ -316,6 +321,11 @@ class PlayerEngine(
             decoderReuseEvaluation: DecoderReuseEvaluation?,
         ) {
             if (format.frameRate > 0f) _state.update { it.copy(video = it.video.copy(frameRate = format.frameRate)) }
+            // Veličina slike iz samog strima, pre nego što dekoder prikaže prvu sliku: poznata je i kad
+            // plejer nema površinu za sliku (merenje kvaliteta kanala).
+            if (format.width > 0 && format.height > 0) {
+                _state.update { if (it.video.height > 0) it else it.copy(video = it.video.copy(width = format.width, height = format.height)) }
+            }
             val container = format.containerMimeType?.substringAfter('/')?.removePrefix("x-") ?: return
             _state.update { it.copy(video = it.video.copy(container = container)) }
         }

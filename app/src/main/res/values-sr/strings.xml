@@ -706,6 +706,8 @@
     <string name="player_source_current">%1$s · gleda se sada</string>
     <string name="player_source_failed">%1$s · ne javlja se</string>
     <string name="player_source_switched">Kanal se nije javio. Prebačeno na listu %1$s.</string>
+    <string name="player_source_switched_version">Kanal se nije javio. Pušta se verzija %1$s.</string>
+    <string name="player_source_data_saver">Mobilni podaci: pušta se verzija %1$s.</string>
     <string name="favorite_pick_title">Omiljeni: %1$s</string>
     <string name="favorite_pick_subtitle">Izaberi liste u kojima je kanal.</string>
     <string name="favorite_list_new">Nova lista</string>
@@ -750,6 +752,16 @@
     <string name="settings_downloads_summary">Filmovi i epizode preuzeti za gledanje bez interneta</string>
     <string name="settings_download_mobile">Preuzimanje preko mobilnih podataka</string>
     <string name="settings_download_mobile_summary">Dok je isključeno, filmovi i epizode se preuzimaju samo preko Wi-Fi mreže, a bez nje preuzimanje čeka.</string>
+    <string name="settings_data_saver">Štedi mobilne podatke</string>
+    <string name="settings_data_saver_summary">Na mobilnom internetu pušta verziju kanala od 720p kad postoji, a pregled kanala u spisku je bez slike. Na Wi-Fi mreži se ništa ne menja. Bolju verziju uvek možeš da izabereš u plejeru, pod „Izvori”.</string>
+    <string name="settings_quality_scan">Izmeri kvalitet omiljenih kanala</string>
+    <string name="settings_quality_scan_summary">Na Wi-Fi mreži nakratko otvori svaku verziju omiljenih kanala i zapamti njenu stvarnu rezoluciju, da štednja zna koju da pusti. Ostali kanali se pamte dok ih gledaš.</string>
+    <string name="settings_quality_scan_start">Izmeri</string>
+    <string name="settings_quality_scan_running">%1$d od %2$d · Prekini</string>
+    <string name="quality_scan_done">Merenje je završeno. Izmereno verzija kanala: %1$d od %2$d.</string>
+    <string name="quality_scan_needs_wifi">Merenje radi samo na Wi-Fi mreži.</string>
+    <string name="quality_scan_no_favorites">Nema omiljenih kanala za merenje.</string>
+    <string name="quality_scan_all_known">Sve verzije omiljenih kanala su već izmerene.</string>
     <string name="remote_buttons_title">Dugmad daljinskog</string>
     <string name="settings_remote_buttons_summary">Bira šta obojena dugmad, kanal gore i dole, meni i dugo OK rade dok gledaš kanal.</string>
     <string name="remote_button_red">Crveno dugme</string>

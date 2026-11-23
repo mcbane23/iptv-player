@@ -133,6 +133,27 @@ object ChannelRules {
     /** Naziv bez oznaka kvaliteta i kodeka, za poređenje „isti kanal u drugom kvalitetu”. */
     fun baseName(name: String): String = upper(name).replace(tags, " ").replace(separators, " ").trim()
 
+    private val variantTags = Regex("$EDGE_BEFORE(RAW|VIP)$EDGE_AFTER")
+    private val leadingCode = Regex("^\\s*([A-Z]{2,3})\\s+")
+
+    /**
+     * Ključ po kome se prepoznaje isti kanal u drugom kvalitetu: zemlja i naziv bez oznake zemlje,
+     * kvaliteta, kodeka i oznaka RAW i VIP. „RS: Sport Uno HD” i „SR| Sport Uno VIP RAW” daju isti ključ.
+     * Oznaka zemlje se skida i kad stoji bez znaka iza sebe („RS Sport Uno”), ako je to zemlja kanala.
+     */
+    fun variantKey(name: String, category: String? = null): String {
+        val country = country(name, category)
+        val marked = countryPrefix.find(name)?.takeIf { countryCode(it.groupValues[1]) != null }
+        val rest = when {
+            marked != null -> name.substring(marked.range.last + 1)
+            country != null -> leadingCode.find(name)?.takeIf { countryCode(it.groupValues[1]) == country }
+                ?.let { name.substring(it.range.last + 1) } ?: name
+            else -> name
+        }
+        val base = upper(rest).replace(tags, " ").replace(variantTags, " ").replace(separators, " ").trim()
+        return country.orEmpty() + "|" + base.ifEmpty { upper(name).trim() }
+    }
+
     /** Kanal sa vremenskim pomakom: u nazivu stoji „+1” kao zasebna oznaka („RTL +1”, ali ne „Canal+ 1”). */
     fun isPlusOne(name: String): Boolean = plusOne.containsMatchIn(upper(name))
 

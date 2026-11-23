@@ -15,6 +15,9 @@ object PlaybackActivity {
 
     val playing: Flow<Boolean> = owners.map { it.isNotEmpty() }.distinctUntilChanged()
 
+    /** Da li pušta neko drugi osim [owner] (npr. plejer, dok [owner] u pozadini meri kvalitet kanala). */
+    fun others(owner: Any): Flow<Boolean> = owners.map { set -> set.any { it !== owner } }.distinctUntilChanged()
+
     fun set(owner: Any, active: Boolean) {
         owners.update { if (active) it + owner else it - owner }
     }

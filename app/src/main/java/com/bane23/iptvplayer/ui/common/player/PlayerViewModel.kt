@@ -17,6 +17,7 @@ import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.data.repo.PlaylistRepository
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
+import com.bane23.iptvplayer.domain.ChannelVariants
 import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.PlaybackState
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -78,6 +80,20 @@ data class PlayerUiState(
     val failedSources: Set<Long> = emptySet(),
 )
 
+/** Zašto je plejer sam pustio drugi izvor kanala. */
+enum class SourceNoticeKind {
+    /** Izvor se nije javio, prešlo se na isti kanal iz druge liste; tekst je naziv liste. */
+    PLAYLIST,
+
+    /** Izvor se nije javio, prešlo se na drugu verziju kanala iz iste liste; tekst je naziv verzije. */
+    VERSION,
+
+    /** Štednja mobilnih podataka je pustila verziju nižeg kvaliteta; tekst je njena rezolucija. */
+    DATA_SAVER,
+}
+
+data class SourceNotice(val kind: SourceNoticeKind, val text: String)
+
 private data class ListScope(val playlistId: Long, val categoryId: Long?, val startIndex: Int)
 
 @HiltViewModel
@@ -90,6 +106,7 @@ class PlayerViewModel @Inject constructor(
     private val recordings: RecordingRepository,
     private val playlists: PlaylistRepository,
     private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
+    private val dataSaver: com.bane23.iptvplayer.data.saver.DataSaver,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -156,10 +173,16 @@ class PlayerViewModel @Inject constructor(
     /** Koliko puta zaredom je plejer morao da pobegne sa izvora iz neke liste, po listi. */
     private val sourceFailures = HashMap<Long, Int>()
 
-    private val _sourceNotice = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    private val _sourceNotice = MutableSharedFlow<SourceNotice>(extraBufferCapacity = 1)
 
-    /** Naziv liste na čiji je izvor plejer sam prešao jer se prethodni nije javio. */
-    val sourceNotice: SharedFlow<String> = _sourceNotice.asSharedFlow()
+    /** Plejer je sam pustio drugi izvor: prethodni se nije javio, ili štednja mobilnih podataka bira nižu rezoluciju. */
+    val sourceNotice: SharedFlow<SourceNotice> = _sourceNotice.asSharedFlow()
+
+    /**
+     * Izvor (ID kanala) koji plejer upravo pušta, za merenje kvaliteta; null dok se izvor menja, da se
+     * rezolucija prethodnog izvora ne upiše novom.
+     */
+    private var playingId: Long? = null
 
     init {
         // Tajmer gašenja je istekao: kanal se pauzira, pa uređaj posle sam ugasi ekran.
@@ -167,6 +190,45 @@ class PlayerViewModel @Inject constructor(
         watchPlaylistRefresh()
         watchSourceFailure()
         watchRelock()
+        watchQuality()
+    }
+
+    /** Pušta [source] kao izvor [sourceId]. Sva puštanja idu ovuda, da merenje kvaliteta zna šta se gleda. */
+    private fun playSource(sourceId: Long, source: com.bane23.iptvplayer.domain.StreamSource) {
+        playingId = null
+        engine.play(source)
+        playingId = sourceId
+    }
+
+    /**
+     * Pamti stvarnu rezoluciju izvora čim slika krene, a posle kraćeg gledanja i protok. Po tome štednja
+     * mobilnih podataka zna koja verzija kanala je 720p, jer oznake u nazivima (4K, HD) često nisu tačne.
+     */
+    private fun watchQuality() {
+        viewModelScope.launch {
+            engine.state.map { Triple(it.status, it.video.width, it.video.height) }.distinctUntilChanged()
+                .collectLatest { (status, width, height) ->
+                    val id = playingId
+                    if (id == null || status != PlaybackStatus.PLAYING || height <= 0) return@collectLatest
+                    repository.saveQuality(id, width, height)
+                    _ui.update { state ->
+                        state.copy(sources = state.sources.map { if (it.channelId == id && it.height != height) it.copy(height = height, bitrate = 0) else it })
+                    }
+                    // Na početku plejer puni bafer brže nego što strim teče; protok se meri tek kad se to smiri.
+                    delay(BITRATE_SETTLE_MS)
+                    val startBytes = engine.bytesLoaded
+                    val startMs = android.os.SystemClock.elapsedRealtime()
+                    delay(BITRATE_WINDOW_MS)
+                    val elapsedMs = android.os.SystemClock.elapsedRealtime() - startMs
+                    if (playingId != id || elapsedMs <= 0) return@collectLatest
+                    val bitrate = ((engine.bytesLoaded - startBytes) * 8_000L / elapsedMs).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                    if (bitrate <= 0) return@collectLatest
+                    repository.saveBitrate(id, bitrate)
+                    _ui.update { state ->
+                        state.copy(sources = state.sources.map { if (it.channelId == id) it.copy(bitrate = bitrate) else it })
+                    }
+                }
+        }
     }
 
     /**
@@ -206,9 +268,11 @@ class PlayerViewModel @Inject constructor(
         val state = _ui.value
         val current = state.sourceId ?: return
         var failed = state.failedSources + current
-        if (state.sources.size > 1) {
+        // Lista postaje sumnjiva samo kad isti kanal postoji i u drugoj listi; verzije iz iste liste se ne računaju.
+        if (state.sources.map { it.playlistId }.distinct().size > 1) {
             currentSource()?.let { sourceFailures[it.playlistId] = (sourceFailures[it.playlistId] ?: 0) + 1 }
         }
+        val failedPlaylist = currentSource()?.playlistId
         for (candidate in state.sources) {
             if (candidate.channelId in failed) continue
             val source = repository.streamSource(candidate.channelId)
@@ -219,8 +283,14 @@ class PlayerViewModel @Inject constructor(
             // Kanal je u međuvremenu promenjen: novi kanal ima svoje izvore.
             if (_ui.value.channel?.id != state.channel?.id) return
             _ui.update { it.copy(sourceId = candidate.channelId, failedSources = failed) }
-            engine.play(source)
-            _sourceNotice.tryEmit(candidate.playlistName)
+            playSource(candidate.channelId, source)
+            _sourceNotice.tryEmit(
+                if (candidate.playlistId != failedPlaylist) {
+                    SourceNotice(SourceNoticeKind.PLAYLIST, candidate.playlistName)
+                } else {
+                    SourceNotice(SourceNoticeKind.VERSION, candidate.name)
+                },
+            )
             return
         }
         _ui.update { if (it.channel?.id == state.channel?.id) it.copy(failedSources = failed) else it }
@@ -233,7 +303,7 @@ class PlayerViewModel @Inject constructor(
             val source = repository.streamSource(channelId) ?: return@launch
             sourceFailures.remove(picked.playlistId)
             _ui.update { it.copy(sourceId = channelId, failedSources = it.failedSources - channelId) }
-            engine.play(source)
+            playSource(channelId, source)
         }
     }
 
@@ -462,7 +532,14 @@ class PlayerViewModel @Inject constructor(
         val sources = repository.sources(channel).filter { it.channelId == channel.id || !locks.isChannelLocked(it.channelId) }
         // Lista sa koje je plejer već više puta morao da pobegne preskače se, da se ne čeka na nju kod svakog kanala.
         val start = sources.firstOrNull { (sourceFailures[it.playlistId] ?: 0) < SKIP_SOURCE_AFTER } ?: sources.firstOrNull()
-        val sourceId = start?.channelId ?: channel.id
+        val chosenId = start?.channelId ?: channel.id
+        // Štednja mobilnih podataka: umesto izabrane verzije ide ona od 720p, ako se zna da postoji.
+        val sourceId = if (dataSaver.isActive()) {
+            ChannelVariants.pick(sources.map { ChannelVariants.Option(it.channelId, it.height, it.bitrate) }, chosenId)
+        } else {
+            chosenId
+        }
+        playingId = null
         _ui.update {
             val before = it.channel
             it.copy(
@@ -479,7 +556,11 @@ class PlayerViewModel @Inject constructor(
             engine.stop()
             _ui.update { it.copy(sourceMissing = true) }
         } else {
-            engine.play(source)
+            playSource(sourceId, source)
+            if (sourceId != chosenId) {
+                val height = sources.firstOrNull { it.channelId == sourceId }?.height ?: 0
+                ChannelVariants.heightLabel(height)?.let { _sourceNotice.tryEmit(SourceNotice(SourceNoticeKind.DATA_SAVER, it)) }
+            }
         }
         // Slika prvo: mesto kanala u spisku i beleška „nedavno gledano” ne smeju da je zadržavaju.
         val position = positionOf(channel)
@@ -500,5 +581,9 @@ class PlayerViewModel @Inject constructor(
         const val NUMBER_ENTRY_DELAY_MS = 1_500L
         const val NOW_NEXT_REFRESH_MS = 30_000L
         const val SINGLE_STREAM_CHECK_MS = 4_000L
+
+        /** Koliko se čeka od početka slike do merenja protoka, i koliko merenje traje. */
+        const val BITRATE_SETTLE_MS = 10_000L
+        const val BITRATE_WINDOW_MS = 15_000L
     }
 }
