@@ -200,10 +200,23 @@ fun TvVodScreen(
         reopened++
     }
     BackHandler(enabled = !categoriesOpen && gridFocused, onBack = openCategories)
+    val keyScope = rememberCoroutineScope()
+    val enterPosters: () -> Boolean = { posterFocus.tryRequestFocus() || gridFocus.tryRequestFocus() }
     val toGrid = Modifier.onPreviewKeyEvent { event ->
         if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
-        // Kad postera nema (učitavanje, prazna kategorija), Desno radi kao i pre.
-        event.type == KeyEventType.KeyDown && gridFocus.tryRequestFocus()
+        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+        // Povratak u istu kategoriju vraća fokus na poster sa koga se otišlo (njegov red dolazi na vrh); u
+        // novoj kategoriji tog postera nema, pa fokus ide na prvi poster (Bane).
+        if (enterPosters()) return@onPreviewKeyEvent true
+        // Posteri ponekad još nisu složeni (prvi ulazak u Serije), pa Desno ne bi uradilo ništa: proba se još
+        // nekoliko kadrova. Kad postera nema (učitavanje, prazna kategorija), Desno radi kao i pre.
+        keyScope.launch {
+            repeat(RIGHT_RETRY_FRAMES) {
+                withFrameNanos { }
+                if (enterPosters()) return@launch
+            }
+        }
+        false
     }
     // Mesto u mreži postera na kome je fokus; nije stanje, da korak kroz postere ništa ne crta iznova.
     // Kolona se računa tek na taster, jer se broj kolona menja kad se kategorije skupe.
@@ -762,6 +775,9 @@ private suspend fun awaitStableWidth(state: LazyGridState) {
 }
 
 private const val MAX_SETTLE_FRAMES = 60
+
+/** Koliko kadrova Desno iz kategorija čeka da se posteri slože. */
+private const val RIGHT_RETRY_FRAMES = 20
 
 /**
  * Dve kolone jedna pored druge; leva je široka kao tanka traka kad je [open] 0, a kao otvorene
