@@ -12,8 +12,11 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import retrofit2.HttpException
 
 /** Kako se završila prijava kodom. */
@@ -47,6 +51,15 @@ class TraktRepository @Inject constructor(
     private val progressDao = db.watchProgressDao()
     private val syncLock = Mutex()
 
+    /** Pozicije šalje i preuzima jedna razmena u isto vreme (puna sinhronizacija ili samo pozicije). */
+    private val playbackLock = Mutex()
+
+    /** Token osvežava samo jedan poziv: Trakt posle osvežavanja poništava stari refresh token. */
+    private val authLock = Mutex()
+
+    /** Razmena pozicija koja treba da se završi i kad onaj ko ju je pokrenuo prestane da čeka. */
+    private val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     val isAvailable: Boolean get() = tokens.isAvailable
 
     /** Korisničko ime prijavljenog naloga ("" ako nije poznato), ili null kad prijave nema. */
@@ -69,7 +82,47 @@ class TraktRepository @Inject constructor(
      * otvaranju detalja filma ili serije, da se vidi ono što je u međuvremenu gledano na drugom uređaju.
      */
     fun refreshIfStale() {
-        if (isAvailable) scheduler.syncIfStale()
+        if (!isAvailable) return
+        scheduler.syncIfStale()
+        // Pozicije se proveravaju svaki put: to je jedan kratak zahtev, a bez njega bi drugi uređaj nudio staru.
+        scheduler.syncPlaybackSoon()
+    }
+
+    /**
+     * Pre puštanja filma ili epizode: preuzima pozicije sa drugih uređaja, da gledanje krene od mesta
+     * gde je tamo stalo. Čeka najviše [timeoutMs]; razmena se posle toga završava u pozadini.
+     */
+    suspend fun syncPlaybackWithin(timeoutMs: Long) {
+        if (!isAvailable || !tokens.isSignedIn()) return
+        val exchange = background.async { syncPlayback() }
+        withTimeoutOrNull(timeoutMs) { exchange.await() }
+    }
+
+    /**
+     * Samo pozicije prekinutog gledanja: šalje one koje čekaju i preuzima nove sa drugih uređaja.
+     * Za razliku od pune sinhronizacije ne staje posle prekida, jer je kratka (dva do tri zahteva).
+     */
+    suspend fun syncPlayback(): TraktSyncResult = withContext(Dispatchers.IO) {
+        if (tokens.session() == null) return@withContext TraktSyncResult.NOT_SIGNED_IN
+        try {
+            val auth = authorization() ?: return@withContext TraktSyncResult.NOT_SIGNED_IN
+            playbackLock.withLock {
+                pushPlayback(auth)
+                pullPlayback(auth)
+            }
+            TraktSyncResult.DONE
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            if (e.code() == 401) {
+                tokens.clear()
+                TraktSyncResult.NOT_SIGNED_IN
+            } else {
+                TraktSyncResult.FAILED
+            }
+        } catch (_: Throwable) {
+            TraktSyncResult.FAILED
+        }
     }
 
     /** Prijava koja je u toku: kod za korisnika i PKCE tajna koja ide uz preuzimanje tokena. */
@@ -190,16 +243,18 @@ class TraktRepository @Inject constructor(
     suspend fun sync(automatic: Boolean = false): TraktSyncResult = withContext(Dispatchers.IO) {
         syncLock.withLock {
             if (tokens.session() == null) return@withLock TraktSyncResult.NOT_SIGNED_IN
-            if (automatic && tokens.unfinishedSyncs() >= TraktTokenStore.MAX_UNFINISHED_SYNCS) {
+            if (automatic && tokens.autoSyncPaused()) {
                 return@withLock TraktSyncResult.PAUSED
             }
             tokens.syncStarted()
             try {
                 val auth = authorization() ?: return@withLock TraktSyncResult.NOT_SIGNED_IN
                 push(auth)
-                pushPlayback(auth)
                 pull(auth)
-                pullPlayback(auth)
+                playbackLock.withLock {
+                    pushPlayback(auth)
+                    pullPlayback(auth)
+                }
                 tokens.setLastSync(System.currentTimeMillis())
                 TraktSyncResult.DONE
             } catch (e: CancellationException) {
@@ -398,7 +453,9 @@ class TraktRepository @Inject constructor(
         }
 
     /** Zaglavlje sa tokenom; token se osvežava kad je blizu isteka. Null kad prijave nema. */
-    private suspend fun authorization(): String? {
+    private suspend fun authorization(): String? = authLock.withLock { freshAuthorization() }
+
+    private suspend fun freshAuthorization(): String? {
         val session = tokens.session() ?: return null
         if (session.expiresAtMs - System.currentTimeMillis() > REFRESH_BEFORE_MS) return bearer(session.accessToken)
         var response = api.refreshToken(RefreshTokenRequest(session.refreshToken, CLIENT_ID, CLIENT_SECRET, LEGACY_REDIRECT))

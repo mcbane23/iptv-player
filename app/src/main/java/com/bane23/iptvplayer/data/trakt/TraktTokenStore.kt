@@ -96,17 +96,30 @@ class TraktTokenStore @Inject constructor(
 
     /**
      * Koliko je sinhronizacija zaredom započeto a nije završeno, jer se aplikacija usred nje ugasila.
-     * Posle [MAX_UNFINISHED_SYNCS] takvih automatska sinhronizacija staje dok ručna ne uspe, da
+     * Posle [MAX_UNFINISHED_SYNCS] takvih automatska sinhronizacija miruje (vidi [autoSyncPaused]), da
      * greška u njoj ne bi gasila aplikaciju pri svakom pokretanju.
      */
-    suspend fun unfinishedSyncs(): Int = dataStore.data.first()[UNFINISHED_SYNCS] ?: 0
 
     val syncPaused: Flow<Boolean> = dataStore.data
         .map { (it[UNFINISHED_SYNCS] ?: 0) >= MAX_UNFINISHED_SYNCS }
         .distinctUntilChanged()
 
+    /**
+     * Automatska sinhronizacija preskače dok je zaustavljena, ali ne zauvek: posle [AUTO_RETRY_MS] od
+     * poslednjeg prekinutog pokušaja proba ponovo sama, bez čekanja na ručnu.
+     */
+    suspend fun autoSyncPaused(): Boolean {
+        val prefs = dataStore.data.first()
+        if ((prefs[UNFINISHED_SYNCS] ?: 0) < MAX_UNFINISHED_SYNCS) return false
+        val last = prefs[LAST_SYNC_START] ?: 0L
+        return System.currentTimeMillis() - last in 0 until AUTO_RETRY_MS
+    }
+
     suspend fun syncStarted() {
-        dataStore.edit { it[UNFINISHED_SYNCS] = (it[UNFINISHED_SYNCS] ?: 0) + 1 }
+        dataStore.edit {
+            it[UNFINISHED_SYNCS] = (it[UNFINISHED_SYNCS] ?: 0) + 1
+            it[LAST_SYNC_START] = System.currentTimeMillis()
+        }
     }
 
     /** Sinhronizacija je stigla do kraja, uspešno ili sa greškom koja nije ugasila aplikaciju. */
@@ -125,6 +138,11 @@ class TraktTokenStore @Inject constructor(
 
     companion object {
         const val MAX_UNFINISHED_SYNCS = 3
+
+        /** Koliko automatska sinhronizacija miruje posle više prekinutih zaredom. */
+        const val AUTO_RETRY_MS = 6 * 60 * 60 * 1000L
+
+        private val LAST_SYNC_START = longPreferencesKey("last_sync_start")
 
         private val UNFINISHED_SYNCS = intPreferencesKey("unfinished_syncs")
         private val ACCESS = stringPreferencesKey("access")

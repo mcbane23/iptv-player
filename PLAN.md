@@ -375,6 +375,9 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 - [x] „Nastavi” kod serije prati ono što je poslednje gledano na bilo kom uređaju (vreme gledanja sa
       Trakt-a); stara pauza se ne upisuje za ono što je posle odgledano; sinhronizacija i pri
       povratku u aplikaciju i pri otvaranju detalja (najviše jednom u 5 minuta)
+- [x] Pozicija pauzirana na jednom uređaju stiže na drugi: pauza duža od 10 s šalje poziciju, pre
+      puštanja filma ili epizode i pri svakom povratku u aplikaciju preuzimaju se pozicije (samo
+      pozicije, bez pauze od 5 minuta); automatska sinhronizacija posle prekida miruje 6 sati, ne zauvek
 - [x] Pri sinhronizaciji se započete serije sa Trakt naloga (bar jedna odgledana epizoda, a nisu
       odgledane sve emitovane) dodaju u omiljene serije aktivne liste. Svaka samo jednom: serija
       koju korisnik ukloni iz omiljenih se ne vraća. Od više verzija iste serije kod provajdera

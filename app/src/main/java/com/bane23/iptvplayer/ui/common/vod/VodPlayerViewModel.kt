@@ -19,12 +19,14 @@ import com.bane23.iptvplayer.data.subtitles.SubtitleException
 import com.bane23.iptvplayer.data.subtitles.SubtitleFailure
 import com.bane23.iptvplayer.data.subtitles.SubtitleQuery
 import com.bane23.iptvplayer.data.subtitles.SubtitleResult
+import com.bane23.iptvplayer.data.trakt.TraktRepository
 import com.bane23.iptvplayer.data.xtream.Episode
 import com.bane23.iptvplayer.data.xtream.SeriesDetails
 import com.bane23.iptvplayer.domain.StreamSource
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.ExternalSubtitle
 import com.bane23.iptvplayer.player.PlaybackState
+import com.bane23.iptvplayer.player.PlaybackStatus
 import com.bane23.iptvplayer.player.NextEpisode
 import com.bane23.iptvplayer.player.PlayerEngine
 import com.bane23.iptvplayer.player.TrackOption
@@ -38,6 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -126,6 +129,7 @@ class VodPlayerViewModel @Inject constructor(
     private val downloads: DownloadRepository,
     private val subtitles: OpenSubtitlesRepository,
     private val sleepTimer: com.bane23.iptvplayer.player.SleepTimer,
+    private val trakt: TraktRepository,
 ) : ViewModel() {
 
     // Podešavanja su potrebna pre nego što se plejer napravi; čitanje iz DataStore-a je kratko.
@@ -188,6 +192,15 @@ class VodPlayerViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { settings.autoNextEpisode.collect { autoNext = it } }
+        // Pauza duža od nekoliko sekundi šalje poziciju, da drugi uređaj nastavi odatle i bez izlaska iz plejera.
+        viewModelScope.launch {
+            playback.map { it.status == PlaybackStatus.PAUSED }.distinctUntilChanged().collectLatest { paused ->
+                if (paused) {
+                    delay(PAUSE_SHARE_MS)
+                    saveProgress(stopped = true)
+                }
+            }
+        }
         viewModelScope.launch { engine.seekLost.collect { AppMessages.show(context, R.string.vod_seek_unavailable) } }
         // Kad se epizoda završi, kreće sledeća.
         viewModelScope.launch {
@@ -607,6 +620,8 @@ class VodPlayerViewModel @Inject constructor(
         load: suspend () -> Pair<StreamSource, Long?>,
     ) {
         try {
+            // Pozicija sa drugog uređaja stiže pre čitanja zapamćene, da gledanje krene odatle.
+            if (!startOver) trakt.syncPlaybackWithin(PLAYBACK_SYNC_WAIT_MS)
             val (source, savedPosition) = load()
             this.source = source
             _ui.update { it.copy(sourceMissing = false) }
@@ -664,6 +679,8 @@ class VodPlayerViewModel @Inject constructor(
     private companion object {
         const val POSITION_TICK_MS = 500L
         const val SAVE_EVERY_MS = 10_000L
+        const val PAUSE_SHARE_MS = 10_000L
+        const val PLAYBACK_SYNC_WAIT_MS = 3_000L
         const val SCRUB_COMMIT_MS = 1_200L
     }
 }
