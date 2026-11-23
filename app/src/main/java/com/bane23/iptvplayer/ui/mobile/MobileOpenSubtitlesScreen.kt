@@ -10,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,7 +33,7 @@ fun MobileOpenSubtitlesScreen(onBack: () -> Unit, viewModel: OpenSubtitlesViewMo
     // Lozinka se ne čuva u sačuvanom stanju ekrana.
     var password by androidx.compose.runtime.remember { mutableStateOf("") }
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

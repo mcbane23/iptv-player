@@ -98,6 +98,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /** Oznaka za „Svi kanali” u izboru kategorije. */
 private const val ALL_CHANNELS = ChannelGroups.ALL
@@ -974,7 +980,7 @@ private fun ChannelPreviewPane(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Glass.Fill)
                         .padding(16.dp),
                     verticalArrangement = Arrangement.Center,
                 ) {
@@ -1192,7 +1198,7 @@ private fun TvTabChip(
     Text(
         text = text,
         color = when {
-            focused -> colors.onPrimary
+            focused -> colors.onSurface
             selected -> colors.primary
             else -> colors.onSurface
         },
@@ -1201,15 +1207,9 @@ private fun TvTabChip(
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .widthIn(max = 200.dp)
+            .focusHalo(focused, colors.primary, radius = 18.dp)
             .clip(shape)
-            .background(
-                when {
-                    focused -> colors.primary
-                    selected -> colors.primary.copy(alpha = 0.16f)
-                    else -> colors.surfaceVariant.copy(alpha = 0.6f)
-                },
-            )
-            .then(if (selected && !focused) Modifier.border(1.5.dp, colors.primary, shape) else Modifier)
+            .glassState(colors.primary, focused, selected, shape)
             .onFocusChanged { focused = it.isFocused }
             .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)

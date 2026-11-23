@@ -74,6 +74,8 @@ import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.ui.common.ScreenPosition
 import com.bane23.iptvplayer.ui.common.screenPositionChoice
 import com.bane23.iptvplayer.ui.common.themeChoice
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import androidx.compose.foundation.BorderStroke
 
 /** Podešavanja aplikacije na telefonu. */
 @Composable
@@ -574,8 +576,9 @@ private fun AccentColorRow(selected: AccentColor?, onSelect: (AccentColor) -> Un
 @Composable
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        shape = Glass.CardShape,
+        color = Glass.Fill,
+        border = BorderStroke(1.dp, Glass.Border),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),

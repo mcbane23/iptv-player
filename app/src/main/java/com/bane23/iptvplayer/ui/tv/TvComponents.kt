@@ -55,6 +55,13 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.OutlinedButtonDefaults
 import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
+import androidx.compose.foundation.BorderStroke
 
 /**
  * Meni preko slike u plejeru (titlovi, zvuk, podešavanja, kanali…) drži fokus dok je otvoren:
@@ -75,13 +82,12 @@ fun Modifier.tvKeepFocus(): Modifier = this
     .focusGroup()
 
 /**
- * Red u listi na TV-u: dobija fokus D-padom, OK ga bira. Fokusiran red je obojen akcentnom bojom,
- * a [selected] red (npr. trenutna kategorija ili kanal) ostaje blago istaknut i kad nema fokus.
- * [content] dobija boju teksta koja odgovara pozadini.
+ * Red u listi na TV-u: dobija fokus D-padom, OK ga bira. Izgled „Staklo”: fokusiran red ima okvir u
+ * akcentnoj boji, providnu akcentnu podlogu i meki oreol, a [selected] red (npr. trenutna kategorija
+ * ili kanal) tanju ivicu i tekst u akcentnoj boji. [content] dobija boju teksta koja odgovara podlozi.
  *
- * Sa [card] (podrazumevano, u svim spiskovima na TV-u isti izgled) red je zaobljena pločica sa
- * podlogom, kao kategorije na telefonu: fokus je i dalje pun u akcentnoj boji, a izabrani red bez
- * fokusa ima akcentni okvir i tekst, da se na ekranu ne vide dva puna akcentna reda.
+ * Sa [card] (podrazumevano, u svim spiskovima na TV-u isti izgled) red je staklena pločica; bez
+ * toga red nema podlogu dok nije u fokusu ili izabran (stavke u meniju koji je i sam staklen).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -98,25 +104,24 @@ fun TvListRow(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val background = when {
-        focused -> colors.primary
-        selected && card -> colors.primary.copy(alpha = 0.16f)
-        selected -> colors.surfaceVariant
-        card -> colors.surfaceVariant.copy(alpha = 0.6f)
-        else -> container
-    }
     val contentColor = when {
-        focused -> colors.onPrimary
-        selected && card -> colors.primary
+        focused -> colors.onSurface
+        selected -> colors.primary
         else -> colors.onSurface
     }
-    val shape = RoundedCornerShape(if (card) 10.dp else 8.dp)
+    val shape = Glass.RowShape
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .focusHalo(focused, colors.primary)
             .clip(shape)
-            .background(background)
-            .then(if (card && selected && !focused) Modifier.border(1.5.dp, colors.primary, shape) else Modifier)
+            .then(
+                if (card || focused || selected) {
+                    Modifier.glassState(colors.primary, focused, selected, shape)
+                } else {
+                    Modifier.background(container)
+                },
+            )
             .onFocusChanged {
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
@@ -206,8 +211,8 @@ private val TvSwitchHeight = 22.dp
 /**
  * Prekidač u redu podešavanja. Samo prikazuje stanje (fokus i OK pripadaju celom redu). Uključen
  * je pun, u akcentnoj boji, sa kružićem desno; isključen je samo okvir u boji teksta sa kružićem
- * levo. Na fokusiranom redu, čija je podloga već akcentna ([onAccentRow]), boje su obrnute:
- * tamna podloga i akcentni kružić.
+ * levo. Na redu čija je podloga puna akcentna ([onAccentRow]) boje su obrnute: tamna podloga i
+ * akcentni kružić.
  */
 @Composable
 private fun TvSwitch(checked: Boolean, color: Color, accent: Color, onAccentRow: Boolean) {
@@ -233,8 +238,8 @@ private fun TvSwitch(checked: Boolean, color: Color, accent: Color, onAccentRow:
 }
 
 /**
- * Glavno dugme na TV-u. Bez fokusa je tamno sa tekstom u akcentnoj boji, a u fokusu je puno u
- * akcentnoj boji, isto kao fokusiran red u listi.
+ * Glavno dugme na TV-u. Bez fokusa je staklena pločica sa tekstom u akcentnoj boji, a u fokusu ima
+ * okvir i providnu podlogu u akcentnoj boji, isto kao fokusiran red u listi.
  */
 @Composable
 fun TvButton(
@@ -249,18 +254,23 @@ fun TvButton(
         modifier = modifier,
         enabled = enabled,
         colors = ButtonDefaults.colors(
-            containerColor = scheme.surfaceVariant,
+            containerColor = Glass.FillStrong,
             contentColor = scheme.primary,
-            focusedContainerColor = scheme.primary,
-            focusedContentColor = scheme.onPrimary,
-            pressedContainerColor = scheme.primary,
-            pressedContentColor = scheme.onPrimary,
+            focusedContainerColor = scheme.primary.copy(alpha = Glass.FOCUSED_FILL),
+            focusedContentColor = scheme.onSurface,
+            pressedContainerColor = scheme.primary.copy(alpha = Glass.FOCUSED_FILL),
+            pressedContentColor = scheme.onSurface,
+        ),
+        border = ButtonDefaults.border(
+            border = Border(BorderStroke(1.dp, Glass.Border)),
+            focusedBorder = Border(BorderStroke(2.dp, scheme.primary)),
+            pressedBorder = Border(BorderStroke(2.dp, scheme.primary)),
         ),
         content = content,
     )
 }
 
-/** Sporedno dugme na TV-u: bez fokusa samo okvir, u fokusu puno u akcentnoj boji. */
+/** Sporedno dugme na TV-u: bez fokusa samo okvir, u fokusu okvir i providna podloga u akcentnoj boji. */
 @Composable
 fun TvOutlinedButton(
     onClick: () -> Unit,
@@ -274,12 +284,15 @@ fun TvOutlinedButton(
         modifier = modifier,
         enabled = enabled,
         colors = OutlinedButtonDefaults.colors(
-            focusedContainerColor = scheme.primary,
-            focusedContentColor = scheme.onPrimary,
-            pressedContainerColor = scheme.primary,
-            pressedContentColor = scheme.onPrimary,
+            focusedContainerColor = scheme.primary.copy(alpha = Glass.FOCUSED_FILL),
+            focusedContentColor = scheme.onSurface,
+            pressedContainerColor = scheme.primary.copy(alpha = Glass.FOCUSED_FILL),
+            pressedContentColor = scheme.onSurface,
         ),
-        border = OutlinedButtonDefaults.border(focusedBorder = Border.None, pressedBorder = Border.None),
+        border = OutlinedButtonDefaults.border(
+            focusedBorder = Border(BorderStroke(2.dp, scheme.primary)),
+            pressedBorder = Border(BorderStroke(2.dp, scheme.primary)),
+        ),
         content = content,
     )
 }
@@ -324,10 +337,8 @@ fun TvFilterDialog(
             androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .widthIn(min = 420.dp, max = 420.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surface,
-                        androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                    )
+                    .background(MaterialTheme.colorScheme.surface, Glass.CardShape)
+                    .border(1.dp, Glass.Border, Glass.CardShape)
                     .padding(12.dp),
             ) {
                 val picked = choices.getOrNull(picking)

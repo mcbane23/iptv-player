@@ -32,6 +32,12 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /**
  * Polje za filtriranje spiska (npr. kategorija) na TV-u. Dok se samo prolazi D-padom preko njega,
@@ -57,13 +63,13 @@ fun TvFilterField(value: String, onChange: (String) -> Unit, placeholder: String
         }
     }
     val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(8.dp)
+    val shape = Glass.RowShape
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(colors.surface, shape)
-            .border(2.dp, if (focused) colors.primary else Color.Transparent, shape)
+            .focusHalo(focused, colors.primary)
+            .glassState(colors.primary, focused, selected = false, shape = shape)
             .then(
                 if (editing) {
                     Modifier

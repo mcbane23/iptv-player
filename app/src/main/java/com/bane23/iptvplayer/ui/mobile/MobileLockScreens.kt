@@ -18,7 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,7 +119,7 @@ fun MobilePinGate(
             CircularProgressIndicator()
         }
 
-        GateStatus.LOCKED -> Scaffold { padding ->
+        GateStatus.LOCKED -> AppScaffold { padding ->
             Column(modifier = Modifier.padding(padding)) {
                 SectionTopBar(title = stringResource(R.string.pin_locked_title), onBack = onCancel)
                 MobilePinEntry(
@@ -147,7 +146,7 @@ fun MobileParentalScreen(onBack: () -> Unit, viewModel: ParentalViewModel = hilt
         AppMessages.show(context, R.string.parental_locked)
         onBack()
     }
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

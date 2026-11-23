@@ -48,6 +48,9 @@ import com.bane23.iptvplayer.ui.common.guide.formatDayTime
 import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
 
 /**
  * Jedna pretraga za sve na telefonu: kanali, emisije iz vodiča, filmovi i serije, po grupama.
@@ -243,8 +246,8 @@ private fun ResultRow(
         modifier = Modifier
             .padding(horizontal = sidePadding, vertical = 2.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .clip(Glass.RowShape)
+            .glass()
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

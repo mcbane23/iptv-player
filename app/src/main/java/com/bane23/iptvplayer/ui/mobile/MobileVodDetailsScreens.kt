@@ -31,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +74,7 @@ import com.bane23.iptvplayer.ui.common.vod.genresOf
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.rememberOpenTrailer
 import com.bane23.iptvplayer.ui.common.vod.statusText
+import com.bane23.iptvplayer.ui.common.theme.fadeMask
 
 /** Detalji filma na telefonu: zaglavlje sa posterom, dugmad za puštanje, opis i ekipa. */
 @Composable
@@ -101,7 +101,7 @@ fun MobileMovieScreen(
         downloads.downloadMovie(movieId, state.name.ifEmpty { name }, state.poster, playExtension)
     }
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -195,7 +195,7 @@ fun MobileSeriesScreen(
         pendingDownload = null
     }
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -262,10 +262,6 @@ fun MobileSeriesScreen(
                                         }
                                     },
                                     label = { Text(stringResource(R.string.vod_season, season.number)) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    ),
                                 )
                             }
                         }
@@ -319,7 +315,6 @@ private fun DetailsHeader(
     onFavorite: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val background = MaterialTheme.colorScheme.background
     Box(modifier = Modifier.fillMaxWidth()) {
         // Široka slika iz filma, kad je provajder šalje, vidi se jače od postera; inače poster kao do sada.
         var backdropFailed by remember(backdrop) { mutableStateOf(false) }
@@ -331,16 +326,15 @@ private fun DetailsHeader(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 onError = { if (wide != null) backdropFailed = true },
+                // Slika se nadole pretapa u pozadinu ekrana (preliv), bez pokrivanja ravnom bojom.
                 modifier = Modifier
                     .matchParentSize()
-                    .alpha(if (wide != null) 0.55f else 0.35f),
+                    .fadeMask(
+                        opacity = if (wide != null) 0.4f else 0.25f,
+                        Brush.verticalGradient(listOf(Color.Black, Color.Transparent)),
+                    ),
             )
         }
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Brush.verticalGradient(listOf(background.copy(alpha = 0.3f), background))),
-        )
         Column {
             Row(
                 modifier = Modifier

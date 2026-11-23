@@ -44,6 +44,8 @@ import com.bane23.iptvplayer.ui.common.guide.scheduleActions
 import com.bane23.iptvplayer.ui.common.guide.scheduleMark
 import com.bane23.iptvplayer.ui.common.recording.RecordingNotices
 import com.bane23.iptvplayer.ui.common.rememberNow
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import androidx.compose.foundation.border
 
 /**
  * Panel „Program” u plejeru na telefonu: raspored kanala koji se gleda, preko slike. Dodir na
@@ -77,8 +79,9 @@ internal fun BoxScope.MobileChannelSchedulePanel(
                     Modifier.widthIn(max = 340.dp).fillMaxHeight()
                 },
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(Glass.CardShape)
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+            .border(1.dp, Glass.Border, Glass.CardShape)
             // Dodir na sam panel ne sme da ga zatvori.
             .pointerInput(Unit) { detectTapGestures { } }
             .padding(vertical = 8.dp),

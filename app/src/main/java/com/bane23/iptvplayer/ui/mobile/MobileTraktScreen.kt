@@ -16,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +43,7 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

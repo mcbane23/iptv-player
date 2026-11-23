@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +46,7 @@ fun MobileVodSearchScreen(
     val watched by viewModel.watched.collectAsStateWithLifecycle()
     val fieldFocus = remember { FocusRequester() }
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

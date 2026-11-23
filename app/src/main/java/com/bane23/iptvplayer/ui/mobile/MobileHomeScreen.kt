@@ -73,6 +73,8 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.SearchAllViewModel
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
 
 /** Kartice donje trake na telefonu. */
 private enum class MobileTab(val icon: ImageVector, val label: Int) {
@@ -266,6 +268,8 @@ fun MobileHomeScreen(
  * Traka iznad donje trake dok se nešto snima, vidljiva u svim karticama. Dodir otvara „Snimci”;
  * kad se snima jedan kanal, snimanje može da se zaustavi odmah, bez odlaska na drugi ekran.
  */
+private val NavRailShape = RoundedCornerShape(28.dp)
+
 private val PULL_REFRESH_TABS = setOf(MobileTab.LIVE, MobileTab.MOVIES, MobileTab.SERIES)
 
 /** Sadržaj kartice koji se povlačenjem nadole osvežava; bez [onRefresh] je običan okvir. */
@@ -296,10 +300,12 @@ private fun RefreshFailedMessage(viewModel: PlaylistRefreshViewModel) {
 @Composable
 private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onStop: (Long) -> Unit) {
     val single = active.singleOrNull()
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+    Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(Glass.PillShape)
+                .glass(Glass.PillShape, strong = true)
                 .clickable(onClick = onOpen)
                 .height(48.dp)
                 .padding(start = 16.dp, end = 4.dp),
@@ -338,17 +344,22 @@ private fun RecordingBar(active: List<ActiveRecording>, onOpen: () -> Unit, onSt
 }
 
 /**
- * Donja traka, niža od standardne Material trake (56 dp umesto 80 dp), da sadržaju ostane više
- * mesta. Izabrana kartica ima ikonicu u akcentnoj boji na blagoj podlozi.
+ * Donji meni kao lebdeća staklena kapsula (izgled „Staklo”), nizak (56 dp) da sadržaju ostane više
+ * mesta. Izabranu karticu pokazuje boja ikonice i naziva.
  */
 @Composable
 private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surface) {
+    Box(
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .height(56.dp)
+                .clip(Glass.PillShape)
+                .glass(Glass.PillShape, strong = true)
                 .selectableGroup(),
         ) {
             tabs.forEach { item ->
@@ -395,16 +406,22 @@ private fun CompactNavBar(tabs: List<MobileTab>, selected: MobileTab, onSelect: 
 }
 
 /**
- * Uska traka sa karticama levo, za telefon u landscape-u: ista izgleda kao donja traka
- * (ikonica na blagoj podlozi i naziv ispod), samo uspravno.
+ * Meni levo, za telefon u landscape-u: ista lebdeća staklena kapsula kao donji meni (ikonica i
+ * naziv ispod), samo uspravno.
  */
 @Composable
 private fun CompactNavRail(tabs: List<MobileTab>, selected: MobileTab, onSelect: (MobileTab) -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxHeight()) {
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+    ) {
         Column(
             modifier = Modifier
                 .width(76.dp)
                 .fillMaxHeight()
+                .clip(NavRailShape)
+                .glass(NavRailShape, strong = true)
                 .selectableGroup(),
             verticalArrangement = Arrangement.Center,
         ) {

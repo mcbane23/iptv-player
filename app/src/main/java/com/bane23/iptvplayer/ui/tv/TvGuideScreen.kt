@@ -59,6 +59,12 @@ import com.bane23.iptvplayer.ui.common.guide.formatTime
 import com.bane23.iptvplayer.ui.common.guide.message
 import com.bane23.iptvplayer.ui.common.guide.timeRange
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /** Na TV-u se odjednom vide dva i po sata programa. */
 private const val WINDOW_MS = 150 * 60_000L
@@ -371,16 +377,19 @@ private fun GuideBox(
 ) {
     var focused by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
-    val background = when {
-        focused -> colors.primary
-        highlighted -> colors.surfaceVariant
-        else -> colors.surfaceVariant.copy(alpha = 0.45f)
-    }
+    val shape = RoundedCornerShape(8.dp)
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(6.dp))
-            .background(background)
+            .clip(shape)
+            .then(
+                when {
+                    focused -> Modifier.glassFocused(colors.primary, shape)
+                    // Emisija koja je u toku je svetlija pločica.
+                    highlighted -> Modifier.glass(shape, strong = true)
+                    else -> Modifier.glass(shape)
+                },
+            )
             .onFocusChanged {
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
@@ -391,7 +400,7 @@ private fun GuideBox(
     ) {
         Text(
             text = text,
-            color = if (focused) colors.onPrimary else colors.onSurface,
+            color = colors.onSurface,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

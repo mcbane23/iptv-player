@@ -85,6 +85,12 @@ import com.bane23.iptvplayer.ui.common.summary
 import com.bane23.iptvplayer.ui.common.vodFilterChoices
 import com.bane23.iptvplayer.ui.common.vod.toVodItem
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /**
  * Filmovi ili serije na TV-u: levo pretraga, „Nastavi gledanje” i kategorije (bira se sa OK),
@@ -700,8 +706,8 @@ private fun CategoryStrip() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(10.dp))
-            .background(colors.surfaceVariant.copy(alpha = 0.6f))
+            .clip(Glass.RowShape)
+            .glass()
             .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -822,7 +828,8 @@ fun PosterCard(
     // Jedno držanje tastera OK važi kao jedan dugi pritisak. [pressed]: pritisak je počeo na ovom posteru;
     // [foreignHold]: taster se drži od ranije (fokus je stigao sa drugog postera), pa se ne računa.
     val hold = remember { BooleanArray(3) }
-    val shape = RoundedCornerShape(10.dp)
+    val shape = Glass.PosterShape
+    val accent = MaterialTheme.colorScheme.primary
     Column(
         modifier = modifier
             // Fokusiran poster je malo veći i crta se preko suseda, da se sa kauča jasno vidi gde je
@@ -837,8 +844,9 @@ fun PosterCard(
                 if (it.isFocused && !focused) onFocused()
                 focused = it.isFocused
             }
-            .background(if (focused) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, shape)
-            .border(3.dp, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, shape)
+            // Okvir u boji sa mekim oreolom, kao fokus svuda u izgledu „Staklo”.
+            .focusHalo(focused, accent, radius = 12.dp)
+            .then(if (focused) Modifier.glassFocused(accent, shape) else Modifier)
             .onPreviewKeyEvent { event ->
                 val native = event.nativeKeyEvent
                 val ok = native.keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||

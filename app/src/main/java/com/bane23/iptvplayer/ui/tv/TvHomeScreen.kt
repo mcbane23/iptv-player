@@ -67,12 +67,20 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.recording.ActiveRecordingsViewModel
 import com.bane23.iptvplayer.ui.common.vod.VodBrowseViewModel
 import kotlinx.coroutines.delay
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 /** Sekcije koje se otvaraju u početnom ekranu, pored bočnog menija. */
 private enum class TvTab { SEARCH, HOME, LIVE, GUIDE, MOVIES, SERIES, PLAYLISTS, SETTINGS }
 
 /** Širina skupljenog menija (samo ikonice) i raširenog (ikonice i nazivi). */
 private val RailCollapsed = 88.dp
+private val RailShape = RoundedCornerShape(28.dp)
+private val RailItemShape = RoundedCornerShape(18.dp)
 private val RailExpanded = 240.dp
 
 /**
@@ -290,9 +298,10 @@ fun TvHomeScreen(
         Column(
             modifier = Modifier
                 .zIndex(1f)
-                .fillMaxHeight()
                 .width(railWidth)
-                .background(MaterialTheme.colorScheme.surface)
+                // Meni je lebdeća staklena kapsula, visoka koliko i njene stavke (izgled „Staklo”).
+                .padding(start = 10.dp, top = 16.dp, bottom = 16.dp)
+                .then(if (liveState.loading) Modifier else Modifier.glass(RailShape, strong = true))
                 .onFocusChanged { railFocused = it.hasFocus }
                 .onKeyEvent { event ->
                     if (event.key != Key.DirectionRight) return@onKeyEvent false
@@ -302,8 +311,8 @@ fun TvHomeScreen(
                 // Kad fokus uđe u meni, ide na izabranu sekciju, a ne na najbližu stavku.
                 .focusRestorer(selectedFocus)
                 .focusGroup()
-                // Margine zbog overscan-a na televizorima; prva stavka je u visini naslova sekcije (27 dp).
-                .padding(horizontal = 16.dp, vertical = 27.dp),
+                // Prva stavka je u visini naslova sekcije (27 dp od vrha ekrana).
+                .padding(horizontal = 11.dp, vertical = 11.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             // Dok se ne zna da li postoji lista, stavke se ne crtaju: inače se pri pokretanju na
@@ -425,9 +434,9 @@ fun TvHomeScreen(
 }
 
 /**
- * Stavka bočnog menija. Fokusirana stavka je u akcentnoj boji sa tamnim sadržajem, izabrana sekcija ima
- * ikonicu u akcentnoj boji, a [tint] daje stavci svoju boju (crvena dok se snima). Naziv se vidi
- * samo kad je meni raširen.
+ * Stavka bočnog menija. Fokusirana stavka ima okvir i providnu podlogu u akcentnoj boji, izabrana
+ * sekcija ikonicu u akcentnoj boji na blagoj podlozi, a [tint] daje stavci svoju boju (crvena dok se
+ * snima). Naziv se vidi samo kad je meni raširen.
  */
 @Composable
 private fun RailItem(
@@ -445,7 +454,7 @@ private fun RailItem(
     val focused = hasFocus && showFocus
     val colors = MaterialTheme.colorScheme
     val content = when {
-        focused -> colors.onPrimary
+        focused -> colors.onSurface
         tint != null -> tint
         selected -> colors.primary
         else -> colors.onSurfaceVariant
@@ -454,8 +463,14 @@ private fun RailItem(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (focused) colors.primary else Color.Transparent)
+            .clip(RailItemShape)
+            .then(
+                when {
+                    focused -> Modifier.glassFocused(colors.primary, RailItemShape)
+                    selected -> Modifier.background(colors.primary.copy(alpha = 0.14f))
+                    else -> Modifier
+                },
+            )
             .onFocusChanged { hasFocus = it.isFocused }
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),

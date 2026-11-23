@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -55,7 +54,7 @@ fun MobileSearchScreen(
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
     MobileFavoritePickDialog(favoriteLists)
 
-    Scaffold { padding ->
+    AppScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

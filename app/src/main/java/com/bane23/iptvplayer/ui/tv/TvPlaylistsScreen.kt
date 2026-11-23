@@ -38,6 +38,12 @@ import com.bane23.iptvplayer.ui.common.message
 import com.bane23.iptvplayer.ui.common.accountExpiresSoon
 import com.bane23.iptvplayer.ui.common.accountLine
 import com.bane23.iptvplayer.ui.common.summary
+import com.bane23.iptvplayer.ui.common.theme.Glass
+import com.bane23.iptvplayer.ui.common.theme.glass
+import com.bane23.iptvplayer.ui.common.theme.glassSelected
+import com.bane23.iptvplayer.ui.common.theme.glassFocused
+import com.bane23.iptvplayer.ui.common.theme.glassState
+import com.bane23.iptvplayer.ui.common.theme.focusHalo
 
 @Composable
 fun TvPlaylistsScreen(
@@ -245,7 +251,7 @@ private fun TvPlaylistRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .glass(Glass.CardShape)
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

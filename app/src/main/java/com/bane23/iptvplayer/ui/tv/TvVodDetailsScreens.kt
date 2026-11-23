@@ -68,6 +68,7 @@ import com.bane23.iptvplayer.ui.common.vod.genresOf
 import com.bane23.iptvplayer.ui.common.vod.metaLine
 import com.bane23.iptvplayer.ui.common.vod.rememberOpenTrailer
 import com.bane23.iptvplayer.ui.common.vod.statusText
+import com.bane23.iptvplayer.ui.common.theme.appBackground
 
 /** Detalji filma na TV-u. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -439,7 +440,7 @@ private fun Backdrop(poster: String?, backdrop: String?, content: @Composable ()
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(background),
+            .appBackground(),
     ) {
         if (!backdrop.isNullOrBlank() && !backdropFailed) {
             AsyncImage(
