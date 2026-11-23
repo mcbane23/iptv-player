@@ -22,7 +22,8 @@ class PinTest {
         assertTrue(Pin.matches("0420", stored))
         assertFalse(Pin.matches("0421", stored))
         assertFalse(Pin.matches("", stored))
-        assertFalse(stored.contains("0420"))
+        // Stalan dodatak: nasumičan zapis ponekad slučajno sadrži te četiri cifre, pa bi test povremeno pao.
+        assertFalse(Pin.hash("0420", "abc").substringAfter(':').contains("0420"))
     }
 
     @Test
