@@ -133,7 +133,9 @@ class ChannelPreviewViewModel @Inject constructor(
     }
 
     private companion object {
-        const val NOW_NEXT_DELAY_MS = 150L
+        // Dovoljno dugo da korak D-pada (oko 200 ms na TV-u) ne pokrene čitanje vodiča za svaki kanal: to
+        // čitanje je na slabom TV-u zauzimalo petinu procesora baš dok se lista pomera.
+        const val NOW_NEXT_DELAY_MS = 350L
         const val PREVIEW_DELAY_MS = 650L
         const val LATER_COUNT = 3
     }
