@@ -685,8 +685,12 @@ private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
 private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: LazyGridScope.(showRow: (Int) -> Unit) -> Unit) {
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    // Poster na kome je fokus; pamti ga [showRow], koji svaki poster zove kad dobije fokus.
+    val focused = remember { IntArray(1) { -1 } }
     val showRow: (Int) -> Unit = remember(gridState) {
         { index ->
+            focused[0] = index
             scope.launch {
                 // Broj kolona se menja kad fokus uđe među postere; red se traži tek kad se mreža složi.
                 withFrameNanos { }
@@ -706,6 +710,21 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
         CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll) {
             LazyVerticalGrid(
                 state = gridState,
+                // Fokusiran red stoji na vrhu, pa red iznad njega nije složen i Gore ne bi imalo kuda.
+                // Zato se prvo pomeri mreža da se red iznad pojavi, pa se tek onda pomera fokus.
+                modifier = Modifier.onPreviewKeyEvent { event ->
+                    if (event.key != Key.DirectionUp) return@onPreviewKeyEvent false
+                    val target = focused[0] - columns
+                    if (target < 0) return@onPreviewKeyEvent false
+                    if (event.type == KeyEventType.KeyDown) {
+                        scope.launch {
+                            gridState.scrollToItem(target)
+                            withFrameNanos { }
+                            focusManager.moveFocus(FocusDirection.Up)
+                        }
+                    }
+                    true
+                },
                 columns = GridCells.Fixed(columns),
                 horizontalArrangement = Arrangement.spacedBy(GRID_GAP),
                 verticalArrangement = Arrangement.spacedBy(GRID_GAP),

@@ -24,6 +24,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -172,8 +173,13 @@ class PlayerEngine(
             context: Context,
             enableFloatOutput: Boolean,
             enableAudioTrackPlaybackParams: Boolean,
-        ): AudioSink? = super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)
-            ?.let { sink -> PassthroughGate(sink).also { audioGate = it } }
+        ): AudioSink = DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            // Višekanalni zvuk se spaja u stereo kad uređaj ne može da ga pusti (vidi [StereoDownmix]).
+            .setAudioProcessors(arrayOf(StereoDownmixProcessor()))
+            .build()
+            .let { sink -> PassthroughGate(sink).also { audioGate = it } }
     }
         // Ako izabrani dekoder ne uspe da krene, plejer proba sledeći umesto da prijavi grešku.
         .setEnableDecoderFallback(true)
@@ -727,6 +733,13 @@ class PlayerEngine(
             scheduleRetry(delayMs = 0)
             return
         }
+        if (needsStereo(error)) {
+            // Uređaj ne može da otvori izlaz za 5.1 (ili više kanala): isti sadržaj odmah iznova, spojen u stereo.
+            StereoDownmix.enabled = true
+            rememberPosition()
+            scheduleRetry(delayMs = 0)
+            return
+        }
         rememberPosition()
         attempts++
         val hasAnotherUrl = urlIndex + 1 < current.urls.size
@@ -845,6 +858,12 @@ class PlayerEngine(
             cause = current.cause
         }
         return false
+    }
+
+    private fun needsStereo(error: PlaybackException): Boolean {
+        if (StereoDownmix.enabled || error.errorCode != PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED) return false
+        val format = (error.cause as? AudioSink.InitializationException)?.format ?: player.audioFormat
+        return (format?.channelCount ?: 0) > 2
     }
 
     private fun classify(error: PlaybackException): PlaybackFailure = when (error.errorCode) {
