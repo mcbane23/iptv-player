@@ -848,6 +848,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       se vidi crn ekran sa satom i datumom koji se polako sele; bilo koji taster ga gasi i fokus ostaje gde je
       bio. Podešavanja > Izgled „Čuvar ekrana”: Isključeno, 2, 5 (podrazumevano), 10 ili 15 minuta. Ne pali
       se preko plejera (pauza ima svoj ekran) ni dok se čeka telefon. Samo TV; ekran se ne drži upaljenim.
+- [x] TV: poster u pozadini čuvara ekrana (Bane, 23. 11. 2026, izgled A): umesto crne pozadine razliven i
+      zatamnjen poster iz omiljenih filmova i serija (ako ih nema, iz poslednje gledanih, bez zaključanih); na
+      minut se sporo pretopi u sledeći. Bez postera ostaje crno. Razlivanje se radi jednom na maloj slici.
 - [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
       kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
       od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno

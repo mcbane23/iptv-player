@@ -57,13 +57,18 @@ import kotlinx.coroutines.launch
 
 /**
  * Čuvar ekrana na TV-u: kad se izabrano vreme ne pritisne nijedan taster, preko svega se prikazuje
- * crn ekran sa satom i datumom koji se polako sele. Bilo koji taster ga gasi, a fokus ostaje gde je bio,
+ * sat sa datumom koji se polako sele, na razlivenom posteru iz omiljenih ili poslednje gledanih
+ * (vidi [ScreensaverBackdrop]); bez postera pozadina je crna. Bilo koji taster ga gasi, a fokus ostaje gde je bio,
  * jer je čuvar u svom prozoru.
  *
  * [blocked] je tačno dok je otvoren plejer ili ekran na kome se čeka (npr. uparivanje sa telefonom).
  */
 @Composable
-fun TvScreensaver(blocked: Boolean, settingsViewModel: SettingsViewModel = hiltViewModel()) {
+fun TvScreensaver(
+    blocked: Boolean,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    screensaverViewModel: ScreensaverViewModel = hiltViewModel(),
+) {
     val minutes by settingsViewModel.screensaverMinutes.collectAsStateWithLifecycle()
     var visible by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -79,11 +84,13 @@ fun TvScreensaver(blocked: Boolean, settingsViewModel: SettingsViewModel = hiltV
             }
         }
     }
-    if (visible) ScreensaverWindow(onDismiss = UserActivity::touch)
+    if (visible) ScreensaverWindow(screensaverViewModel, onDismiss = UserActivity::touch)
 }
 
 @Composable
-private fun ScreensaverWindow(onDismiss: () -> Unit) {
+private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> Unit) {
+    // Posteri se čitaju samo dok je čuvar na ekranu.
+    val posters by viewModel.posters.collectAsStateWithLifecycle()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
@@ -101,11 +108,13 @@ private fun ScreensaverWindow(onDismiss: () -> Unit) {
                 }
                 .pointerInput(onDismiss) { detectTapGestures { onDismiss() } }
                 .focusRequester(focus)
-                .focusable()
-                // Margine zbog overscan-a na televizorima.
-                .padding(horizontal = 48.dp, vertical = 27.dp),
+                .focusable(),
         ) {
-            DriftingClock()
+            // Pozadina ide preko celog ekrana, a sat ostaje unutar margina zbog overscan-a televizora.
+            ScreensaverBackdrop(posters, modifier = Modifier.fillMaxSize())
+            Box(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
+                DriftingClock()
+            }
         }
     }
 }
