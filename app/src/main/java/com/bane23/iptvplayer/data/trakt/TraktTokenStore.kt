@@ -96,7 +96,8 @@ class TraktTokenStore @Inject constructor(
 
     /**
      * Liste (ID-jevi) čije su omiljene serije već jednom očišćene od viška jezičkih verzija. Ključ je
-     * „_2” jer je čišćenje ponovljeno kad je i AMZ počeo da se računa kao engleska verzija.
+     * „_2” jer je čišćenje ponovljeno kad je AMZ počeo da se računa kao engleska verzija i kad su i
+     * serije bez engleske verzije počele da se svode na jednu.
      */
     suspend fun trimmedPlaylists(): Set<String> = dataStore.data.first()[TRIMMED_PLAYLISTS].orEmpty()
 

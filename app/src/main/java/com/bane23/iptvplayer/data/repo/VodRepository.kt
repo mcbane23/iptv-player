@@ -898,8 +898,9 @@ class VodRepository @Inject constructor(
 
     /**
      * Jednokratno čišćenje omiljenih liste [playlistId]: od serija koje je Trakt dodao ([autoTmdbIds]) u
-     * više verzija ostaje samo engleska koju bira [preferredVersions]. Serija čija je neka verzija gledana
-     * u aplikaciji, ili koja nema englesku verziju, ili je u omiljenima samo jednom, ostaje kakva jeste.
+     * više verzija ostaje samo jedna, ona koju bira [preferredVersions] (engleska, a bez nje prva iz
+     * spiska). Serija čija je neka verzija gledana u aplikaciji, ili je u omiljenima samo jednom, ostaje
+     * kakva jeste.
      * Vraća false kad lista nije aktivna, pa čišćenje treba ponoviti kasnije.
      */
     suspend fun trimAutoSeriesFavorites(playlistId: Long, autoTmdbIds: Set<Long>): Boolean = withContext(Dispatchers.IO) {
@@ -918,7 +919,6 @@ class VodRepository @Inject constructor(
                 val all = byTmdb.getValue(tmdbId)
                 if (all.any { it.id in watched }) continue
                 val chosen = preferredVersions(all, watched, categories).single()
-                if (englishRank(chosen.name, chosen.categoryId?.let(categories::get)) == null) continue
                 for (favorite in saved) {
                     if (favorite.itemId != chosen.id) favoriteDao.delete(playlistId, KIND_SERIES, favorite.itemId)
                 }
