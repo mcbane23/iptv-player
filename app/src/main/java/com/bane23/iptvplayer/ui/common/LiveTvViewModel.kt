@@ -6,6 +6,8 @@ import com.bane23.iptvplayer.ui.common.theme.UiScale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
+import androidx.paging.PagingDataEvent
+import androidx.paging.PagingDataPresenter
 import androidx.paging.cachedIn
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -246,6 +249,19 @@ class ChannelListViewModel @Inject constructor(
     val channels: Flow<PagingData<Channel>> = selection.filterNotNull()
         .flatMapLatest { repository.channels(it.playlistId, it.categoryId) }
         .cachedIn(viewModelScope)
+
+    /**
+     * Čita spisak i dok ekran nije na ekranu (npr. dok je otvoren plejer). Gledanje kanala menja
+     * „Nedavno”, pa baza traži novo čitanje; bez čitaoca bi ono počelo tek po povratku iz plejera i
+     * spisak bi na trenutak bio prazan. Ovako je novi spisak već učitan kad se ekran vrati.
+     */
+    private val warmList = object : PagingDataPresenter<Channel>() {
+        override suspend fun presentPagingDataEvent(event: PagingDataEvent<Channel>) = Unit
+    }
+
+    init {
+        viewModelScope.launch { channels.collectLatest { warmList.collectFrom(it) } }
+    }
 
     fun select(playlistId: Long, categoryId: Long?) {
         selection.value = Selection(playlistId, categoryId)
