@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -261,16 +262,14 @@ internal fun UpdateAlert(content: AlertContent) {
                             .padding(top = 24.dp),
                     ) {
                         dismiss?.let { (label, action) ->
-                            TextButton(onClick = action) { Text(label) }
+                            AlertButton(label = label, onClick = action)
                         }
-                        TextButton(
+                        AlertButton(
+                            label = confirm.first,
                             onClick = confirm.second,
-                            modifier = Modifier
-                                .focusRequester(confirmFocus)
-                                .onFocusChanged { confirmFocused = it.isFocused },
-                        ) {
-                            Text(confirm.first)
-                        }
+                            modifier = Modifier.focusRequester(confirmFocus),
+                            onFocus = { confirmFocused = it },
+                        )
                     }
                 }
             }
@@ -284,6 +283,35 @@ internal fun UpdateAlert(content: AlertContent) {
             runCatching { confirmFocus.requestFocus() }
             delay(FOCUS_STEP_MS)
         }
+    }
+}
+
+/**
+ * Dugme dijaloga. Dugme u fokusu je puno, u boji teme, kao fokus na ostalim TV ekranima: tanak sloj
+ * običnog dugmeta se na TV-u slabo vidi, pa se nije znalo da li je izabrano „Ažuriraj” ili „Kasnije”.
+ */
+@Composable
+private fun AlertButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onFocus: (Boolean) -> Unit = {},
+) {
+    var focused by remember { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    TextButton(
+        onClick = onClick,
+        colors = if (focused) {
+            ButtonDefaults.textButtonColors(containerColor = colors.primary, contentColor = colors.onPrimary)
+        } else {
+            ButtonDefaults.textButtonColors()
+        },
+        modifier = modifier.onFocusChanged {
+            focused = it.isFocused
+            onFocus(it.isFocused)
+        },
+    ) {
+        Text(label)
     }
 }
 
