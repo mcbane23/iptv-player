@@ -263,8 +263,7 @@ class VodPlayerViewModel @Inject constructor(
         _ui.update { it.copy(title = title) }
         viewModelScope.launch {
             play(startOver = true) {
-                val source = archive.source(channelId, startMs, stopMs, startToken) ?: throw java.io.IOException("No archive")
-                source to null
+                archive.source(channelId, startMs, stopMs, startToken) ?: throw java.io.IOException("No archive")
             }
         }
     }
@@ -279,7 +278,7 @@ class VodPlayerViewModel @Inject constructor(
                 _ui.update { it.copy(title = recording.title) }
                 val file = java.io.File(recording.path)
                 if (!file.exists()) throw java.io.IOException("No file")
-                StreamSource(listOf(android.net.Uri.fromFile(file).toString()), null, null) to null
+                StreamSource(listOf(android.net.Uri.fromFile(file).toString()), null, null)
             }
         }
     }
@@ -332,14 +331,17 @@ class VodPlayerViewModel @Inject constructor(
                     }
                 }
             }
-            play(startOver = false) {
-                val saved = when {
-                    !ownList -> null
-                    episode -> repository.episodeProgress(row.itemId)
-                    else -> repository.movieProgress(row.itemId)
-                }
-                file to saved?.takeIf { it.resumable }?.positionMs
-            }
+            play(
+                startOver = false,
+                savedPosition = {
+                    val saved = when {
+                        !ownList -> null
+                        episode -> repository.episodeProgress(row.itemId)
+                        else -> repository.movieProgress(row.itemId)
+                    }
+                    saved?.takeIf { it.resumable }?.positionMs
+                },
+            ) { file }
         }
     }
 
@@ -635,7 +637,7 @@ class VodPlayerViewModel @Inject constructor(
     /** [savedPosition] čita zapamćenu poziciju (ako je ima), a [load] vraća izvor strima. */
     private suspend fun play(
         startOver: Boolean,
-        savedPosition: suspend () -> Long?,
+        savedPosition: suspend () -> Long? = { null },
         load: suspend () -> StreamSource,
     ) {
         lateRemoteJob?.cancel()
