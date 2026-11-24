@@ -686,22 +686,32 @@ class VodRepository @Inject constructor(
     /**
      * Pozicija sa Trakt naloga (gledano na drugom uređaju): [progress] je procenat, [pausedAtMs]
      * vreme prekida. Upisuje se samo ako je novija od ovde zapamćene i stvarno drugačija.
-     * Film, odnosno serija, traži se po TMDB ID-ju u spisku aktivne liste.
+     * Film, odnosno serija, traži se po TMDB ID-ju: prvo među onima koji se ovde gledaju (vidi [watchedHere]),
+     * pa u spisku aktivne liste.
      */
     suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long) = withContext(Dispatchers.IO) {
         val playlistId = session().playlistId
         val isMovie = key.kind == TraktKey.MOVIE
         val target: RemoteTarget = if (isMovie) {
-            val item = allItems(VodKind.MOVIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
-            RemoteTarget(item.id, null, item.name, item.poster, item.extension) {
-                movie(item.id).durationSeconds
+            val items = allItems(VodKind.MOVIES)
+            val movieId = watchedHere(items, progressDao.recentMovies(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { id ->
+                movie(id).tmdbId
+            } ?: items.firstOrNull { it.tmdbId == key.tmdbId }?.id ?: return@withContext
+            val item = items.firstOrNull { it.id == movieId }
+            val row = progressDao.get(playlistId, KIND_MOVIE, movieId)
+            RemoteTarget(movieId, null, item?.name ?: row?.title, item?.poster ?: row?.poster, item?.extension ?: row?.extension) {
+                movie(movieId).durationSeconds
             }
         } else {
-            val show = allItems(VodKind.SERIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
-            val details = series(show.id)
+            val items = allItems(VodKind.SERIES)
+            val showId = watchedHere(items, progressDao.recentSeries(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { id ->
+                series(id).tmdbId
+            } ?: items.firstOrNull { it.tmdbId == key.tmdbId }?.id ?: return@withContext
+            val show = items.firstOrNull { it.id == showId }
+            val details = series(showId)
             val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode }
                 ?: return@withContext
-            RemoteTarget(episode.id, show.id, details.name ?: show.name, show.poster ?: details.poster, null) {
+            RemoteTarget(episode.id, showId, details.name ?: show?.name, show?.poster ?: details.poster, null) {
                 episode.durationSeconds
             }
         }
@@ -731,6 +741,26 @@ class VodRepository @Inject constructor(
                 watchedAt = existing?.watchedAt,
             ),
         )
+    }
+
+    /**
+     * Ista serija ili film često postoji kod provajdera više puta (više kategorija, drugi ID). Pozicija sa
+     * drugog uređaja ide na onaj koji se ovde već gleda ([recent], od poslednjeg); bez toga bi otišla na
+     * duplikat, a nastavak bi krenuo od starog mesta. Detalji se traže samo za stavke bez TMDB ID-ja u spisku,
+     * a greška panela za jednu stavku ne prekida traženje.
+     */
+    private suspend fun watchedHere(items: List<VodItem>, recent: List<Long>, tmdbId: Long, details: suspend (Long) -> Long?): Long? {
+        val listed = items.associateBy { it.id }
+        recent.firstOrNull { listed[it]?.tmdbId == tmdbId }?.let { return it }
+        return recent.firstOrNull { id ->
+            listed[id]?.tmdbId == null && try {
+                details(id) == tmdbId
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+        }
     }
 
     private class RemoteTarget(
@@ -1073,6 +1103,9 @@ class VodRepository @Inject constructor(
 
         /** Razlika pozicija za koju se ne menja zapamćeno (zaokruživanje procenta na Trakt-u). */
         const val SAME_POSITION_MS = 30_000L
+
+        /** Koliko poslednje gledanih serija, odnosno filmova, se proverava pri dolasku pozicije sa drugog uređaja. */
+        const val REMOTE_MATCH_LIMIT = 10
 
         /** Najviše stavki u redu „Nastavi gledanje”. */
         const val CONTINUE_LIMIT = 20

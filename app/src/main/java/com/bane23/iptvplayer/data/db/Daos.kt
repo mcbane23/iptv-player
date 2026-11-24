@@ -786,6 +786,17 @@ interface WatchProgressDao {
     @Query("SELECT DISTINCT seriesId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'episode'")
     suspend fun seriesWithProgress(playlistId: Long): List<Long>
 
+    /** Serije sa gledanjem na ovom uređaju, od poslednje gledane. */
+    @Query(
+        "SELECT seriesId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'episode' " +
+            "GROUP BY seriesId ORDER BY MAX(updatedAt) DESC LIMIT :limit",
+    )
+    suspend fun recentSeries(playlistId: Long, limit: Int): List<Long>
+
+    /** Filmovi sa gledanjem na ovom uređaju, od poslednje gledanog. */
+    @Query("SELECT itemId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'movie' ORDER BY updatedAt DESC LIMIT :limit")
+    suspend fun recentMovies(playlistId: Long, limit: Int): List<Long>
+
     @Query("SELECT * FROM watch_progress WHERE playlistId = :playlistId AND kind = :kind AND itemId IN (:itemIds)")
     suspend fun getMany(playlistId: Long, kind: String, itemIds: List<Long>): List<WatchProgressEntity>
 
