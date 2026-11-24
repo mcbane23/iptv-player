@@ -174,6 +174,13 @@ class PlayerEngine(
     /** Brzina puštanja je drugačija od obične; tada zvuk ne sme da ide neraspakovan ni kroz tunel. */
     private var speedChanged = false
 
+    /**
+     * Sadržaj je pripremljen pauziran (povratak u aplikaciju, ponovni pokušaj tokom pauze), pa ide bez
+     * tunela do sledeće pripreme. Neki dekoderi u tunelu ne umeju da zadrže sliku dok zvuk stoji, pa bi
+     * slika krenula sama, bez zvuka, a plejer bi i dalje bio pauziran (XGIMI, Bane).
+     */
+    private var tunnelHeldForPause = false
+
     /** Zvuk koji se sada pušta ide neraspakovan ka TV-u ili pojačalu. */
     private var audioPassthrough = false
 
@@ -704,7 +711,9 @@ class PlayerEngine(
     private fun applyTunneling() {
         val selector = player.trackSelector as? DefaultTrackSelector ?: return
         selector.setParameters(
-            selector.buildUponParameters().setTunnelingEnabled(!shared && !speedChanged && decoderMode == DecoderMode.TUNNEL),
+            selector.buildUponParameters().setTunnelingEnabled(
+                !shared && !speedChanged && !tunnelHeldForPause && decoderMode == DecoderMode.TUNNEL,
+            ),
         )
     }
 
@@ -734,6 +743,11 @@ class PlayerEngine(
     private fun prepareCurrent(autoPlay: Boolean = false) {
         wasReady = false
         val current = source ?: return
+        val pausedPrepare = !autoPlay && !player.playWhenReady
+        if (pausedPrepare != tunnelHeldForPause) {
+            tunnelHeldForPause = pausedPrepare
+            applyTunneling()
+        }
         val url = current.urls.getOrNull(urlIndex) ?: return
         val headers = buildMap {
             current.referrer?.let { put("Referer", it) }
