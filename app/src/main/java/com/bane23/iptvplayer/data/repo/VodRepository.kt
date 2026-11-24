@@ -984,8 +984,13 @@ class VodRepository @Inject constructor(
      * Spisak iz memorije, inače sa uređaja (ako je čuvanje uključeno), inače sa servera. Spisak sa
      * uređaja preuzet pre poslednjeg osvežavanja liste se prikazuje odmah, a noviji se preuzima u
      * pozadini i javlja kroz [updates].
+     *
+     * Prazan spisak se ne pamti: server ga ponekad vrati kad zapne (preopterećen, ograničen broj
+     * veza), pa bi Filmovi i Serije ostali prazni sve do sledećeg osvežavanja liste. Zato se prazan
+     * spisak sa servera ne upisuje ni u memoriju ni na uređaj, ne zamenjuje sačuvani spisak, a prazan
+     * spisak sačuvan ranije se ne koristi, nego se pita server.
      */
-    private suspend fun <V : Any> cached(
+    private suspend fun <V : List<*>> cached(
         memory: ConcurrentHashMap<String, V>,
         key: String,
         kind: VodKind,
@@ -1002,15 +1007,17 @@ class VodRepository @Inject constructor(
             val local = settings.vodLocalCache.first()
             if (local) {
                 val stored = readDisk()
-                if (stored != null) {
+                if (stored != null && stored.value.isNotEmpty()) {
                     memory[key] = stored.value
                     if (stored.stamp != stamp) refreshInBackground(memory, key, kind, writeDisk, fetch)
                     return@withLock stored.value
                 }
             }
             val value = fetch()
-            memory[key] = value
-            if (local) writeDisk(value)
+            if (value.isNotEmpty()) {
+                memory[key] = value
+                if (local) writeDisk(value)
+            }
             value
         }
     }
@@ -1018,7 +1025,7 @@ class VodRepository @Inject constructor(
     /** Po jedna brava za svaki spisak koji se upravo učitava, vidi [cached]. */
     private val loading = ConcurrentHashMap<String, Mutex>()
 
-    private fun <V : Any> refreshInBackground(
+    private fun <V : List<*>> refreshInBackground(
         memory: ConcurrentHashMap<String, V>,
         key: String,
         kind: VodKind,
@@ -1029,6 +1036,8 @@ class VodRepository @Inject constructor(
         writeScope.launch {
             try {
                 val value = fetch()
+                // Prazan spisak ne briše sačuvani, vidi [cached].
+                if (value.isEmpty()) return@launch
                 // Ako je lista u međuvremenu ponovo osvežena, ključ je izbačen i ovaj spisak je zastareo.
                 if (memory.replace(key, value) == null) return@launch
                 if (settings.vodLocalCache.first()) writeDisk(value)
