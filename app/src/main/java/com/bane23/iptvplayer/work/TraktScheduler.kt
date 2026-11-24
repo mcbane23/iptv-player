@@ -49,19 +49,24 @@ class TraktScheduler @Inject constructor(@ApplicationContext private val context
         val now = SystemClock.elapsedRealtime()
         val last = lastPlaybackRequestMs
         if (last != 0L && now - last < PLAYBACK_DEBOUNCE_MS) return
-        lastPlaybackRequestMs = now
+        enqueuePlayback(ExistingWorkPolicy.APPEND_OR_REPLACE)
+    }
+
+    /**
+     * Pozicija koja čeka slanje ide odmah, bez spajanja sa prethodnim zahtevom. Prethodni se zamenjuje:
+     * da je u redu iza njega, čekala bi dok ovaj odbrojava do sledećeg pokušaja. Razmena ionako šalje
+     * sve pozicije koje čekaju.
+     */
+    fun sendPlaybackNow() = enqueuePlayback(ExistingWorkPolicy.REPLACE)
+
+    private fun enqueuePlayback(policy: ExistingWorkPolicy) {
+        lastPlaybackRequestMs = SystemClock.elapsedRealtime()
         val request = OneTimeWorkRequestBuilder<TraktSyncWorker>()
             .setConstraints(network)
             .setInputData(workDataOf(TraktSyncWorker.PLAYBACK_ONLY to true))
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(PLAYBACK_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
-    }
-
-    /** Pozicija koja čeka slanje ide odmah, bez spajanja sa prethodnim zahtevom. */
-    fun sendPlaybackNow() {
-        lastPlaybackRequestMs = 0L
-        syncPlaybackSoon()
+        WorkManager.getInstance(context).enqueueUniqueWork(PLAYBACK_WORK, policy, request)
     }
 
     /** Sinhronizacija samo ako poslednja nije tražena u poslednjih nekoliko minuta. */

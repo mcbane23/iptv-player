@@ -13,6 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
@@ -89,13 +90,13 @@ class TraktRepository @Inject constructor(
     }
 
     /**
-     * Pre puštanja filma ili epizode: preuzima pozicije sa drugih uređaja, da gledanje krene od mesta
-     * gde je tamo stalo. Čeka najviše [timeoutMs]; razmena se posle toga završava u pozadini.
+     * Pre puštanja filma ili epizode: pokreće razmenu pozicija, da gledanje krene od mesta gde je na
+     * drugom uređaju stalo. Razmena se završava u pozadini, nezavisno od onoga ko čeka; null kad
+     * prijave na Trakt nema.
      */
-    suspend fun syncPlaybackWithin(timeoutMs: Long) {
-        if (!isAvailable || !tokens.isSignedIn()) return
-        val exchange = background.async { syncPlayback() }
-        withTimeoutOrNull(timeoutMs) { exchange.await() }
+    suspend fun startPlaybackExchange(): Deferred<TraktSyncResult>? {
+        if (!isAvailable || !tokens.isSignedIn()) return null
+        return background.async { syncPlayback() }
     }
 
     /**
@@ -106,11 +107,13 @@ class TraktRepository @Inject constructor(
         if (tokens.session() == null) return@withContext TraktSyncResult.NOT_SIGNED_IN
         try {
             val auth = authorization() ?: return@withContext TraktSyncResult.NOT_SIGNED_IN
-            playbackLock.withLock {
-                pushPlayback(auth)
+            val allSent = playbackLock.withLock {
+                val sent = pushPlayback(auth)
                 pullPlayback(auth)
+                sent
             }
-            TraktSyncResult.DONE
+            // Pozicija koju panel trenutno nije prepoznao ponavlja se uskoro, a ne tek pri sledećem otvaranju aplikacije.
+            if (allSent) TraktSyncResult.DONE else TraktSyncResult.FAILED
         } catch (e: CancellationException) {
             throw e
         } catch (e: HttpException) {
@@ -378,9 +381,13 @@ class TraktRepository @Inject constructor(
         return all.toList()
     }
 
-    /** Šalje pozicije prekinutog gledanja (za nastavak na drugom uređaju). */
-    private suspend fun pushPlayback(auth: String) {
+    /**
+     * Šalje pozicije prekinutog gledanja (za nastavak na drugom uređaju). Vraća false kad neka čeka
+     * jer panel provajdera nije odgovorio (npr. strim je upravo zatvoren, a dozvoljena je jedna veza).
+     */
+    private suspend fun pushPlayback(auth: String): Boolean {
         val activePlaylistId = settings.activePlaylistId.first()
+        var allSent = true
         for (row in dao.pendingPlayback()) {
             if (row.playlistId != activePlaylistId) continue
             val key = try {
@@ -390,6 +397,7 @@ class TraktRepository @Inject constructor(
             } catch (_: PanelUnreadable) {
                 null
             } catch (_: IOException) {
+                allSent = false
                 continue
             }
             if (key != null) {
@@ -399,6 +407,7 @@ class TraktRepository @Inject constructor(
             }
             dao.deletePlayback(row.playlistId, row.kind, row.itemId)
         }
+        return allSent
     }
 
     /** Preuzima pozicije sa drugih uređaja koje su novije od poslednje primenjene. */

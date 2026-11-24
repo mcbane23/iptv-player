@@ -35,6 +35,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.abs
+import com.bane23.iptvplayer.ui.common.player.formatDuration
 
 /** Oznake za ekran pauze: ocena (osim prazne i nule), godina i žanr, samo ono što postoji. */
 internal fun pauseMeta(rating: String?, releaseDate: String?, genre: String?): List<String> = listOfNotNull(
@@ -86,6 +90,8 @@ data class VodPlayerUiState(
     val nextCard: NextCard? = null,
     /** Strim nije mogao ni da se sastavi (nema veze, lista više nije Xtream i sl.). */
     val sourceMissing: Boolean = false,
+    /** Pre puštanja se čeka pozicija sa drugog uređaja (Trakt). */
+    val fetchingPosition: Boolean = false,
     /** Može li se titl potražiti na internetu (film ili epizoda, a APK ima ključ za OpenSubtitles). */
     val onlineSubtitles: Boolean = false,
 )
@@ -174,6 +180,12 @@ class VodPlayerViewModel @Inject constructor(
     private var lastSavedPositionMs = -1L
     private var scrubJob: Job? = null
 
+    /** Čeka poziciju sa drugog uređaja koja je zakasnila (vidi [followLateRemote]). */
+    private var lateRemoteJob: Job? = null
+
+    /** Gledalac je sam premotao od početka puštanja: zakasnela pozicija se tad ne primenjuje. */
+    private var userMoved = false
+
     init {
         // Tajmer gašenja je istekao: gledanje se pauzira, pa uređaj posle sam ugasi ekran.
         viewModelScope.launch { sleepTimer.expired.collect { engine.pause() } }
@@ -234,10 +246,12 @@ class VodPlayerViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            play(startOver) {
-                val start = repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs
+            play(
+                startOver,
+                savedPosition = { repository.movieProgress(movieId)?.takeIf { it.resumable }?.positionMs },
+            ) {
                 // Film preuzet na telefon se pušta sa uređaja, bez interneta.
-                (downloads.localSource(episode = false, movieId) ?: repository.movieSource(movieId, extension)) to start
+                downloads.localSource(episode = false, movieId) ?: repository.movieSource(movieId, extension)
             }
         }
     }
@@ -437,12 +451,14 @@ class VodPlayerViewModel @Inject constructor(
 
     fun seekBy(deltaMs: Long) {
         if (seekBlocked()) return
+        userMoved = true
         engine.seekBy(deltaMs)
         _ui.update { it.copy(positionMs = (it.positionMs + deltaMs).coerceIn(0, it.durationMs.coerceAtLeast(0))) }
     }
 
     fun seekTo(positionMs: Long) {
         if (seekBlocked()) return
+        userMoved = true
         scrubJob?.cancel()
         engine.seekTo(positionMs)
         _ui.update { it.copy(positionMs = positionMs, scrubMs = null) }
@@ -608,21 +624,35 @@ class VodPlayerViewModel @Inject constructor(
                 onlineSubtitles = subtitles.isAvailable,
             )
         }
-        play(startOver) {
-            val start = repository.episodeProgress(episode.id)?.takeIf { it.resumable }?.positionMs
-            (downloads.localSource(episode = true, episode.id) ?: repository.episodeSource(episode.id, episode.extension)) to start
+        play(
+            startOver,
+            savedPosition = { repository.episodeProgress(episode.id)?.takeIf { it.resumable }?.positionMs },
+        ) {
+            downloads.localSource(episode = true, episode.id) ?: repository.episodeSource(episode.id, episode.extension)
         }
     }
 
-    /** [load] vraća izvor strima i zapamćenu poziciju (ako je ima). */
+    /** [savedPosition] čita zapamćenu poziciju (ako je ima), a [load] vraća izvor strima. */
     private suspend fun play(
         startOver: Boolean,
-        load: suspend () -> Pair<StreamSource, Long?>,
+        savedPosition: suspend () -> Long?,
+        load: suspend () -> StreamSource,
     ) {
+        lateRemoteJob?.cancel()
+        userMoved = false
         try {
             // Pozicija sa drugog uređaja stiže pre čitanja zapamćene, da gledanje krene odatle.
-            if (!startOver) trakt.syncPlaybackWithin(PLAYBACK_SYNC_WAIT_MS)
-            val (source, savedPosition) = load()
+            val exchange = if (startOver) null else trakt.startPlaybackExchange()
+            if (exchange != null) {
+                _ui.update { it.copy(fetchingPosition = true) }
+                try {
+                    withTimeoutOrNull(PLAYBACK_SYNC_WAIT_MS) { exchange.await() }
+                } finally {
+                    _ui.update { it.copy(fetchingPosition = false) }
+                }
+            }
+            val source = load()
+            val start = if (startOver) null else savedPosition()
             this.source = source
             _ui.update { it.copy(sourceMissing = false) }
             // Titl sa interneta izabran ranije za ovaj film ili epizodu uključuje se sam, iz fajla na uređaju.
@@ -631,7 +661,7 @@ class VodPlayerViewModel @Inject constructor(
             _ui.update { it.copy(subtitleOffsetMs = if (saved != null) 0L else null) }
             engine.play(
                 source,
-                startPositionMs = if (startOver) 0 else savedPosition ?: 0,
+                startPositionMs = start ?: 0,
                 subtitles = saved?.let { (subtitle, file) ->
                     listOf(
                         ExternalSubtitle(
@@ -643,6 +673,7 @@ class VodPlayerViewModel @Inject constructor(
                     )
                 } ?: emptyList(),
             )
+            if (exchange != null && !exchange.isCompleted) followLateRemote(exchange, start, savedPosition)
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -651,9 +682,28 @@ class VodPlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Pozicija sa drugog uređaja nije stigla pre početka: kad stigne (najkasnije za [LATE_REMOTE_MS]),
+     * gledanje skače na nju, osim ako je gledalac u međuvremenu sam premotao. Dok se čeka, ovaj uređaj
+     * ne pamti svoju poziciju: novija bi prekrila onu sa drugog uređaja.
+     */
+    private fun followLateRemote(exchange: Deferred<*>, startedAt: Long?, savedPosition: suspend () -> Long?) {
+        val current = item
+        lateRemoteJob = viewModelScope.launch {
+            withTimeoutOrNull(LATE_REMOTE_MS) { exchange.await() } ?: return@launch
+            if (item != current || userMoved) return@launch
+            val remote = savedPosition() ?: return@launch
+            if (remote == startedAt || abs(remote - engine.positionMs) < LATE_JUMP_MIN_MS) return@launch
+            engine.seekTo(remote)
+            _ui.update { it.copy(positionMs = remote) }
+            AppMessages.show(context.getString(R.string.vod_resumed_from_other_device, formatDuration(remote)))
+        }
+    }
+
     /** [stopped]: gledanje je prekinuto (izlaz iz plejera ili aplikacije), pa pozicija ide i na Trakt. */
     private fun saveProgress(finished: Boolean = false, stopped: Boolean = false) {
         val current = item ?: return
+        if (!finished && lateRemoteJob?.isActive == true) return
         val duration = engine.durationMs
         if (duration <= 0) return
         lastSavedAt = System.currentTimeMillis()
@@ -680,7 +730,9 @@ class VodPlayerViewModel @Inject constructor(
         const val POSITION_TICK_MS = 500L
         const val SAVE_EVERY_MS = 10_000L
         const val PAUSE_SHARE_MS = 10_000L
-        const val PLAYBACK_SYNC_WAIT_MS = 3_000L
+        const val PLAYBACK_SYNC_WAIT_MS = 8_000L
+        const val LATE_REMOTE_MS = 30_000L
+        const val LATE_JUMP_MIN_MS = 10_000L
         const val SCRUB_COMMIT_MS = 1_200L
     }
 }
