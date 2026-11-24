@@ -435,9 +435,13 @@ class TraktRepository @Inject constructor(
     private suspend fun pullPlayback(auth: String) {
         val since = tokens.lastPlaybackMs()
         val all = api.playback(auth)
+        // Pozicije iz poslednjih dana se proveravaju svaki put, i kad su već jednom obrađene: ako tada nisu
+        // mogle da se upišu (npr. serija još nije bila učitana), inače se nikad više ne bi upisale. Upis je
+        // ionako preskočen kad je ovde zapamćeno isto ili novije.
+        val recheckFrom = System.currentTimeMillis() - PLAYBACK_RECHECK_MS
         val items = all
             .mapNotNull { item -> TraktPayloads.parseTime(item.pausedAt)?.let { it to item } }
-            .filter { (pausedAt, _) -> pausedAt > since }
+            .filter { (pausedAt, _) -> pausedAt > since || pausedAt > recheckFrom }
             .sortedBy { it.first }
         playbackLog.add(
             PlaybackLogEvent.RECEIVED_LIST,
@@ -456,7 +460,7 @@ class TraktRepository @Inject constructor(
             val label = TraktPlaybackLog.label(key)
             if (TraktPayloads.finishedSince(watchedAt, pausedAt)) {
                 playbackLog.add(PlaybackLogEvent.SKIP_FINISHED, item = label, percent = item.progress.toInt())
-                applied = pausedAt
+                applied = maxOf(applied, pausedAt)
                 continue
             }
             try {
@@ -472,7 +476,7 @@ class TraktRepository @Inject constructor(
                 playbackLog.add(PlaybackLogEvent.SKIP_PANEL, item = label, percent = item.progress.toInt(), detail = e.message.orEmpty())
                 break
             }
-            applied = pausedAt
+            applied = maxOf(applied, pausedAt)
         }
         if (applied > since) tokens.setLastPlaybackMs(applied)
     }
@@ -547,6 +551,9 @@ class TraktRepository @Inject constructor(
         /** Koliko pozicija sa Trakt-a se navodi u dnevniku i koliko dug opis greške. */
         const val LOG_NEWEST = 5
         const val LOG_DETAIL_MAX = 160
+
+        /** Pozicije sa Trakt-a mlađe od ovoga se pri svakoj razmeni ponovo proveravaju (3 dana). */
+        const val PLAYBACK_RECHECK_MS = 3 * 24 * 60 * 60 * 1000L
 
         val CLIENT_ID: String = BuildConfig.TRAKT_CLIENT_ID
         /** Samo starije Trakt aplikacije imaju Client Secret; inače se ne šalje. */
