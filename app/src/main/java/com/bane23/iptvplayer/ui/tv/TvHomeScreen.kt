@@ -213,6 +213,9 @@ fun TvHomeScreen(
                 .graphicsLayer { translationX = if (railExpanded) slidePx else 0f }
                 .onFocusChanged { if (it.hasFocus) railHold = false }
                 .focusRequester(contentFocus)
+                // Desno iz menija vraća fokus tamo gde je bio u sekciji (npr. na izabranu kategoriju), a ne
+                // na ono što je slučajno u visini stavke menija. Kad toga više nema, ide na najbliže.
+                .focusRestorer()
                 .focusGroup(),
         ) {
             holder.SaveableStateProvider(tab.name) {
