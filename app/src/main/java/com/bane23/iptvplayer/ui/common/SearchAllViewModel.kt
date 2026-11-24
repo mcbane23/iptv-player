@@ -104,6 +104,11 @@ class SearchAllViewModel @Inject constructor(
         viewModelScope.launch { settings.addRecentSearch(query) }
     }
 
+    /** Briše jedan nedavni upit. */
+    fun removeRecent(query: String) {
+        viewModelScope.launch { settings.removeRecentSearch(query) }
+    }
+
     fun clearRecent() {
         viewModelScope.launch { settings.clearRecentSearches() }
     }

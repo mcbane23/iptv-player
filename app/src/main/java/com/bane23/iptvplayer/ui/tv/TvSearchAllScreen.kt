@@ -91,6 +91,32 @@ fun TvSearchAllScreen(
         onOpenVod(item, series)
     }
 
+    // Dugi OK na nedavnoj pretrazi nudi da se ukloni; fokus posle toga prelazi na susednu stavku
+    // (sledeću, a ako je bila poslednja, prethodnu), a kad lista ostane prazna, na polje za kucanje.
+    var removeMenu by remember { mutableStateOf<String?>(null) }
+    val recentFocus = remember { HashMap<String, FocusRequester>() }
+    var removed by remember { mutableStateOf<Pair<String, String?>?>(null) }
+    removeMenu?.let { query ->
+        TvActionDialog(
+            title = query,
+            options = listOf(stringResource(R.string.search_recent_remove)),
+            onSelect = {
+                val index = recent.indexOf(query)
+                removed = query to (recent.getOrNull(index + 1) ?: recent.getOrNull(index - 1))
+                viewModel.removeRecent(query)
+            },
+            onClose = { removeMenu = null },
+        )
+    }
+    LaunchedEffect(recent, removed, removeMenu) {
+        val (query, neighbor) = removed ?: return@LaunchedEffect
+        if (removeMenu != null || query in recent) return@LaunchedEffect
+        recentFocus.remove(query)
+        val target = neighbor?.let { recentFocus[it] }
+        if (target == null || !target.tryRequestFocus()) fieldFocus.tryRequestFocus()
+        removed = null
+    }
+
     // Glasovna pretraga preko sistemskog prepoznavanja govora; aplikacija sama ništa ne snima.
     val context = LocalContext.current
     val voiceIntent = remember {
@@ -161,10 +187,14 @@ fun TvSearchAllScreen(
             if (showRecent) {
                 item(key = "h-recent") { TvSearchGroupTitle(stringResource(R.string.search_recent), recent.size) }
                 items(recent, key = { "q$it" }) { query ->
-                    TvListRow(onClick = {
-                        focusResults = true
-                        viewModel.submit(query)
-                    }) { color ->
+                    TvListRow(
+                        onClick = {
+                            focusResults = true
+                            viewModel.submit(query)
+                        },
+                        onLongClick = { removeMenu = query },
+                        modifier = Modifier.focusRequester(recentFocus.getOrPut(query) { FocusRequester() }),
+                    ) { color ->
                         RowIcon(AppIcons.History, color)
                         RowText(query, color, Modifier.weight(1f))
                     }

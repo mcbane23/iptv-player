@@ -662,6 +662,7 @@
     <string name="search_recent">Nedavne pretrage</string>
     <string name="search_recent_clear">Obriši</string>
     <string name="search_recent_clear_all">Obriši nedavne pretrage</string>
+    <string name="search_recent_remove">Ukloni iz nedavnih pretraga</string>
     <string name="search_voice">Glasom</string>
     <string name="search_on_air">u toku, do %1$s</string>
     <string name="subtitle_step_size">Veličina</string>

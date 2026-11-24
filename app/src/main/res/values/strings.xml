@@ -661,6 +661,7 @@
     <string name="search_recent">Recent searches</string>
     <string name="search_recent_clear">Clear</string>
     <string name="search_recent_clear_all">Clear recent searches</string>
+    <string name="search_recent_remove">Remove from recent searches</string>
     <string name="search_voice">Voice</string>
     <string name="search_on_air">on now, until %1$s</string>
     <string name="subtitle_step_size">Size</string>
