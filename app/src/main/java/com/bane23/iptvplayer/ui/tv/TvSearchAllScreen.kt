@@ -187,13 +187,14 @@ fun TvSearchAllScreen(
             if (showRecent) {
                 item(key = "h-recent") { TvSearchGroupTitle(stringResource(R.string.search_recent), recent.size) }
                 items(recent, key = { "q$it" }) { query ->
+                    val rowFocus = remember(query) { recentFocus.getOrPut(query) { FocusRequester() } }
                     TvListRow(
                         onClick = {
                             focusResults = true
                             viewModel.submit(query)
                         },
                         onLongClick = { removeMenu = query },
-                        modifier = Modifier.focusRequester(recentFocus.getOrPut(query) { FocusRequester() }),
+                        modifier = Modifier.focusRequester(rowFocus),
                     ) { color ->
                         RowIcon(AppIcons.History, color)
                         RowText(query, color, Modifier.weight(1f))
