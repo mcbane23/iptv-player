@@ -495,6 +495,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[SCREENSAVER_MINUTES] = minutes }
     }
 
+    /** Grad za temperaturu u čuvaru ekrana; prazno znači da se mesto pogađa po IP adresi. */
+    val weatherCity: Flow<String> = dataStore.data.map { it[WEATHER_CITY].orEmpty() }.distinctUntilChanged()
+
+    suspend fun setWeatherCity(city: String) {
+        dataStore.edit { it[WEATHER_CITY] = city.trim() }
+    }
+
     suspend fun setUiScale(name: String) {
         dataStore.edit { it[UI_SCALE] = name }
     }
@@ -716,6 +723,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val UI_SCALE = stringPreferencesKey("ui_scale")
         val SCREENSAVER_MINUTES = intPreferencesKey("screensaver_minutes")
+        val WEATHER_CITY = stringPreferencesKey("weather_city")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
         val VOD_SORT_MOVIES = stringPreferencesKey("vod_sort_movies")
@@ -737,7 +745,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
          */
         val GENERAL_KEYS: List<Preferences.Key<*>> = BOOLEAN_KEYS + INT_KEYS + listOf(
             PLAYER_BUFFER, SUBTITLE_SIZE, SUBTITLE_POSITION, PLAYER_LOUDNESS, PLAYER_AUDIO_LANGUAGE, PLAYER_SUBTITLE_LANGUAGE, APP_THEME,
-            RECENT_SEARCHES, ACCENT_COLOR, UPDATE_CHANNEL, VOD_SORT_MOVIES, VOD_SORT_SERIES,
+            RECENT_SEARCHES, ACCENT_COLOR, UPDATE_CHANNEL, VOD_SORT_MOVIES, VOD_SORT_SERIES, WEATHER_CITY,
         )
 
         /** Podešavanja koja imaju smisla samo na istoj vrsti uređaja (telefon ili TV). */

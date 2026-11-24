@@ -854,6 +854,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       minut se sporo pretopi u sledeći. Bez postera ostaje crno. Razlivanje se radi jednom na maloj slici.
       Sat i datum više ne klize stalno (na TV-u ~70 ms rada po kadru i iskidana slova), nego svaki minut
       preskoče na novo mesto uz kratko gašenje i paljenje; između toga se ništa ne crta.
+- [x] TV: temperatura u čuvaru ekrana (Bane, 24. 11. 2026): pored datuma, istim slovima, „· 7°”. Vreme sa
+      Open-Meteo (besplatno, bez naloga), mesto po IP adresi (ipapi.co, rezervno ipwho.is), a Podešavanja >
+      Izgled „Grad za temperaturu” ima prednost. Pita se samo dok je čuvar upaljen, internet najviše na 30 min;
+      bez podatka se vidi samo datum.
 - [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
       kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
       od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno

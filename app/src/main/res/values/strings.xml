@@ -309,9 +309,14 @@
     <string name="settings_ui_scale_summary">Smaller text and items, so more fits on the screen. Tap to switch to the next size.</string>
     <string name="settings_ui_scale_tv_summary">Smaller text and items, so more fits on the screen. Press OK and pick a size. The change shows right away.</string>
     <string name="settings_screensaver">Screensaver</string>
-    <string name="settings_screensaver_summary">When no key is pressed for the chosen time, a clock and the date change place every minute over a blurred poster from your favorite movies and series (or the last watched). It does not start while the player is open. Any key closes it and takes you back where you were. Press OK and pick a time.</string>
+    <string name="settings_screensaver_summary">When no key is pressed for the chosen time, a clock, the date and the current temperature change place every minute over a blurred poster from your favorite movies and series (or the last watched). It does not start while the player is open. Any key closes it and takes you back where you were. Press OK and pick a time.</string>
     <string name="settings_screensaver_off">Off</string>
     <string name="settings_screensaver_minutes">%1$d min</string>
+    <string name="settings_weather_city">Temperature city</string>
+    <string name="settings_weather_city_summary">The screensaver shows the current temperature next to the date. The place is guessed from your internet connection; if it is wrong, type your city here. Weather comes from Open-Meteo. Without internet only the date is shown.</string>
+    <string name="settings_weather_city_auto">Automatic</string>
+    <string name="settings_weather_city_hint">Leave empty to guess the place from your internet connection.</string>
+    <string name="settings_weather_city_placeholder">City, e.g. Novi Sad</string>
     <string name="accent_orange">Orange</string>
     <string name="accent_blue">Blue</string>
     <string name="accent_green">Green</string>

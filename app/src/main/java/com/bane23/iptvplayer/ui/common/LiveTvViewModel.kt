@@ -482,6 +482,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settings.setScreensaverMinutes(minutes) }
     }
 
+    val weatherCity: StateFlow<String> = settings.weatherCity
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    fun setWeatherCity(city: String) {
+        viewModelScope.launch { settings.setWeatherCity(city) }
+    }
+
     val tvChannelPreview: StateFlow<Boolean> = settings.tvChannelPreview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 

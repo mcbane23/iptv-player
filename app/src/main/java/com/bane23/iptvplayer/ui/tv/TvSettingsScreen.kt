@@ -145,6 +145,11 @@ fun TvSettingsScreen(
         group = SettingsGroup.LOOK,
         onSelect = { index -> ScreensaverTimeout.choices.getOrNull(index)?.let(viewModel::setScreensaverMinutes) },
     )
+    val weatherCity by viewModel.weatherCity.collectAsStateWithLifecycle()
+    var weatherCityOpen by remember { mutableStateOf(false) }
+    if (weatherCityOpen) {
+        TvWeatherCityDialog(city = weatherCity, onSave = viewModel::setWeatherCity, onClose = { weatherCityOpen = false })
+    }
     val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
         accentChoice + scaleChoice + screensaverChoice
     // Jezik se bira sa spiska u bočnom prozoru; red jezika je u levoj koloni, van stavki grupa.
@@ -275,6 +280,11 @@ fun TvSettingsScreen(
             TvItem(VOD_PREVIEW_ROW, stringResource(R.string.settings_tv_vod_preview), checked = vodPreview) {
                 viewModel.setTvVodPreview(!vodPreview)
             },
+            TvItem(
+                WEATHER_CITY_ROW,
+                stringResource(R.string.settings_weather_city),
+                weatherCity.ifEmpty { stringResource(R.string.settings_weather_city_auto) },
+            ) { weatherCityOpen = true },
         )
 
         SettingsGroup.RECORDINGS -> listOfNotNull(
@@ -567,6 +577,7 @@ private fun FocusedSummary(
         RESUME_ROW -> stringResource(R.string.settings_resume_last_summary)
         BLACK_THEME_ROW -> stringResource(R.string.settings_black_theme_summary)
         CLASSIC_LOOK_ROW -> stringResource(R.string.settings_classic_look_summary)
+        WEATHER_CITY_ROW -> stringResource(R.string.settings_weather_city_summary)
         PAUSE_INFO_ROW -> stringResource(R.string.settings_pause_info_summary)
         AUTO_NEXT_ROW -> stringResource(R.string.settings_auto_next_summary)
         RULE_SD_ROW -> stringResource(R.string.settings_rule_hide_sd_summary)
@@ -634,6 +645,7 @@ private const val RULE_SD_ROW = -27
 private const val RULE_PLUS_ONE_ROW = -28
 private const val RULE_SAME_NAME_ROW = -29
 private const val CLASSIC_LOOK_ROW = -30
+private const val WEATHER_CITY_ROW = -31
 
 /** Oznaka reda prve grupe; grupa sa rednim brojem n ima oznaku GROUP_ROW - n. */
 private const val GROUP_ROW = -100

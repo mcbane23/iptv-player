@@ -44,6 +44,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.bane23.iptvplayer.data.weather.temperatureText
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UserActivity
 import com.bane23.iptvplayer.ui.common.rememberClockText
@@ -56,7 +57,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 /**
  * Čuvar ekrana na TV-u: kad se izabrano vreme ne pritisne nijedan taster, preko svega se prikazuje
- * sat sa datumom koji se polako sele, na razlivenom posteru iz omiljenih ili poslednje gledanih
+ * sat sa datumom (i trenutnom temperaturom, kad je ima) koji se svaki minut premesti, na razlivenom posteru iz omiljenih ili poslednje gledanih
  * (vidi [ScreensaverBackdrop]); bez postera pozadina je crna. Bilo koji taster ga gasi, a fokus ostaje gde je bio,
  * jer je čuvar u svom prozoru.
  *
@@ -90,6 +91,7 @@ fun TvScreensaver(
 private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> Unit) {
     // Posteri se čitaju samo dok je čuvar na ekranu.
     val posters by viewModel.posters.collectAsStateWithLifecycle()
+    val temperature by viewModel.temperature.collectAsStateWithLifecycle()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
@@ -112,7 +114,7 @@ private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> 
             // Pozadina ide preko celog ekrana, a sat ostaje unutar margina zbog overscan-a televizora.
             ScreensaverBackdrop(posters, modifier = Modifier.fillMaxSize())
             Box(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
-                DriftingClock()
+                DriftingClock(temperature)
             }
         }
     }
@@ -124,9 +126,13 @@ private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> 
  * držalo procesor zauzetim celim kadrom svakih ~70 ms.
  */
 @Composable
-private fun DriftingClock() {
+private fun DriftingClock(temperature: Int?) {
     val clock by rememberClockText()
-    val date = remember(clock) { dateText() }
+    // Temperatura ide u isti red kao datum, istim slovima; bez nje se vidi samo datum.
+    val date = remember(clock, temperature) {
+        val day = dateText()
+        if (temperature == null) day else "$day  ·  ${temperatureText(temperature)}"
+    }
     var area by remember { mutableStateOf(IntSize.Zero) }
     var content by remember { mutableStateOf(IntSize.Zero) }
     var x by remember { mutableFloatStateOf(Random.nextFloat()) }
