@@ -193,7 +193,8 @@ fun MobileVodPlayerScreen(
             // U slici u slici ostaje samo video, kao kod kanala.
             if (inPip) return@PauseDimLayer
 
-            statusMessage(ui.sourceMissing, playback)?.let { message ->
+            (if (ui.fetchingPosition) stringResource(R.string.vod_fetching_position) else statusMessage(ui.sourceMissing, playback))
+                ?.let { message ->
                 Text(
                     text = message,
                     color = Color.White,
