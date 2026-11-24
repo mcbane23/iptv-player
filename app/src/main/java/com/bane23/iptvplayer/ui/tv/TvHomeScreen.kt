@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -176,8 +177,10 @@ fun TvHomeScreen(
     val focusManager = LocalFocusManager.current
     // Izlazak iz menija u sekciju. Kad desno od stavke nema ničega (prazan ekran: dugme je levo,
     // ispod raširenog menija), fokus ide na prvi element sekcije, inače bi meni ostao raširen.
+    // Sekcija može da prijavi gde je fokus bio pre ulaska u meni; Desno vraća tamo (Bane).
+    val railReturn = remember { TvRailReturn() }
     val leaveRail: () -> Boolean = {
-        focusManager.moveFocus(FocusDirection.Right) || contentFocus.tryRequestFocus()
+        railReturn.tryRestore() || focusManager.moveFocus(FocusDirection.Right) || contentFocus.tryRequestFocus()
     }
     // OK na sekciji u meniju otvara je i fokus odmah prelazi u njen sadržaj, kod svih sekcija isto (Bane).
     // Ostale sekcije same uzimaju fokus čim se prikažu; „Početna” to radi preko [focusHomeContent], a
@@ -218,6 +221,7 @@ fun TvHomeScreen(
                 .focusRestorer()
                 .focusGroup(),
         ) {
+            CompositionLocalProvider(LocalTvRailReturn provides railReturn) {
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
                     // Dok se ne zna da li lista postoji, ne crta se ništa (kao ni bočni meni).
@@ -295,6 +299,7 @@ fun TvHomeScreen(
                         onBackup = onBackup,
                     )
                 }
+            }
             }
         }
 
