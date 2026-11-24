@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -117,10 +118,14 @@ fun MobileSearchAllScreen(
                         }
                     }
                     items(recent, key = { "q$it" }) { query ->
-                        ResultRow(title = query, onClick = {
-                            keyboard?.hide()
-                            viewModel.submit(query)
-                        }) { GroupIcon(AppIcons.History) }
+                        ResultRow(
+                            title = query,
+                            onClick = {
+                                keyboard?.hide()
+                                viewModel.submit(query)
+                            },
+                            onRemove = { viewModel.removeRecent(query) },
+                        ) { GroupIcon(AppIcons.History) }
                     }
                 }
                 if (state.channels.isNotEmpty()) {
@@ -239,6 +244,7 @@ private fun ResultRow(
     subtitle: String? = null,
     trailing: String? = null,
     sidePadding: Dp = 12.dp,
+    onRemove: (() -> Unit)? = null,
     leading: @Composable () -> Unit,
 ) {
     // Pločica kao red kanala u Uživo.
@@ -277,6 +283,16 @@ private fun ResultRow(
                 maxLines = 1,
                 modifier = Modifier.padding(start = 8.dp),
             )
+        }
+        if (onRemove != null) {
+            IconButton(onClick = onRemove, modifier = Modifier.padding(start = 4.dp).size(36.dp)) {
+                Icon(
+                    imageVector = AppIcons.Close,
+                    contentDescription = stringResource(R.string.search_recent_remove),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }

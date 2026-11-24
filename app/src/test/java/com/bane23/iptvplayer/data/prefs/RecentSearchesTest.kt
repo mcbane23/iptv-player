@@ -35,4 +35,10 @@ class RecentSearchesTest {
         assertEquals(list, RecentSearches.decode(RecentSearches.encode(list)))
         assertEquals(emptyList<String>(), RecentSearches.decode(null))
     }
+
+    @Test
+    fun `remove drops only the given query`() {
+        assertEquals(listOf("vesti", "film"), RecentSearches.remove(listOf("vesti", "Sport", "film"), " sport "))
+        assertEquals(listOf("vesti"), RecentSearches.remove(listOf("vesti"), "nema"))
+    }
 }

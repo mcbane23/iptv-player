@@ -13,6 +13,10 @@ object RecentSearches {
         return (listOf(clean) + current.filterNot { it.equals(clean, ignoreCase = true) }).take(LIMIT)
     }
 
+    /** Uklanja jedan upit (velika i mala slova se ne razlikuju). */
+    fun remove(current: List<String>, query: String): List<String> =
+        current.filterNot { it.equals(query.trim(), ignoreCase = true) }
+
     fun encode(list: List<String>): String = list.joinToString("\n")
 
     fun decode(text: String?): List<String> =

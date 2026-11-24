@@ -472,6 +472,10 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[RECENT_SEARCHES] = RecentSearches.encode(RecentSearches.add(RecentSearches.decode(it[RECENT_SEARCHES]), query)) }
     }
 
+    suspend fun removeRecentSearch(query: String) {
+        dataStore.edit { it[RECENT_SEARCHES] = RecentSearches.encode(RecentSearches.remove(RecentSearches.decode(it[RECENT_SEARCHES]), query)) }
+    }
+
     suspend fun clearRecentSearches() {
         dataStore.edit { it.remove(RECENT_SEARCHES) }
     }
