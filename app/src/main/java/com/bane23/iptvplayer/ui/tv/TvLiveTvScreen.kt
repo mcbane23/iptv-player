@@ -837,15 +837,19 @@ fun TvLiveTvScreen(
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
-                                    channel.nowTitle?.let { nowTitle ->
-                                        Text(
-                                            text = nowUntil(nowTitle, channel.nowStopMs),
-                                            color = color.copy(alpha = 0.7f),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
+                                    val nowTitle = channel.nowTitle
+                                    // Bez programa piše to, bleđe, kao na telefonu (Bane).
+                                    Text(
+                                        text = if (nowTitle != null) {
+                                            nowUntil(nowTitle, channel.nowStopMs)
+                                        } else {
+                                            stringResource(R.string.channel_no_programme)
+                                        },
+                                        color = color.copy(alpha = if (nowTitle != null) 0.7f else 0.45f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
                                     channel.nowProgress(now)?.let { progress ->
                                         TvProgressBar(
                                             progress = progress,
