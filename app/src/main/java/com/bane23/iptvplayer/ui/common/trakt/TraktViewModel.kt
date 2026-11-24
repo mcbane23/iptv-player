@@ -56,6 +56,9 @@ class TraktViewModel @Inject constructor(
         current.copy(username = name, lastSyncMs = lastSync, syncPaused = paused)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TraktUiState())
 
+    /** Privremeni dnevnik razmene pozicija (dok se ne nađe zašto se pozicija gubi između uređaja). */
+    val playbackLog = trakt.playbackLogEntries
+
     fun connect() {
         loginJob?.cancel()
         local.update { it.copy(login = TraktLogin.Starting, message = null) }

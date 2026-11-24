@@ -6,6 +6,7 @@ import com.bane23.iptvplayer.data.db.AppDatabase
 import com.bane23.iptvplayer.data.db.VodFavoriteEntity
 import com.bane23.iptvplayer.data.db.WatchProgressEntity
 import com.bane23.iptvplayer.data.prefs.SettingsStore
+import com.bane23.iptvplayer.data.trakt.PlaybackLogEvent
 import com.bane23.iptvplayer.data.trakt.TraktKey
 import com.bane23.iptvplayer.data.trakt.TraktPayloads
 import com.bane23.iptvplayer.data.trakt.TraktQueue
@@ -692,7 +693,7 @@ class VodRepository @Inject constructor(
      * sklonjena iz „Nastavi gledanje” se preskače (osim one koja se ovde gleda), pa jednom sklonjena ostaje
      * sklonjena.
      */
-    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long) = withContext(Dispatchers.IO) {
+    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long): Pair<PlaybackLogEvent, Int> = withContext(Dispatchers.IO) {
         val playlistId = session().playlistId
         val isMovie = key.kind == TraktKey.MOVIE
         val items = allItems(if (isMovie) VodKind.MOVIES else VodKind.SERIES)
@@ -702,16 +703,16 @@ class VodRepository @Inject constructor(
             watchedHere(items, progressDao.recentSeries(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { series(it).tmdbId }
         }
         val versions = (listOfNotNull(here) + items.filter { it.tmdbId == key.tmdbId }.map { it.id }).distinct()
-        var applied = false
+        if (versions.isEmpty()) return@withContext PlaybackLogEvent.SKIP_NO_ITEM to 0
+        var applied = 0
+        var skip = PlaybackLogEvent.SKIP_DISMISSED
         var failure: Exception? = null
         for (id in versions) {
             if (id != here && dismissedVersion(playlistId, isMovie, id)) continue
             try {
                 val target = if (isMovie) remoteMovie(playlistId, id, items) else remoteEpisode(id, items, key)
-                if (target != null) {
-                    applyRemoteTo(playlistId, target, progress, pausedAtMs)
-                    applied = true
-                }
+                val result = if (target != null) applyRemoteTo(playlistId, target, progress, pausedAtMs) else PlaybackLogEvent.SKIP_NO_EPISODE
+                if (result == null) applied++ else skip = result
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -719,7 +720,8 @@ class VodRepository @Inject constructor(
                 if (failure == null) failure = e
             }
         }
-        if (!applied) failure?.let { throw it }
+        if (applied == 0) failure?.let { throw it }
+        if (applied > 0) PlaybackLogEvent.APPLIED to applied else skip to versions.size
     }
 
     private suspend fun dismissedVersion(playlistId: Long, isMovie: Boolean, id: Long): Boolean =
@@ -746,18 +748,18 @@ class VodRepository @Inject constructor(
         }
     }
 
-    private suspend fun applyRemoteTo(playlistId: Long, target: RemoteTarget, progress: Float, pausedAtMs: Long) {
+    private suspend fun applyRemoteTo(playlistId: Long, target: RemoteTarget, progress: Float, pausedAtMs: Long): PlaybackLogEvent? {
         val kind = if (target.seriesId == null) KIND_MOVIE else KIND_EPISODE
         val existing = progressDao.get(playlistId, kind, target.itemId)
-        if (existing != null && existing.updatedAt >= pausedAtMs) return
+        if (existing != null && existing.updatedAt >= pausedAtMs) return PlaybackLogEvent.SKIP_NEWER_HERE
         // Ovde je posle te pauze odgledano do kraja ili označeno: stara pozicija se ne vraća.
-        if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return
+        if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return PlaybackLogEvent.SKIP_FINISHED
         // Sklonjeno iz reda „Nastavi gledanje” ne vraća pozicija starija od sklanjanja.
         val dismissedAt = target.seriesId?.let { progressDao.seriesDismissedAt(playlistId, it) } ?: existing?.dismissedAt
-        if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return
-        val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return
+        if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return PlaybackLogEvent.SKIP_DISMISSED
+        val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return PlaybackLogEvent.SKIP_NO_DURATION
         val positionMs = (durationMs * progress / 100).toLong()
-        if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return
+        if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return PlaybackLogEvent.SKIP_SAME
         progressDao.upsert(
             WatchProgressEntity(
                 playlistId = playlistId,
@@ -773,6 +775,7 @@ class VodRepository @Inject constructor(
                 watchedAt = existing?.watchedAt,
             ),
         )
+        return null
     }
 
     /**

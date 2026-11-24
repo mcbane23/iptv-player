@@ -25,6 +25,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.theme.glowBackground
 import com.bane23.iptvplayer.ui.common.pairing.QrCode
 import com.bane23.iptvplayer.ui.common.trakt.TraktLogin
+import com.bane23.iptvplayer.ui.common.trakt.TraktPlaybackLogList
 import com.bane23.iptvplayer.ui.common.trakt.TraktViewModel
 import com.bane23.iptvplayer.ui.common.trakt.formatSyncTime
 
@@ -96,6 +97,8 @@ fun TvTraktScreen(viewModel: TraktViewModel = hiltViewModel()) {
                             Text(stringResource(R.string.trakt_disconnect))
                         }
                     }
+                    val playbackLog by viewModel.playbackLog.collectAsStateWithLifecycle()
+                    TraktPlaybackLogList(playbackLog, limit = 8, style = MaterialTheme.typography.bodySmall)
                 }
 
                 login is TraktLogin.Waiting -> {
