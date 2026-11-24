@@ -29,6 +29,7 @@ import coil3.toBitmap
 import coil3.transform.Transformation
 import com.bane23.iptvplayer.data.repo.VodKind
 import com.bane23.iptvplayer.data.repo.VodRepository
+import com.bane23.iptvplayer.data.weather.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.math.hypot
@@ -39,7 +40,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
@@ -49,7 +52,23 @@ import kotlinx.coroutines.flow.stateIn
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class ScreensaverViewModel @Inject constructor(vod: VodRepository) : ViewModel() {
+class ScreensaverViewModel @Inject constructor(
+    vod: VodRepository,
+    weather: WeatherRepository,
+) : ViewModel() {
+    /**
+     * Trenutna temperatura, ili null dok je nema. Pita se samo dok je čuvar na ekranu, jednom u
+     * minutu; spremište samo ide na internet najviše na pola sata.
+     */
+    val temperature: StateFlow<Int?> = flow {
+        while (true) {
+            emit(weather.currentTemperature())
+            delay(TEMPERATURE_CHECK_MS)
+        }
+    }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     val posters: StateFlow<List<String>> = vod.activePlaylistId
         .flatMapLatest { playlistId ->
             if (playlistId == null) {
@@ -72,6 +91,8 @@ class ScreensaverViewModel @Inject constructor(vod: VodRepository) : ViewModel()
         .catch { if (it is CancellationException) throw it else emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }
+
+private const val TEMPERATURE_CHECK_MS = 60_000L
 
 /** Omiljeni posteri; ako ih nema, poslednje gledani. Bez praznih i ponovljenih adresa. */
 internal fun screensaverPosters(favorites: List<String?>, recent: List<String?>): List<String> {

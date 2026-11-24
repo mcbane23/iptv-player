@@ -155,7 +155,7 @@ private fun LazyListScope.newListRows(
 }
 
 @Composable
-private fun SideDialogTitle(title: String, subtitle: String?) {
+internal fun SideDialogTitle(title: String, subtitle: String?) {
     Text(
         text = title,
         color = MaterialTheme.colorScheme.onSurface,
@@ -178,7 +178,7 @@ private fun SideDialogTitle(title: String, subtitle: String?) {
 
 /** Prozor uz desnu ivicu ekrana sa redovima jedan ispod drugog, kao ostali izbori na TV-u. */
 @Composable
-private fun TvSideDialog(onClose: () -> Unit, content: LazyListScope.() -> Unit) {
+internal fun TvSideDialog(onClose: () -> Unit, content: LazyListScope.() -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
