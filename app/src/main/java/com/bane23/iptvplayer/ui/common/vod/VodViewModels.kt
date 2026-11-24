@@ -110,7 +110,12 @@ class VodBrowseViewModel @Inject constructor(
     }
 
     fun open(series: Boolean) {
-        if (opened) return
+        if (opened) {
+            // Spisak je ranije stigao prazan (server je zapeo): pri povratku na karticu pita se ponovo.
+            val current = _state.value
+            if (current.categories.isEmpty() && !current.loadingCategories && !current.categoriesFailed) loadCategories()
+            return
+        }
         opened = true
         _state.update { it.copy(series = series) }
         openedKind.value = if (series) VodKind.SERIES else VodKind.MOVIES
@@ -147,7 +152,17 @@ class VodBrowseViewModel @Inject constructor(
         try {
             val categories = repository.categories(kind)
             _state.update { it.copy(categories = categories) }
-            val selected = _state.value.selected ?: return
+            val selected = _state.value.selected
+            if (selected == null) {
+                // Spisak je ranije bio prazan, pa ništa nije izabrano: bira se kategorija od prošlog puta, inače prva.
+                val last = repository.lastCategory(kind)
+                val restored = when (last) {
+                    FAVORITES_ID -> VodCategory(FAVORITES_ID, "")
+                    else -> categories.firstOrNull { it.id == last } ?: categories.firstOrNull()
+                }
+                restored?.let { select(it, remember = false) }
+                return
+            }
             if (selected.id == FAVORITES_ID || _state.value.loadingItems) return
             if (categories.none { it.id == selected.id }) return
             val items = repository.items(kind, selected.id)

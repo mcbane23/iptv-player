@@ -96,8 +96,9 @@ class TraktTokenStore @Inject constructor(
 
     /**
      * Liste (ID-jevi) čije su omiljene serije već jednom očišćene od viška jezičkih verzija. Ključ je
-     * „_2” jer je čišćenje ponovljeno kad je AMZ počeo da se računa kao engleska verzija i kad su i
-     * serije bez engleske verzije počele da se svode na jednu.
+     * „_3” jer je čišćenje ponovljeno kad je AMZ počeo da se računa kao engleska verzija i kad su i
+     * serije bez engleske verzije počele da se svode na jednu, i još jednom jer je lista mogla da bude
+     * označena kao očišćena kad je server vratio prazan spisak serija.
      */
     suspend fun trimmedPlaylists(): Set<String> = dataStore.data.first()[TRIMMED_PLAYLISTS].orEmpty()
 
@@ -165,6 +166,6 @@ class TraktTokenStore @Inject constructor(
         private val LAST_SYNC = longPreferencesKey("last_sync")
         private val LAST_PLAYBACK = longPreferencesKey("last_playback")
         private val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
-        private val TRIMMED_PLAYLISTS = stringSetPreferencesKey("trimmed_language_versions_2")
+        private val TRIMMED_PLAYLISTS = stringSetPreferencesKey("trimmed_language_versions_3")
     }
 }

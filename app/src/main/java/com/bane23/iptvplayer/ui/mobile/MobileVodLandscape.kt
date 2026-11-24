@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.bane23.iptvplayer.ui.common.lock.vodItem
 import com.bane23.iptvplayer.ui.common.lock.LockMenu
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -249,12 +251,17 @@ fun MobileVodLandscape(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                    state.categoriesFailed || state.itemsFailed -> Failure(onRetry = onRetry)
+                    // Prazan ekran se pomera, da bi povlačenje nadole (osvežavanje liste) radilo i na njemu.
+                    state.categoriesFailed || state.itemsFailed -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        Failure(onRetry = onRetry)
+                    }
 
-                    state.items.isEmpty() -> EmptyState(
-                        icon = if (series) AppIcons.Series else AppIcons.Movies,
-                        text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty),
-                    )
+                    state.items.isEmpty() -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        EmptyState(
+                            icon = if (series) AppIcons.Series else AppIcons.Movies,
+                            text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty),
+                        )
+                    }
 
                     else -> PosterGrid(gridState) {
                         items(state.items, key = { it.id }) { item ->
