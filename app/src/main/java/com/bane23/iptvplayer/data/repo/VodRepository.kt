@@ -686,36 +686,78 @@ class VodRepository @Inject constructor(
     /**
      * Pozicija sa Trakt naloga (gledano na drugom uređaju): [progress] je procenat, [pausedAtMs]
      * vreme prekida. Upisuje se samo ako je novija od ovde zapamćene i stvarno drugačija.
-     * Film, odnosno serija, traži se po TMDB ID-ju u spisku aktivne liste.
+     *
+     * Ista serija ili film često postoji kod provajdera više puta (jezičke verzije, druge kategorije), sa
+     * istim TMDB ID-jem. Pozicija ide na svaku verziju, da nastavak radi koju god da korisnik pusti. Verzija
+     * sklonjena iz „Nastavi gledanje” se preskače (osim one koja se ovde gleda), pa jednom sklonjena ostaje
+     * sklonjena.
      */
     suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long) = withContext(Dispatchers.IO) {
         val playlistId = session().playlistId
         val isMovie = key.kind == TraktKey.MOVIE
-        val target: RemoteTarget = if (isMovie) {
-            val item = allItems(VodKind.MOVIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
-            RemoteTarget(item.id, null, item.name, item.poster, item.extension) {
-                movie(item.id).durationSeconds
-            }
+        val items = allItems(if (isMovie) VodKind.MOVIES else VodKind.SERIES)
+        val here = if (isMovie) {
+            watchedHere(items, progressDao.recentMovies(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { movie(it).tmdbId }
         } else {
-            val show = allItems(VodKind.SERIES).firstOrNull { it.tmdbId == key.tmdbId } ?: return@withContext
-            val details = series(show.id)
-            val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode }
-                ?: return@withContext
-            RemoteTarget(episode.id, show.id, details.name ?: show.name, show.poster ?: details.poster, null) {
-                episode.durationSeconds
+            watchedHere(items, progressDao.recentSeries(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { series(it).tmdbId }
+        }
+        val versions = (listOfNotNull(here) + items.filter { it.tmdbId == key.tmdbId }.map { it.id }).distinct()
+        var applied = false
+        var failure: Exception? = null
+        for (id in versions) {
+            if (id != here && dismissedVersion(playlistId, isMovie, id)) continue
+            try {
+                val target = if (isMovie) remoteMovie(playlistId, id, items) else remoteEpisode(id, items, key)
+                if (target != null) {
+                    applyRemoteTo(playlistId, target, progress, pausedAtMs)
+                    applied = true
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Greška panela za jednu verziju ne sprečava ostale; ako nijedna ne uspe, pozicija čeka sledeću sinhronizaciju.
+                if (failure == null) failure = e
             }
         }
-        val kind = if (isMovie) KIND_MOVIE else KIND_EPISODE
+        if (!applied) failure?.let { throw it }
+    }
+
+    private suspend fun dismissedVersion(playlistId: Long, isMovie: Boolean, id: Long): Boolean =
+        if (isMovie) {
+            progressDao.get(playlistId, KIND_MOVIE, id)?.dismissedAt != null
+        } else {
+            progressDao.seriesDismissedAt(playlistId, id) != null
+        }
+
+    private suspend fun remoteMovie(playlistId: Long, movieId: Long, items: List<VodItem>): RemoteTarget {
+        val item = items.firstOrNull { it.id == movieId }
+        val row = progressDao.get(playlistId, KIND_MOVIE, movieId)
+        return RemoteTarget(movieId, null, item?.name ?: row?.title, item?.poster ?: row?.poster, item?.extension ?: row?.extension) {
+            movie(movieId).durationSeconds
+        }
+    }
+
+    private suspend fun remoteEpisode(showId: Long, items: List<VodItem>, key: TraktKey): RemoteTarget? {
+        val show = items.firstOrNull { it.id == showId }
+        val details = series(showId)
+        val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode } ?: return null
+        return RemoteTarget(episode.id, showId, details.name ?: show?.name, show?.poster ?: details.poster, null) {
+            episode.durationSeconds
+        }
+    }
+
+    private suspend fun applyRemoteTo(playlistId: Long, target: RemoteTarget, progress: Float, pausedAtMs: Long) {
+        val kind = if (target.seriesId == null) KIND_MOVIE else KIND_EPISODE
         val existing = progressDao.get(playlistId, kind, target.itemId)
-        if (existing != null && existing.updatedAt >= pausedAtMs) return@withContext
+        if (existing != null && existing.updatedAt >= pausedAtMs) return
         // Ovde je posle te pauze odgledano do kraja ili označeno: stara pozicija se ne vraća.
-        if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return@withContext
+        if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return
         // Sklonjeno iz reda „Nastavi gledanje” ne vraća pozicija starija od sklanjanja.
         val dismissedAt = target.seriesId?.let { progressDao.seriesDismissedAt(playlistId, it) } ?: existing?.dismissedAt
-        if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return@withContext
-        val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return@withContext
+        if (!WatchProgress.remoteAllowed(dismissedAt, pausedAtMs)) return
+        val durationMs = existing?.durationMs?.takeIf { it > 0 } ?: target.durationSeconds()?.times(1000) ?: return
         val positionMs = (durationMs * progress / 100).toLong()
-        if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return@withContext
+        if (existing != null && kotlin.math.abs(existing.positionMs - positionMs) < SAME_POSITION_MS) return
         progressDao.upsert(
             WatchProgressEntity(
                 playlistId = playlistId,
@@ -731,6 +773,24 @@ class VodRepository @Inject constructor(
                 watchedAt = existing?.watchedAt,
             ),
         )
+    }
+
+    /**
+     * Verzija koja se ovde već gleda ([recent], od poslednje). Ide i kad spisak nema TMDB ID: detalji se
+     * tad traže samo za te stavke, a greška panela za jednu stavku ne prekida traženje.
+     */
+    private suspend fun watchedHere(items: List<VodItem>, recent: List<Long>, tmdbId: Long, details: suspend (Long) -> Long?): Long? {
+        val listed = items.associateBy { it.id }
+        recent.firstOrNull { listed[it]?.tmdbId == tmdbId }?.let { return it }
+        return recent.firstOrNull { id ->
+            listed[id]?.tmdbId == null && try {
+                details(id) == tmdbId
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+        }
     }
 
     private class RemoteTarget(
@@ -1073,6 +1133,9 @@ class VodRepository @Inject constructor(
 
         /** Razlika pozicija za koju se ne menja zapamćeno (zaokruživanje procenta na Trakt-u). */
         const val SAME_POSITION_MS = 30_000L
+
+        /** Koliko poslednje gledanih serija, odnosno filmova, se proverava pri dolasku pozicije sa drugog uređaja. */
+        const val REMOTE_MATCH_LIMIT = 10
 
         /** Najviše stavki u redu „Nastavi gledanje”. */
         const val CONTINUE_LIMIT = 20
