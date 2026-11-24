@@ -1,5 +1,7 @@
 package com.bane23.iptvplayer.ui.mobile
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.bane23.iptvplayer.ui.common.lock.vodItem
 import com.bane23.iptvplayer.ui.common.lock.ItemLock
 import com.bane23.iptvplayer.ui.common.lock.rememberLockMenu
@@ -178,8 +180,13 @@ fun MobileVodScreen(
                     hint = vodLoadingHint(state.storedOnDevice),
                     modifier = Modifier.fillMaxSize(),
                 )
-                state.categoriesFailed -> Failure(onRetry = viewModel::loadCategories)
-                state.categories.isEmpty() -> EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
+                // Prazan ekran se pomera, da bi povlačenje nadole (osvežavanje liste) radilo i na njemu.
+                state.categoriesFailed -> Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    Failure(onRetry = viewModel::loadCategories)
+                }
+                state.categories.isEmpty() -> Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    EmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(R.string.vod_empty))
+                }
 
                 else -> Column(modifier = Modifier.weight(1f).nestedScroll(header.connection)) {
                     // Prečice kao u Uživo, odmah ispod naslova i uvek na mestu: Favoriti (zvezdica),
