@@ -154,6 +154,12 @@ fun TvLiveTvScreen(
     val channelFocus = remember { FocusRequester() }
     // Prvi kanal vidljiv na vrhu spiska: Desno sa kategorija ide na njega (Bane), ne na kanal u visini kategorije.
     val topChannelFocus = remember { FocusRequester() }
+    // Kanal sa koga se otišlo u kategorije: Desno se vraća na njega dok je ista kategorija izabrana (Bane, 24. 11.).
+    var returnChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
+    var returnCategory by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
+    val returnChannelFocus = remember { FocusRequester() }
+    // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega.
+    val leftRow = rememberTvLastRow()
     val channelListState = rememberLazyListState()
     val categoryListState = rememberLazyListState()
     // Tekst za traženje kategorije (polje iznad kategorija, kao kod filmova i serija).
@@ -205,6 +211,9 @@ fun TvLiveTvScreen(
     // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
     var awaitingUnlock by rememberSaveable { mutableStateOf<Long?>(null) }
     val lockMenu = rememberLockMenu(onUnlock)
+    val enterChannels: () -> Boolean = {
+        (returnCategory == selectedCategory && returnChannelFocus.tryRequestFocus()) || topChannelFocus.tryRequestFocus()
+    }
     val pickCategory: (Long) -> Unit = { id ->
         if (state.categories.any { it.id == id && it.locked }) {
             // Kanali zaključane kategorije se ne vide, pa OK na njoj prvo traži PIN.
@@ -212,7 +221,7 @@ fun TvLiveTvScreen(
             onUnlock()
         } else {
             awaitingUnlock = null
-            if (selectedCategory == id) topChannelFocus.tryRequestFocus() else focusedCategory = id
+            if (selectedCategory == id) enterChannels() else focusedCategory = id
         }
     }
     LaunchedEffect(awaitingUnlock, state.categories) {
@@ -228,7 +237,7 @@ fun TvLiveTvScreen(
     val focusFavorites: () -> Unit = {
         // Drugi OK na već izabranoj grupi ide na kanale, kao Desno.
         if (state.isFavoritesGroup(selectedCategory)) {
-            topChannelFocus.tryRequestFocus()
+            enterChannels()
         } else if (!state.isFavoritesGroup(focusedCategory)) {
             focusedCategory = favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES
         }
@@ -536,7 +545,7 @@ fun TvLiveTvScreen(
                     if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
                     // Ako prvi vidljivi kanal ne može da primi fokus (spisak je prazan ili se
                     // učitava), Desno radi kao i pre.
-                    event.type == KeyEventType.KeyDown && topChannelFocus.tryRequestFocus()
+                    event.type == KeyEventType.KeyDown && enterChannels()
                 }
                 Column(
                     modifier = Modifier
@@ -545,7 +554,11 @@ fun TvLiveTvScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Column(modifier = toChannels, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        TvListRow(onClick = onSearch) { color ->
+                        TvListRow(
+                            onClick = onSearch,
+                            onFocused = { leftRow.focused(ROW_SEARCH) },
+                            modifier = leftRow.mark(ROW_SEARCH),
+                        ) { color ->
                             Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                             Text(
                                 text = stringResource(R.string.search_channels),
@@ -563,6 +576,8 @@ fun TvLiveTvScreen(
                             filterOpen = true
                         },
                         selected = liveFilter.active,
+                        onFocused = { leftRow.focused(ROW_FILTER) },
+                        modifier = leftRow.mark(ROW_FILTER),
                     ) { color ->
                         Icon(AppIcons.Filter, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
@@ -584,11 +599,15 @@ fun TvLiveTvScreen(
                         subtitle = stringResource(R.string.vod_total, state.favoriteCount),
                         // Jedan red za sve liste omiljenih; liste su kartice iznad kanala.
                         selected = state.isFavoritesGroup(selectedCategory),
-                        onFocused = { lastChannelId = null },
+                        onFocused = {
+                            lastChannelId = null
+                            leftRow.focused(ChannelGroups.FAVORITES)
+                        },
                         onClick = focusFavorites,
                         onLongClick = { favoritesMenu = true },
                         modifier = focusTarget(state.isFavoritesGroup(selectedCategory), firstFocus)
-                            .focusRequester(favoritesFocus),
+                            .focusRequester(favoritesFocus)
+                            .then(leftRow.mark(ChannelGroups.FAVORITES)),
                     )
                     if (state.recentCount > 0) {
                         PinnedRow(
@@ -596,10 +615,14 @@ fun TvLiveTvScreen(
                             title = stringResource(R.string.category_recent),
                             subtitle = stringResource(R.string.vod_total, state.recentCount),
                             selected = selectedCategory == ChannelGroups.RECENT,
-                            onFocused = { lastChannelId = null },
+                            onFocused = {
+                                lastChannelId = null
+                                leftRow.focused(ChannelGroups.RECENT)
+                            },
                             onClick = { pickCategory(ChannelGroups.RECENT) },
                             onLongClick = { recentMenu = true },
-                            modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus),
+                            modifier = focusTarget(selectedCategory == ChannelGroups.RECENT, firstFocus)
+                                .then(leftRow.mark(ChannelGroups.RECENT)),
                         )
                     }
                     PinnedRow(
@@ -607,10 +630,14 @@ fun TvLiveTvScreen(
                         title = stringResource(R.string.category_all),
                         subtitle = stringResource(R.string.vod_total, state.totalChannels),
                         selected = selectedCategory == ALL_CHANNELS,
-                        onFocused = { lastChannelId = null },
+                        onFocused = {
+                            lastChannelId = null
+                            leftRow.focused(ALL_CHANNELS)
+                        },
                         onClick = { pickCategory(ALL_CHANNELS) },
                         modifier = focusTarget(selectedCategory == ALL_CHANNELS, firstFocus)
-                            .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus)),
+                            .then(focusTarget(focusTargetId == ALL_CHANNELS, moveFocus))
+                            .then(leftRow.mark(ALL_CHANNELS)),
                     )
                     }
                     TvFilterField(
@@ -634,11 +661,15 @@ fun TvLiveTvScreen(
                                 text = category.name,
                                 trailing = category.channelCount.toString(),
                                 selected = selectedCategory == category.id,
-                                onFocused = { lastChannelId = null },
+                                onFocused = {
+                                    lastChannelId = null
+                                    leftRow.focused(category.id)
+                                },
                                 onClick = { pickCategory(category.id) },
                                 onLongClick = { menuCategory = category },
                                 modifier = focusTarget(selectedCategory == category.id, firstFocus)
-                                    .then(focusTarget(focusTargetId == category.id, moveFocus)),
+                                    .then(focusTarget(focusTargetId == category.id, moveFocus))
+                                    .then(leftRow.mark(category.id)),
                             )
                         }
                     }
@@ -747,6 +778,8 @@ fun TvLiveTvScreen(
                                 focusedRow[0] = index
                                 channel?.let {
                                     lastChannelId = it.id
+                                    returnChannelId = it.id
+                                    returnCategory = selectedCategory
                                     focusedChannel = it
                                     previewViewModel.focus(it.id)
                                 }
@@ -760,6 +793,11 @@ fun TvLiveTvScreen(
                                 focusTarget(
                                     remember(index) { derivedStateOf { index == channelListState.firstVisibleItemIndex } }.value,
                                     topChannelFocus,
+                                ),
+                            ).then(
+                                focusTarget(
+                                    remember(channel?.id) { derivedStateOf { channel != null && channel.id == returnChannelId } }.value,
+                                    returnChannelFocus,
                                 ),
                             ),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
@@ -949,6 +987,8 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
     if (isTarget) Modifier.focusRequester(requester) else Modifier
 
 private const val SKELETON_ROWS = 8
+private const val ROW_SEARCH = "__search"
+private const val ROW_FILTER = "__filter"
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L

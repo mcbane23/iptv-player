@@ -201,6 +201,8 @@ fun TvVodScreen(
     }
     BackHandler(enabled = !categoriesOpen && gridFocused, onBack = openCategories)
     val keyScope = rememberCoroutineScope()
+    // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega (Bane).
+    val leftRow = rememberTvLastRow()
     val enterPosters: () -> Boolean = { posterFocus.tryRequestFocus() || gridFocus.tryRequestFocus() }
     val toGrid = Modifier.onPreviewKeyEvent { event ->
         if (event.key != Key.DirectionRight) return@onPreviewKeyEvent false
@@ -461,7 +463,11 @@ fun TvVodScreen(
                         CategoryStrip()
                         return@Column
                     }
-                    TvListRow(onClick = onSearch, modifier = Modifier.focusRequester(searchRowFocus).then(toGrid)) { color ->
+                    TvListRow(
+                        onClick = onSearch,
+                        onFocused = { leftRow.focused(ROW_SEARCH) },
+                        modifier = Modifier.focusRequester(searchRowFocus).then(leftRow.mark(ROW_SEARCH)).then(toGrid),
+                    ) { color ->
                         Icon(AppIcons.Search, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(if (series) R.string.search_series else R.string.search_movies),
@@ -472,7 +478,11 @@ fun TvVodScreen(
                             modifier = Modifier.padding(start = 12.dp),
                         )
                     }
-                    TvListRow(onClick = { sortOpen = true }, modifier = toGrid) { color ->
+                    TvListRow(
+                        onClick = { sortOpen = true },
+                        onFocused = { leftRow.focused(ROW_SORT) },
+                        modifier = leftRow.mark(ROW_SORT).then(toGrid),
+                    ) { color ->
                         Icon(AppIcons.Sort, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = stringResource(R.string.vod_sort_current, stringResource(state.sort.label)),
@@ -484,7 +494,12 @@ fun TvVodScreen(
                         )
                     }
                     // Filter postera: dok je uključen, red je označen i piše šta je izabrano.
-                    TvListRow(onClick = { filterOpen = true }, selected = state.filter.active, modifier = toGrid) { color ->
+                    TvListRow(
+                        onClick = { filterOpen = true },
+                        selected = state.filter.active,
+                        onFocused = { leftRow.focused(ROW_FILTER) },
+                        modifier = leftRow.mark(ROW_FILTER).then(toGrid),
+                    ) { color ->
                         Icon(AppIcons.Filter, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                         Text(
                             text = if (state.filter.active) {
@@ -514,8 +529,10 @@ fun TvVodScreen(
                                 viewModel.selectCategory(VodCategory(FAVORITES_ID, favoritesLabel))
                             }
                         },
+                        onFocused = { leftRow.focused(FAVORITES_ID) },
                         modifier = (if (showFavorites) Modifier.focusRequester(firstFocus) else Modifier)
                             .then(if (focusTargetId == FAVORITES_ID) Modifier.focusRequester(moveFocus) else Modifier)
+                            .then(leftRow.mark(FAVORITES_ID))
                             .then(toGrid),
                     )
                     if (continueItems.isNotEmpty()) {
@@ -534,7 +551,10 @@ fun TvVodScreen(
                                     viewModel.rememberContinue()
                                 }
                             },
-                            modifier = (if (showContinue) Modifier.focusRequester(firstFocus) else Modifier).then(toGrid),
+                            onFocused = { leftRow.focused(CONTINUE_TARGET) },
+                            modifier = (if (showContinue) Modifier.focusRequester(firstFocus) else Modifier)
+                                .then(leftRow.mark(CONTINUE_TARGET))
+                                .then(toGrid),
                         )
                     }
                     TvFilterField(
@@ -568,8 +588,10 @@ fun TvVodScreen(
                                     }
                                 },
                                 onLongClick = { menuCategory = category },
+                                onFocused = { leftRow.focused(category.id) },
                                 modifier = (if (selected) Modifier.focusRequester(firstFocus) else Modifier)
-                                    .then(if (focusTargetId == category.id) Modifier.focusRequester(moveFocus) else Modifier),
+                                    .then(if (focusTargetId == category.id) Modifier.focusRequester(moveFocus) else Modifier)
+                                    .then(leftRow.mark(category.id)),
                             )
                         }
                     }
@@ -885,6 +907,9 @@ private const val CATEGORIES_OPEN_FRACTION = 0.28f
 private val CATEGORIES_STRIP_WIDTH = 44.dp
 private const val CATEGORIES_ANIMATION_MS = 180
 private const val CONTINUE_TARGET = "__continue"
+private const val ROW_SEARCH = "__search"
+private const val ROW_SORT = "__sort"
+private const val ROW_FILTER = "__filter"
 private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
