@@ -906,7 +906,11 @@ class VodRepository @Inject constructor(
     suspend fun trimAutoSeriesFavorites(playlistId: Long, autoTmdbIds: Set<Long>): Boolean = withContext(Dispatchers.IO) {
         if (autoTmdbIds.isEmpty()) return@withContext true
         if (session().playlistId != playlistId) return@withContext false
-        val versions = allItems(VodKind.SERIES).filter { it.tmdbId != null && it.tmdbId in autoTmdbIds }.distinctBy { it.id }
+        val series = allItems(VodKind.SERIES)
+        // Prazan spisak znači da server trenutno ne odgovara kako treba: čišćenje se ponavlja kasnije,
+        // umesto da se lista označi kao očišćena a da se ništa ne skloni.
+        if (series.isEmpty()) return@withContext false
+        val versions = series.filter { it.tmdbId != null && it.tmdbId in autoTmdbIds }.distinctBy { it.id }
         val tmdbOf = versions.associate { it.id to it.tmdbId!! }
         val favorites = favoriteDao.getByPlaylist(playlistId).filter { it.kind == KIND_SERIES && it.itemId in tmdbOf }
         val groups = favorites.groupBy { tmdbOf.getValue(it.itemId) }.filterValues { it.size > 1 }
