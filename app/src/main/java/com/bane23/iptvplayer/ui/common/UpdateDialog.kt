@@ -71,6 +71,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 
@@ -210,6 +211,7 @@ internal data class AlertContent(
 internal fun UpdateAlert(content: AlertContent) {
     val (title, text, confirm, onDismiss, dismiss, progress, notes) = content
     val confirmFocus = remember { FocusRequester() }
+    var confirmFocused by remember { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -261,7 +263,12 @@ internal fun UpdateAlert(content: AlertContent) {
                         dismiss?.let { (label, action) ->
                             TextButton(onClick = action) { Text(label) }
                         }
-                        TextButton(onClick = confirm.second, modifier = Modifier.focusRequester(confirmFocus)) {
+                        TextButton(
+                            onClick = confirm.second,
+                            modifier = Modifier
+                                .focusRequester(confirmFocus)
+                                .onFocusChanged { confirmFocused = it.isFocused },
+                        ) {
                             Text(confirm.first)
                         }
                     }
@@ -269,8 +276,15 @@ internal fun UpdateAlert(content: AlertContent) {
             }
         }
     }
-    // Na TV-u fokus mora odmah biti na dugmetu, inače daljinski nema šta da pritisne.
-    LaunchedEffect(title, confirm.first) { runCatching { confirmFocus.requestFocus() } }
+    // Na TV-u fokus mora odmah biti na dugmetu, inače daljinski nema šta da pritisne. Pri pokretanju
+    // prozor dijaloga ponekad još nije spreman, pa se pokušava dok dugme zaista ne dobije fokus.
+    LaunchedEffect(title, confirm.first) {
+        repeat(FOCUS_ATTEMPTS) {
+            if (confirmFocused) return@LaunchedEffect
+            runCatching { confirmFocus.requestFocus() }
+            delay(FOCUS_STEP_MS)
+        }
+    }
 }
 
 /**
@@ -327,6 +341,9 @@ private fun WhatsNew(notes: List<String>, modifier: Modifier = Modifier) {
         }
     }
 }
+
+private const val FOCUS_ATTEMPTS = 40
+private const val FOCUS_STEP_MS = 50L
 
 /** Otvara sistemsko podešavanje „Instaliranje nepoznatih aplikacija” za ovu aplikaciju. */
 private fun openInstallPermission(context: Context) {
