@@ -675,6 +675,7 @@ class VodPlayerViewModel @Inject constructor(
                     )
                 } ?: emptyList(),
             )
+            if (!startOver) trakt.logPlayerStart(_ui.value.title, start ?: 0, exchange?.isCompleted)
             if (exchange != null && !exchange.isCompleted) followLateRemote(exchange, start, savedPosition)
         } catch (e: CancellationException) {
             throw e
