@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -148,7 +149,9 @@ private fun DriftingClock(temperature: Int?) {
         }
     }
     Box(modifier = Modifier.fillMaxSize().onSizeChanged { area = it }) {
+        // Datum sa temperaturom je širi od sata, pa se oba reda centriraju jedan prema drugom.
         Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .onSizeChanged { content = it }
                 // Pomeranje i providnost samo u fazi crtanja, bez ponovnog slaganja ekrana.
