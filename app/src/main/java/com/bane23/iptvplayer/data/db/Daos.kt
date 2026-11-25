@@ -800,6 +800,14 @@ interface WatchProgressDao {
     )
     fun observeContinueSeries(playlistId: Long, limit: Int): Flow<List<WatchProgressEntity>>
 
+    /** Filmovi koji su puštani na ovom uređaju. */
+    @Query("SELECT itemId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'movie' AND playedHereAt IS NOT NULL")
+    suspend fun moviesPlayedHere(playlistId: Long): List<Long>
+
+    /** Serije čija je bar jedna epizoda puštana na ovom uređaju. */
+    @Query("SELECT DISTINCT seriesId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'episode' AND playedHereAt IS NOT NULL")
+    suspend fun seriesPlayedHere(playlistId: Long): List<Long>
+
     /** Serije liste čiju je bar jednu epizodu korisnik gledao ili označio u aplikaciji. */
     @Query("SELECT DISTINCT seriesId FROM watch_progress WHERE playlistId = :playlistId AND kind = 'episode'")
     suspend fun seriesWithProgress(playlistId: Long): List<Long>

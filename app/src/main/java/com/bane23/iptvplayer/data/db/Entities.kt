@@ -256,6 +256,11 @@ data class WatchProgressEntity(
      * u red; null znači da nije sklonjeno (od verzije baze 12).
      */
     val dismissedAt: Long? = null,
+    /**
+     * Kad je film, odnosno epizoda, poslednji put puštan baš na ovom uređaju. Pozicija sa drugog uređaja ga
+     * ne menja. Od više jezičkih verzija u redu „Nastavi gledanje” ostaje ona gledana ovde (od verzije baze 26).
+     */
+    val playedHereAt: Long? = null,
 )
 
 /** Ono što je o kanalu potrebno za povezivanje sa vodičem. */
