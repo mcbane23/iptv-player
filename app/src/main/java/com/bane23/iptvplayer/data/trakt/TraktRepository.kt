@@ -47,7 +47,6 @@ class TraktRepository @Inject constructor(
     private val vod: VodRepository,
     private val settings: SettingsStore,
     private val scheduler: TraktScheduler,
-    private val playbackLog: TraktPlaybackLog,
 ) {
     private val dao = db.traktDao()
     private val progressDao = db.watchProgressDao()
@@ -118,30 +117,15 @@ class TraktRepository @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: HttpException) {
-            playbackLog.add(PlaybackLogEvent.FAILED, detail = "HTTP ${e.code()}")
             if (e.code() == 401) {
                 tokens.clear()
                 TraktSyncResult.NOT_SIGNED_IN
             } else {
                 TraktSyncResult.FAILED
             }
-        } catch (e: Throwable) {
-            playbackLog.add(PlaybackLogEvent.FAILED, detail = "${e.javaClass.simpleName}: ${e.message.orEmpty()}".take(LOG_DETAIL_MAX))
+        } catch (_: Throwable) {
             TraktSyncResult.FAILED
         }
-    }
-
-    /** Dnevnik razmene pozicija, za podešavanja. */
-    val playbackLogEntries get() = playbackLog.entries
-
-    /** Plejer je krenuo: od koje sekunde i da li je razmena pozicija stigla da se završi pre toga. */
-    fun logPlayerStart(title: String, startMs: Long, exchangeDone: Boolean?) {
-        playbackLog.add(
-            PlaybackLogEvent.PLAYER_START,
-            item = title,
-            count = (startMs / 1000).toInt(),
-            percent = when (exchangeDone) { true -> 1; false -> 0; null -> -1 },
-        )
     }
 
     /** Prijava koja je u toku: kod za korisnika i PKCE tajna koja ide uz preuzimanje tokena. */
@@ -288,7 +272,6 @@ class TraktRepository @Inject constructor(
                 }
             } catch (e: Throwable) {
                 // Mreža, Trakt, neočekivan odgovor ili nedostatak memorije: pokušava se ponovo kasnije.
-                playbackLog.add(PlaybackLogEvent.FAILED, detail = "${e.javaClass.simpleName}: ${e.message.orEmpty()}".take(LOG_DETAIL_MAX))
                 TraktSyncResult.FAILED
             } finally {
                 withContext(NonCancellable) { tokens.syncFinished() }
@@ -413,19 +396,15 @@ class TraktRepository @Inject constructor(
                 throw e
             } catch (_: PanelUnreadable) {
                 null
-            } catch (e: IOException) {
-                playbackLog.add(PlaybackLogEvent.SEND_PANEL_WAIT, item = "${row.kind} ${row.itemId}", percent = row.progress.toInt(), detail = e.message.orEmpty())
+            } catch (_: IOException) {
                 allSent = false
                 continue
             }
             if (key != null) {
                 val response = api.scrobblePause(auth, TraktPayloads.scrobble(key, row.progress))
-                playbackLog.add(PlaybackLogEvent.SENT, item = TraktPlaybackLog.label(key), percent = row.progress.toInt(), count = response.code())
                 // 401 i 429 se ponavljaju kasnije; ostale greške (npr. 409, već poslato) se ne ponavljaju.
                 if (response.code() == 401 || response.code() == 429 || response.code() >= 500) throw HttpException(response)
                 if (response.isSuccessful) tokens.markSent(TraktPayloads.progressKey(key), row.progress)
-            } else {
-                playbackLog.add(PlaybackLogEvent.SEND_NO_TMDB, item = "${row.kind} ${row.itemId}", percent = row.progress.toInt())
             }
             dao.deletePlayback(row.playlistId, row.kind, row.itemId)
         }
@@ -451,46 +430,39 @@ class TraktRepository @Inject constructor(
                 pausedAt > since || pausedAt > recheckFrom || (known != null && TraktPayloads.progressDiffers(item.progress, known))
             }
             .sortedBy { it.first }
-        playbackLog.add(
-            PlaybackLogEvent.RECEIVED_LIST,
-            count = all.size,
-            percent = items.size,
-            detail = all.take(LOG_NEWEST).joinToString { item ->
-                (TraktPayloads.playbackKey(item)?.let(TraktPlaybackLog::label) ?: "?") + " ${item.progress.toInt()}% ${item.pausedAt}"
-            },
-        )
-        if (items.isEmpty()) return
+        if (items.isEmpty()) {
+            tokens.markSeen(seenNow(all))
+            return
+        }
         var applied = since
         for ((pausedAt, item) in items) {
             val key = TraktPayloads.playbackKey(item) ?: continue
             // Posle ove pauze je odgledano do kraja (ovde ili drugde): stara pozicija se ne vraća.
             val watchedAt = dao.watchedAt(key.kind, key.tmdbId, key.season, key.episode)
-            val label = TraktPlaybackLog.label(key)
             if (TraktPayloads.finishedSince(watchedAt, pausedAt)) {
-                playbackLog.add(PlaybackLogEvent.SKIP_FINISHED, item = label, percent = item.progress.toInt())
                 applied = maxOf(applied, pausedAt)
                 continue
             }
             try {
                 // Procenat koji ovaj uređaj nije poslao došao je sa drugog uređaja posle naše poslednje pauze.
                 val fromOther = TraktPayloads.progressDiffers(item.progress, sent[TraktPayloads.progressKey(key)])
-                val result = panel { vod.applyRemoteProgress(key, item.progress, pausedAt, fromOther) }
-                playbackLog.add(result.event, item = label, percent = item.progress.toInt(), count = result.count, detail = result.detail.take(LOG_DETAIL_MAX * 2))
+                panel { vod.applyRemoteProgress(key, item.progress, pausedAt, fromOther) }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: PanelUnreadable) {
+            } catch (_: PanelUnreadable) {
                 // Ova pozicija se preskače; novije se i dalje primenjuju.
-                playbackLog.add(PlaybackLogEvent.SKIP_PANEL, item = label, percent = item.progress.toInt(), detail = e.message.orEmpty())
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 // Panel trenutno ne odgovara: ova i novije pozicije čekaju sledeću sinhronizaciju.
-                playbackLog.add(PlaybackLogEvent.SKIP_PANEL, item = label, percent = item.progress.toInt(), detail = e.message.orEmpty())
                 break
             }
             applied = maxOf(applied, pausedAt)
         }
         if (applied > since) tokens.setLastPlaybackMs(applied)
-        tokens.markSeen(all.mapNotNull { item -> TraktPayloads.playbackKey(item)?.let { TraktPayloads.progressKey(it) to item.progress } }.toMap())
+        tokens.markSeen(seenNow(all))
     }
+
+    private fun seenNow(all: List<PlaybackItem>): Map<String, Float> =
+        all.mapNotNull { item -> TraktPayloads.playbackKey(item)?.let { TraktPayloads.progressKey(it) to item.progress } }.toMap()
 
     /**
      * Poziv ka panelu provajdera (spiskovi i detalji filmova i serija). Njegove greške se ovde
@@ -560,8 +532,6 @@ class TraktRepository @Inject constructor(
 
     private companion object {
         /** Koliko pozicija sa Trakt-a se navodi u dnevniku i koliko dug opis greške. */
-        const val LOG_NEWEST = 5
-        const val LOG_DETAIL_MAX = 160
 
         /** Pozicije sa Trakt-a mlađe od ovoga se pri svakoj razmeni ponovo proveravaju (3 dana). */
         const val PLAYBACK_RECHECK_MS = 3 * 24 * 60 * 60 * 1000L
