@@ -204,6 +204,7 @@ fun TvVodScreen(
     }
     // Redosled i Filter iznad postera: Nazad sa njih otvara kategorije, isto kao sa postera.
     var headerFocused by remember { mutableStateOf(false) }
+    val headerFocus = remember { FocusRequester() }
     BackHandler(enabled = !categoriesOpen && (gridFocused || headerFocused), onBack = openCategories)
     val keyScope = rememberCoroutineScope()
     // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega (Bane).
@@ -581,6 +582,7 @@ fun TvVodScreen(
                             filter = if (state.filter.active) state.filter.summary() else null,
                             onSort = { sortOpen = true },
                             onFilter = { filterOpen = true },
+                            sortFocus = headerFocus,
                             modifier = Modifier
                                 .onFocusChanged { headerFocused = it.hasFocus }
                                 .onPreviewKeyEvent { event ->
@@ -659,7 +661,7 @@ fun TvVodScreen(
                         state.itemsFailed -> TvEmptyState(icon = AppIcons.Warning, text = stringResource(R.string.vod_load_failed), isError = true)
                         state.items.isEmpty() -> TvEmptyState(icon = if (series) AppIcons.Series else AppIcons.Movies, text = stringResource(if (state.filter.active) R.string.filter_empty else R.string.vod_empty))
 
-                        else -> PosterGrid(columns, gridModifier) { showRow ->
+                        else -> PosterGrid(columns, gridModifier, onUpFromTop = { headerFocus.tryRequestFocus() }) { showRow ->
                             itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                                 PosterCard(
                                     name = item.name,
@@ -721,7 +723,12 @@ private fun isLastItem(id: Long, lastItemId: () -> Long?): Boolean =
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: LazyGridScope.(showRow: (Int) -> Unit) -> Unit) {
+private fun PosterGrid(
+    columns: Int,
+    modifier: Modifier = Modifier,
+    // Gore sa prvog reda: vraća true kad je fokus otišao iznad mreže (dugmad kategorije).
+    onUpFromTop: () -> Boolean = { false },
+    content: LazyGridScope.(showRow: (Int) -> Unit) -> Unit) {
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
@@ -759,7 +766,9 @@ private fun PosterGrid(columns: Int, modifier: Modifier = Modifier, content: Laz
                 modifier = Modifier.onPreviewKeyEvent { event ->
                     if (event.key != Key.DirectionUp) return@onPreviewKeyEvent false
                     val target = focused[0] - columns
-                    if (target < 0) return@onPreviewKeyEvent false
+                    // Sa prvog reda Gore ide izričito na dugmad iznad mreže; sama pretraga fokusa ih ne nalazi
+                    // (Bane, 25. 11. 2026: „nemoguće je doći do dugmeta sortiranja”).
+                    if (target < 0) return@onPreviewKeyEvent event.type == KeyEventType.KeyDown && onUpFromTop()
                     if (event.type == KeyEventType.KeyDown) {
                         scope.launch {
                             gridState.scrollToItem(target)
@@ -831,6 +840,7 @@ private fun CategoryHeader(
     filter: String?,
     onSort: () -> Unit,
     onFilter: () -> Unit,
+    sortFocus: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -849,7 +859,7 @@ private fun CategoryHeader(
             modifier = Modifier.weight(1f).padding(end = 12.dp),
         )
         Row(modifier = modifier.focusGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TvButton(onClick = onSort) {
+            TvButton(onClick = onSort, modifier = Modifier.focusRequester(sortFocus)) {
                 Icon(AppIcons.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(
                     text = sort,
