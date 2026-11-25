@@ -250,10 +250,34 @@ object Migrations {
         }
     }
 
+    /**
+     * 24 → 25: imenovane liste omiljenih postaju sekcije jedne liste „Omiljeni”. Kanal koji je bio samo u
+     * imenovanoj listi upisuje se i u omiljene, a kanal koji je bio u više lista ostaje samo u prvoj od
+     * njih (po redosledu lista). Ništa drugo se ne briše.
+     */
+    private val MIGRATION_24_25 = object : Migration(24, 25) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(SECTIONS_ADD_FAVORITES)
+            db.execSQL(SECTIONS_KEEP_FIRST)
+        }
+    }
+
+    /** Svaki kanal iz neke sekcije je i među omiljenima. */
+    internal const val SECTIONS_ADD_FAVORITES =
+        "INSERT OR IGNORE INTO `favorites` (`playlistId`, `channelKey`, `addedAt`) " +
+            "SELECT `playlistId`, `channelKey`, MIN(`addedAt`) FROM `favorite_list_items` GROUP BY `playlistId`, `channelKey`"
+
+    /** Kanal ostaje samo u prvoj sekciji u kojoj je (najmanji `position`, pa najmanji ID). */
+    internal const val SECTIONS_KEEP_FIRST =
+        "DELETE FROM `favorite_list_items` WHERE EXISTS (SELECT 1 FROM `favorite_list_items` o " +
+            "JOIN `favorite_lists` ol ON ol.`id` = o.`listId` JOIN `favorite_lists` fl ON fl.`id` = `favorite_list_items`.`listId` " +
+            "WHERE o.`playlistId` = `favorite_list_items`.`playlistId` AND o.`channelKey` = `favorite_list_items`.`channelKey` " +
+            "AND (ol.`position` < fl.`position` OR (ol.`position` = fl.`position` AND ol.`id` < fl.`id`)))"
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
         MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17,
         MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_20_21, MIGRATION_21_22,
-        MIGRATION_22_23, MIGRATION_23_24,
+        MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25,
     )
 }

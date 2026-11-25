@@ -372,7 +372,10 @@ data class LockedItemEntity(
     val active: Boolean,
 )
 
-/** Lista omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala. */
+/**
+ * Sekcija omiljenih kanala kojoj je korisnik dao ime (na primer „Sport”). Važi za sve liste kanala.
+ * Tabela je ostala od imenovanih lista omiljenih, pa se tako i zove.
+ */
 @Entity(tableName = "favorite_lists")
 data class FavoriteListEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -380,7 +383,10 @@ data class FavoriteListEntity(
     val position: Int,
 )
 
-/** Omiljeni kanal svrstan u jednu imenovanu listu. Isti kanal može biti u više lista. */
+/**
+ * Omiljeni kanal svrstan u sekciju. Kanal je u najviše jednoj sekciji i uvek je i u [FavoriteEntity];
+ * to čuva [com.bane23.iptvplayer.data.repo.ChannelRepository].
+ */
 @Entity(
     tableName = "favorite_list_items",
     primaryKeys = ["listId", "playlistId", "channelKey"],
@@ -406,9 +412,6 @@ data class FavoriteListItemEntity(
     val channelKey: String,
     val addedAt: Long,
 )
-
-/** Imenovana lista omiljenih sa brojem kanala koji se iz nje vide u izabranoj listi kanala. */
-data class FavoriteListRow(val id: Long, val name: String, val channelCount: Int)
 
 /** Kanal koji je gledan; čuva se samo vreme poslednjeg gledanja. */
 @Entity(
@@ -437,6 +440,15 @@ data class ChannelWithFavorite(
     @ColumnInfo(name = "nowStartMs") val nowStartMs: Long? = null,
     @ColumnInfo(name = "nowStopMs") val nowStopMs: Long? = null,
 )
+
+/** Omiljeni kanal sa sekcijom u kojoj je ([sectionId] je null za kanal bez sekcije). */
+data class FavoriteChannelRow(
+    @Embedded val row: ChannelWithFavorite,
+    @ColumnInfo(name = "sectionId") val sectionId: Long?,
+)
+
+/** Broj omiljenih kanala sekcije [sectionId] (null = bez sekcije) u izabranoj listi kanala. */
+data class FavoriteSectionCount(val sectionId: Long?, val channelCount: Int)
 
 data class PlaylistWithCount(
     @Embedded val playlist: PlaylistEntity,

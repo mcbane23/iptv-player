@@ -57,6 +57,9 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import androidx.compose.foundation.background
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
@@ -167,7 +170,6 @@ fun MobileLiveTvScreen(
     }
     val groups = buildList {
         add(ChannelGroups.FAVORITES)
-        state.favoriteLists.forEach { add(it.groupId) }
         if (state.recentCount > 0) add(ChannelGroups.RECENT)
         add(ALL_CHANNELS)
         state.categories.forEach { add(it.id) }
@@ -175,11 +177,8 @@ fun MobileLiveTvScreen(
     val selected = chosen?.takeIf { it in groups }
         ?: state.lastCategoryId?.takeIf { it in groups }
         ?: if (state.favoriteCount > 0) ChannelGroups.FAVORITES else ALL_CHANNELS
-    // „Omiljeni” su jedno dugme: imenovane liste su kartice iznad kanala, ne zasebna dugmad.
-    val inFavorites = state.isFavoritesGroup(selected)
-    // Kartica omiljenih koja je bila otvorena poslednji put, da se dugme „Omiljeni” vrati na nju.
-    var favoritesTab by rememberSaveable { mutableStateOf(ChannelGroups.FAVORITES) }
-    LaunchedEffect(selected) { if (inFavorites) favoritesTab = selected }
+    // „Omiljeni” su jedan spisak; sekcije su naslovi u njemu i čipovi koji skroluju do njih.
+    val inFavorites = selected == ChannelGroups.FAVORITES
     // Grupa koja je bila izabrana pre omiljenih, da drugi dodir na zvezdicu vrati na nju.
     var beforeFavorites by rememberSaveable { mutableStateOf<Long?>(null) }
     // Zaključana kategorija koju je korisnik hteo da otvori; otvara se sama čim PIN prođe.
@@ -189,7 +188,7 @@ fun MobileLiveTvScreen(
         onUnlock()
     })
     val pick: (Long) -> Unit = { group ->
-        if (state.isFavoritesGroup(group) && !inFavorites) beforeFavorites = selected
+        if (group == ChannelGroups.FAVORITES && !inFavorites) beforeFavorites = selected
         chosen = group
         viewModel.rememberCategory(group)
     }
@@ -214,20 +213,7 @@ fun MobileLiveTvScreen(
     }
     // Zaključana kategorija može da ostane izabrana od ranije (ili posle „Zaključaj ponovo”).
     val selectedLocked = state.categories.any { it.id == selected && it.locked }
-    val openFavorites = { choose(favoritesTab.takeIf { state.isFavoritesGroup(it) } ?: ChannelGroups.FAVORITES) }
-    // Red sa listama omiljenih; postoji tek kad korisnik napravi bar jednu listu.
-    val favoriteTabs: @Composable (Modifier) -> Unit = { tabsModifier ->
-        if (inFavorites && state.favoriteLists.isNotEmpty()) {
-            FavoriteListTabs(
-                lists = state.favoriteLists,
-                selected = selected,
-                onSelect = choose,
-                onListMenu = { listMenu = FavoriteListMenu(it) },
-                onNew = { listMenu = FavoriteListMenu(list = null, create = true) },
-                modifier = tabsModifier,
-            )
-        }
-    }
+    val openFavorites = { choose(ChannelGroups.FAVORITES) }
     val categoryId = selected.takeIf { it != ALL_CHANNELS }
 
     LaunchedEffect(playlistId, categoryId) {
@@ -308,8 +294,36 @@ fun MobileLiveTvScreen(
                         ChannelGroups.FAVORITES -> state.favoriteCount
                         ChannelGroups.RECENT -> state.recentCount
                         ALL_CHANNELS -> state.totalChannels
-                        else -> state.favoriteList(selected)?.channelCount
-                            ?: state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
+                        else -> state.categories.firstOrNull { it.id == selected }?.channelCount ?: 0
+                    }
+                    val scope = rememberCoroutineScope()
+                    // Dodir na sekciju skroluje do njenog prvog kanala (spisak se ne filtrira).
+                    val jumpToSection: (FavoriteList) -> Unit = { section ->
+                        val start = state.favoriteSections.start(section.id)
+                        if (start == null) {
+                            AppMessages.show(context, R.string.favorite_section_empty)
+                        } else {
+                            scope.launch { listState.scrollToItem(start) }
+                        }
+                    }
+                    // Sekcija kanala na vrhu spiska: njen čip je istaknut, a naslov ostaje zalepljen gore.
+                    val currentSection by remember(state.favoriteSections, inFavorites) {
+                        derivedStateOf {
+                            if (inFavorites) state.favoriteSections.sectionAt(listState.firstVisibleItemIndex) else null
+                        }
+                    }
+                    // Red sa sekcijama omiljenih; postoji tek kad korisnik napravi bar jednu sekciju.
+                    val favoriteTabs: @Composable (Modifier) -> Unit = { tabsModifier ->
+                        if (inFavorites && state.favoriteLists.isNotEmpty()) {
+                            FavoriteSectionChips(
+                                sections = state.favoriteLists,
+                                current = currentSection?.id,
+                                onJump = jumpToSection,
+                                onMenu = { listMenu = FavoriteListMenu(it) },
+                                onNew = { listMenu = FavoriteListMenu(list = null, create = true) },
+                                modifier = tabsModifier,
+                            )
+                        }
                     }
                     // Kanal u pregledu (samo položen telefon): prvi dodir ga bira i pušta u malom pregledu
                     // desno, drugi dodir ili dugme ga otvara preko celog ekrana, kao fokus i OK na TV-u.
@@ -337,17 +351,15 @@ fun MobileLiveTvScreen(
                             }
                             if (channels.itemCount == 0 && channels.loadState.refresh is LoadState.NotLoading) {
                                 val favorites = selected == ChannelGroups.FAVORITES
-                                val namedList = state.favoriteList(selected) != null
                                 EmptyState(
                                     icon = when {
-                                        favorites || namedList -> AppIcons.StarOutline
+                                        favorites -> AppIcons.StarOutline
                                         selectedLocked -> AppIcons.Lock
                                         else -> AppIcons.LiveTv
                                     },
                                     text = stringResource(
                                         when {
                                             favorites -> R.string.favorites_empty
-                                            namedList -> R.string.favorite_list_empty
                                             selectedLocked -> R.string.category_locked
                                             else -> R.string.channels_empty
                                         },
@@ -364,6 +376,14 @@ fun MobileLiveTvScreen(
                             ) {
                                 items(count = channels.itemCount, key = channels.itemKey { it.id }) { index ->
                                     val channel = channels[index]
+                                    // Naslov sekcije stoji iznad njenog prvog kanala, u istom redu spiska.
+                                    val section = channel?.favoriteSection?.takeIf { inFavorites }
+                                    val prior = if (section != null && index > 0) channels.peek(index - 1) else null
+                                    val sectionTitle = section
+                                        ?.takeIf { index == 0 || (prior != null && prior.favoriteSection != it) }
+                                        ?.let { id -> state.favoriteLists.firstOrNull { it.id == id }?.name }
+                                    Column {
+                                    if (sectionTitle != null) SectionTitle(sectionTitle)
                                     MobileChannelCard(
                                         channel = channel,
                                         selected = showPreview && channel != null && channel.id == previewId,
@@ -397,7 +417,28 @@ fun MobileLiveTvScreen(
                                             null
                                         },
                                     )
+                                    }
                                 }
+                            }
+                            // Zalepljen naslov sekcije dok se njeni kanali listaju ispod njega.
+                            val stuck = currentSection
+                            val showStuck by remember(state.favoriteSections) {
+                                derivedStateOf {
+                                    val top = currentSection
+                                    top != null && (
+                                        listState.firstVisibleItemIndex != state.favoriteSections.start(top.id) ||
+                                            listState.firstVisibleItemScrollOffset > 0
+                                        )
+                                }
+                            }
+                            if (stuck != null && showStuck) {
+                                SectionTitle(
+                                    name = stuck.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f))
+                                        .padding(horizontal = 12.dp),
+                                )
                             }
                         }
                     }
@@ -411,6 +452,8 @@ fun MobileLiveTvScreen(
                                 onSelect = { group ->
                                     if (group != ChannelGroups.FAVORITES) choose(group) else if (!inFavorites) openFavorites()
                                 },
+                                currentSection = currentSection?.id,
+                                onSection = jumpToSection,
                                 header = {
                                     // Izbor liste i dugmad stoje na vrhu spiska, da kanali počnu u istoj visini.
                                     val active = playlists.playlists.firstOrNull { it.id == playlistId }
@@ -452,11 +495,8 @@ fun MobileLiveTvScreen(
                                     .width(210.dp)
                                     .fillMaxHeight(),
                             )
-                            // Bez naslova: izabrana grupa i broj kanala već pišu u spisku levo.
-                            Column(modifier = Modifier.weight(0.58f)) {
-                                favoriteTabs(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp))
-                                channelGrid(Modifier.weight(1f))
-                            }
+                            // Bez naslova: izabrana grupa, broj kanala i sekcije već pišu u spisku levo.
+                            channelGrid(Modifier.weight(0.58f))
                             val previewChannel = previewId?.let { id ->
                                 channels.itemSnapshotList.items.firstOrNull { it.id == id }
                             }
@@ -480,8 +520,7 @@ fun MobileLiveTvScreen(
                             ChannelGroups.FAVORITES -> stringResource(R.string.category_favorites)
                             ChannelGroups.RECENT -> stringResource(R.string.category_chip_recent)
                             ALL_CHANNELS -> stringResource(R.string.category_chip_all)
-                            else -> state.favoriteList(selected)?.name
-                                ?: state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
+                            else -> state.categories.firstOrNull { it.id == selected }?.name.orEmpty()
                         }
                         Column(modifier = Modifier.weight(1f).nestedScroll(header.connection)) {
                         CollapsingHeader(
@@ -504,7 +543,7 @@ fun MobileLiveTvScreen(
                                 when {
                                     group != ChannelGroups.FAVORITES -> choose(group)
                                     inFavorites -> choose(
-                                        beforeFavorites?.takeIf { it in groups && !state.isFavoritesGroup(it) } ?: ALL_CHANNELS,
+                                        beforeFavorites?.takeIf { it in groups && it != ChannelGroups.FAVORITES } ?: ALL_CHANNELS,
                                     )
                                     else -> openFavorites()
                                 }
@@ -646,15 +685,15 @@ private fun QuickGroupChips(
 }
 
 /**
- * Liste omiljenih kao red kartica iznad kanala: „Omiljeni”, pa imenovane liste i „+” za novu.
- * Dugi pritisak na listu otvara meni (preimenuj, obriši).
+ * Sekcije omiljenih kao red čipova iznad kanala, pa „+” za novu. Dodir skroluje do sekcije (spisak se
+ * ne filtrira), a istaknut je čip sekcije čiji su kanali na vrhu. Dugi pritisak otvara meni sekcije.
  */
 @Composable
-private fun FavoriteListTabs(
-    lists: List<FavoriteList>,
-    selected: Long,
-    onSelect: (Long) -> Unit,
-    onListMenu: (FavoriteList?) -> Unit,
+private fun FavoriteSectionChips(
+    sections: List<FavoriteList>,
+    current: Long?,
+    onJump: (FavoriteList) -> Unit,
+    onMenu: (FavoriteList) -> Unit,
     onNew: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -666,18 +705,12 @@ private fun FavoriteListTabs(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        GroupChip(
-            label = stringResource(R.string.category_favorites),
-            selected = selected == ChannelGroups.FAVORITES,
-            onClick = { onSelect(ChannelGroups.FAVORITES) },
-            onLongClick = { onListMenu(null) },
-        )
-        lists.forEach { list ->
+        sections.forEach { section ->
             GroupChip(
-                label = list.name,
-                selected = selected == list.groupId,
-                onClick = { onSelect(list.groupId) },
-                onLongClick = { onListMenu(list) },
+                label = section.name,
+                selected = section.id == current,
+                onClick = { onJump(section) },
+                onLongClick = { onMenu(section) },
             )
         }
         GroupChip(
@@ -685,6 +718,33 @@ private fun FavoriteListTabs(
             selected = false,
             onClick = onNew,
             iconOnly = AppIcons.Add,
+        )
+    }
+}
+
+/** Naslov sekcije omiljenih iznad njenog prvog kanala (i zalepljen na vrhu dok se sekcija lista). */
+@Composable
+private fun SectionTitle(name: String, modifier: Modifier = Modifier) {
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = modifier.padding(start = 2.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = name.uppercase(),
+            color = accent,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .widthIn(max = 240.dp)
+                .padding(end = 10.dp),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(accent.copy(alpha = 0.35f)),
         )
     }
 }
@@ -774,6 +834,8 @@ private fun GroupPanel(
     lockMenu: LockMenu,
     onListMenu: (FavoriteList?) -> Unit,
     onRecentMenu: () -> Unit,
+    currentSection: Long?,
+    onSection: (FavoriteList) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Spisak se otvara tamo gde je izabrana kategorija, da posle okretanja telefona bude na vidiku.
@@ -807,11 +869,24 @@ private fun GroupPanel(
                 text = stringResource(R.string.category_favorites),
                 icon = AppIcons.Star,
                 subtitle = stringResource(R.string.vod_total, state.favoriteCount),
-                // Jedan red za sve liste omiljenih; koja je otvorena, vidi se u karticama nad kanalima.
-                selected = state.isFavoritesGroup(selected),
+                selected = selected == ChannelGroups.FAVORITES,
                 onClick = { onSelect(ChannelGroups.FAVORITES) },
                 onLongClick = { onListMenu(null) },
             )
+        }
+        // Sekcije omiljenih ispod reda „Omiljeni”, kao sadržaj spiska: dodir skroluje do sekcije.
+        if (selected == ChannelGroups.FAVORITES) {
+            items(state.favoriteLists, key = { "section-${it.id}" }) { section ->
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    PanelRow(
+                        text = section.name,
+                        count = section.channelCount,
+                        selected = section.id == currentSection,
+                        onClick = { onSection(section) },
+                        onLongClick = { onListMenu(section) },
+                    )
+                }
+            }
         }
         if (state.recentCount > 0) {
             item(key = ChannelGroups.RECENT) {

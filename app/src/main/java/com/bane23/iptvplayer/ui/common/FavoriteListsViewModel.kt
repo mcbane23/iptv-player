@@ -16,20 +16,20 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Kanal za koji je otvoren izbor liste omiljenih, sa onim gde se sada nalazi. */
+/** Kanal za koji je otvoren izbor sekcije omiljenih, sa onim gde se sada nalazi. */
 data class FavoritePick(
     val channelId: Long,
     val channelName: String,
-    /** Kanal je u samim „Omiljenima” (nezavisno od imenovanih lista). */
+    /** Kanal je već među omiljenima. */
     val favorite: Boolean,
-    /** Imenovane liste u kojima je kanal. */
-    val listIds: Set<Long>,
+    /** Sekcija u kojoj je kanal, ili null kad je bez sekcije. */
+    val sectionId: Long?,
 )
 
 /**
- * Liste omiljenih kanala sa imenom: izbor liste pri dodavanju kanala u omiljene i pravljenje,
- * preimenovanje i brisanje lista. Dok nijedna imenovana lista ne postoji, dodavanje u omiljene
- * radi jednim potezom, bez pitanja.
+ * Sekcije omiljenih kanala: izbor sekcije pri dodavanju kanala u omiljene i pravljenje,
+ * preimenovanje, pomeranje i brisanje sekcija. Dok nijedna sekcija ne postoji, dodavanje u omiljene
+ * radi jednim potezom, bez pitanja. (Ime je ostalo od imenovanih lista omiljenih.)
  */
 @HiltViewModel
 class FavoriteListsViewModel @Inject constructor(
@@ -43,17 +43,17 @@ class FavoriteListsViewModel @Inject constructor(
 
     private val _pick = MutableStateFlow<FavoritePick?>(null)
 
-    /** Kanal za koji je izbor liste otvoren, ili null dok je zatvoren. */
+    /** Kanal za koji je izbor sekcije otvoren, ili null dok je zatvoren. */
     val pick: StateFlow<FavoritePick?> = _pick.asStateFlow()
 
     private val _nameTaken = MutableStateFlow(false)
 
-    /** Poslednje uneto ime liste je prazno ili već postoji. */
+    /** Poslednje uneto ime sekcije je prazno ili već postoji. */
     val nameTaken: StateFlow<Boolean> = _nameTaken.asStateFlow()
 
     /**
-     * Potez „omiljeno” nad kanalom. Bez imenovanih lista kanal se odmah dodaje ili uklanja; kad
-     * liste postoje, otvara se izbor liste.
+     * Potez „omiljeno” nad kanalom. Bez sekcija kanal se odmah dodaje ili uklanja; kad sekcije postoje,
+     * otvara se izbor sekcije (i uklanjanje, ako je kanal već među omiljenima).
      */
     fun favoriteAction(channelId: Long) {
         viewModelScope.launch {
@@ -70,25 +70,29 @@ class FavoriteListsViewModel @Inject constructor(
         _pick.value = null
     }
 
-    /** Dodaje kanal iz izbora u „Omiljene” ili ga uklanja iz njih; imenovane liste se ne menjaju. */
-    fun toggleFavorite() = change { pick ->
-        repository.toggleFavorite(pick.channelId)
+    /** Stavlja kanal iz izbora u sekciju [sectionId] (null = bez sekcije) i zatvara izbor. */
+    fun choose(sectionId: Long?) {
+        val pick = _pick.value ?: return
+        _pick.value = null
+        viewModelScope.launch { repository.setFavoriteSection(pick.channelId, sectionId) }
     }
 
-    /** Stavlja kanal iz izbora u listu [listId] ili ga vadi iz nje. */
-    fun toggleList(listId: Long) = change { pick ->
-        repository.setInFavoriteList(pick.channelId, listId, listId !in pick.listIds)
+    /** Uklanja kanal iz izbora iz omiljenih i zatvara izbor. */
+    fun remove() {
+        val pick = _pick.value ?: return
+        _pick.value = null
+        viewModelScope.launch { if (repository.isFavorite(pick.channelId)) repository.toggleFavorite(pick.channelId) }
     }
 
-    /** Pravi listu [name]; ako je izbor otvoren, kanal odmah ide u nju. [onDone] javlja uspeh. */
+    /** Pravi sekciju [name]; ako je izbor otvoren, kanal odmah ide u nju i izbor se zatvara. [onDone] javlja uspeh. */
     fun create(name: String, onDone: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
             val id = repository.createFavoriteList(name)
             _nameTaken.value = id == null
             val pick = _pick.value
             if (id != null && pick != null) {
-                repository.setInFavoriteList(pick.channelId, id, true)
-                _pick.value = _pick.value?.let { load(it.channelId) }
+                _pick.value = null
+                repository.setFavoriteSection(pick.channelId, id)
             }
             onDone(id != null)
         }
@@ -102,7 +106,12 @@ class FavoriteListsViewModel @Inject constructor(
         }
     }
 
-    /** Briše listu; kanali ostaju u ostalim listama u kojima su bili. */
+    /** Pomera sekciju za jedno mesto gore ([delta] = -1) ili dole (1). */
+    fun move(listId: Long, delta: Int) {
+        viewModelScope.launch { repository.moveFavoriteList(listId, delta) }
+    }
+
+    /** Briše sekciju; njeni kanali ostaju među omiljenima, bez sekcije. */
     fun delete(listId: Long) {
         viewModelScope.launch { repository.deleteFavoriteList(listId) }
     }
@@ -111,21 +120,13 @@ class FavoriteListsViewModel @Inject constructor(
         _nameTaken.value = false
     }
 
-    private fun change(action: suspend (FavoritePick) -> Unit) {
-        val pick = _pick.value ?: return
-        viewModelScope.launch {
-            action(pick)
-            _pick.value = _pick.value?.let { load(it.channelId) }
-        }
-    }
-
     private suspend fun load(channelId: Long): FavoritePick? {
         val channel = repository.getChannel(channelId) ?: return null
         return FavoritePick(
             channelId = channelId,
             channelName = channel.name,
             favorite = repository.isFavorite(channelId),
-            listIds = repository.favoriteListsOf(channelId),
+            sectionId = repository.favoriteSectionOf(channelId),
         )
     }
 }

@@ -15,6 +15,7 @@ import com.bane23.iptvplayer.domain.Category
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.domain.ChannelGroups
 import com.bane23.iptvplayer.domain.FavoriteList
+import com.bane23.iptvplayer.domain.FavoriteSections
 import com.bane23.iptvplayer.data.repo.LockRepository
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
@@ -53,8 +54,8 @@ data class LiveTvUiState(
     val totalChannels: Int = 0,
     val favoriteCount: Int = 0,
     val recentCount: Int = 0,
-    /** Liste omiljenih kojima je korisnik dao ime. */
-    val favoriteLists: List<FavoriteList> = emptyList(),
+    /** Sekcije omiljenih i broj omiljenih bez sekcije. */
+    val favoriteSections: FavoriteSections = FavoriteSections(),
     /** Lista je Xtream nalog, pa ima i filmove i serije. */
     val hasVod: Boolean = false,
     /**
@@ -67,15 +68,11 @@ data class LiveTvUiState(
     fun hasGroup(groupId: Long): Boolean = when (groupId) {
         ChannelGroups.FAVORITES, ChannelGroups.ALL -> true
         ChannelGroups.RECENT -> recentCount > 0
-        else -> categories.any { it.id == groupId } || favoriteList(groupId) != null
+        else -> categories.any { it.id == groupId }
     }
 
-    /** Grupa je „Omiljeni” ili neka imenovana lista omiljenih. */
-    fun isFavoritesGroup(groupId: Long?): Boolean = groupId == ChannelGroups.FAVORITES || favoriteList(groupId) != null
-
-    /** Imenovana lista omiljenih koju grupa [groupId] predstavlja, ili null. */
-    fun favoriteList(groupId: Long?): FavoriteList? =
-        ChannelGroups.favoriteListId(groupId)?.let { id -> favoriteLists.firstOrNull { it.id == id } }
+    /** Sekcije omiljenih, redom. */
+    val favoriteLists: List<FavoriteList> get() = favoriteSections.sections
 }
 
 /** Kategorije aktivne liste. */
@@ -137,14 +134,14 @@ class LiveTvViewModel @Inject constructor(
                             recentCount = recent,
                             hasVod = xtream,
                         )
-                    }.combine(repository.observeFavoriteLists(playlistId)) { ui, lists ->
+                    }.combine(repository.observeFavoriteSections(playlistId)) { ui, sections ->
                         ui.copy(
-                            favoriteLists = lists,
+                            favoriteSections = sections,
                             // Uživo kreće od nedavno gledanih; bez njih od grupe otvorene prošli put.
                             lastCategoryId = if (ui.recentCount > 0) {
                                 ChannelGroups.RECENT
                             } else {
-                                LastLiveCategory.resolve(last, ui.categories, false, lists)
+                                LastLiveCategory.resolve(last, ui.categories, false)
                             },
                         )
                     }
@@ -207,25 +204,17 @@ object LastLiveCategory {
         ChannelGroups.FAVORITES -> FAVORITES
         ChannelGroups.RECENT -> RECENT
         ChannelGroups.ALL -> ALL
-        else -> ChannelGroups.favoriteListId(groupId)?.let { LIST + it }
-            ?: categories.firstOrNull { it.id == groupId }?.let { CATEGORY + plainName(it.name) }
+        else -> categories.firstOrNull { it.id == groupId }?.let { CATEGORY + plainName(it.name) }
     }
 
-    fun resolve(
-        token: String?,
-        categories: List<Category>,
-        hasRecent: Boolean,
-        lists: List<FavoriteList> = emptyList(),
-    ): Long? {
+    fun resolve(token: String?, categories: List<Category>, hasRecent: Boolean): Long? {
         if (token == null) return null
         return when {
             token == FAVORITES -> ChannelGroups.FAVORITES
             token == RECENT -> ChannelGroups.RECENT.takeIf { hasRecent }
             token == ALL -> ChannelGroups.ALL
-            token.startsWith(LIST) -> {
-                val id = token.removePrefix(LIST).toLongOrNull()
-                lists.firstOrNull { it.id == id }?.groupId
-            }
+            // Imenovane liste omiljenih su postale sekcije spiska „Omiljeni”.
+            token.startsWith(LIST) -> ChannelGroups.FAVORITES
             token.startsWith(CATEGORY) -> {
                 val name = token.removePrefix(CATEGORY)
                 categories.firstOrNull { plainName(it.name) == name }?.id
