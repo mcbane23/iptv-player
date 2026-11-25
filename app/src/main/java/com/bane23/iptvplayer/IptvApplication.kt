@@ -19,6 +19,8 @@ import com.bane23.iptvplayer.data.trakt.TraktTokenStore
 import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.work.EpgScheduler
 import com.bane23.iptvplayer.work.TraktScheduler
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.contentcapture.ContentCaptureManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -63,8 +65,13 @@ class IptvApplication : Application(), SingletonImageLoader.Factory {
         super.attachBaseContext(AppLocale.wrap(base))
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate() {
         super.onCreate()
+        // Compose inače posle svake promene na ekranu prolazi kroz celo stablo elemenata i šalje ga
+        // sistemskoj usluzi „content capture” (kad je uređaj ima). Na TV-u je to bio veliki deo cene
+        // svakog koraka kroz spisak kanala, a aplikaciji ne treba (i ne šalje ništa o korisniku).
+        ContentCaptureManager.isEnabled = false
         epgScheduler.schedulePeriodic()
         epgScheduler.schedulePlaylistRefresh()
         // Pravila za kanale (SD kad postoji HD, kanali +1, istoimeni) prate podešavanja i osvežavanje lista.
