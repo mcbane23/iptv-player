@@ -633,8 +633,8 @@
     <string name="vod_loading_series">Loading series…</string>
     <string name="vod_loading_hint">Loading can take a while.</string>
     <string name="vod_loading_hint_stored">The first load can take a while. After that the list opens right away.</string>
+    <string name="vod_category_count">%1$s · %2$d</string>
     <string name="vod_sort">Sort order</string>
-    <string name="vod_sort_current">Order: %1$s</string>
     <string name="vod_sort_default">Provider order</string>
     <string name="vod_sort_added">Recently added</string>
     <string name="vod_sort_name">By name</string>

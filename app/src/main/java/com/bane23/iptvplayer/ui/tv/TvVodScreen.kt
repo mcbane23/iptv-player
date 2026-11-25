@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -200,7 +202,9 @@ fun TvVodScreen(
         categoriesOpen = true
         reopened++
     }
-    BackHandler(enabled = !categoriesOpen && gridFocused, onBack = openCategories)
+    // Redosled i Filter iznad postera: Nazad sa njih otvara kategorije, isto kao sa postera.
+    var headerFocused by remember { mutableStateOf(false) }
+    BackHandler(enabled = !categoriesOpen && (gridFocused || headerFocused), onBack = openCategories)
     val keyScope = rememberCoroutineScope()
     // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega (Bane).
     val leftRow = rememberTvLastRow()
@@ -479,42 +483,6 @@ fun TvVodScreen(
                             modifier = Modifier.padding(start = 12.dp),
                         )
                     }
-                    TvListRow(
-                        onClick = { sortOpen = true },
-                        onFocused = { leftRow.focused(ROW_SORT) },
-                        modifier = leftRow.mark(ROW_SORT).then(toGrid),
-                    ) { color ->
-                        Icon(AppIcons.Sort, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                        Text(
-                            text = stringResource(R.string.vod_sort_current, stringResource(state.sort.label)),
-                            color = color,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
-                    // Filter postera: dok je uključen, red je označen i piše šta je izabrano.
-                    TvListRow(
-                        onClick = { filterOpen = true },
-                        selected = state.filter.active,
-                        onFocused = { leftRow.focused(ROW_FILTER) },
-                        modifier = leftRow.mark(ROW_FILTER).then(toGrid),
-                    ) { color ->
-                        Icon(AppIcons.Filter, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                        Text(
-                            text = if (state.filter.active) {
-                                stringResource(R.string.filter_row_current, state.filter.summary())
-                            } else {
-                                stringResource(R.string.filter_row)
-                            },
-                            color = color,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
                     PinnedRow(
                         icon = AppIcons.Star,
                         title = favoritesLabel,
@@ -601,6 +569,33 @@ fun TvVodScreen(
                         // Pregled čita svoje stanje sam: korak kroz postere ne crta iznova ceo ekran.
                         val preview by previewViewModel.preview.collectAsStateWithLifecycle()
                         TvVodPreviewHeader(preview = preview)
+                    }
+                    // Redosled i Filter važe za izabranu kategoriju, pa stoje iznad njenih postera, uz njen
+                    // naziv (Bane, 25. 11. 2026). Gore sa prvog reda postera stiže do njih.
+                    val category = state.selected
+                    if (!showContinue && !showFavorites && category != null) {
+                        CategoryHeader(
+                            name = category.name,
+                            count = if (state.loadingItems || state.itemsFailed) null else state.items.size,
+                            sort = stringResource(state.sort.label),
+                            filter = if (state.filter.active) state.filter.summary() else null,
+                            onSort = { sortOpen = true },
+                            onFilter = { filterOpen = true },
+                            modifier = Modifier
+                                .onFocusChanged { headerFocused = it.hasFocus }
+                                .onPreviewKeyEvent { event ->
+                                    when (event.key) {
+                                        // Levo sa dugmadi otvara kategorije i vraća na izabranu.
+                                        Key.DirectionLeft -> {
+                                            if (event.type == KeyEventType.KeyDown) openCategories()
+                                            true
+                                        }
+                                        // Dole vraća na poster sa koga se došlo.
+                                        Key.DirectionDown -> event.type == KeyEventType.KeyDown && enterPosters()
+                                        else -> false
+                                    }
+                                },
+                        )
                     }
                     when {
                         showContinue -> PosterGrid(columns, gridModifier) { showRow ->
@@ -825,6 +820,59 @@ private fun SplitRow(open: () -> Float, gap: Dp, content: @Composable () -> Unit
 }
 
 /**
+ * Red iznad postera izabrane kategorije: naziv i broj naslova levo, dugmad Redosled i Filter desno.
+ * Levo sa prvog dugmeta i Dole obrađuje ekran ([modifier]); Desno sa Redosleda ide na Filter.
+ */
+@Composable
+private fun CategoryHeader(
+    name: String,
+    count: Int?,
+    sort: String,
+    filter: String?,
+    onSort: () -> Unit,
+    onFilter: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = GRID_PADDING, end = GRID_PADDING, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = if (count != null) stringResource(R.string.vod_category_count, name, count) else name,
+            color = colors.primary,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+        )
+        Row(modifier = modifier.focusGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TvButton(onClick = onSort) {
+                Icon(AppIcons.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(
+                    text = sort,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            TvButton(onClick = onFilter) {
+                Icon(AppIcons.Filter, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(
+                    text = filter ?: stringResource(R.string.filter_row),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .widthIn(max = 260.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
  * Skupljene kategorije dok je fokus među posterima: mala kapsula samo sa ikonicama (Bane). Ne prima
  * fokus; otvara je Levo sa prve kolone postera ili Nazad.
  */
@@ -910,8 +958,6 @@ private val CATEGORIES_STRIP_WIDTH = 44.dp
 private const val CATEGORIES_ANIMATION_MS = 180
 private const val CONTINUE_TARGET = "__continue"
 private const val ROW_SEARCH = "__search"
-private const val ROW_SORT = "__sort"
-private const val ROW_FILTER = "__filter"
 private const val FOCUSED_POSTER_SCALE = 1.08f
 private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L

@@ -634,8 +634,8 @@
     <string name="vod_loading_series">Učitavam serije…</string>
     <string name="vod_loading_hint">Učitavanje može da potraje.</string>
     <string name="vod_loading_hint_stored">Prvo učitavanje može da potraje. Posle se lista otvara odmah.</string>
+    <string name="vod_category_count">%1$s · %2$d</string>
     <string name="vod_sort">Redosled</string>
-    <string name="vod_sort_current">Redosled: %1$s</string>
     <string name="vod_sort_default">Kao kod provajdera</string>
     <string name="vod_sort_added">Nedavno dodato</string>
     <string name="vod_sort_name">Po nazivu</string>
