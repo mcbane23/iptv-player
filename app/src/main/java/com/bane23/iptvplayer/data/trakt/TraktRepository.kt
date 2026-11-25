@@ -464,8 +464,8 @@ class TraktRepository @Inject constructor(
                 continue
             }
             try {
-                val (event, versions) = panel { vod.applyRemoteProgress(key, item.progress, pausedAt) }
-                playbackLog.add(event, item = label, percent = item.progress.toInt(), count = versions)
+                val result = panel { vod.applyRemoteProgress(key, item.progress, pausedAt) }
+                playbackLog.add(result.event, item = label, percent = item.progress.toInt(), count = result.count, detail = result.detail.take(LOG_DETAIL_MAX * 2))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: PanelUnreadable) {

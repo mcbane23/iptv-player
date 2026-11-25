@@ -693,36 +693,48 @@ class VodRepository @Inject constructor(
      * sklonjena iz „Nastavi gledanje” se preskače (osim one koja se ovde gleda), pa jednom sklonjena ostaje
      * sklonjena.
      */
-    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long): Pair<PlaybackLogEvent, Int> = withContext(Dispatchers.IO) {
+    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long): RemoteApplyResult = withContext(Dispatchers.IO) {
         val playlistId = session().playlistId
         val isMovie = key.kind == TraktKey.MOVIE
         val items = allItems(if (isMovie) VodKind.MOVIES else VodKind.SERIES)
-        val here = if (isMovie) {
-            watchedHere(items, progressDao.recentMovies(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { movie(it).tmdbId }
-        } else {
-            watchedHere(items, progressDao.recentSeries(playlistId, REMOTE_MATCH_LIMIT), key.tmdbId) { series(it).tmdbId }
+        val notes = mutableListOf<String>()
+        val recent = if (isMovie) progressDao.recentMovies(playlistId, REMOTE_MATCH_LIMIT) else progressDao.recentSeries(playlistId, REMOTE_MATCH_LIMIT)
+        val listed = items.associateBy { it.id }
+        // Isti redosled kao pri slanju: film prvo iz spiska, serija prvo iz detalja.
+        val here = watchedHere(recent, key.tmdbId, notes) { id ->
+            if (isMovie) listed[id]?.tmdbId ?: movie(id).tmdbId else series(id).tmdbId ?: listed[id]?.tmdbId
         }
         val versions = (listOfNotNull(here) + items.filter { it.tmdbId == key.tmdbId }.map { it.id }).distinct()
-        if (versions.isEmpty()) return@withContext PlaybackLogEvent.SKIP_NO_ITEM to 0
+        if (versions.isEmpty()) return@withContext RemoteApplyResult(PlaybackLogEvent.SKIP_NO_ITEM, 0, notes.joinToString("; "))
         var applied = 0
         var skip = PlaybackLogEvent.SKIP_DISMISSED
         var failure: Exception? = null
         for (id in versions) {
-            if (id != here && dismissedVersion(playlistId, isMovie, id)) continue
+            val mark = if (id == here) "*" else ""
+            if (id != here && dismissedVersion(playlistId, isMovie, id)) {
+                notes += "$mark$id sklonjena"
+                continue
+            }
             try {
-                val target = if (isMovie) remoteMovie(playlistId, id, items) else remoteEpisode(id, items, key)
+                val target = if (isMovie) remoteMovie(playlistId, id, items) else remoteEpisode(id, items, key, notes)
                 val result = if (target != null) applyRemoteTo(playlistId, target, progress, pausedAtMs) else PlaybackLogEvent.SKIP_NO_EPISODE
                 if (result == null) applied++ else skip = result
+                if (target != null) notes += "$mark$id ${result?.name ?: "OK"}"
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 // Greška panela za jednu verziju ne sprečava ostale; ako nijedna ne uspe, pozicija čeka sledeću sinhronizaciju.
+                notes += "$mark$id ${e.javaClass.simpleName}"
                 if (failure == null) failure = e
             }
         }
         if (applied == 0) failure?.let { throw it }
-        if (applied > 0) PlaybackLogEvent.APPLIED to applied else skip to versions.size
+        val detail = notes.joinToString("; ")
+        if (applied > 0) RemoteApplyResult(PlaybackLogEvent.APPLIED, applied, detail) else RemoteApplyResult(skip, versions.size, detail)
     }
+
+    /** Ishod primene pozicije sa drugog uređaja, sa kratkim opisom proverenih verzija (za dnevnik). */
+    data class RemoteApplyResult(val event: PlaybackLogEvent, val count: Int, val detail: String)
 
     private suspend fun dismissedVersion(playlistId: Long, isMovie: Boolean, id: Long): Boolean =
         if (isMovie) {
@@ -739,10 +751,16 @@ class VodRepository @Inject constructor(
         }
     }
 
-    private suspend fun remoteEpisode(showId: Long, items: List<VodItem>, key: TraktKey): RemoteTarget? {
+    private suspend fun remoteEpisode(showId: Long, items: List<VodItem>, key: TraktKey, notes: MutableList<String>): RemoteTarget? {
         val show = items.firstOrNull { it.id == showId }
         val details = series(showId)
-        val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode } ?: return null
+        val episode = details.episodes.firstOrNull { it.season == key.season && it.number == key.episode }
+        if (episode == null) {
+            val inSeason = details.episodes.count { it.season == key.season }
+            val seasons = details.episodes.map { it.season }.distinct().sorted().joinToString(",")
+            notes += "$showId ${(details.name ?: show?.name).orEmpty().take(20)}: S${key.season} ima $inSeason ep, sezone [$seasons]"
+            return null
+        }
         return RemoteTarget(episode.id, showId, details.name ?: show?.name, show?.poster ?: details.poster, null) {
             episode.durationSeconds
         }
@@ -779,21 +797,29 @@ class VodRepository @Inject constructor(
     }
 
     /**
-     * Verzija koja se ovde već gleda ([recent], od poslednje). Ide i kad spisak nema TMDB ID: detalji se
-     * tad traže samo za te stavke, a greška panela za jednu stavku ne prekida traženje.
+     * Verzija koja se ovde već gleda ([recent], od poslednje). TMDB ID se određuje isto kao kad se
+     * pozicija šalje ([resolve]). Tako se nađe i verzija čiji spisak ima drugi ili
+     * nikakav TMDB ID. Greška panela za jednu stavku ne prekida traženje.
      */
-    private suspend fun watchedHere(items: List<VodItem>, recent: List<Long>, tmdbId: Long, details: suspend (Long) -> Long?): Long? {
-        val listed = items.associateBy { it.id }
-        recent.firstOrNull { listed[it]?.tmdbId == tmdbId }?.let { return it }
-        return recent.firstOrNull { id ->
-            listed[id]?.tmdbId == null && try {
-                details(id) == tmdbId
+    private suspend fun watchedHere(
+        recent: List<Long>,
+        tmdbId: Long,
+        notes: MutableList<String>,
+        resolve: suspend (Long) -> Long?,
+    ): Long? {
+        for (id in recent) {
+            val resolved = try {
+                resolve(id)
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                false
+            } catch (e: Exception) {
+                notes += "$id ${e.javaClass.simpleName}"
+                null
             }
+            if (resolved == tmdbId) return id
         }
+        notes += "gledano ovde: nije nađeno (${recent.size})"
+        return null
     }
 
     private class RemoteTarget(
