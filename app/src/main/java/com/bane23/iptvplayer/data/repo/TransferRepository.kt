@@ -297,6 +297,7 @@ class TransferRepository @Inject constructor(
      */
     private suspend fun clearUserData(playlistId: Long) {
         db.favoriteDao().deleteByPlaylist(playlistId)
+        db.favoriteListDao().deleteItemsByPlaylist(playlistId)
         db.hiddenChannelDao().deleteByPlaylist(playlistId)
         db.vodFavoriteDao().deleteByPlaylist(playlistId)
         db.historyDao().clear(playlistId)
@@ -396,10 +397,13 @@ class TransferRepository @Inject constructor(
     }
 
     /**
-     * Imenovane liste omiljenih. Lista sa istim nazivom se na TV-u dopunjuje, nova se pravi; ništa se ne briše.
+     * Sekcije omiljenih (u paketu se zovu liste). Sekcija sa istim nazivom se na TV-u dopunjuje, nova se
+     * pravi; ništa se ne briše. Kanal iz paketa ide u omiljene i u sekciju iz paketa (izlazi iz one u
+     * kojoj je bio); kad ga paket stavlja u više sekcija (starija verzija), važi prva.
      */
     private suspend fun importFavoriteLists(playlistId: Long, lists: List<TransferFavoriteList>, now: Long) {
         val dao = db.favoriteListDao()
+        val placed = HashSet<String>()
         lists.asSequence()
             .map { it.copy(name = it.name.trim()) }
             .filter { it.name.isNotEmpty() && it.name.length <= MAX_LIST_NAME }
@@ -409,6 +413,9 @@ class TransferRepository @Inject constructor(
                     ?: dao.insert(FavoriteListEntity(name = list.name, position = dao.nextPosition()))
                 list.channels.asSequence().filter { it.isNotEmpty() && it.length <= MAX_TEXT }.take(MAX_FAVORITES)
                     .forEachIndexed { position, key ->
+                        if (!placed.add(key)) return@forEachIndexed
+                        db.favoriteDao().insert(FavoriteEntity(playlistId, key, now + position))
+                        dao.deleteItems(playlistId, key)
                         dao.insertItem(FavoriteListItemEntity(listId, playlistId, key, now + position))
                     }
             }

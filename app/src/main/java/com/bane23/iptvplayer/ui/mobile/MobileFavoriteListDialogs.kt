@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,12 +31,13 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.FavoriteList
 import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 
-/** Najduže ime liste, da stane u čip i u red među kategorijama. */
+/** Najduže ime sekcije, da stane u čip i u red levog spiska. */
 private const val MAX_LIST_NAME = 30
 
 /**
- * Izbor liste omiljenih za kanal na telefonu. Otvara se sam kad [viewModel] ima kanal za izbor:
- * „Omiljeni” i sve imenovane liste sa kvačicom, a ispod polje za novu listu.
+ * Izbor sekcije omiljenih za kanal na telefonu. Otvara se sam kad [viewModel] ima kanal za izbor:
+ * „Bez sekcije” i sve sekcije (izabrana je ona u kojoj je kanal), polje za novu sekciju i, za kanal
+ * koji je već među omiljenima, uklanjanje. Izbor odmah zatvara prozor.
  */
 @Composable
 fun MobileFavoritePickDialog(viewModel: FavoriteListsViewModel) {
@@ -61,16 +62,16 @@ fun MobileFavoritePickDialog(viewModel: FavoriteListsViewModel) {
                         .heightIn(max = 260.dp)
                         .verticalScroll(rememberScrollState()),
                 ) {
-                    CheckRow(
-                        text = stringResource(R.string.category_favorites),
-                        checked = current.favorite,
-                        onToggle = viewModel::toggleFavorite,
+                    ChoiceRow(
+                        text = stringResource(R.string.favorite_section_none),
+                        selected = current.favorite && current.sectionId == null,
+                        onClick = { viewModel.choose(null) },
                     )
                     lists.forEach { list ->
-                        CheckRow(
+                        ChoiceRow(
                             text = list.name,
-                            checked = list.id in current.listIds,
-                            onToggle = { viewModel.toggleList(list.id) },
+                            selected = current.favorite && list.id == current.sectionId,
+                            onClick = { viewModel.choose(list.id) },
                         )
                     }
                 }
@@ -87,7 +88,7 @@ fun MobileFavoritePickDialog(viewModel: FavoriteListsViewModel) {
                     )
                     TextButton(
                         enabled = name.isNotBlank(),
-                        onClick = { viewModel.create(name) { created -> if (created) name = "" } },
+                        onClick = { viewModel.create(name) },
                         modifier = Modifier.padding(start = 4.dp),
                     ) {
                         Text(stringResource(R.string.favorite_list_add), maxLines = 1)
@@ -98,20 +99,25 @@ fun MobileFavoritePickDialog(viewModel: FavoriteListsViewModel) {
         confirmButton = {
             TextButton(onClick = viewModel::closePick) { Text(stringResource(R.string.action_close)) }
         },
+        dismissButton = if (current.favorite) {
+            { TextButton(onClick = viewModel::remove) { Text(stringResource(R.string.favorite_remove)) } }
+        } else {
+            null
+        },
     )
 }
 
 /**
- * Šta je korisnik dugo pritisnuo među grupama: „Omiljene” ([list] je null) ili imenovanu listu.
- * Sa [create] se odmah traži ime nove liste, bez menija.
+ * Šta je korisnik dugo pritisnuo: „Omiljene” ([list] je null) ili sekciju omiljenih. Sa [create] se
+ * odmah traži ime nove sekcije, bez menija.
  */
 data class FavoriteListMenu(val list: FavoriteList?, val create: Boolean = false)
 
 private enum class MenuStep { MENU, NAME_NEW, NAME_RENAME, DELETE }
 
 /**
- * Meni liste omiljenih posle dugog pritiska: za „Omiljene” samo nova lista, za imenovanu listu i
- * preimenovanje i brisanje. Ime i potvrda brisanja se traže u istom prozoru.
+ * Meni sekcije omiljenih posle dugog pritiska: za „Omiljene” samo nova sekcija, za sekciju i
+ * preimenovanje, pomeranje i brisanje. Ime i potvrda brisanja se traže u istom prozoru.
  */
 @Composable
 fun MobileFavoriteListMenuDialog(menu: FavoriteListMenu, viewModel: FavoriteListsViewModel, onClose: () -> Unit) {
@@ -131,6 +137,14 @@ fun MobileFavoriteListMenuDialog(menu: FavoriteListMenu, viewModel: FavoriteList
                 Column {
                     if (list != null) {
                         MenuRow(stringResource(R.string.favorite_list_rename)) { step = MenuStep.NAME_RENAME }
+                        MenuRow(stringResource(R.string.category_move_up)) {
+                            viewModel.move(list.id, -1)
+                            onClose()
+                        }
+                        MenuRow(stringResource(R.string.category_move_down)) {
+                            viewModel.move(list.id, 1)
+                            onClose()
+                        }
                         MenuRow(stringResource(R.string.favorite_list_delete)) { step = MenuStep.DELETE }
                     }
                     MenuRow(stringResource(R.string.favorite_list_new)) { step = MenuStep.NAME_NEW }
@@ -222,15 +236,15 @@ private fun ListNameField(
 }
 
 @Composable
-private fun CheckRow(text: String, checked: Boolean, onToggle: () -> Unit) {
+private fun ChoiceRow(text: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Checkbox, onClick = onToggle)
+            .clickable(role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.padding(end = 12.dp, top = 8.dp, bottom = 8.dp))
+        RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(end = 12.dp, top = 8.dp, bottom = 8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,

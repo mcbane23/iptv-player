@@ -34,10 +34,47 @@ object ChannelGroups {
     fun favoriteListId(groupId: Long?): Long? = groupId?.takeIf { it < LIST_BASE }?.let { LIST_BASE - it }
 }
 
-/** Lista omiljenih kanala kojoj je korisnik dao ime. */
+/** Sekcija omiljenih kanala kojoj je korisnik dao ime („Sport”, „Formula 1”). */
 data class FavoriteList(val id: Long, val name: String, val channelCount: Int) {
-    /** Vrednost kojom se lista bira na mestu kategorije. */
+    /** Vrednost kojom se samo ova sekcija bira na mestu kategorije (npr. u izboru za više kanala). */
     val groupId: Long get() = ChannelGroups.favoriteList(id)
+}
+
+/**
+ * Raspored spiska „Omiljeni”: prvo [unsorted] kanala bez sekcije, pa sekcije redom, svaka sa svojim
+ * brojem kanala.
+ */
+data class FavoriteSections(val unsorted: Int = 0, val sections: List<FavoriteList> = emptyList()) {
+    /** Mesto prvog kanala sekcije [sectionId] u spisku „Omiljeni”, ili null kad je sekcija prazna. */
+    fun start(sectionId: Long): Int? {
+        var index = unsorted
+        for (section in sections) {
+            if (section.id == sectionId) return index.takeIf { section.channelCount > 0 }
+            index += section.channelCount
+        }
+        return null
+    }
+
+    /** Sekcija kojoj pripada kanal na mestu [index] u spisku „Omiljeni”, ili null (bez sekcije). */
+    fun sectionAt(index: Int): FavoriteList? {
+        if (index < unsorted) return null
+        var end = unsorted
+        for (section in sections) {
+            end += section.channelCount
+            if (index < end) return section
+        }
+        return null
+    }
+
+    /** Mesta prvih kanala svih sekcija koje nisu prazne, redom (bez sekcije, ako takvih kanala ima, je 0). */
+    fun starts(): List<Int> = buildList {
+        if (unsorted > 0) add(0)
+        var index = unsorted
+        for (section in sections) {
+            if (section.channelCount > 0) add(index)
+            index += section.channelCount
+        }
+    }
 }
 
 data class Channel(
@@ -59,6 +96,8 @@ data class Channel(
     val archiveDays: Int? = null,
     /** Ključ kanala koji ostaje isti i posle osvežavanja liste. */
     val stableKey: String = "",
+    /** Sekcija omiljenih u kojoj je kanal; popunjena samo u spisku „Omiljeni”, inače null. */
+    val favoriteSection: Long? = null,
 ) {
     /** Koliki deo tekuće emisije je prošao u trenutku [nowMs] (0 do 1), ili null bez vodiča. */
     fun nowProgress(nowMs: Long): Float? {

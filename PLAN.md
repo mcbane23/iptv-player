@@ -924,6 +924,17 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       (telefon i TV) nudi sve verzije sa rezolucijom. Pregled kanala u spisku je tada bez slike.
 - [x] Filmovi i Serije iz menija (Bane, 25. 11. 2026; telefon i TV): obe sekcije se otvaraju na poslednjoj
       izabranoj kategoriji. Favoriti i „Nastavi gledanje” se ne pamte kao početak; prvi put je to prva kategorija.
+- [x] Omiljeni kanali u jednoj listi sa sekcijama (Bane, 25. 11. 2026; telefon i TV, predlog A iz
+      `dizajn/omiljeni-sekcije`): imenovane liste omiljenih postaju sekcije jednog spiska „Omiljeni”.
+      Kanal je u najviše jednoj sekciji (Banetov izbor); kanali bez sekcije su na vrhu, pa sekcije redom
+      koji korisnik bira (Pomeri gore/dole). Iznad prvog kanala sekcije je njen naslov. Na TV-u su sekcije
+      ispod reda „Omiljeni” u levom panelu: OK skače na prvi kanal sekcije, dugi OK je meni sekcije, a
+      CH+/CH− (i Page Up/Down) u spisku skače na sledeću ili prethodnu sekciju. Na telefonu red čipova
+      sekcija skroluje do sekcije (ne filtrira), čip sekcije koja je na vrhu je istaknut, a njen naslov
+      ostaje zalepljen gore; položeno su sekcije ispod „Omiljeni” u levom spisku, kao na TV-u. Dugi
+      pritisak na kanal (kad sekcije postoje) bira sekciju, „Bez sekcije” ili uklanja iz omiljenih. Baza
+      v25 (bez promene šeme): kanal koji je bio samo u imenovanoj listi upisuje se u omiljene, a kanal iz
+      više lista ostaje u prvoj. Prenos i izvoz zadržavaju isti format
 
 ## 7. Testiranje
 

@@ -38,9 +38,9 @@ import com.bane23.iptvplayer.ui.common.FavoriteListsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 
 /**
- * Izbor liste omiljenih za kanal, uz desnu ivicu ekrana. Otvara se sam kad [viewModel] ima kanal
- * za izbor: „Omiljeni” i sve imenovane liste sa kvačicom, a ispod polje za novu listu. OK
- * stavlja kanal u listu ili ga vadi; Nazad zatvara.
+ * Izbor sekcije omiljenih za kanal, uz desnu ivicu ekrana. Otvara se sam kad [viewModel] ima kanal
+ * za izbor: „Bez sekcije” i sve sekcije (kvačica je na onoj u kojoj je kanal), polje za novu sekciju
+ * i, za kanal koji je već među omiljenima, uklanjanje. OK bira i zatvara; Nazad zatvara.
  */
 @Composable
 fun TvFavoritePickDialog(viewModel: FavoriteListsViewModel) {
@@ -59,17 +59,17 @@ fun TvFavoritePickDialog(viewModel: FavoriteListsViewModel) {
         }
         item {
             TvTextRow(
-                text = stringResource(R.string.category_favorites),
-                onClick = viewModel::toggleFavorite,
-                checked = current.favorite,
+                text = stringResource(R.string.favorite_section_none),
+                onClick = { viewModel.choose(null) },
+                checked = current.favorite && current.sectionId == null,
                 modifier = Modifier.focusRequester(firstFocus),
             )
         }
         items(lists, key = { it.id }) { list ->
             TvTextRow(
                 text = list.name,
-                onClick = { viewModel.toggleList(list.id) },
-                checked = list.id in current.listIds,
+                onClick = { viewModel.choose(list.id) },
+                checked = current.favorite && list.id == current.sectionId,
             )
         }
         newListRows(
@@ -80,15 +80,18 @@ fun TvFavoritePickDialog(viewModel: FavoriteListsViewModel) {
             },
             nameTaken = nameTaken,
             action = R.string.favorite_list_create,
-            onConfirm = { viewModel.create(name) { created -> if (created) name = "" } },
+            onConfirm = { viewModel.create(name) },
         )
+        if (current.favorite) {
+            item { TvTextRow(text = stringResource(R.string.favorite_remove), onClick = viewModel::remove) }
+        }
         item { TvTextRow(text = stringResource(R.string.action_close), onClick = viewModel::closePick) }
     }
     LaunchedEffect(current.channelId) { firstFocus.tryRequestFocus() }
 }
 
 /**
- * Ime liste omiljenih: nova lista kad je [list] null, inače preimenovanje. Zatvara se kad je ime
+ * Ime sekcije omiljenih: nova sekcija kad je [list] null, inače preimenovanje. Zatvara se kad je ime
  * prihvaćeno.
  */
 @Composable
@@ -120,7 +123,7 @@ fun TvFavoriteListNameDialog(list: FavoriteList?, viewModel: FavoriteListsViewMo
     }
 }
 
-/** Polje za ime liste, upozorenje kad ime ne valja i red koji potvrđuje. */
+/** Polje za ime sekcije, upozorenje kad ime ne valja i red koji potvrđuje. */
 private fun LazyListScope.newListRows(
     name: String,
     onName: (String) -> Unit,
@@ -196,5 +199,5 @@ internal fun TvSideDialog(onClose: () -> Unit, content: LazyListScope.() -> Unit
     }
 }
 
-/** Najduže ime liste, da stane u red među kategorijama. */
+/** Najduže ime sekcije, da stane u red levog panela. */
 const val MAX_LIST_NAME = 30
