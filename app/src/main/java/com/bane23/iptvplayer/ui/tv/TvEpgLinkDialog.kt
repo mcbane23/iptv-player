@@ -29,7 +29,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.tv.text.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Channel
 import com.bane23.iptvplayer.ui.common.guide.EpgLinkViewModel

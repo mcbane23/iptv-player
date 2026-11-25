@@ -56,7 +56,7 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.OutlinedButton
 import androidx.tv.material3.OutlinedButtonDefaults
-import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.tv.text.Text
 import com.bane23.iptvplayer.ui.common.theme.Glass
 import com.bane23.iptvplayer.ui.common.theme.glass
 import com.bane23.iptvplayer.ui.common.theme.glassSelected

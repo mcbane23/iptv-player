@@ -43,7 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.tv.text.Text
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.player.PlaybackState
 import com.bane23.iptvplayer.player.TrackOption

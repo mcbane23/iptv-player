@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
+import com.bane23.iptvplayer.ui.tv.text.Text
 import com.bane23.iptvplayer.ui.common.rememberClockText
 
 /** Sat u gornjem desnom uglu TV ekrana, u visini naslova. */
