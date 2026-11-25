@@ -591,7 +591,6 @@
     <string name="category_move">Move</string>
     <string name="category_move_done">Done</string>
     <string name="categories_move_hint">Up and down move the category “%1$s”; hold the arrow to move faster. Press OK or Back when it is in place.</string>
-    <string name="playlist_switch">Playlist: %1$s</string>
     <string name="playlists_merge">Merge channels of all playlists</string>
     <string name="playlists_merge_summary">Live, the guide and search show channels of all playlists together. Off: only the active playlist. Movies and series always come from the active playlist.</string>
     <string name="playlists_tv_hint">OK selects the playlist. Hold OK on a playlist for options: refresh, edit, delete.</string>
