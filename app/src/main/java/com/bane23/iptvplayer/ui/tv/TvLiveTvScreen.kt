@@ -64,6 +64,8 @@ import com.bane23.iptvplayer.ui.common.SkeletonTextLines
 import com.bane23.iptvplayer.ui.common.skeleton
 import com.bane23.iptvplayer.ui.common.LiveTvViewModel
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
+import com.bane23.iptvplayer.ui.common.accountExpiresSoon
+import com.bane23.iptvplayer.ui.common.accountLine
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
@@ -466,21 +468,36 @@ fun TvLiveTvScreen(
                     .weight(1f)
                     .padding(end = 24.dp),
             )
-            // Brza promena aktivne liste: OK prelazi na sledeću. Postoji samo kad lista ima više.
-            val all = playlists.playlists
-            val activeIndex = all.indexOfFirst { it.id == playlistId }
-            if (all.size > 1 && activeIndex >= 0) {
-                TvOutlinedButton(
-                    onClick = { playlistsViewModel.setActive(all[(activeIndex + 1) % all.size].id) },
+            // Aktivna lista i, za Xtream nalog, do kada važi i koliko veza. Samo informacija: fokus ne
+            // staje na nju, a lista se menja na ekranu „Liste” u bočnom meniju.
+            playlists.playlists.firstOrNull { it.id == playlistId }?.let { active ->
+                Column(
+                    horizontalAlignment = Alignment.End,
                     modifier = Modifier
                         .padding(end = 24.dp)
-                        .widthIn(max = 360.dp),
+                        .widthIn(max = 420.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.playlist_switch, all[activeIndex].name),
+                        text = active.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    active.accountLine()?.let { line ->
+                        Text(
+                            text = line,
+                            style = MaterialTheme.typography.bodySmall,
+                            // Nalog koji uskoro ističe je u boji teme.
+                            color = if (active.accountExpiresSoon()) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
             TvClock()
