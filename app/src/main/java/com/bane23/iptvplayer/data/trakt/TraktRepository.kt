@@ -423,6 +423,7 @@ class TraktRepository @Inject constructor(
                 playbackLog.add(PlaybackLogEvent.SENT, item = TraktPlaybackLog.label(key), percent = row.progress.toInt(), count = response.code())
                 // 401 i 429 se ponavljaju kasnije; ostale greške (npr. 409, već poslato) se ne ponavljaju.
                 if (response.code() == 401 || response.code() == 429 || response.code() >= 500) throw HttpException(response)
+                if (response.isSuccessful) tokens.markSent(TraktPayloads.progressKey(key), row.progress)
             } else {
                 playbackLog.add(PlaybackLogEvent.SEND_NO_TMDB, item = "${row.kind} ${row.itemId}", percent = row.progress.toInt())
             }
@@ -439,9 +440,16 @@ class TraktRepository @Inject constructor(
         // mogle da se upišu (npr. serija još nije bila učitana), inače se nikad više ne bi upisale. Upis je
         // ionako preskočen kad je ovde zapamćeno isto ili novije.
         val recheckFrom = System.currentTimeMillis() - PLAYBACK_RECHECK_MS
+        // Trakt ne menja `paused_at` kad se ista epizoda ponovo pauzira, pa se nova pozicija prepoznaje i
+        // po procentu koji se razlikuje od ranije viđenog.
+        val seen = tokens.seenProgress()
+        val sent = tokens.sentProgress()
         val items = all
             .mapNotNull { item -> TraktPayloads.parseTime(item.pausedAt)?.let { it to item } }
-            .filter { (pausedAt, _) -> pausedAt > since || pausedAt > recheckFrom }
+            .filter { (pausedAt, item) ->
+                val known = TraktPayloads.playbackKey(item)?.let { seen[TraktPayloads.progressKey(it)] }
+                pausedAt > since || pausedAt > recheckFrom || (known != null && TraktPayloads.progressDiffers(item.progress, known))
+            }
             .sortedBy { it.first }
         playbackLog.add(
             PlaybackLogEvent.RECEIVED_LIST,
@@ -464,7 +472,9 @@ class TraktRepository @Inject constructor(
                 continue
             }
             try {
-                val result = panel { vod.applyRemoteProgress(key, item.progress, pausedAt) }
+                // Procenat koji ovaj uređaj nije poslao došao je sa drugog uređaja posle naše poslednje pauze.
+                val fromOther = TraktPayloads.progressDiffers(item.progress, sent[TraktPayloads.progressKey(key)])
+                val result = panel { vod.applyRemoteProgress(key, item.progress, pausedAt, fromOther) }
                 playbackLog.add(result.event, item = label, percent = item.progress.toInt(), count = result.count, detail = result.detail.take(LOG_DETAIL_MAX * 2))
             } catch (e: CancellationException) {
                 throw e
@@ -479,6 +489,7 @@ class TraktRepository @Inject constructor(
             applied = maxOf(applied, pausedAt)
         }
         if (applied > since) tokens.setLastPlaybackMs(applied)
+        tokens.markSeen(all.mapNotNull { item -> TraktPayloads.playbackKey(item)?.let { TraktPayloads.progressKey(it) to item.progress } }.toMap())
     }
 
     /**

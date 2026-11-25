@@ -120,6 +120,26 @@ object TraktPayloads {
      */
     fun finishedSince(watchedAtMs: Long?, pausedAtMs: Long): Boolean = watchedAtMs != null && watchedAtMs >= pausedAtMs
 
+    /** Ključ pozicije za pamćenje na uređaju (film ili epizoda). */
+    fun progressKey(key: TraktKey): String = "${key.kind}/${key.tmdbId}/${key.season}/${key.episode}"
+
+    /**
+     * Da li se procenat sa naloga ([remote]) razlikuje od [known] (poslatog ili ranije viđenog).
+     * Trakt ne menja `paused_at` kad se ista epizoda pauzira ponovo, pa se nova pozicija prepoznaje po procentu.
+     */
+    fun progressDiffers(remote: Float, known: Float?): Boolean =
+        known == null || kotlin.math.abs(remote - known) >= PROGRESS_TOLERANCE
+
+    /** Čuva najviše [max] zapisa "ključ|procenat", najnovije (poslednje dodate) na kraju. */
+    fun withProgress(entries: List<String>, key: String, progress: Float, max: Int = PROGRESS_MARKS_MAX): List<String> =
+        (entries.filterNot { it.substringBeforeLast('|') == key } + "$key|$progress").takeLast(max)
+
+    fun progressMap(entries: List<String>): Map<String, Float> =
+        entries.mapNotNull { entry -> entry.substringAfterLast('|').toFloatOrNull()?.let { entry.substringBeforeLast('|') to it } }.toMap()
+
+    const val PROGRESS_TOLERANCE = 0.5f
+    const val PROGRESS_MARKS_MAX = 200
+
     /** Vreme iz Trakt odgovora (`2026-11-16T09:30:00.000Z`) u milisekundama, ili null. */
     fun parseTime(text: String?): Long? {
         if (text.isNullOrBlank()) return null

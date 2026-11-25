@@ -904,6 +904,9 @@ interface TraktDao {
     @Query("SELECT * FROM trakt_playback_pending ORDER BY createdAt")
     suspend fun pendingPlayback(): List<TraktPlaybackPendingEntity>
 
+    @Query("SELECT COUNT(*) FROM trakt_playback_pending WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
+    suspend fun pendingPlaybackCount(playlistId: Long, kind: String, itemId: Long): Int
+
     @Query("DELETE FROM trakt_playback_pending WHERE playlistId = :playlistId AND kind = :kind AND itemId = :itemId")
     suspend fun deletePlayback(playlistId: Long, kind: String, itemId: Long)
 
