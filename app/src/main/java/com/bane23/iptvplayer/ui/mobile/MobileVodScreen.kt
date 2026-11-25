@@ -140,6 +140,7 @@ fun MobileVodScreen(
             onCategories = onCategories,
             lockMenu = lockMenu,
             onToggleFavorite = viewModel::toggleFavorite,
+            onToggleWatched = viewModel::toggleWatched,
             onDismissContinue = viewModel::dismissContinue,
             onOpen = onOpen,
             onSearch = onSearch,
@@ -284,6 +285,7 @@ fun MobileVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    onToggleWatched = if (series) null else ({ viewModel.toggleWatched(item) }),
                                     lock = lockMenu.vodItem(series, item.id, item.name),
                                     compact = true,
                                 )
@@ -313,6 +315,7 @@ fun MobileVodScreen(
                                     favorite = item.id in favoriteIds,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    onToggleWatched = if (series) null else ({ viewModel.toggleWatched(item) }),
                                     lock = lockMenu.vodItem(series, item.id, item.name),
                                     compact = true,
                                 )
@@ -427,6 +430,8 @@ fun PosterTile(
     watched: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
+    // Označavanje odgledanog (samo filmovi), stavka menija na dugi pritisak.
+    onToggleWatched: (() -> Unit)? = null,
     // Dugi pritisak tada otvara meni roditeljske zaštite za ovaj film, odnosno seriju.
     lock: ItemLock? = null,
     /**
@@ -437,9 +442,10 @@ fun PosterTile(
 ) {
     var lockMenuOpen by remember { mutableStateOf(false) }
     val favoriteInMenu = compact && favorite != null
-    val longClick = onLongClick ?: if (lock != null || favoriteInMenu) ({ lockMenuOpen = true }) else null
+    val hasMenu = lock != null || favoriteInMenu || onToggleWatched != null
+    val longClick = onLongClick ?: if (hasMenu) ({ lockMenuOpen = true }) else null
     Column(modifier = modifier.combinedClickable(onClick = onClick, onLongClick = longClick)) {
-        if (lock != null || favoriteInMenu) {
+        if (hasMenu) {
             DropdownMenu(expanded = lockMenuOpen, onDismissRequest = { lockMenuOpen = false }) {
                 if (favoriteInMenu) {
                     DropdownMenuItem(
@@ -447,6 +453,15 @@ fun PosterTile(
                         onClick = {
                             lockMenuOpen = false
                             onToggleFavorite()
+                        },
+                    )
+                }
+                if (onToggleWatched != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched)) },
+                        onClick = {
+                            lockMenuOpen = false
+                            onToggleWatched()
                         },
                     )
                 }
