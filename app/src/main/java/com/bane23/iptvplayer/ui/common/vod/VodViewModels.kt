@@ -55,11 +55,6 @@ data class VodBrowseUiState(
     val sort: VodSort = VodSort.DEFAULT,
     /** Filter postera u kategoriji (godina, ocena, 4K). */
     val filter: VodFilter = VodFilter(),
-    /**
-     * Da li se sekcija otvara na „Nastavi gledanje” (kad ga ima). Netačno ako je korisnik poslednji
-     * put izašao sa neke kategorije; tada se otvara ona.
-     */
-    val startOnContinue: Boolean = true,
     /** Da li se spiskovi čuvaju na uređaju; tada poruka pri učitavanju kaže da je to samo prvi put. */
     val storedOnDevice: Boolean = true,
 )
@@ -155,12 +150,7 @@ class VodBrowseViewModel @Inject constructor(
             val selected = _state.value.selected
             if (selected == null) {
                 // Spisak je ranije bio prazan, pa ništa nije izabrano: bira se kategorija od prošlog puta, inače prva.
-                val last = repository.lastCategory(kind)
-                val restored = when (last) {
-                    FAVORITES_ID -> VodCategory(FAVORITES_ID, "")
-                    else -> categories.firstOrNull { it.id == last } ?: categories.firstOrNull()
-                }
-                restored?.let { select(it, remember = false) }
+                restoredCategory(categories)?.let { select(it, remember = false) }
                 return
             }
             if (selected.id == FAVORITES_ID || _state.value.loadingItems) return
@@ -209,23 +199,10 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val categories = repository.categories(kind)
-                val first = _state.value.selected == null
-                val last = if (first) repository.lastCategory(kind) else null
-                _state.update {
-                    it.copy(
-                        loadingCategories = false,
-                        categories = categories,
-                        startOnContinue = if (first) last == null || last == CONTINUE_ID else it.startOnContinue,
-                    )
-                }
+                val restored = if (_state.value.selected == null) restoredCategory(categories) else null
+                _state.update { it.copy(loadingCategories = false, categories = categories) }
                 // Jedna kategorija je uvek izabrana: ona od prošlog puta, inače prva.
-                if (_state.value.selected == null) {
-                    val restored = when (last) {
-                        FAVORITES_ID -> VodCategory(FAVORITES_ID, "")
-                        else -> categories.firstOrNull { it.id == last } ?: categories.firstOrNull()
-                    }
-                    restored?.let { select(it, remember = false) }
-                }
+                if (_state.value.selected == null) restored?.let { select(it, remember = false) }
                 watchCategoryPrefs()
             } catch (e: CancellationException) {
                 throw e
@@ -276,9 +253,25 @@ class VodBrowseViewModel @Inject constructor(
         }
     }
 
-    /** Pamti da je korisnik otvorio „Nastavi gledanje”, da se sekcija sledeći put otvori na njemu. */
-    fun rememberContinue() {
-        viewModelScope.launch { repository.setLastCategory(kind, CONTINUE_ID) }
+    /**
+     * Poslednja kategorija sa servera koju je korisnik izabrao, inače prva. Favoriti i „Nastavi gledanje” se
+     * ne pamte (Bane, 25. 11. 2026); stara oznaka za njih ovde ne odgovara nijednoj kategoriji, pa se bira prva.
+     */
+    private suspend fun restoredCategory(categories: List<VodCategory>): VodCategory? {
+        val last = repository.lastCategory(kind)
+        return categories.firstOrNull { it.id == last } ?: categories.firstOrNull()
+    }
+
+    /**
+     * Sekcija je upravo izabrana iz menija: ako su ostali otvoreni Favoriti, vraća se poslednja izabrana
+     * kategorija, isto u Filmovima i Serijama.
+     */
+    fun openedFromMenu() {
+        if (_state.value.selected?.id != FAVORITES_ID) return
+        viewModelScope.launch {
+            val restored = restoredCategory(_state.value.categories) ?: return@launch
+            if (_state.value.selected?.id == FAVORITES_ID) select(restored, remember = false)
+        }
     }
 
     /** Sklanja film, odnosno seriju, iz reda „Nastavi gledanje” (vraća se kad se ponovo gleda). */
@@ -289,7 +282,7 @@ class VodBrowseViewModel @Inject constructor(
     fun selectCategory(category: VodCategory) = select(category, remember = true)
 
     private fun select(category: VodCategory, remember: Boolean) {
-        if (remember) viewModelScope.launch { repository.setLastCategory(kind, category.id) }
+        if (remember && category.id != FAVORITES_ID) viewModelScope.launch { repository.setLastCategory(kind, category.id) }
         if (category.id == FAVORITES_ID) {
             // Omiljeni su u bazi i stižu kroz [favorites], pa nema šta da se učitava.
             itemsJob?.cancel()
@@ -331,9 +324,6 @@ class VodBrowseViewModel @Inject constructor(
 
 /** Oznaka za grupu „Omiljeni” među kategorijama (pravi ID-jevi kategorija nikad nisu ovakvi). */
 const val FAVORITES_ID = "__favorites"
-
-/** Oznaka za „Nastavi gledanje” kad se pamti šta je poslednje bilo otvoreno. */
-const val CONTINUE_ID = "__continue"
 
 data class MovieUiState(
     val movieId: Long = 0,

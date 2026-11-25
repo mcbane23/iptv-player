@@ -126,9 +126,11 @@ fun MobileHomeScreen(
     val shownTabs = if (liveState.loading) emptyList() else tabs
     val holder = rememberSaveableStateHolder()
     // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
-    // Filmovi i serije pamte svoju kategoriju.
+    // Filmovi i serije se otvaraju na poslednjoj izabranoj kategoriji, ne na Favoritima ni „Nastavi gledanje” (Bane).
     LaunchedEffect(tab) {
         if (tab != MobileTab.SETTINGS) holder.removeState(MobileTab.SETTINGS.name)
+        if (tab != MobileTab.MOVIES) holder.removeState(MobileTab.MOVIES.name)
+        if (tab != MobileTab.SERIES) holder.removeState(MobileTab.SERIES.name)
         if (tab != MobileTab.LIVE) {
             holder.removeState(MobileTab.LIVE.name)
             liveTvViewModel.startFresh()

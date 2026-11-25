@@ -88,6 +88,7 @@ import com.bane23.iptvplayer.data.repo.VodCategory
 import com.bane23.iptvplayer.data.repo.VodItem
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
+import com.bane23.iptvplayer.ui.common.vod.OpenedFromMenu
 import com.bane23.iptvplayer.ui.common.vod.Poster
 import com.bane23.iptvplayer.ui.common.vod.VodLoading
 import com.bane23.iptvplayer.ui.common.vod.vodLoadingHint
@@ -123,6 +124,7 @@ fun TvVodScreen(
     previewViewModel: TvVodPreviewViewModel = hiltViewModel(key = "vod-preview-$series"),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
+    OpenedFromMenu(viewModel)
     val previewEnabled by previewViewModel.enabled.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
@@ -134,9 +136,8 @@ fun TvVodScreen(
     val posterFocus = remember { FocusRequester() }
     // Poster na kome je fokus bio poslednji put, da se posle povratka iz detalja nastavi odatle.
     var lastItemId by rememberSaveable { mutableStateOf<Long?>(null) }
-    // „Nastavi gledanje” je prikazano dok korisnik ne izabere neku kategoriju, osim ako je prošli
-    // put izašao sa kategorije; tada se otvara ona.
-    var continueChosen by rememberSaveable(state.loadingCategories) { mutableStateOf(state.startOnContinue) }
+    // Sekcija se otvara na poslednjoj izabranoj kategoriji; „Nastavi gledanje” se prikazuje tek kad se izabere.
+    var continueChosen by rememberSaveable { mutableStateOf(false) }
     val showContinue = continueChosen && continueItems.isNotEmpty()
     val showFavorites = !showContinue && state.selected?.id == FAVORITES_ID
     var categoryFilter by rememberSaveable { mutableStateOf("") }
@@ -548,7 +549,6 @@ fun TvVodScreen(
                                     lastItemId = null
                                     continueChosen = true
                                     enterGrid = CONTINUE_TARGET
-                                    viewModel.rememberContinue()
                                 }
                             },
                             onFocused = { leftRow.focused(CONTINUE_TARGET) },
