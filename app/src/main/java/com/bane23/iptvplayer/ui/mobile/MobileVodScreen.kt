@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.remember
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
@@ -160,13 +161,6 @@ fun MobileVodScreen(
         ) {
             val topBar: @Composable () -> Unit = {
                 SectionTopBar(title = title, onBack = onBack) {
-                    VodSortButton(sort = state.sort, onSort = viewModel::setSort)
-                    FilterButton(
-                        title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
-                        count = state.filter.count,
-                        choices = vodFilterChoices(state.filter, viewModel::setFilter),
-                        onReset = { viewModel.setFilter(VodFilter()) },
-                    )
                     ToolbarIcon(AppIcons.Search, searchLabel, onSearch)
                 }
             }
@@ -258,6 +252,17 @@ fun MobileVodScreen(
                             onClick = { pickerOpen = true },
                             modifier = Modifier.weight(1f),
                         )
+                        // Redosled i Filter važe za izabranu kategoriju, pa stoje odmah uz nju (Bane, 25. 11. 2026).
+                        if (!inContinue && !showingFavorites && state.selected != null) {
+                            VodSortButton(sort = state.sort, onSort = viewModel::setSort, compact = true)
+                            FilterButton(
+                                title = stringResource(if (series) R.string.filter_title_series else R.string.filter_title_movies),
+                                count = state.filter.count,
+                                choices = vodFilterChoices(state.filter, viewModel::setFilter),
+                                onReset = { viewModel.setFilter(VodFilter()) },
+                                compact = true,
+                            )
+                        }
                     }
                     }
                     }
@@ -359,10 +364,17 @@ private const val CONTINUE_GROUP = "continue-watching"
 
 /** Dugme za redosled postera: otvara meni sa načinima slaganja, izabrani je obeležen. */
 @Composable
-internal fun VodSortButton(sort: VodSort, onSort: (VodSort) -> Unit) {
+internal fun VodSortButton(sort: VodSort, onSort: (VodSort) -> Unit, compact: Boolean = false) {
     var open by remember { mutableStateOf(false) }
     Box {
-        ToolbarIcon(AppIcons.Sort, stringResource(R.string.vod_sort), { open = true })
+        if (compact) {
+            // Manje dugme, za red sa čipovima iznad postera.
+            IconButton(onClick = { open = true }, modifier = Modifier.size(36.dp)) {
+                Icon(AppIcons.Sort, contentDescription = stringResource(R.string.vod_sort), modifier = Modifier.size(20.dp))
+            }
+        } else {
+            ToolbarIcon(AppIcons.Sort, stringResource(R.string.vod_sort), { open = true })
+        }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             for (option in VodSort.entries) {
                 DropdownMenuItem(
