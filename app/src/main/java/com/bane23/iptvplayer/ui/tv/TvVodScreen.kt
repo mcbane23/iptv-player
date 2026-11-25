@@ -205,6 +205,7 @@ fun TvVodScreen(
     // Redosled i Filter iznad postera: Nazad sa njih otvara kategorije, isto kao sa postera.
     var headerFocused by remember { mutableStateOf(false) }
     val headerFocus = remember { FocusRequester() }
+    var sortFocused by remember { mutableStateOf(false) }
     BackHandler(enabled = !categoriesOpen && (gridFocused || headerFocused), onBack = openCategories)
     val keyScope = rememberCoroutineScope()
     // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega (Bane).
@@ -583,13 +584,17 @@ fun TvVodScreen(
                             onSort = { sortOpen = true },
                             onFilter = { filterOpen = true },
                             sortFocus = headerFocus,
+                            onSortFocused = { sortFocused = it },
                             modifier = Modifier
                                 .onFocusChanged { headerFocused = it.hasFocus }
                                 .onPreviewKeyEvent { event ->
                                     when (event.key) {
                                         // Levo sa dugmadi otvara kategorije i vraća na izabranu.
+                                        // Sa Filtera Levo ide nazad na Redosled (Bane, 25. 11. 2026).
                                         Key.DirectionLeft -> {
-                                            if (event.type == KeyEventType.KeyDown) openCategories()
+                                            if (event.type == KeyEventType.KeyDown) {
+                                                if (sortFocused) openCategories() else headerFocus.tryRequestFocus()
+                                            }
                                             true
                                         }
                                         // Dole vraća na poster sa koga se došlo.
@@ -841,6 +846,7 @@ private fun CategoryHeader(
     onSort: () -> Unit,
     onFilter: () -> Unit,
     sortFocus: FocusRequester,
+    onSortFocused: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -859,7 +865,10 @@ private fun CategoryHeader(
             modifier = Modifier.weight(1f).padding(end = 12.dp),
         )
         Row(modifier = modifier.focusGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TvButton(onClick = onSort, modifier = Modifier.focusRequester(sortFocus)) {
+            TvButton(
+                onClick = onSort,
+                modifier = Modifier.focusRequester(sortFocus).onFocusChanged { onSortFocused(it.isFocused) },
+            ) {
                 Icon(AppIcons.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(
                     text = sort,
