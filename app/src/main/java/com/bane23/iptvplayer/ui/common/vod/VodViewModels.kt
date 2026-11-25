@@ -104,6 +104,24 @@ class VodBrowseViewModel @Inject constructor(
         viewModelScope.launch { repository.toggleFavorite(kind, item, isFavorite) }
     }
 
+    /**
+     * Označava film kao odgledan, odnosno poništava oznaku (meni na dugi pritisak), isto kao dugme na
+     * ekranu filma; sa Trakt-om se usklađuje na isti način.
+     */
+    fun toggleWatched(item: VodItem) {
+        val wasWatched = watched.value.of(item)
+        viewModelScope.launch {
+            // Trakt ključ treba samo za poništavanje, da se odmah skine i oznaka preuzeta sa Trakt-a.
+            val keys = if (!wasWatched) {
+                emptyList()
+            } else {
+                listOfNotNull((item.tmdbId ?: listTmdbId { repository.movieTmdbId(item.id) })?.let { TraktKey.movie(it) })
+            }
+            val target = WatchTarget(item.id, item.name, item.poster, item.extension)
+            repository.setWatched(seriesId = null, listOf(target), watched = !wasWatched, traktKeys = keys)
+        }
+    }
+
     fun open(series: Boolean) {
         if (opened) {
             // Spisak je ranije stigao prazan (server je zapeo): pri povratku na karticu pita se ponovo.

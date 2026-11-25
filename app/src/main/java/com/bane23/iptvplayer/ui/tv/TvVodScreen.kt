@@ -637,6 +637,7 @@ fun TvVodScreen(
                                     favorite = true,
                                     watched = watched.of(item),
                                     onToggleFavorite = { if (pendingUnfavorite == null) pendingUnfavorite = item },
+                                    onToggleWatched = if (series) null else ({ viewModel.toggleWatched(item) }),
                                     lock = posterLock(item, favorites),
                                     onClick = { onOpen(item) },
                                     onFocused = {
@@ -671,6 +672,7 @@ fun TvVodScreen(
                                     favorite = item.id in favoriteIds,
                                     watched = watched.of(item),
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    onToggleWatched = if (series) null else ({ viewModel.toggleWatched(item) }),
                                     lock = posterLock(item, state.items),
                                     onClick = { onOpen(item) },
                                     onFocused = {
@@ -935,20 +937,24 @@ fun PosterCard(
     watched: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    // Sa zaključavanjem dugi OK otvara meni: omiljeni i roditeljska zaštita.
+    // Označavanje odgledanog (samo filmovi); sa njim dugi OK otvara meni.
+    onToggleWatched: (() -> Unit)? = null,
+    // Sa zaključavanjem dugi OK otvara meni: omiljeni, odgledano i roditeljska zaštita.
     lock: ItemLock? = null,
 ) {
     var focused by remember { mutableStateOf(false) }
     var lockMenuOpen by remember { mutableStateOf(false) }
-    if (lockMenuOpen && lock != null) {
+    val hasMenu = lock != null || onToggleWatched != null
+    if (lockMenuOpen && hasMenu) {
         val favoriteOption = onToggleFavorite?.let { stringResource(if (favorite) R.string.favorite_remove else R.string.favorite_add) }
+        val watchedOption = onToggleWatched?.let { stringResource(if (watched) R.string.vod_mark_unwatched else R.string.vod_mark_watched) }
+        val lockActions = lock?.actions.orEmpty()
+        // Stavke redom: omiljeni, odgledano, zaključavanje.
+        val actions = listOfNotNull(onToggleFavorite, onToggleWatched) + lockActions.map { action -> { lock?.run?.invoke(action) ?: Unit } }
         TvActionDialog(
             title = name,
-            options = listOfNotNull(favoriteOption) + lock.actions.map { stringResource(it.label) },
-            onSelect = { option ->
-                val shift = if (favoriteOption == null) 0 else 1
-                if (option < shift) onToggleFavorite?.invoke() else lock.actions.getOrNull(option - shift)?.let(lock.run)
-            },
+            options = listOfNotNull(favoriteOption, watchedOption) + lockActions.map { stringResource(it.label) },
+            onSelect = { option -> actions.getOrNull(option)?.invoke() },
             onClose = { lockMenuOpen = false },
         )
     }
@@ -964,7 +970,7 @@ fun PosterCard(
         )
     }
     val longAction: (() -> Unit)? = onLongClick
-        ?: lock?.let { { lockMenuOpen = true } }
+        ?: if (hasMenu) ({ lockMenuOpen = true }) else null
         ?: onToggleFavorite?.let { toggle -> { if (favorite) confirmRemove = true else toggle() } }
     // Jedno držanje tastera OK važi kao jedan dugi pritisak. [pressed]: pritisak je počeo na ovom posteru;
     // [foreignHold]: taster se drži od ranije (fokus je stigao sa drugog postera), pa se ne računa.

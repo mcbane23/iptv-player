@@ -367,6 +367,8 @@ Pre početka svake stavke dogovoriti detalje (vidi odeljak 3).
 
 - [x] Ručno označavanje filmova i epizoda kao odgledanih (i cele sezone), kvačica na posterima
       filmova; gledanje do 95% označava samo (baza v8)
+- [x] „Označi kao odgledano” / „Označi kao neodgledano” u meniju na dugi pritisak filma (telefon i TV),
+      pored omiljenih i zaključavanja; serije se i dalje označavaju po epizodi ili sezoni.
 - [x] Trakt nalog: prijava kodom (trakt.tv/activate), slanje i preuzimanje odgledanog (obostrano).
       Poklapanje preko TMDB ID-ja iz panela; bez njega stavka ne ide na Trakt (baza v9).
       `TRAKT_CLIENT_ID` je u GitHub Secrets; Client Secret nije potreban (PKCE)

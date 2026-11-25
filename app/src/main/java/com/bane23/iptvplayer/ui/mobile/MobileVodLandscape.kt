@@ -84,6 +84,7 @@ fun MobileVodLandscape(
     onCategories: () -> Unit,
     lockMenu: LockMenu,
     onToggleFavorite: (VodItem) -> Unit,
+    onToggleWatched: (VodItem) -> Unit,
     onDismissContinue: (ContinueItem) -> Unit,
     onOpen: (VodItem) -> Unit,
     onSearch: () -> Unit,
@@ -238,6 +239,7 @@ fun MobileVodLandscape(
                                 favorite = true,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                onToggleWatched = if (series) null else ({ onToggleWatched(item) }),
                                 lock = lockMenu.vodItem(series, item.id, item.name),
                                 compact = true,
                             )
@@ -272,6 +274,7 @@ fun MobileVodLandscape(
                                 favorite = item.id in favoriteIds,
                                 watched = watched.of(item),
                                 onToggleFavorite = { onToggleFavorite(item) },
+                                onToggleWatched = if (series) null else ({ onToggleWatched(item) }),
                                 lock = lockMenu.vodItem(series, item.id, item.name),
                                 compact = true,
                             )
