@@ -131,6 +131,8 @@ data class ContinueItem(
     /** Zapamćena pozicija i trajanje (ms), za red na početnom ekranu TV-a. */
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    /** Sve jezičke verzije iste stavke koje su bile u redu (uključujući [id]); sklanjaju se zajedno. */
+    val versionIds: List<Long> = listOf(id),
 )
 
 /**
@@ -187,6 +189,33 @@ internal fun preferredVersions(
 ): List<VodItem> = series.groupBy { it.tmdbId }.values.flatMap { versions ->
     versions.filter { it.id in watchedSeriesIds }.ifEmpty {
         listOf(versions.minBy { englishRank(it.name, it.categoryId?.let(categoryNames::get)) ?: Int.MAX_VALUE })
+    }
+}
+
+/**
+ * Red „Nastavi gledanje” ([rows], poslednje gledano prvo) sa po jednom verzijom filma, odnosno serije: verzije
+ * sa istim TMDB ID-jem ([catalog]) se spajaju u jednu. Ostaje verzija puštana na ovom uređaju ([playedHere]),
+ * a ako takve nema, engleska (EN, UK/GB, US, AMZ), inače poslednje gledana. Stavka zadržava mesto i vreme
+ * najskorije gledane verzije. [categoryNames]: naziv kategorije po ID-ju.
+ */
+internal fun oneVersionEach(
+    rows: List<ContinueItem>,
+    catalog: Map<Long, VodItem>,
+    playedHere: Set<Long>,
+    categoryNames: Map<String, String> = emptyMap(),
+): List<ContinueItem> {
+    val groups = LinkedHashMap<Long, MutableList<ContinueItem>>()
+    for (row in rows) {
+        val key = catalog[row.id]?.tmdbId?.takeIf { it > 0 } ?: (-row.id - 1)
+        groups.getOrPut(key) { ArrayList() }.add(row)
+    }
+    return groups.values.map { versions ->
+        if (versions.size == 1) return@map versions.single()
+        val chosen = versions.firstOrNull { it.id in playedHere } ?: versions.minBy { row ->
+            val item = catalog[row.id]
+            englishRank(item?.name ?: row.name, item?.categoryId?.let(categoryNames::get)) ?: Int.MAX_VALUE
+        }
+        chosen.copy(updatedAt = versions.maxOf { it.updatedAt }, versionIds = versions.map { it.id })
     }
 }
 
@@ -553,15 +582,16 @@ class VodRepository @Inject constructor(
 
     /** Filmovi, odnosno serije, koje je korisnik počeo da gleda; poslednje gledano prvo. */
     fun observeContinue(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>> {
+        // Više redova nego što se prikazuje: jezičke verzije istog filma se posle spajaju u jedan.
         val rows = if (kind == VodKind.MOVIES) {
             progressDao.observeContinueMovies(
                 playlistId,
                 WatchProgress.MIN_RESUME_MS,
                 WatchProgress.FINISHED_PERCENT,
-                CONTINUE_LIMIT,
+                CONTINUE_ROWS,
             )
         } else {
-            progressDao.observeContinueSeries(playlistId, CONTINUE_LIMIT)
+            progressDao.observeContinueSeries(playlistId, CONTINUE_ROWS)
         }
         return rows.withoutLocked(kind) { if (kind == VodKind.SERIES) it.seriesId else it.itemId }.map { list ->
             list.map { row ->
@@ -578,6 +608,30 @@ class VodRepository @Inject constructor(
                     durationMs = row.durationMs,
                 )
             }
+        }.map { list -> oneVersionEach(playlistId, kind, list).take(CONTINUE_LIMIT) }
+    }
+
+    /**
+     * Spaja jezičke verzije u redu „Nastavi gledanje”, vidi [oneVersionEach]. Kad spisak sa servera nije
+     * dostupan, red ostaje kakav jeste.
+     */
+    private suspend fun oneVersionEach(playlistId: Long, kind: VodKind, rows: List<ContinueItem>): List<ContinueItem> {
+        if (rows.size < 2) return rows
+        return try {
+            val ids = rows.mapTo(HashSet()) { it.id }
+            val all = allItems(kind)
+            val catalog = withContext(Dispatchers.Default) { all.filter { it.id in ids }.associateBy { it.id } }
+            val tmdbIds = catalog.values.mapNotNull { it.tmdbId?.takeIf { id -> id > 0 } }
+            if (tmdbIds.size == tmdbIds.toSet().size) return rows
+            val playedHere = withContext(Dispatchers.IO) {
+                if (kind == VodKind.MOVIES) progressDao.moviesPlayedHere(playlistId) else progressDao.seriesPlayedHere(playlistId)
+            }.toSet()
+            val categories = categoryNames(kind)
+            withContext(Dispatchers.Default) { oneVersionEach(rows, catalog, playedHere, categories) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            rows
         }
     }
 
@@ -589,12 +643,15 @@ class VodRepository @Inject constructor(
     suspend fun dismissContinue(item: ContinueItem) = withContext(Dispatchers.IO) {
         val playlistId = settings.activePlaylistId.first() ?: return@withContext
         val now = System.currentTimeMillis()
-        if (item.isSeries) {
-            progressDao.dismissSeries(playlistId, item.id, now)
-            trakt.dropPlaybackOfSeries(playlistId, item.id)
-        } else {
-            progressDao.dismissMovie(playlistId, item.id, now)
-            trakt.dropPlayback(playlistId, KIND_MOVIE, item.id)
+        // Sve jezičke verzije spojene u ovu stavku, da se posle sklanjanja ne pojavi druga.
+        for (id in item.versionIds.ifEmpty { listOf(item.id) }) {
+            if (item.isSeries) {
+                progressDao.dismissSeries(playlistId, id, now)
+                trakt.dropPlaybackOfSeries(playlistId, id)
+            } else {
+                progressDao.dismissMovie(playlistId, id, now)
+                trakt.dropPlayback(playlistId, KIND_MOVIE, id)
+            }
         }
     }
 
@@ -670,6 +727,7 @@ class VodRepository @Inject constructor(
                         poster = poster,
                         extension = extension,
                         watchedAt = watchedAt,
+                        playedHereAt = now,
                     ),
                 )
                 previous == null && watchedAt != null
@@ -774,6 +832,7 @@ class VodRepository @Inject constructor(
                 poster = target.poster,
                 extension = target.extension,
                 watchedAt = existing?.watchedAt,
+                playedHereAt = existing?.playedHereAt,
             ),
         )
         return true
@@ -947,7 +1006,7 @@ class VodRepository @Inject constructor(
         if (session().playlistId != playlistId) return@withContext emptySet()
         val wanted = tmdbIds.withIndex().associate { (index, id) -> id to index }
         val matches = allItems(VodKind.SERIES).filter { it.tmdbId != null && wanted.containsKey(it.tmdbId) }.distinctBy { it.id }
-        val found = preferredVersions(matches, progressDao.seriesWithProgress(playlistId).toSet(), seriesCategoryNames())
+        val found = preferredVersions(matches, progressDao.seriesWithProgress(playlistId).toSet(), categoryNames(VodKind.SERIES))
         val now = System.currentTimeMillis()
         favoriteDao.insertMissing(
             found.map { item ->
@@ -985,7 +1044,7 @@ class VodRepository @Inject constructor(
         val groups = favorites.groupBy { tmdbOf.getValue(it.itemId) }.filterValues { it.size > 1 }
         if (groups.isEmpty()) return@withContext true
         val watched = progressDao.seriesWithProgress(playlistId).toSet()
-        val categories = seriesCategoryNames()
+        val categories = categoryNames(VodKind.SERIES)
         val byTmdb = versions.groupBy { it.tmdbId!! }
         db.withTransaction {
             for ((tmdbId, saved) in groups) {
@@ -1013,9 +1072,9 @@ class VodRepository @Inject constructor(
         true
     }
 
-    /** Nazivi kategorija serija po ID-ju; prazno kad ih panel trenutno ne šalje. */
-    private suspend fun seriesCategoryNames(): Map<String, String> = try {
-        allCategories(VodKind.SERIES).associate { it.id to it.name }
+    /** Nazivi kategorija filmova, odnosno serija, po ID-ju; prazno kad ih panel trenutno ne šalje. */
+    private suspend fun categoryNames(kind: VodKind): Map<String, String> = try {
+        allCategories(kind).associate { it.id to it.name }
     } catch (e: CancellationException) {
         throw e
     } catch (_: IOException) {
@@ -1148,5 +1207,8 @@ class VodRepository @Inject constructor(
 
         /** Najviše stavki u redu „Nastavi gledanje”. */
         const val CONTINUE_LIMIT = 20
+
+        /** Koliko redova se čita za „Nastavi gledanje” pre spajanja jezičkih verzija. */
+        const val CONTINUE_ROWS = 100
     }
 }

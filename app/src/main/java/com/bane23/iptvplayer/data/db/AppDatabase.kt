@@ -26,7 +26,7 @@ import androidx.room.RoomDatabase
         LockedItemEntity::class,
         ChannelQualityEntity::class,
     ],
-    version = 25,
+    version = 26,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

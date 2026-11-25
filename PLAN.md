@@ -939,6 +939,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       pritisak na kanal (kad sekcije postoje) bira sekciju, „Bez sekcije” ili uklanja iz omiljenih. Baza
       v25 (bez promene šeme): kanal koji je bio samo u imenovanoj listi upisuje se u omiljene, a kanal iz
       više lista ostaje u prvoj. Prenos i izvoz zadržavaju isti format
+- [x] Jedna verzija filma i serije u „Nastavi gledanje” (Bane, 25. 11. 2026; telefon, TV i početna na TV-u):
+      jezičke verzije sa istim TMDB ID-jem (pozicija sa drugog uređaja ide na sve) prikazuju se kao jedna
+      stavka. Ostaje verzija puštana na ovom uređaju, inače engleska (EN, UK/GB, US, AMZ), inače poslednje
+      gledana. Sklanjanje iz reda sklanja sve spojene verzije. Baza v26: `watch_progress.playedHereAt`.
 
 ## 7. Testiranje
 
