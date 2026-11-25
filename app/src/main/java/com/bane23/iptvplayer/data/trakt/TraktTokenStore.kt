@@ -85,6 +85,28 @@ class TraktTokenStore @Inject constructor(
     }
 
     /**
+     * Pozicije koje je ovaj uređaj poslednje poslao ([SENT_PROGRESS]) i koje je poslednje video na nalogu
+     * ([SEEN_PROGRESS]), po [TraktPayloads.progressKey]. Trakt ne menja `paused_at` pri novoj pauzi iste
+     * epizode, pa se po procentu vidi da je poziciju u međuvremenu poslao drugi uređaj.
+     */
+    suspend fun sentProgress(): Map<String, Float> = TraktPayloads.progressMap(dataStore.data.first()[SENT_PROGRESS].orEmpty().split('\n'))
+
+    suspend fun markSent(key: String, progress: Float) = mark(SENT_PROGRESS, mapOf(key to progress))
+
+    suspend fun seenProgress(): Map<String, Float> = TraktPayloads.progressMap(dataStore.data.first()[SEEN_PROGRESS].orEmpty().split('\n'))
+
+    suspend fun markSeen(progress: Map<String, Float>) = mark(SEEN_PROGRESS, progress)
+
+    private suspend fun mark(pref: Preferences.Key<String>, progress: Map<String, Float>) {
+        if (progress.isEmpty()) return
+        dataStore.edit { prefs ->
+            var entries = prefs[pref].orEmpty().split('\n').filter { it.isNotBlank() }
+            for ((key, value) in progress) entries = TraktPayloads.withProgress(entries, key, value)
+            prefs[pref] = entries.joinToString("\n")
+        }
+    }
+
+    /**
      * Serije koje je sinhronizacija već dodala u omiljene, kao "lista/TMDB ID". Svaka se dodaje
      * samo jednom, da se serija koju korisnik ukloni iz omiljenih ne bi vraćala.
      */
@@ -166,6 +188,8 @@ class TraktTokenStore @Inject constructor(
         private val LAST_SYNC = longPreferencesKey("last_sync")
         private val LAST_PLAYBACK = longPreferencesKey("last_playback")
         private val AUTO_FAVORITES = stringSetPreferencesKey("auto_favorites")
+        private val SENT_PROGRESS = stringPreferencesKey("sent_playback_progress")
+        private val SEEN_PROGRESS = stringPreferencesKey("seen_playback_progress")
         private val TRIMMED_PLAYLISTS = stringSetPreferencesKey("trimmed_language_versions_3")
     }
 }

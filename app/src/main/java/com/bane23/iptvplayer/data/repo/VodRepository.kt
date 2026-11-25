@@ -693,7 +693,7 @@ class VodRepository @Inject constructor(
      * sklonjena iz „Nastavi gledanje” se preskače (osim one koja se ovde gleda), pa jednom sklonjena ostaje
      * sklonjena.
      */
-    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long): RemoteApplyResult = withContext(Dispatchers.IO) {
+    suspend fun applyRemoteProgress(key: TraktKey, progress: Float, pausedAtMs: Long, fromOther: Boolean): RemoteApplyResult = withContext(Dispatchers.IO) {
         val playlistId = session().playlistId
         val isMovie = key.kind == TraktKey.MOVIE
         val items = allItems(if (isMovie) VodKind.MOVIES else VodKind.SERIES)
@@ -717,7 +717,7 @@ class VodRepository @Inject constructor(
             }
             try {
                 val target = if (isMovie) remoteMovie(playlistId, id, items) else remoteEpisode(id, items, key, notes)
-                val result = if (target != null) applyRemoteTo(playlistId, target, progress, pausedAtMs) else PlaybackLogEvent.SKIP_NO_EPISODE
+                val result = if (target != null) applyRemoteTo(playlistId, target, progress, pausedAtMs, fromOther) else PlaybackLogEvent.SKIP_NO_EPISODE
                 if (result == null) applied++ else skip = result
                 if (target != null) notes += "$mark$id ${result?.name ?: "OK"}"
             } catch (e: CancellationException) {
@@ -766,10 +766,15 @@ class VodRepository @Inject constructor(
         }
     }
 
-    private suspend fun applyRemoteTo(playlistId: Long, target: RemoteTarget, progress: Float, pausedAtMs: Long): PlaybackLogEvent? {
+    private suspend fun applyRemoteTo(playlistId: Long, target: RemoteTarget, progress: Float, pausedAtMs: Long, fromOther: Boolean): PlaybackLogEvent? {
         val kind = if (target.seriesId == null) KIND_MOVIE else KIND_EPISODE
         val existing = progressDao.get(playlistId, kind, target.itemId)
-        if (existing != null && existing.updatedAt >= pausedAtMs) return PlaybackLogEvent.SKIP_NEWER_HERE
+        // Trakt ne menja `paused_at` pri novoj pauzi iste epizode, pa vreme samo nije dovoljno: pozicija koju
+        // ovaj uređaj nije poslao je novija od svega što je ovde već poslato. Ovde je novije samo ono što
+        // još čeka slanje.
+        val newerHere = existing != null && existing.updatedAt >= pausedAtMs &&
+            (!fromOther || trakt.hasPendingPlayback(playlistId, kind, target.itemId))
+        if (newerHere) return PlaybackLogEvent.SKIP_NEWER_HERE
         // Ovde je posle te pauze odgledano do kraja ili označeno: stara pozicija se ne vraća.
         if (TraktPayloads.finishedSince(existing?.watchedAt, pausedAtMs)) return PlaybackLogEvent.SKIP_FINISHED
         // Sklonjeno iz reda „Nastavi gledanje” ne vraća pozicija starija od sklanjanja.

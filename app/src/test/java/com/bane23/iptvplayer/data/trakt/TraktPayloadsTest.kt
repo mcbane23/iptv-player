@@ -150,4 +150,24 @@ class TraktPayloadsTest {
         // Vreme gledanja koje se ne zna (0) ne poništava poziciju.
         assertEquals(false, TraktPayloads.finishedSince(watchedAtMs = 0, pausedAtMs = 200))
     }
+
+    @Test
+    fun `progress differs only beyond tolerance or when unknown`() {
+        assertEquals(true, TraktPayloads.progressDiffers(63f, null))
+        assertEquals(true, TraktPayloads.progressDiffers(63f, 32f))
+        assertEquals(false, TraktPayloads.progressDiffers(63.2f, 63f))
+    }
+
+    @Test
+    fun `progress marks keep the newest entry per key and cap the size`() {
+        val key = TraktPayloads.progressKey(TraktKey.episode(7, season = 2, episode = 3))
+        var entries = TraktPayloads.withProgress(emptyList(), key, 32f)
+        entries = TraktPayloads.withProgress(entries, "movie/100/0/0", 10f)
+        entries = TraktPayloads.withProgress(entries, key, 63f)
+        assertEquals(mapOf(key to 63f, "movie/100/0/0" to 10f), TraktPayloads.progressMap(entries))
+        assertEquals(key, entries.last().substringBeforeLast('|'))
+
+        val capped = TraktPayloads.withProgress(entries, "movie/200/0/0", 5f, max = 2)
+        assertEquals(listOf(key, "movie/200/0/0"), capped.map { it.substringBeforeLast('|') })
+    }
 }

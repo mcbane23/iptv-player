@@ -35,6 +35,10 @@ class TraktQueue @Inject constructor(
         scheduler.sendPlaybackNow()
     }
 
+    /** Da li pozicija filma ili epizode još čeka slanje na Trakt. */
+    suspend fun hasPendingPlayback(playlistId: Long, kind: String, itemId: Long): Boolean =
+        dao.pendingPlaybackCount(playlistId, kind, itemId) > 0
+
     /** Odbacuje poziciju filma ili epizode koja još čeka slanje (korisnik ne želi nastavak). */
     suspend fun dropPlayback(playlistId: Long, kind: String, itemId: Long) = dao.deletePlayback(playlistId, kind, itemId)
 
