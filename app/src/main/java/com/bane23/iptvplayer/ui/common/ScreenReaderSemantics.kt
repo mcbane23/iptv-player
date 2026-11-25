@@ -62,11 +62,12 @@ private fun rememberSemanticsNeeded(): Boolean {
     return needed
 }
 
+// Samo vibracija nije čitač: tako se predstavljaju i pokretači (npr. Projectivy) koji prate
+// koja je aplikacija otvorena, a opis elemenata ne koriste.
 private const val READING_FEEDBACK =
     AccessibilityServiceInfo.FEEDBACK_SPOKEN or
         AccessibilityServiceInfo.FEEDBACK_BRAILLE or
-        AccessibilityServiceInfo.FEEDBACK_AUDIBLE or
-        AccessibilityServiceInfo.FEEDBACK_HAPTIC
+        AccessibilityServiceInfo.FEEDBACK_AUDIBLE
 
 /** U nedoumici opis ostaje: sklanja se samo kad je sigurno da ga nijedna usluga ne čita. */
 private fun semanticsNeeded(manager: AccessibilityManager?): Boolean {
