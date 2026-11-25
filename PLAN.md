@@ -922,6 +922,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       pusti (oznake u nazivima nisu pouzdane), a dugme u Podešavanjima > Slika i veza ih na Wi-Fi mreži
       izmeri za omiljene kanale. Prekidač „Štedi mobilne podatke” je uključen. Meni „Izvori” u plejeru
       (telefon i TV) nudi sve verzije sa rezolucijom. Pregled kanala u spisku je tada bez slike.
+- [x] Filmovi i Serije iz menija (Bane, 25. 11. 2026; telefon i TV): obe sekcije se otvaraju na poslednjoj
+      izabranoj kategoriji. Favoriti i „Nastavi gledanje” se ne pamte kao početak; prvi put je to prva kategorija.
 
 ## 7. Testiranje
 

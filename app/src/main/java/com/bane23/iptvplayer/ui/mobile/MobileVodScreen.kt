@@ -48,6 +48,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clip
 import com.bane23.iptvplayer.ui.common.vod.FAVORITES_ID
+import com.bane23.iptvplayer.ui.common.vod.OpenedFromMenu
 import com.bane23.iptvplayer.data.repo.VodCategory
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,6 +89,7 @@ fun MobileVodScreen(
     viewModel: VodBrowseViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(series) { viewModel.open(series) }
+    OpenedFromMenu(viewModel)
     val state by viewModel.state.collectAsStateWithLifecycle()
     val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()

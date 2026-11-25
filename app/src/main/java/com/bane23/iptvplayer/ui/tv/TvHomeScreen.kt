@@ -152,9 +152,11 @@ fun TvHomeScreen(
     ExitOnDoubleBack(enabled = tab == startTab)
     val holder = rememberSaveableStateHolder()
     // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
-    // Filmovi i serije pamte svoju kategoriju.
+    // Filmovi i serije se otvaraju na poslednjoj izabranoj kategoriji, ne na Favoritima ni „Nastavi gledanje” (Bane).
     LaunchedEffect(tab) {
         if (tab != TvTab.SETTINGS) holder.removeState(TvTab.SETTINGS.name)
+        if (tab != TvTab.MOVIES) holder.removeState(TvTab.MOVIES.name)
+        if (tab != TvTab.SERIES) holder.removeState(TvTab.SERIES.name)
         if (tab != TvTab.HOME) focusHomeContent = false
         if (tab != TvTab.LIVE) {
             holder.removeState(TvTab.LIVE.name)
