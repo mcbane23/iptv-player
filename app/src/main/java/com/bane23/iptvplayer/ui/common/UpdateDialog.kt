@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -213,12 +214,23 @@ internal fun UpdateAlert(content: AlertContent) {
     val (title, text, confirm, onDismiss, dismiss, progress, notes) = content
     val confirmFocus = remember { FocusRequester() }
     var confirmFocused by remember { mutableStateOf(false) }
+    var dismissFocused by remember { mutableStateOf(false) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setWindowAnimations(0) }
+        // Na TV-u fokus mora odmah biti na „Ažuriraj”, inače daljinski nema šta da pritisne. Pri pokretanju
+        // prozor dijaloga dobija fokus tek posle glavnog ekrana i tada ume da izgubi fokus dugmeta, pa se
+        // fokus traži kad prozor postane aktivan i još kratko posle toga, dok nijedno dugme nije u fokusu.
+        val windowFocused = LocalWindowInfo.current.isWindowFocused
+        LaunchedEffect(windowFocused, title, confirm.first) {
+            repeat(FOCUS_ATTEMPTS) {
+                if (!confirmFocused && !dismissFocused) runCatching { confirmFocus.requestFocus() }
+                delay(FOCUS_STEP_MS)
+            }
+        }
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -262,7 +274,7 @@ internal fun UpdateAlert(content: AlertContent) {
                             .padding(top = 24.dp),
                     ) {
                         dismiss?.let { (label, action) ->
-                            AlertButton(label = label, onClick = action)
+                            AlertButton(label = label, onClick = action, onFocus = { dismissFocused = it })
                         }
                         AlertButton(
                             label = confirm.first,
@@ -273,15 +285,6 @@ internal fun UpdateAlert(content: AlertContent) {
                     }
                 }
             }
-        }
-    }
-    // Na TV-u fokus mora odmah biti na dugmetu, inače daljinski nema šta da pritisne. Pri pokretanju
-    // prozor dijaloga ponekad još nije spreman, pa se pokušava dok dugme zaista ne dobije fokus.
-    LaunchedEffect(title, confirm.first) {
-        repeat(FOCUS_ATTEMPTS) {
-            if (confirmFocused) return@LaunchedEffect
-            runCatching { confirmFocus.requestFocus() }
-            delay(FOCUS_STEP_MS)
         }
     }
 }
