@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.pairing.QrCode
 import com.bane23.iptvplayer.ui.common.trakt.TraktLogin
-import com.bane23.iptvplayer.ui.common.trakt.TraktPlaybackLogList
 import com.bane23.iptvplayer.ui.common.trakt.TraktViewModel
 import com.bane23.iptvplayer.ui.common.trakt.formatSyncTime
 
@@ -86,8 +85,6 @@ fun MobileTraktScreen(onBack: () -> Unit, viewModel: TraktViewModel = hiltViewMo
                         OutlinedButton(onClick = viewModel::disconnect, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.trakt_disconnect))
                         }
-                        val playbackLog by viewModel.playbackLog.collectAsStateWithLifecycle()
-                        TraktPlaybackLogList(playbackLog, limit = 30, style = MaterialTheme.typography.bodySmall)
                     }
 
                     login is TraktLogin.Waiting -> {
