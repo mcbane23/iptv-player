@@ -18,6 +18,7 @@ import com.bane23.iptvplayer.ui.common.AppLocale
 import com.bane23.iptvplayer.ui.common.DeviceType
 import com.bane23.iptvplayer.ui.common.AppMessageHost
 import com.bane23.iptvplayer.ui.common.CrashReportPrompt
+import com.bane23.iptvplayer.ui.common.SemanticsWhenNeeded
 import com.bane23.iptvplayer.ui.common.UpdateDialog
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.watchnext.WatchNextLink
@@ -123,21 +124,23 @@ class MainActivity : ComponentActivity() {
                 classic = classic,
             ) {
                 ScaledUi(UiScale.fromName(scale, isTv)) {
-                    if (isTv) {
-                        // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
-                        TvEdgeScroll { TvApp(watchLink = watchLink, onWatchLinkHandled = { watchLink = null }) }
-                    } else {
-                        val fullScreen by settingsStore.appFullScreen.collectAsStateWithLifecycle(initialValue = savedFullScreen)
-                        val position by settingsStore.screenPosition.collectAsStateWithLifecycle(initialValue = savedPosition)
-                        AppOrientation(ScreenPosition.fromName(position)) {
-                            AppFullScreen(enabled = fullScreen) {
-                                MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                    SemanticsWhenNeeded {
+                        if (isTv) {
+                            // Na celom TV interfejsu se pomera fokus, a spisak tek kad fokus priđe ivici.
+                            TvEdgeScroll { TvApp(watchLink = watchLink, onWatchLinkHandled = { watchLink = null }) }
+                        } else {
+                            val fullScreen by settingsStore.appFullScreen.collectAsStateWithLifecycle(initialValue = savedFullScreen)
+                            val position by settingsStore.screenPosition.collectAsStateWithLifecycle(initialValue = savedPosition)
+                            AppOrientation(ScreenPosition.fromName(position)) {
+                                AppFullScreen(enabled = fullScreen) {
+                                    MobileApp(sendTarget = sendTarget, onSendTargetHandled = { sendTarget = null })
+                                }
                             }
                         }
+                        UpdateDialog()
+                        CrashReportPrompt()
+                        AppMessageHost()
                     }
-                    UpdateDialog()
-                    CrashReportPrompt()
-                    AppMessageHost()
                 }
             }
         }
