@@ -33,8 +33,8 @@ import com.bane23.iptvplayer.ui.common.player.PlayerTitle
  * Kontrole plejera na telefonu, raspoređene isto kao na TV-u: gore nazad, naslov i dugmad
  * (slika u slici, zaključavanje), a sve ostalo dole: dugme za puštanje, traka i red dugmadi.
  *
- * Uspravno je slika traka na sredini ekrana, pa donje kontrole stoje odmah ispod nje umesto na
- * dnu ekrana, a u donjem desnom uglu slike je dugme za okretanje. Položeno je to dugme u gornjem redu.
+ * Uspravno su donje kontrole na dnu ekrana, a dugme za okretanje je odmah ispod donjeg desnog ugla
+ * slike, da ne prekriva video. Položeno je to dugme u gornjem redu.
  */
 @Composable
 fun MobilePlayerControls(
@@ -122,9 +122,9 @@ fun MobilePlayerControls(
 }
 
 /**
- * Uspravan telefon: [content] stoji odmah ispod slike, a [corner] u njenom donjem desnom uglu.
- * Slika je na sredini ekrana i računa se kao 16:9; kad kontrole ne bi stale do dna ekrana
- * (kratak ekran, podeljen prozor), penju se taman koliko treba.
+ * Uspravan telefon: [content] stoji na dnu ekrana, a [corner] odmah ispod donjeg desnog ugla slike.
+ * Slika je na sredini ekrana i računa se kao 16:9; kad između slike i kontrola nema mesta (kratak
+ * ekran, podeljen prozor), dugme se penje taman toliko da ne dodiruje kontrole.
  */
 @Composable
 private fun BelowPicture(corner: @Composable () -> Unit, content: @Composable () -> Unit) {
@@ -139,11 +139,12 @@ private fun BelowPicture(corner: @Composable () -> Unit, content: @Composable ()
         val button = measurables[0].measure(loose)
         val controls = measurables[1].measure(loose)
         val pictureBottom = (constraints.maxHeight + constraints.maxWidth * 9 / 16) / 2
-        val controlsY = minOf(pictureBottom, constraints.maxHeight - controls.height).coerceAtLeast(0)
+        val controlsY = (constraints.maxHeight - controls.height).coerceAtLeast(0)
         val margin = 8.dp.roundToPx()
+        val buttonY = minOf(pictureBottom + margin, controlsY - button.height - margin).coerceAtLeast(0)
         layout(constraints.maxWidth, constraints.maxHeight) {
             controls.place(0, controlsY)
-            button.place(constraints.maxWidth - button.width - margin, controlsY - button.height - margin)
+            button.place(constraints.maxWidth - button.width - 16.dp.roundToPx(), buttonY)
         }
     }
 }
