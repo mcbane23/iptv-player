@@ -74,9 +74,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -1168,7 +1169,14 @@ private fun ChannelPreviewPane(
                 )
             }
         }
-        Column(modifier = Modifier.alpha(if (stale) STALE_ALPHA else 1f)) {
+        // Prigušenje se primenjuje na svaki tekst posebno (ModulateAlpha), bez sloja van ekrana: delovi se ne
+        // preklapaju, pa izgleda isto, a pri listanju (kad je tekst skoro uvek prigušen) ne crta se sloj više.
+        Column(
+            modifier = Modifier.graphicsLayer {
+                alpha = if (stale) STALE_ALPHA else 1f
+                compositingStrategy = CompositingStrategy.ModulateAlpha
+            },
+        ) {
             val program = nowNext.now
             if (program != null) {
                 Text(
