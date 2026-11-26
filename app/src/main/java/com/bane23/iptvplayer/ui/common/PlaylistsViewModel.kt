@@ -22,6 +22,8 @@ data class PlaylistsUiState(
     /** Liste koje se trenutno osvežavaju. */
     val refreshing: Set<Long> = emptySet(),
     val error: PlaylistError? = null,
+    /** Ime liste na koju se greška odnosi. */
+    val errorPlaylistName: String? = null,
 ) {
     /** Kanali svih lista se prikazuju zajedno. */
     val merged: Boolean get() = playlists.any { it.merged }
@@ -33,21 +35,30 @@ class PlaylistsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val refreshing = MutableStateFlow<Set<Long>>(emptySet())
-    private val error = MutableStateFlow<PlaylistError?>(null)
+    /** Greška poslednjeg osvežavanja i lista na koju se odnosi. */
+    private val error = MutableStateFlow<Pair<Long, PlaylistError>?>(null)
 
     val state: StateFlow<PlaylistsUiState> =
         combine(repository.observePlaylists(), refreshing, error) { playlists, busy, err ->
-            PlaylistsUiState(loading = false, playlists = playlists, refreshing = busy, error = err)
+            PlaylistsUiState(
+                loading = false,
+                playlists = playlists,
+                refreshing = busy,
+                error = err?.second,
+                errorPlaylistName = err?.let { (id, _) -> playlists.firstOrNull { it.id == id }?.name },
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlaylistsUiState())
 
     fun refresh(id: Long) {
         if (id in refreshing.value) return
         refreshing.update { it + id }
+        // Stara poruka (možda za drugu listu) više ne važi.
+        error.value = null
         viewModelScope.launch {
             try {
                 repository.refreshPlaylist(id)
             } catch (e: PlaylistException) {
-                error.value = e.error
+                error.value = id to e.error
             } finally {
                 refreshing.update { it - id }
             }
@@ -55,10 +66,13 @@ class PlaylistsViewModel @Inject constructor(
     }
 
     fun delete(id: Long) {
+        if (error.value?.first == id) error.value = null
         viewModelScope.launch { repository.deletePlaylist(id) }
     }
 
     fun setActive(id: Long) {
+        // Izbor druge liste sklanja poruku o grešci prethodne.
+        if (error.value?.first != id) error.value = null
         viewModelScope.launch { repository.setActivePlaylist(id) }
     }
 

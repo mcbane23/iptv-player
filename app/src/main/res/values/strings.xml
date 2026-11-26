@@ -611,6 +611,8 @@
     <string name="player_last_channel">Last watched channel</string>
     <string name="playlist_account_valid_until">Account valid until %1$s</string>
     <string name="playlist_account_expires_today">expires today</string>
+    <string name="playlist_account_expired_on">Account expired on %1$s</string>
+    <string name="playlist_error_for">%1$s: %2$s</string>
     <plurals name="playlist_account_days_left">
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>
