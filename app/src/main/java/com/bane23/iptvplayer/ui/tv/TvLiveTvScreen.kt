@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -742,6 +745,7 @@ fun TvLiveTvScreen(
                         runCatching { channelListState.scrollToItem(0) }
                     }
                 }
+                rowFocus.idAt = { index -> if (index in 0 until channels.itemCount) channels.peek(index)?.id else null }
                 if (switching && !selectedLocked) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         repeat(SKELETON_ROWS) {
@@ -814,7 +818,7 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = rowFocus.row(index, channel?.id),
+                            modifier = rowFocus.row(channel?.id),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -890,10 +894,18 @@ fun TvLiveTvScreen(
                     }
                 }
                 }
+                // Pregled prati kanal tek kad se listanje zaustavi (Bane, 26. 11.): pri brzom koraku kroz kanale
+                // desna kolona se ne slaže iznova na svaki pritisak. Prvi kanal i izlazak sa kanala važe odmah.
+                val previewChannel by produceState<Channel?>(initialValue = null) {
+                    snapshotFlow { focusedChannel?.takeIf { it.id == lastChannelId } }.collectLatest { next ->
+                        if (value != null && next != null) delay(PREVIEW_SETTLE_MS)
+                        value = next
+                    }
+                }
                 ChannelPreviewPane(
                     viewModel = previewViewModel,
                     // Kanal se čita tek u pregledu, da korak kroz kanale ne crta iznova ceo ekran.
-                    channel = { focusedChannel?.takeIf { it.id == lastChannelId } },
+                    channel = { previewChannel },
                     now = now,
                     modifier = Modifier
                         .weight(0.32f)
@@ -1021,29 +1033,32 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
 
 /**
  * Fokus redova kanala bez ponovnog slaganja: svaki red stalno nosi svoj [FocusRequester] i prijavljuje ga
- * pod svojim mestom u spisku i ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti.
+ * pod ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti. [byIndex] mesto u spisku
+ * pretvara u ID preko [idAt], jer se redovi posle skoka niz spisak ne mogu pouzdano tražiti po mestu.
  */
 private class ChannelRowFocus {
-    private val rowsByIndex = HashMap<Int, FocusRequester>()
     private val rowsById = HashMap<Long, FocusRequester>()
+
+    /** ID kanala na mestu u spisku; postavlja ga spisak kanala kad se složi. */
+    var idAt: (Int) -> Long? = { null }
 
     /** Cilj fokusa koji se računa tek kad se fokus traži. */
     fun interface Target {
         fun tryRequestFocus(): Boolean
     }
 
-    fun byId(id: () -> Long?): Target = Target { id()?.let { rowsById[it] }?.tryRequestFocus() == true }
+    fun byId(id: () -> Long?): Target = Target { request(id()) }
 
-    fun byIndex(index: () -> Int): Target = Target { rowsByIndex[index()]?.tryRequestFocus() == true }
+    fun byIndex(index: () -> Int): Target = Target { request(idAt(index())) }
+
+    private fun request(id: Long?): Boolean = id?.let { rowsById[it] }?.tryRequestFocus() == true
 
     @Composable
-    fun row(index: Int, id: Long?): Modifier {
+    fun row(id: Long?): Modifier {
         val requester = remember { FocusRequester() }
-        DisposableEffect(index, id) {
-            rowsByIndex[index] = requester
+        DisposableEffect(id) {
             if (id != null) rowsById[id] = requester
             onDispose {
-                if (rowsByIndex[index] === requester) rowsByIndex.remove(index)
                 if (id != null && rowsById[id] === requester) rowsById.remove(id)
             }
         }
@@ -1058,6 +1073,7 @@ private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
 private const val MOVE_SETTLE_MS = 150L
+private const val PREVIEW_SETTLE_MS = 200L
 private val SECTION_ROWS_MAX_HEIGHT = 200.dp
 
 /** Oznaka u `pendingRecent`: briše se cela lista nedavno gledanih, ne jedan kanal. */
