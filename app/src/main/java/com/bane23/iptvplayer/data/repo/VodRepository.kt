@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -581,6 +582,7 @@ class VodRepository @Inject constructor(
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
 
     /** Filmovi, odnosno serije, koje je korisnik počeo da gleda; poslednje gledano prvo. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun observeContinue(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>> {
         // Više redova nego što se prikazuje: jezičke verzije istog filma se posle spajaju u jedan.
         val rows = if (kind == VodKind.MOVIES) {
@@ -608,7 +610,21 @@ class VodRepository @Inject constructor(
                     durationMs = row.durationMs,
                 )
             }
-        }.map { list -> oneVersionEach(playlistId, kind, list).take(CONTINUE_LIMIT) }
+        }.transformLatest { list ->
+            // Spajanje verzija čita ceo spisak liste, što posle pokretanja aplikacije potraje i nekoliko
+            // sekundi. Red se zato odmah prikaže kakav je u bazi, a spojene verzije stignu za njim.
+            if (list.size >= 2 && !catalogInMemory(kind)) emit(list.take(CONTINUE_LIMIT))
+            emit(oneVersionEach(playlistId, kind, list).take(CONTINUE_LIMIT))
+        }.distinctUntilChanged()
+    }
+
+    /** Da li je ceo spisak filmova, odnosno serija, aktivne liste već u memoriji (brzo spajanje verzija). */
+    private suspend fun catalogInMemory(kind: VodKind): Boolean = try {
+        itemCache.containsKey("${session().cache}$kind/$ALL_CATEGORIES")
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        false
     }
 
     /**
