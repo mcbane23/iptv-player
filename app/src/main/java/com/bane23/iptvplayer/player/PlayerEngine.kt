@@ -109,6 +109,8 @@ data class VideoInfo(
     val measuredFrameRate: Float = 0f,
     /** Kako se sadržaj premotava; vidi [SeekKind]. */
     val seek: SeekKind = SeekKind.NORMAL,
+    /** Koliko puta je plejer sam pokrenuo film ili epizodu koja je predugo stajala na učitavanju. */
+    val stallRecoveries: Int = 0,
 )
 
 data class PlaybackState(
@@ -263,6 +265,16 @@ class PlayerEngine(
     /** Server nije dozvolio skok, pa je sadržaj krenuo od početka i više ne može da se premotava. */
     val seekLost: SharedFlow<Unit> = _seekLost.asSharedFlow()
 
+    private val _stallSkipped = MutableSharedFlow<Long>(extraBufferCapacity = 1)
+
+    /** Film ili epizoda su predugo stajali na učitavanju, pa je plejer preskočio ovoliko milisekundi. */
+    val stallSkipped: SharedFlow<Long> = _stallSkipped.asSharedFlow()
+
+    private var stallJob: Job? = null
+
+    /** Koji je po redu pokušaj oporavka od zastoja u toku; 0 dok sadržaj teče. */
+    private var stallStep = 0
+
     /**
      * Titlovi iz fajla dodati uz trenutni sadržaj; ostaju i posle ponovnog pokušaja. Plejer za njih
      * ne zna: aplikacija ih sama čita i prikazuje preko slike ([subtitleText]), pa se sadržaj ne
@@ -296,6 +308,7 @@ class PlayerEngine(
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_READY) {
                 wasReady = true
+                stallStep = 0
             } else if (playbackState == Player.STATE_BUFFERING && wasReady) {
                 _state.update { it.copy(video = it.video.copy(rebuffers = it.video.rebuffers + 1)) }
             }
@@ -304,9 +317,13 @@ class PlayerEngine(
             } else {
                 publishStatus()
             }
+            watchStall()
         }
 
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = publishStatus()
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            publishStatus()
+            watchStall()
+        }
 
         override fun onTimelineChanged(timeline: Timeline, reason: Int) = applyPendingResume()
 
@@ -453,6 +470,8 @@ class PlayerEngine(
      */
     fun play(source: StreamSource, startPositionMs: Long? = null, subtitles: List<ExternalSubtitle>? = null) {
         retryJob?.cancel()
+        stallJob?.cancel()
+        stallStep = 0
         seekable = startPositionMs != null
         resumePositionMs = startPositionMs ?: 0
         val newSource = source != this.source
@@ -585,6 +604,8 @@ class PlayerEngine(
     /** Zaustavlja puštanje i oslobađa vezu sa serverom (npr. kad aplikacija ode u pozadinu). */
     fun stop() {
         retryJob?.cancel()
+        stallJob?.cancel()
+        stallStep = 0
         rememberPosition()
         player.stop()
     }
@@ -721,6 +742,7 @@ class PlayerEngine(
         PlaybackActivity.set(this, false)
         retryJob?.cancel()
         statsJob?.cancel()
+        stallJob?.cancel()
         subtitleLoadJob?.cancel()
         subtitleTextJob?.cancel()
         player.removeListener(listener)
@@ -841,6 +863,50 @@ class PlayerEngine(
                 )
             }
         }
+    }
+
+    /**
+     * Film ili epizoda stoje na učitavanju iako je korisnik pustio sadržaj. Neki serveri u toku
+     * gledanja prestanu da šalju podatke, a veza ostane otvorena, pa plejer čeka bez kraja (Bane:
+     * pomagao je samo skok udesno). Posle [STALL_TIMEOUT_MS] se zato sadržaj sam priprema iznova.
+     */
+    private fun watchStall() {
+        val stalled = seekable && player.playWhenReady && player.playbackState == Player.STATE_BUFFERING &&
+            (wasReady || stallStep > 0)
+        if (!stalled) {
+            stallJob?.cancel()
+            stallJob = null
+            return
+        }
+        if (stallJob?.isActive == true) return
+        stallJob = scope.launch {
+            delay(STALL_TIMEOUT_MS)
+            recoverFromStall()
+        }
+    }
+
+    /**
+     * Prvi pokušaj priprema sadržaj iznova sa istog mesta: nova veza sa serverom, bez propuštenog kadra.
+     * Ako ni to ne pomogne, svaki sledeći pokušaj preskoči [STALL_SKIP_MS] napred, kao ručni skok udesno.
+     * Posle [MAX_STALL_STEPS] pokušaja plejer odustaje i ostaje na učitavanju.
+     */
+    private fun recoverFromStall() {
+        if (source == null || stallStep >= MAX_STALL_STEPS) return
+        // Sadržaj koji ne može da se premotava bi krenuo od početka.
+        if (stallStep == 0 && !player.isCurrentMediaItemSeekable) return
+        if (stallStep == 0) rememberPosition()
+        stallStep++
+        if (stallStep > 1) {
+            val duration = durationMs
+            val target = resumePositionMs + STALL_SKIP_MS
+            resumePositionMs = if (duration > 0) target.coerceAtMost(duration - STALL_SKIP_MS) else target
+            _stallSkipped.tryEmit(STALL_SKIP_MS)
+        }
+        _state.update { it.copy(video = it.video.copy(stallRecoveries = it.video.stallRecoveries + 1)) }
+        retryJob?.cancel()
+        // Zaustavljanje zatvara zaglavljenu vezu (server dozvoljava samo jednu), pa tek onda ide nova.
+        player.stop()
+        prepareCurrent()
     }
 
     /** Pamti dokle se stiglo, da se posle prekida ili povratka u aplikaciju nastavi odatle. */
@@ -1010,6 +1076,11 @@ class PlayerEngine(
         const val STATS_INTERVAL_MS = 1_000L
         const val MAX_ATTEMPTS = 3
         const val RETRY_DELAY_MS = 1_500L
+
+        /** Koliko film ili epizoda smeju da stoje na učitavanju pre nego što ih plejer sam pokrene. */
+        const val STALL_TIMEOUT_MS = 5_000L
+        const val STALL_SKIP_MS = 2_000L
+        const val MAX_STALL_STEPS = 4
 
         /** Koliko pozicija sme da bude ispred zapamćenog mesta, a da se na njega ipak ne skače. */
         const val RESUME_SLACK_MS = 5_000L

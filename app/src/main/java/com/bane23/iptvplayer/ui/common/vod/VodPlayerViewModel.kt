@@ -214,6 +214,7 @@ class VodPlayerViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { engine.seekLost.collect { AppMessages.show(context, R.string.vod_seek_unavailable) } }
+        viewModelScope.launch { engine.stallSkipped.collect { AppMessages.show(context, R.string.vod_stall_skipped) } }
         // Kad se epizoda završi, kreće sledeća.
         viewModelScope.launch {
             playback.map { it.ended }.distinctUntilChanged().collect { ended ->

@@ -21,7 +21,7 @@ fun VideoInfo.label(): String? {
         stringResource(R.string.stream_info_keyframe_skips, keyframeSkips),
         stringResource(R.string.stream_info_audio_underruns, audioUnderruns),
         stringResource(R.string.stream_info_rebuffers, rebuffers),
-    )
+    ) + listOfNotNull(stallRecoveries.takeIf { it > 0 }?.let { stringResource(R.string.stream_info_stall_recoveries, it) })
     val tunnel = if (tunneled) stringResource(R.string.stream_info_tunnel) else null
     val seeking = when (seek) {
         SeekKind.NORMAL -> null
