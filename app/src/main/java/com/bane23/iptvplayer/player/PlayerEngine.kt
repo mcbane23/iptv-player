@@ -749,12 +749,11 @@ class PlayerEngine(
      */
     private fun applyTunneling() {
         val selector = player.trackSelector as? DefaultTrackSelector ?: return
-        selector.setParameters(
-            selector.buildUponParameters().setTunnelingEnabled(
-                !shared && !speedChanged && !tunnelHeldForPause && !tunnelFallback && decoderMode == DecoderMode.TUNNEL,
-            ),
-        )
+        selector.setParameters(selector.buildUponParameters().setTunnelingEnabled(tunnelRequested()))
     }
+
+    private fun tunnelRequested(): Boolean =
+        !shared && !speedChanged && !tunnelHeldForPause && !tunnelFallback && decoderMode == DecoderMode.TUNNEL
 
     fun release() {
         PlaybackActivity.set(this, false)
@@ -789,6 +788,11 @@ class PlayerEngine(
             applyTunneling()
         }
         val url = current.urls.getOrNull(urlIndex) ?: return
+        if (videoTunneled && !tunnelRequested()) {
+            // Slika je išla kroz tunel, a sada neće: površina se pravi iznova, inače ostaje crna.
+            videoTunneled = false
+            SurfaceReset.request(player)
+        }
         val headers = buildMap {
             current.referrer?.let { put("Referer", it) }
         }
