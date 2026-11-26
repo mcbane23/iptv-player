@@ -1,5 +1,8 @@
 package com.bane23.iptvplayer.ui.tv
 
+import android.util.Log
+import com.bane23.iptvplayer.BuildConfig
+
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.Spacer
 import com.bane23.iptvplayer.ui.common.lock.channel
@@ -632,11 +635,11 @@ fun TvLiveTvScreen(
                         TvFavoriteSectionRows(
                             sections = state.favoriteLists,
                             onJump = { section ->
-                                val start = state.favoriteSections.start(section.id)
+                                val start = rowFocus.sectionStart(section.id, state.favoriteSections.start(section.id))
                                 if (start == null) {
                                     AppMessages.show(context, R.string.favorite_section_empty)
                                 } else {
-                                    scope.launch { jumpToRow(channelListState, topChannelFocus, start) }
+                                    scope.launch { jumpToRow(channelListState, rowFocus, start) }
                                 }
                             },
                             onMenu = { menuList = it },
@@ -745,7 +748,8 @@ fun TvLiveTvScreen(
                         runCatching { channelListState.scrollToItem(0) }
                     }
                 }
-                rowFocus.idAt = { index -> if (index in 0 until channels.itemCount) channels.peek(index)?.id else null }
+                rowFocus.peek = { index -> if (index in 0 until channels.itemCount) channels.peek(index) else null }
+                rowFocus.count = { channels.itemCount }
                 if (switching && !selectedLocked) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         repeat(SKELETON_ROWS) {
@@ -769,8 +773,8 @@ fun TvLiveTvScreen(
                             val up = event.key == Key.ChannelUp || event.key == Key.PageUp
                             if ((up || down) && inFavorites && state.favoriteLists.isNotEmpty()) {
                                 if (event.type == KeyEventType.KeyDown) {
-                                    val target = sectionStep(state.favoriteSections.starts(), focusedRow[0], forward = down)
-                                    if (target != null) scope.launch { jumpToRow(channelListState, topChannelFocus, target) }
+                                    val target = sectionStep(rowFocus.sectionStarts(state.favoriteSections.starts()), focusedRow[0], forward = down)
+                                    if (target != null) scope.launch { jumpToRow(channelListState, rowFocus, target) }
                                 }
                                 return@onPreviewKeyEvent true
                             }
@@ -1039,8 +1043,33 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
 private class ChannelRowFocus {
     private val rowsById = HashMap<Long, FocusRequester>()
 
-    /** ID kanala na mestu u spisku; postavlja ga spisak kanala kad se složi. */
-    var idAt: (Int) -> Long? = { null }
+    /** Kanal na mestu u spisku (bez učitavanja) i broj redova; postavlja ih spisak kanala kad se složi. */
+    var peek: (Int) -> Channel? = { null }
+    var count: () -> Int = { 0 }
+
+    fun idAt(index: Int): Long? = peek(index)?.id
+
+    /** Svi redovi spiska, ili null dok neki nije učitan. */
+    private fun loaded(): List<Channel>? {
+        val rows = ArrayList<Channel>(count())
+        for (index in 0 until count()) rows += peek(index) ?: return null
+        return rows
+    }
+
+    /**
+     * Počeci sekcija u „Omiljenima” po redovima koji su stvarno na spisku, a dok spisak nije ceo učitan
+     * [fallback] (prebrojano u bazi). Tako skok uvek pogađa prvi kanal sekcije.
+     */
+    fun sectionStarts(fallback: List<Int>): List<Int> {
+        val rows = loaded() ?: return fallback
+        return rows.indices.filter { it == 0 || rows[it].favoriteSection != rows[it - 1].favoriteSection }
+    }
+
+    /** Mesto prvog kanala sekcije [sectionId] na spisku; dok spisak nije ceo učitan, [fallback]. */
+    fun sectionStart(sectionId: Long, fallback: Int?): Int? {
+        val rows = loaded() ?: return fallback
+        return rows.indexOfFirst { it.favoriteSection == sectionId }.takeIf { it >= 0 }
+    }
 
     /** Cilj fokusa koji se računa tek kad se fokus traži. */
     fun interface Target {
@@ -1048,6 +1077,12 @@ private class ChannelRowFocus {
     }
 
     fun byId(id: () -> Long?): Target = Target { request(id()) }
+
+    /** Fokus na red [index], ako je složen. */
+    fun requestAt(index: Int): Boolean = request(idAt(index))
+
+    /** Za proveru na TV-u (samo test verzija): šta skok zatiče. */
+    fun describe(index: Int): String = "id=${idAt(index)} registered=${idAt(index)?.let { it in rowsById }} rows=${rowsById.size}"
 
     fun byIndex(index: () -> Int): Target = Target { request(idAt(index())) }
 
@@ -1374,14 +1409,23 @@ private fun TvSectionTitle(name: String) {
 internal fun sectionStep(starts: List<Int>, current: Int, forward: Boolean): Int? =
     if (forward) starts.firstOrNull { it > current } else starts.lastOrNull { it < current }
 
-/** Skroluje spisak tako da je red [index] prvi vidljiv i daje mu fokus (preko [topFocus], koji nosi prvi vidljivi red). */
-private suspend fun jumpToRow(listState: LazyListState, topFocus: ChannelRowFocus.Target, index: Int) {
+/**
+ * Skroluje spisak tako da je red [index] prvi vidljiv i daje fokus baš tom redu (po ID-u kanala). Ne čeka da
+ * red ostane prvi vidljiv, jer ga fokus sa razmakom do ivice može malo pomeriti.
+ */
+private suspend fun jumpToRow(listState: LazyListState, rows: ChannelRowFocus, index: Int) {
     runCatching { listState.scrollToItem(index) }
-    repeat(FOCUS_RESTORE_ATTEMPTS) {
-        if (listState.firstVisibleItemIndex == index && topFocus.tryRequestFocus()) return
+    repeat(FOCUS_RESTORE_ATTEMPTS) { attempt ->
+        val moved = rows.requestAt(index)
+        if (BuildConfig.DEBUG) {
+            Log.d(JUMP_LOG, "jump index=$index attempt=$attempt first=${listState.firstVisibleItemIndex} ${rows.describe(index)} moved=$moved")
+        }
+        if (moved) return
         delay(FOCUS_RESTORE_STEP_MS)
     }
 }
+
+private const val JUMP_LOG = "GlowboxJump"
 
 /** Oznaka „uživo” na slici pregleda. */
 private val LiveRed = Color(0xFFE5484D)
