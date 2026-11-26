@@ -745,6 +745,7 @@ fun TvLiveTvScreen(
                         runCatching { channelListState.scrollToItem(0) }
                     }
                 }
+                rowFocus.idAt = { index -> if (index in 0 until channels.itemCount) channels.peek(index)?.id else null }
                 if (switching && !selectedLocked) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         repeat(SKELETON_ROWS) {
@@ -817,7 +818,7 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            modifier = rowFocus.row(index, channel?.id),
+                            modifier = rowFocus.row(channel?.id),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -1032,29 +1033,32 @@ private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier 
 
 /**
  * Fokus redova kanala bez ponovnog slaganja: svaki red stalno nosi svoj [FocusRequester] i prijavljuje ga
- * pod svojim mestom u spisku i ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti.
+ * pod ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti. [byIndex] mesto u spisku
+ * pretvara u ID preko [idAt], jer se redovi posle skoka niz spisak ne mogu pouzdano tražiti po mestu.
  */
 private class ChannelRowFocus {
-    private val rowsByIndex = HashMap<Int, FocusRequester>()
     private val rowsById = HashMap<Long, FocusRequester>()
+
+    /** ID kanala na mestu u spisku; postavlja ga spisak kanala kad se složi. */
+    var idAt: (Int) -> Long? = { null }
 
     /** Cilj fokusa koji se računa tek kad se fokus traži. */
     fun interface Target {
         fun tryRequestFocus(): Boolean
     }
 
-    fun byId(id: () -> Long?): Target = Target { id()?.let { rowsById[it] }?.tryRequestFocus() == true }
+    fun byId(id: () -> Long?): Target = Target { request(id()) }
 
-    fun byIndex(index: () -> Int): Target = Target { rowsByIndex[index()]?.tryRequestFocus() == true }
+    fun byIndex(index: () -> Int): Target = Target { request(idAt(index())) }
+
+    private fun request(id: Long?): Boolean = id?.let { rowsById[it] }?.tryRequestFocus() == true
 
     @Composable
-    fun row(index: Int, id: Long?): Modifier {
+    fun row(id: Long?): Modifier {
         val requester = remember { FocusRequester() }
-        DisposableEffect(index, id) {
-            rowsByIndex[index] = requester
+        DisposableEffect(id) {
             if (id != null) rowsById[id] = requester
             onDispose {
-                if (rowsByIndex[index] === requester) rowsByIndex.remove(index)
                 if (id != null && rowsById[id] === requester) rowsById.remove(id)
             }
         }
