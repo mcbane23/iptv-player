@@ -364,8 +364,11 @@ fun TvLiveTvScreen(
                         favoriteLists.favoriteAction(channel.id)
                     }
                 } else {
-                    hiddenChannels.hide(channel.id)
-                    hiddenCount++
+                    // Fokus prvo prelazi na suseda (kanal koji dolazi na mesto sakrivenog), spisak ostaje gde
+                    // je, pa se kanal tek onda sakriva (Bane, 26. 11.).
+                    pendingRemoval = ChannelRemoval(channel.id, menuNeighbor, direct = true) {
+                        hiddenChannels.hide(channel.id)
+                    }
                     AppMessages.show(context, R.string.channel_hidden, long = true)
                 }
             },
@@ -929,7 +932,7 @@ fun TvLiveTvScreen(
                         val moved = neighbor != null &&
                             focusManager.moveFocus(if (neighbor.below) FocusDirection.Down else FocusDirection.Up)
                         if (!moved) firstFocus.tryRequestFocus()
-                        favoriteLists.favoriteAction(removal.channelId)
+                        removal.remove?.invoke() ?: favoriteLists.favoriteAction(removal.channelId)
                         pendingRemoval = null
                     } else if (removalGone) {
                         // Red je nestao dok je izbor liste otvoren. Fokus se vraća odmah, i još jednom kad
@@ -1030,7 +1033,13 @@ private data class ListNameRequest(val list: FavoriteList?)
 private data class ChannelNeighbor(val id: Long, val below: Boolean)
 
 /** Kanal [channelId] koji izlazi iz otvorene liste omiljenih; [direct] kad izlazi odmah, bez izbora liste. */
-private data class ChannelRemoval(val channelId: Long, val neighbor: ChannelNeighbor?, val direct: Boolean)
+private data class ChannelRemoval(
+    val channelId: Long,
+    val neighbor: ChannelNeighbor?,
+    val direct: Boolean,
+    /** Šta se radi posle pomeranja fokusa kod [direct] (npr. sakrivanje); bez toga kanal izlazi iz omiljenih. */
+    val remove: (() -> Unit)? = null,
+)
 
 private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
     if (isTarget) Modifier.focusRequester(requester) else Modifier
