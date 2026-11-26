@@ -312,6 +312,9 @@
     <string name="settings_screensaver_summary">Kad izabrano vreme ne pritisneš nijedan taster, vide se sat, datum i trenutna temperatura koji svaki minut promene mesto, a iza njih razliven poster iz omiljenih filmova i serija (ili poslednje gledanih). Ne pali se dok je otvoren plejer. Bilo koji taster ga gasi i vraća te gde si bio. Pritisni OK i izaberi vreme.</string>
     <string name="settings_screensaver_off">Isključeno</string>
     <string name="settings_screensaver_minutes">%1$d min</string>
+    <string name="settings_screen_dim">Zatamnjenje</string>
+    <string name="settings_screen_dim_summary">Tamni sliku i celu aplikaciju, za gledanje uveče. TV ne dozvoljava aplikaciji da smanji osvetljenje ekrana, pa preko svega ide crni providan sloj. Menja se i u plejeru, u meniju Podešavanja. Pritisni OK i izaberi koliko.</string>
+    <string name="screen_dim_percent">%1$d%%</string>
     <string name="settings_weather_city">Grad za temperaturu</string>
     <string name="settings_weather_city_summary">Čuvar ekrana pored datuma prikazuje trenutnu temperaturu. Mesto se pogađa po internet vezi; ako je pogrešno, ovde upiši svoj grad. Vreme stiže sa Open-Meteo. Bez interneta se vidi samo datum.</string>
     <string name="settings_weather_city_auto">Automatski</string>

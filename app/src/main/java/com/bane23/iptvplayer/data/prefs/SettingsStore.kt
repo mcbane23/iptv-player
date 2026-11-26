@@ -499,6 +499,13 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         dataStore.edit { it[SCREENSAVER_MINUTES] = minutes }
     }
 
+    /** TV: zatamnjenje cele aplikacije u procentima (vidi [ScreenDim]); 0 znači isključeno. */
+    val screenDim: Flow<Int> = dataStore.data.map { ScreenDim.fromStored(it[SCREEN_DIM]) }.distinctUntilChanged()
+
+    suspend fun setScreenDim(percent: Int) {
+        dataStore.edit { it[SCREEN_DIM] = ScreenDim.fromStored(percent) }
+    }
+
     /** Grad za temperaturu u čuvaru ekrana; prazno znači da se mesto pogađa po IP adresi. */
     val weatherCity: Flow<String> = dataStore.data.map { it[WEATHER_CITY].orEmpty() }.distinctUntilChanged()
 
@@ -727,6 +734,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val UI_SCALE = stringPreferencesKey("ui_scale")
         val SCREENSAVER_MINUTES = intPreferencesKey("screensaver_minutes")
+        val SCREEN_DIM = intPreferencesKey("screen_dim")
         val WEATHER_CITY = stringPreferencesKey("weather_city")
         val UPDATE_CHANNEL = stringPreferencesKey("update_channel")
         val ACTIVE_PLAYLIST_ID = longPreferencesKey("active_playlist_id")
@@ -740,7 +748,7 @@ class SettingsStore @Inject constructor(@ApplicationContext context: Context) {
             PAUSE_INFO, DOWNLOAD_ON_MOBILE, TV_FAVORITE_HINT_SHOWN, ROTATE_HINT_SHOWN, AUTO_NEXT_EPISODE,
             RULE_HIDE_SD, RULE_HIDE_PLUS_ONE, RULE_MERGE_SAME_NAME, DATA_SAVER,
         )
-        val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES)
+        val INT_KEYS: List<Preferences.Key<*>> = listOf(PLAYER_SEEK_STEP, SCREENSAVER_MINUTES, SCREEN_DIM)
         val SET_KEYS: List<Preferences.Key<*>> = listOf(CAST_PEERS)
 
         /**

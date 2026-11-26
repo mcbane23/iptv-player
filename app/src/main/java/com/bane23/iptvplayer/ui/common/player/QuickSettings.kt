@@ -6,11 +6,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.data.prefs.ScreenDim
 import com.bane23.iptvplayer.player.BufferSize
 import com.bane23.iptvplayer.player.DecoderMode
 import com.bane23.iptvplayer.player.LoudnessLevel
 import com.bane23.iptvplayer.player.SleepTimer
 import com.bane23.iptvplayer.ui.common.SettingChoice
+import com.bane23.iptvplayer.ui.common.SettingsGroup
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import java.text.DecimalFormat
 
@@ -43,6 +45,7 @@ fun quickSettingChoices(
     val backgroundPlay by settingsViewModel.backgroundPlay.collectAsStateWithLifecycle()
     val sleepMinutes by settingsViewModel.sleepTimerMinutes.collectAsStateWithLifecycle()
     val matchFrameRate by settingsViewModel.matchFrameRate.collectAsStateWithLifecycle()
+    val screenDim by settingsViewModel.screenDim.collectAsStateWithLifecycle()
     val onOff = listOf(stringResource(R.string.setting_on), stringResource(R.string.setting_off))
 
     fun switch(title: String, checked: Boolean, set: (Boolean) -> Unit) = SettingChoice(
@@ -123,19 +126,39 @@ fun quickSettingChoices(
         speedChoice,
         bufferChoice,
     )
-    // Samo TV: usklađivanje osvežavanja ekrana sa snimkom. Ista sačuvana vrednost kao u glavnim
-    // Podešavanjima, pa važi poslednja izmena, gde god da je napravljena.
+    // Samo TV: zatamnjenje odmah posle odnosa slike (menja se strelicama levo i desno) i usklađivanje
+    // osvežavanja ekrana sa snimkom. Iste sačuvane vrednosti kao u glavnim Podešavanjima, pa važi
+    // poslednja izmena, gde god da je napravljena.
     if (tv) {
-        return shared + switch(
+        val dimChoice = screenDimChoice(screenDim, settingsViewModel::setScreenDim)
+        val frameRateChoice = switch(
             stringResource(R.string.settings_match_frame_rate),
             matchFrameRate,
             settingsViewModel::setMatchFrameRate,
         )
+        return listOf(aspectChoice, dimChoice) + shared.filter { it !== aspectChoice } + frameRateChoice
     }
     // Samo telefon: trake na dodir i puštanje u pozadini.
     return shared + listOf(
         switch(stringResource(R.string.settings_brightness_swipe), brightnessSlider, settingsViewModel::setPlayerBrightnessSwipe),
         switch(stringResource(R.string.settings_volume_swipe), volumeSlider, settingsViewModel::setPlayerVolumeSwipe),
         switch(stringResource(R.string.settings_background_play), backgroundPlay, settingsViewModel::setBackgroundPlay),
+    )
+}
+
+/**
+ * TV: zatamnjenje cele aplikacije (vidi [ScreenDim]). Ista sačuvana vrednost u meniju plejera i u
+ * Podešavanjima → Izgled ([group]), pa važi poslednja izmena, gde god da je napravljena.
+ */
+@Composable
+fun screenDimChoice(percent: Int, onSet: (Int) -> Unit, group: SettingsGroup? = null): SettingChoice {
+    val off = stringResource(R.string.setting_off)
+    return SettingChoice(
+        title = stringResource(R.string.settings_screen_dim),
+        summary = if (group == null) "" else stringResource(R.string.settings_screen_dim_summary),
+        options = ScreenDim.choices.map { if (it == ScreenDim.OFF) off else stringResource(R.string.screen_dim_percent, it) },
+        selected = ScreenDim.choices.indexOf(percent).coerceAtLeast(0),
+        group = group,
+        onSelect = { index -> ScreenDim.choices.getOrNull(index)?.let(onSet) },
     )
 }
