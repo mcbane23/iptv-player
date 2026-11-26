@@ -1,0 +1,18 @@
+Favourite channels in one list with sections
+Movies and series: sort and filter sit with the category, not at the top of the list
+Movies and series open on the last category; Continue watching shows one version of a movie or series
+Mark as watched with a long press on a movie
+Volume leveling
+Mobile data saver: 720p version of channels on mobile internet
+Watch position is shared between phone and TV, also when paused
+Screensaver: poster in the background, temperature, centred clock and date
+Phone portrait: player controls at the bottom of the screen
+TV: much faster scrolling, also with accessibility services and the Projectivy launcher
+TV: side menu in the middle of the screen, smaller category bar, list name and account info in Live
+TV: Up, Right and Left return focus where expected in Movies, Series and Home
+Live: message when a channel has no programme; delete a single recent search
+Pause stays paused after returning to the app; the last frame stays while the stream reloads
+Unsupported format (e.g. 4K HEVC) is reported at once; 5.1 audio plays as stereo when needed
+Fixed: Movies and Series no longer disappear after refreshing a list
+Fixed: an expired account no longer says "expires today", and the error message names the list
+Fixed: the update dialog on TV gets focus right away
