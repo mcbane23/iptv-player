@@ -1,0 +1,5 @@
+A movie or episode resumes by itself when playback gets stuck on Loading
+When the direct decoder gets stuck, playback switches to the hardware decoder; fixed the black picture after that
+TV: faster scrolling through channels in Live
+TV: the channel preview in Live refreshes as soon as you stop on a channel
+Fixed: focus no longer jumps in Favourites on TV
