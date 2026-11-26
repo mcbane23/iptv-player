@@ -183,6 +183,12 @@ class PlayerEngine(
      */
     private var tunnelHeldForPause = false
 
+    /**
+     * Snimak je u tunel režimu zapeo na učitavanju, pa ide običnim hardverskim dekoderom do kraja
+     * (Philips TV sa MediaTek čipom, Bane). Podešavanje dekodera se ne menja.
+     */
+    private var tunnelFallback = false
+
     /** Zvuk koji se sada pušta ide neraspakovan ka TV-u ili pojačalu. */
     private var audioPassthrough = false
 
@@ -271,6 +277,11 @@ class PlayerEngine(
     val stallSkipped: SharedFlow<Long> = _stallSkipped.asSharedFlow()
 
     private var stallJob: Job? = null
+
+    private val _tunnelDropped = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Direktan dekoder je zapeo, pa plejer do kraja snimka koristi običan hardverski. */
+    val tunnelDropped: SharedFlow<Unit> = _tunnelDropped.asSharedFlow()
 
     /** Koji je po redu pokušaj oporavka od zastoja u toku; 0 dok sadržaj teče. */
     private var stallStep = 0
@@ -483,7 +494,13 @@ class PlayerEngine(
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
                 .build()
         }
-        if (source != this.source) frameRateMeter.reset()
+        if (source != this.source) {
+            frameRateMeter.reset()
+            if (tunnelFallback) {
+                tunnelFallback = false
+                applyTunneling()
+            }
+        }
         this.source = source
         urlIndex = 0
         attempts = 0
@@ -694,6 +711,7 @@ class PlayerEngine(
     fun setDecoder(mode: DecoderMode) {
         if (decoderMode == mode) return
         decoderMode = mode
+        tunnelFallback = false
         applyTunneling()
         // Sadržaj koji ne može da se premotava bi krenuo od početka; novi dekoder važi od sledećeg puštanja.
         if (source == null || seekBlocked) return
@@ -733,7 +751,7 @@ class PlayerEngine(
         val selector = player.trackSelector as? DefaultTrackSelector ?: return
         selector.setParameters(
             selector.buildUponParameters().setTunnelingEnabled(
-                !shared && !speedChanged && !tunnelHeldForPause && decoderMode == DecoderMode.TUNNEL,
+                !shared && !speedChanged && !tunnelHeldForPause && !tunnelFallback && decoderMode == DecoderMode.TUNNEL,
             ),
         )
     }
@@ -903,6 +921,11 @@ class PlayerEngine(
             _stallSkipped.tryEmit(STALL_SKIP_MS)
         }
         _state.update { it.copy(video = it.video.copy(stallRecoveries = it.video.stallRecoveries + 1)) }
+        if (_state.value.video.tunneled && !tunnelFallback) {
+            tunnelFallback = true
+            applyTunneling()
+            _tunnelDropped.tryEmit(Unit)
+        }
         retryJob?.cancel()
         // Zaustavljanje zatvara zaglavljenu vezu (server dozvoljava samo jednu), pa tek onda ide nova.
         player.stop()
