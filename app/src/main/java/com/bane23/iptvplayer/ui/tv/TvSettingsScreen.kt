@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -474,7 +475,11 @@ fun TvSettingsScreen(
                         val slot = openSlot?.let { parent.slots.getOrNull(it) }
                         val choice = slot ?: parent
                         val change = stringResource(R.string.settings_language_change)
+                        // Fokus staje na trenutnu vrednost (ne na prvu), pa spisak počinje od nje da bi red već postojao.
+                        val focusIndex = choice.selected.coerceIn(0, (choice.options.size - 1).coerceAtLeast(0))
+                        val listState = remember(open, openSlot) { LazyListState(firstVisibleItemIndex = focusIndex) }
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             contentPadding = PaddingValues(bottom = 27.dp),
@@ -509,7 +514,7 @@ fun TvSettingsScreen(
                                                 openChoice = null
                                             }
                                         },
-                                        modifier = if (index == 0) Modifier.focusRequester(optionFocus) else Modifier,
+                                        modifier = if (index == focusIndex) Modifier.focusRequester(optionFocus) else Modifier,
                                     )
                                 }
                             }
