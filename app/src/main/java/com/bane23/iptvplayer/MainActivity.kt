@@ -39,6 +39,7 @@ import com.bane23.iptvplayer.ui.mobile.AppOrientation
 import com.bane23.iptvplayer.ui.mobile.MobileApp
 import com.bane23.iptvplayer.ui.tv.TvApp
 import com.bane23.iptvplayer.ui.tv.TvEdgeScroll
+import com.bane23.iptvplayer.ui.tv.TvScreenDim
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -106,6 +107,8 @@ class MainActivity : ComponentActivity() {
         val savedClassic = runBlocking { settingsStore.classicLook.first() }
         // Isto važi za veličinu prikaza, da se ekran pri pokretanju ne iscrta pa tek onda smanji.
         val savedScale = runBlocking { settingsStore.uiScale.first() }
+        // I zatamnjenje na TV-u, da slika pri pokretanju ne blesne punim sjajem.
+        val savedDim = if (isTv) runBlocking { settingsStore.screenDim.first() } else 0
         // I ceo ekran na telefonu, da se trake pri pokretanju ne pojave pa tek onda sakriju.
         val savedFullScreen = !isTv && runBlocking { settingsStore.appFullScreen.first() }
         // I položaj ekrana, da se aplikacija ne otvori uspravno pa tek onda okrene.
@@ -140,6 +143,11 @@ class MainActivity : ComponentActivity() {
                         UpdateDialog()
                         CrashReportPrompt()
                         AppMessageHost()
+                        // Zatamnjenje ide preko svega, i preko poruka, da ništa ne svetli u mraku.
+                        if (isTv) {
+                            val dim by settingsStore.screenDim.collectAsStateWithLifecycle(initialValue = savedDim)
+                            TvScreenDim(dim)
+                        }
                     }
                 }
             }

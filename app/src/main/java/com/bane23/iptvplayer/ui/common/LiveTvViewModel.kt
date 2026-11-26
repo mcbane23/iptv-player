@@ -9,6 +9,7 @@ import androidx.paging.PagingData
 import androidx.paging.PagingDataEvent
 import androidx.paging.PagingDataPresenter
 import androidx.paging.cachedIn
+import com.bane23.iptvplayer.data.prefs.ScreenDim
 import com.bane23.iptvplayer.data.prefs.SettingsStore
 import com.bane23.iptvplayer.data.repo.ChannelRepository
 import com.bane23.iptvplayer.domain.Category
@@ -469,6 +470,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setScreensaverMinutes(minutes: Int) {
         viewModelScope.launch { settings.setScreensaverMinutes(minutes) }
+    }
+
+    /** TV: zatamnjenje cele aplikacije u procentima. */
+    val screenDim: StateFlow<Int> = settings.screenDim
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ScreenDim.OFF)
+
+    fun setScreenDim(percent: Int) {
+        viewModelScope.launch { settings.setScreenDim(percent) }
     }
 
     val weatherCity: StateFlow<String> = settings.weatherCity

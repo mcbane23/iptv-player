@@ -314,6 +314,9 @@
     <string name="settings_screensaver_summary">When no key is pressed for the chosen time, a clock, the date and the current temperature change place every minute over a blurred poster from your favorite movies and series (or the last watched). It does not start while the player is open. Any key closes it and takes you back where you were. Press OK and pick a time.</string>
     <string name="settings_screensaver_off">Off</string>
     <string name="settings_screensaver_minutes">%1$d min</string>
+    <string name="settings_screen_dim">Dimming</string>
+    <string name="settings_screen_dim_summary">Darkens the picture and the whole app, for watching at night. The TV does not let apps lower the screen brightness, so a translucent black layer goes over everything. You can also change it in the player, in the Settings menu. Press OK and pick how much.</string>
+    <string name="screen_dim_percent">%1$d%%</string>
     <string name="settings_weather_city">Temperature city</string>
     <string name="settings_weather_city_summary">The screensaver shows the current temperature next to the date. The place is guessed from your internet connection; if it is wrong, type your city here. Weather comes from Open-Meteo. Without internet only the date is shown.</string>
     <string name="settings_weather_city_auto">Automatic</string>

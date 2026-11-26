@@ -63,6 +63,7 @@ import com.bane23.iptvplayer.ui.common.HiddenChannelsViewModel
 import com.bane23.iptvplayer.ui.common.crashReportValue
 import com.bane23.iptvplayer.ui.common.handOverCrashReport
 import com.bane23.iptvplayer.ui.common.player.SubtitlePreview
+import com.bane23.iptvplayer.ui.common.player.screenDimChoice
 import com.bane23.iptvplayer.ui.common.playerSettingChoices
 import com.bane23.iptvplayer.ui.common.themeChoice
 import com.bane23.iptvplayer.work.Autostart
@@ -145,13 +146,15 @@ fun TvSettingsScreen(
         group = SettingsGroup.LOOK,
         onSelect = { index -> ScreensaverTimeout.choices.getOrNull(index)?.let(viewModel::setScreensaverMinutes) },
     )
+    val screenDim by viewModel.screenDim.collectAsStateWithLifecycle()
+    val dimChoice = screenDimChoice(screenDim, viewModel::setScreenDim, SettingsGroup.LOOK)
     val weatherCity by viewModel.weatherCity.collectAsStateWithLifecycle()
     var weatherCityOpen by remember { mutableStateOf(false) }
     if (weatherCityOpen) {
         TvWeatherCityDialog(city = weatherCity, onSave = viewModel::setWeatherCity, onClose = { weatherCityOpen = false })
     }
     val choices = playerSettingChoices(playerSettings, viewModel) + themeChoice(appTheme, viewModel::setAppTheme) +
-        accentChoice + scaleChoice + screensaverChoice
+        accentChoice + scaleChoice + dimChoice + screensaverChoice
     // Jezik se bira sa spiska u bočnom prozoru; red jezika je u levoj koloni, van stavki grupa.
     var languageOpen by remember { mutableStateOf(false) }
     if (languageOpen) {

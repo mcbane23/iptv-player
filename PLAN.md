@@ -945,6 +945,10 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       jezičke verzije sa istim TMDB ID-jem (pozicija sa drugog uređaja ide na sve) prikazuju se kao jedna
       stavka. Ostaje verzija puštana na ovom uređaju, inače engleska (EN, UK/GB, US, AMZ), inače poslednje
       gledana. Sklanjanje iz reda sklanja sve spojene verzije. Baza v26: `watch_progress.playedHereAt`.
+- [x] Zatamnjenje na TV-u (Bane, 26. 11. 2026): crni providan sloj preko cele aplikacije (Isključeno, 20,
+      40, 60, 80%), za gledanje uveče bez drugih aplikacija. Menja se u plejeru (meni Podešavanja, odmah
+      posle odnosa slike, strelicama levo i desno) i u Podešavanja → Izgled; ista sačuvana vrednost. Pri
+      izmeni gore u sredini kratko stoji pločica sa nivoom. Telefon menja pravo osvetljenje prevlačenjem.
 
 ## 7. Testiranje
 
