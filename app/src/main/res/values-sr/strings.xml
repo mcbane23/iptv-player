@@ -610,6 +610,8 @@
     <string name="player_last_channel">Prethodno gledani kanal</string>
     <string name="playlist_account_valid_until">Nalog važi do %1$s</string>
     <string name="playlist_account_expires_today">ističe danas</string>
+    <string name="playlist_account_expired_on">Nalog je istekao %1$s</string>
+    <string name="playlist_error_for">%1$s: %2$s</string>
     <plurals name="playlist_account_days_left">
         <item quantity="one">još %1$d dan</item>
         <item quantity="few">još %1$d dana</item>

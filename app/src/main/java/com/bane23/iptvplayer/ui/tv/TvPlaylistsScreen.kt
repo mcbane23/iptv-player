@@ -34,7 +34,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
-import com.bane23.iptvplayer.ui.common.message
+import com.bane23.iptvplayer.ui.common.messageFor
 import com.bane23.iptvplayer.ui.common.accountExpiresSoon
 import com.bane23.iptvplayer.ui.common.accountLine
 import com.bane23.iptvplayer.ui.common.summary
@@ -107,7 +107,7 @@ fun TvPlaylistsScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = error.message(),
+                    text = error.messageFor(state.errorPlaylistName),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),

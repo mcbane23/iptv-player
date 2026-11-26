@@ -39,7 +39,7 @@ import com.bane23.iptvplayer.R
 import com.bane23.iptvplayer.domain.Playlist
 import com.bane23.iptvplayer.ui.common.PlaylistsViewModel
 import com.bane23.iptvplayer.ui.common.icons.AppIcons
-import com.bane23.iptvplayer.ui.common.message
+import com.bane23.iptvplayer.ui.common.messageFor
 import com.bane23.iptvplayer.ui.common.accountExpiresSoon
 import com.bane23.iptvplayer.ui.common.accountLine
 import com.bane23.iptvplayer.ui.common.summary
@@ -134,7 +134,7 @@ fun MobilePlaylistsScreen(
         AlertDialog(
             onDismissRequest = viewModel::dismissError,
             title = { Text(stringResource(R.string.error_title)) },
-            text = { Text(error.message()) },
+            text = { Text(error.messageFor(state.errorPlaylistName)) },
             confirmButton = {
                 TextButton(onClick = viewModel::dismissError) { Text(stringResource(R.string.action_ok)) }
             },

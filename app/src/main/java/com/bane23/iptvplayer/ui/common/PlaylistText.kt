@@ -11,6 +11,11 @@ import com.bane23.iptvplayer.domain.PlaylistType
 import java.text.DateFormat
 import java.util.Date
 
+/** Poruka o grešci uz ime liste na koju se odnosi. */
+@Composable
+fun PlaylistError.messageFor(playlistName: String?): String =
+    if (playlistName.isNullOrBlank()) message() else stringResource(R.string.playlist_error_for, playlistName, message())
+
 /** Poruka o grešci razumljiva korisniku. */
 @Composable
 fun PlaylistError.message(): String {
@@ -62,7 +67,11 @@ const val ACCOUNT_EXPIRY_WARNING_DAYS = 7
 fun Playlist.accountDaysLeft(now: Long = System.currentTimeMillis()): Int? =
     accountExpiresAt?.let { ((it - now) / 86_400_000L).toInt().coerceAtLeast(0) }
 
-/** Da li nalog uskoro ističe. */
+/** Da li je nalog već istekao. */
+fun Playlist.accountExpired(now: Long = System.currentTimeMillis()): Boolean =
+    accountExpiresAt?.let { it <= now } == true
+
+/** Da li nalog uskoro ističe ili je već istekao. */
 fun Playlist.accountExpiresSoon(now: Long = System.currentTimeMillis()): Boolean =
     accountDaysLeft(now)?.let { it < ACCOUNT_EXPIRY_WARNING_DAYS } == true
 
@@ -77,6 +86,7 @@ fun Playlist.accountLine(): String? {
         val date = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it))
         val valid = stringResource(R.string.playlist_account_valid_until, date)
         when {
+            accountExpired() -> stringResource(R.string.playlist_account_expired_on, date)
             daysLeft == null || daysLeft >= ACCOUNT_EXPIRY_WARNING_DAYS -> valid
             daysLeft == 0 -> "$valid (${stringResource(R.string.playlist_account_expires_today)})"
             else -> "$valid (${pluralStringResource(R.plurals.playlist_account_days_left, daysLeft, daysLeft)})"

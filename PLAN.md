@@ -545,6 +545,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
   „Last channel” na daljinskom).
 - [x] Liste: kartica Xtream liste prikazuje do kada nalog važi i broj veza; poslednjih 7 dana je
   istaknuto. Podatak se osvežava kad i lista (baza v13).
+  Nalog kome je datum prošao piše „Nalog je istekao <datum>” (ranije pogrešno „ističe danas”).
+  Poruka o grešci osvežavanja nosi ime liste i nestaje kad se izabere ili osveži druga lista.
 - [x] Liste se jednom dnevno same osvežavaju u pozadini (prekidač u Podešavanjima, uključeno
   podrazumevano; liste iz fajla se ne osvežavaju).
 - [x] Filmovi i serije: izbor redosleda u kategoriji (kao kod provajdera, nedavno dodato, po nazivu,
