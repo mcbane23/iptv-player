@@ -1078,7 +1078,7 @@ class PlayerEngine(
         const val RETRY_DELAY_MS = 1_500L
 
         /** Koliko film ili epizoda smeju da stoje na učitavanju pre nego što ih plejer sam pokrene. */
-        const val STALL_TIMEOUT_MS = 8_000L
+        const val STALL_TIMEOUT_MS = 5_000L
         const val STALL_SKIP_MS = 2_000L
         const val MAX_STALL_STEPS = 4
 
