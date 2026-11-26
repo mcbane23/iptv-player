@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -582,8 +583,15 @@ class VodRepository @Inject constructor(
     val activePlaylistId: Flow<Long?> = settings.activePlaylistId
 
     /** Filmovi, odnosno serije, koje je korisnik počeo da gleda; poslednje gledano prvo. */
+    fun observeContinue(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>> =
+        observeContinueOrWaiting(playlistId, kind).filterNotNull()
+
+    /**
+     * Kao [observeContinue], ali null dok se jezičke verzije spajaju čitanjem celog spiska liste (posle
+     * pokretanja to potraje i nekoliko sekundi), da ekran ne prikaže na tren sve verzije (Bane).
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeContinue(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>> {
+    fun observeContinueOrWaiting(playlistId: Long, kind: VodKind): Flow<List<ContinueItem>?> {
         // Više redova nego što se prikazuje: jezičke verzije istog filma se posle spajaju u jedan.
         val rows = if (kind == VodKind.MOVIES) {
             progressDao.observeContinueMovies(
@@ -611,11 +619,40 @@ class VodRepository @Inject constructor(
                 )
             }
         }.transformLatest { list ->
-            // Spajanje verzija čita ceo spisak liste, što posle pokretanja aplikacije potraje i nekoliko
-            // sekundi. Red se zato odmah prikaže kakav je u bazi, a spojene verzije stignu za njim.
-            if (list.size >= 2 && !catalogInMemory(kind)) emit(list.take(CONTINUE_LIMIT))
+            if (list.size >= 2 && !versionsKnown(playlistId, kind, list)) emit(null)
             emit(oneVersionEach(playlistId, kind, list).take(CONTINUE_LIMIT))
         }.distinctUntilChanged()
+    }
+
+    /**
+     * Da li se verzije stavki [rows] spajaju odmah: ceo spisak liste je već u memoriji, ili su sve stavke
+     * među sačuvanim pri prošlom spajanju.
+     */
+    private suspend fun versionsKnown(playlistId: Long, kind: VodKind, rows: List<ContinueItem>): Boolean =
+        catalogInMemory(kind) || storedVersions(playlistId, kind, rows.mapTo(HashSet()) { it.id }) != null
+
+    /** Sačuvane stavke reda „Nastavi gledanje” (vidi [VodDiskCache.readVersions]); null kad neka od [ids] fali. */
+    private suspend fun storedVersions(playlistId: Long, kind: VodKind, ids: Set<Long>): Map<Long, VodItem>? =
+        withContext(Dispatchers.IO) {
+            if (!settings.vodLocalCache.first()) return@withContext null
+            val stored = disk.readVersions(playlistId, kind)?.value ?: return@withContext null
+            stored.filter { it.id in ids }.associateBy { it.id }.takeIf { it.size == ids.size }
+        }
+
+    /**
+     * Stavke [ids] iz spiska liste, za spajanje verzija. Posle pokretanja se uzimaju sačuvane, ako su sve tu;
+     * inače se čita ceo spisak i izdvojene stavke se sačuvaju za sledeći put. Stavka koje više nema na listi
+     * se čuva bez TMDB ID-ja, da sledeći put ne traži ponovo ceo spisak.
+     */
+    private suspend fun versionCatalog(playlistId: Long, kind: VodKind, ids: Set<Long>): Map<Long, VodItem> {
+        if (!catalogInMemory(kind)) storedVersions(playlistId, kind, ids)?.let { return it }
+        val all = allItems(kind)
+        val catalog = withContext(Dispatchers.Default) { all.filter { it.id in ids }.associateBy { it.id } }
+        if (settings.vodLocalCache.first()) {
+            val missing = ids.filter { it !in catalog }.map { VodItem(id = it, name = "", poster = null, rating = null, extension = null) }
+            withContext(Dispatchers.IO) { disk.writeVersions(playlistId, kind, catalog.values + missing) }
+        }
+        return catalog
     }
 
     /** Da li je ceo spisak filmova, odnosno serija, aktivne liste već u memoriji (brzo spajanje verzija). */
@@ -634,9 +671,7 @@ class VodRepository @Inject constructor(
     private suspend fun oneVersionEach(playlistId: Long, kind: VodKind, rows: List<ContinueItem>): List<ContinueItem> {
         if (rows.size < 2) return rows
         return try {
-            val ids = rows.mapTo(HashSet()) { it.id }
-            val all = allItems(kind)
-            val catalog = withContext(Dispatchers.Default) { all.filter { it.id in ids }.associateBy { it.id } }
+            val catalog = versionCatalog(playlistId, kind, rows.mapTo(HashSet()) { it.id })
             val tmdbIds = catalog.values.mapNotNull { it.tmdbId?.takeIf { id -> id > 0 } }
             if (tmdbIds.size == tmdbIds.toSet().size) return rows
             val playedHere = withContext(Dispatchers.IO) {
