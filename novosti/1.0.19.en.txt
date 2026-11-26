@@ -1,0 +1,2 @@
+TV: jumping to a section in Favourites now really lands on its first channel
+TV: after hiding a channel, focus moves to the channel that takes its place
