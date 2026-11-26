@@ -8,9 +8,39 @@ import com.bane23.iptvplayer.domain.NowNext
 import com.bane23.iptvplayer.domain.Program
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /** Vreme u obliku koji je podešen na uređaju (npr. 20:15). */
-fun formatTime(timeMs: Long): String = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(timeMs))
+fun formatTime(timeMs: Long): String = TimeFormat.format(timeMs)
+
+/**
+ * Pravljenje formata vremena je skupo (na TV-u ~0,7 ms), a poziva se za svaki red kanala pri listanju.
+ * Format se zato pravi jednom i iznova samo kad se promeni jezik ili vremenska zona uređaja.
+ */
+private object TimeFormat {
+    private var locale: Locale? = null
+    private var zone: TimeZone? = null
+    private var format: DateFormat? = null
+
+    @Synchronized
+    fun format(timeMs: Long): String {
+        val currentLocale = Locale.getDefault()
+        val currentZone = TimeZone.getDefault()
+        val cached = format
+        val usable = if (cached != null && currentLocale == locale && currentZone == zone) {
+            cached
+        } else {
+            DateFormat.getTimeInstance(DateFormat.SHORT, currentLocale).also {
+                it.timeZone = currentZone
+                format = it
+                locale = currentLocale
+                zone = currentZone
+            }
+        }
+        return usable.format(Date(timeMs))
+    }
+}
 
 /** Dan i vreme, za početak prozora vodiča (npr. ned 20:00). */
 fun formatDayTime(timeMs: Long): String {
