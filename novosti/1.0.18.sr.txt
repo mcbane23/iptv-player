@@ -1,0 +1,5 @@
+Film ili epizoda sami nastavljaju kad snimak zastane na Učitavanju
+Kad direktan dekoder zapne, snimak prelazi na hardverski; ispravljena crna slika posle toga
+TV: brže listanje kanala u Uživo
+TV: pregled kanala u Uživo se osvežava čim staneš na kanal
+Ispravljeno: fokus više ne skače u Omiljenima na TV-u
