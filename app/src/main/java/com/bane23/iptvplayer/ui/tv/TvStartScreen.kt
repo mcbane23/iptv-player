@@ -226,11 +226,15 @@ fun TvStartScreen(
         )
         // Gornji red je stigao tek pošto je fokus već sam postavljen na red ispod njega (sporiji uređaj):
         // dok se korisnik nije pomerio, fokus prelazi na prvu stavku novog prvog reda i spisak se vraća na vrh.
+        // Isto i kad stavka sa fokusom nestane iz reda (spojene jezičke verzije u „Nastavi gledanje”).
         val firstRow = rowKeys.firstOrNull()
-        LaunchedEffect(firstRow, autoFocusKey) {
+        val autoItemGone = autoFocusKey?.let { key ->
+            rowOf(key) == "continue" && continueItems.none { "continue-" + (if (it.isSeries) "s" else "m") + it.id == key }
+        } == true
+        LaunchedEffect(firstRow, autoFocusKey, autoItemGone) {
             val key = autoFocusKey ?: return@LaunchedEffect
-            if (firstRow == null || rowOf(key) == firstRow) return@LaunchedEffect
-            if (!rowsHaveFocus || lastFocusKey != key) {
+            if (firstRow == null || (rowOf(key) == firstRow && !autoItemGone)) return@LaunchedEffect
+            if ((!rowsHaveFocus && !autoItemGone) || lastFocusKey != key) {
                 autoFocusKey = null
                 return@LaunchedEffect
             }
