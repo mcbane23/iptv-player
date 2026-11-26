@@ -93,8 +93,8 @@ class TvStartViewModel @Inject constructor(
     private val vod: VodRepository,
 ) : ViewModel() {
 
-    /** Započeti filmovi i serije u jednom redu, poslednje gledano prvo. */
-    val continueItems: StateFlow<List<ContinueItem>> = vod.activePlaylistId
+    /** Započeti filmovi i serije u jednom redu, poslednje gledano prvo; null dok se još čitaju. */
+    val continueItems: StateFlow<List<ContinueItem>?> = vod.activePlaylistId
         .flatMapLatest { playlistId ->
             if (playlistId == null) {
                 flowOf(emptyList())
@@ -105,7 +105,7 @@ class TvStartViewModel @Inject constructor(
                 ) { movies, series -> mergeContinue(movies, series, CONTINUE_LIMIT) }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
      * Omiljeni kanali (ili nedavno gledani kad omiljenih nema) sa emisijom koja je sada na programu.
