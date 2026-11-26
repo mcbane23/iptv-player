@@ -1016,6 +1016,9 @@ private data class ChannelNeighbor(val id: Long, val below: Boolean)
 /** Kanal [channelId] koji izlazi iz otvorene liste omiljenih; [direct] kad izlazi odmah, bez izbora liste. */
 private data class ChannelRemoval(val channelId: Long, val neighbor: ChannelNeighbor?, val direct: Boolean)
 
+private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
+    if (isTarget) Modifier.focusRequester(requester) else Modifier
+
 /**
  * Fokus redova kanala bez ponovnog slaganja: svaki red stalno nosi svoj [FocusRequester] i prijavljuje ga
  * pod svojim mestom u spisku i ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti.
