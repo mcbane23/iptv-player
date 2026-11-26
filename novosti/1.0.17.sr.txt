@@ -1,0 +1,18 @@
+Omiljeni kanali u jednoj listi sa sekcijama
+Filmovi i serije: redosled i filter su uz kategoriju, a ne na vrhu spiska
+Filmovi i serije se otvaraju na poslednjoj kategoriji; u Nastavi gledanje jedna verzija filma i serije
+Označi kao odgledano na dugi pritisak filma
+Izjednačavanje jačine zvuka
+Štednja mobilnih podataka: 720p verzija kanala na mobilnom internetu
+Pozicija gledanja se razmenjuje između telefona i TV-a i kad se pauzira
+Čuvar ekrana: poster u pozadini, temperatura, sat i datum u sredini
+Telefon uspravno: kontrole plejera na dnu ekrana
+TV: znatno brže listanje, i uz usluge pristupačnosti i pokretač Projectivy
+TV: bočni meni u sredini ekrana, manja traka kategorija, naziv liste i podaci o nalogu u Uživo
+TV: Gore, Desno i Levo vraćaju fokus tamo gde treba u Filmovima, Serijama i na Početnoj
+Uživo: poruka kad kanal nema program; brisanje jedne stavke iz nedavnih pretraga
+Pauza ostaje pauza posle povratka u aplikaciju; poslednja slika ostaje dok se strim ponovo učitava
+Nepodržan format (npr. 4K HEVC) javlja se odmah; 5.1 zvuk se pušta kao stereo kad treba
+Ispravljeno: Filmovi i Serije ne nestaju posle osvežavanja liste
+Ispravljeno: istekao nalog više ne piše „ističe danas”, a poruka o grešci nosi ime liste
+Ispravljeno: dijalog za ažuriranje na TV-u odmah dobija fokus
