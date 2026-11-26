@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -95,7 +95,8 @@ fun TvStartScreen(
     onAutoFocused: () -> Unit = {},
     viewModel: TvStartViewModel = hiltViewModel(),
 ) {
-    val continueItems by viewModel.continueItems.collectAsStateWithLifecycle()
+    val continueLoaded by viewModel.continueItems.collectAsStateWithLifecycle()
+    val continueItems = continueLoaded.orEmpty()
     val channelRow by viewModel.channelRow.collectAsStateWithLifecycle()
     val added by viewModel.added.collectAsStateWithLifecycle()
     val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
@@ -112,6 +113,10 @@ fun TvStartScreen(
     // Sa „Početne” je nešto otvoreno, pa se pri sledećem prikazu fokus vraća na tu stavku.
     var returning by rememberSaveable { mutableStateOf(false) }
     val itemFocus = remember { FocusRequester() }
+    // Prva stavka prvog reda, i stavka na koju je fokus sam postavljen pri ulasku na „Početnu”.
+    val firstItemFocus = remember { FocusRequester() }
+    var autoFocusKey by remember { mutableStateOf<String?>(null) }
+    var rowsHaveFocus by remember { mutableStateOf(false) }
     val lastKey: () -> String? = { lastFocusKey }
     // Ovaj prikaz je povratak sa otvorene stavke: fokus na prvu stavku ([autoFocus]) tada ne važi.
     val cameBack = remember { BooleanArray(1) { returning } }
@@ -144,17 +149,18 @@ fun TvStartScreen(
     }
 
     val channels = channelRow?.channels.orEmpty()
-    // Red kanala stiže malo posle ostalih. Ostali redovi ga kratko sačekaju, da ih on ne gurne nadole
-    // kad se pojavi; ako kasni duže, prikazuju se bez njega.
+    // Red kanala i „Nastavi gledanje” mogu da stignu malo posle ostalih. Ostali redovi ih kratko sačekaju,
+    // da ih oni ne gurnu nadole kad se pojave i da fokus ne stane na red ispod njih; ako kasne duže,
+    // prikazuju se bez njih.
     var channelsWaited by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(CHANNELS_WAIT_MS)
         channelsWaited = true
     }
-    val holdRows = channelRow == null && !channelsWaited
+    val holdRows = (channelRow == null || continueLoaded == null) && !channelsWaited
     val nothing = holdRows ||
         (channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty())
-    val empty = channelRow != null && nothing && added.loaded
+    val empty = channelRow != null && continueLoaded != null && nothing && added.loaded
     // Poruka o učitavanju tek posle kratkog čekanja, da ne zatreperi kad redovi stignu odmah.
     var waited by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -171,7 +177,10 @@ fun TvStartScreen(
             return@LaunchedEffect
         }
         delay(REFOCUS_DELAY_MS)
-        if (rowsFocus.tryRequestFocus()) onAutoFocused()
+        if (rowsFocus.tryRequestFocus()) {
+            autoFocusKey = lastFocusKey
+            onAutoFocused()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -215,6 +224,29 @@ fun TvStartScreen(
                 "series".takeIf { added.series.isNotEmpty() },
             ),
         )
+        // Gornji red je stigao tek pošto je fokus već sam postavljen na red ispod njega (sporiji uređaj):
+        // dok se korisnik nije pomerio, fokus prelazi na prvu stavku novog prvog reda i spisak se vraća na vrh.
+        val firstRow = rowKeys.firstOrNull()
+        LaunchedEffect(firstRow, autoFocusKey) {
+            val key = autoFocusKey ?: return@LaunchedEffect
+            if (firstRow == null || rowOf(key) == firstRow) return@LaunchedEffect
+            if (!rowsHaveFocus || lastFocusKey != key) {
+                autoFocusKey = null
+                return@LaunchedEffect
+            }
+            rowsState.scrollToItem(0)
+            repeat(RETURN_FOCUS_FRAMES) {
+                if (firstItemFocus.tryRequestFocus()) {
+                    autoFocusKey = lastFocusKey
+                    return@LaunchedEffect
+                }
+                withFrameNanos { }
+            }
+        }
+        // Čita [rowKeys] pri crtanju stavke, da i već nacrtan red sazna kad prestane da bude prvi.
+        val firstFocus: (String, Int) -> Modifier = { rowKey, index ->
+            if (index == 0 && rowKey == rowKeys.firstOrNull()) Modifier.focusRequester(firstItemFocus) else Modifier
+        }
         val showRow: (String) -> Unit = { rowKey ->
             val index = rowKeys.indexOf(rowKey)
             if (index >= 0 && (index != rowsState.firstVisibleItemIndex || rowsState.firstVisibleItemScrollOffset != 0)) {
@@ -224,13 +256,17 @@ fun TvStartScreen(
         CompositionLocalProvider(LocalBringIntoViewSpec provides NoFocusScroll) {
         LazyColumn(
             state = rowsState,
-            modifier = Modifier.fillMaxSize().focusRequester(rowsFocus).focusGroup(),
+            modifier = Modifier
+                .fillMaxSize()
+                .onFocusChanged { rowsHaveFocus = it.hasFocus }
+                .focusRequester(rowsFocus)
+                .focusGroup(),
             contentPadding = PaddingValues(bottom = 27.dp),
         ) {
             if (continueItems.isNotEmpty()) {
                 item(key = "continue") {
                     StartRow(stringResource(R.string.vod_continue_watching), edgeSpec) {
-                        items(continueItems, key = { (if (it.isSeries) "s" else "m") + it.id }) { item ->
+                        itemsIndexed(continueItems, key = { _, c -> (if (c.isSeries) "s" else "m") + c.id }) { index, item ->
                             val focusKey = "continue-" + (if (item.isSeries) "s" else "m") + item.id
                             PosterCard(
                                 name = item.name,
@@ -246,7 +282,7 @@ fun TvStartScreen(
                                     viewModel.focusVod(item.id, item.name, item.poster, item.isSeries)
                                 },
                                 onLongClick = { menuContinue = item },
-                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
+                                modifier = firstFocus("continue", index).then(Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus)),
                             )
                         }
                     }
@@ -257,7 +293,7 @@ fun TvStartScreen(
                     val group = channelRow?.group ?: ChannelGroups.FAVORITES
                     val title = if (group == ChannelGroups.FAVORITES) R.string.home_favorite_channels else R.string.home_recent_channels
                     StartRow(stringResource(title), edgeSpec) {
-                        items(channels, key = { it.id }) { channel ->
+                        itemsIndexed(channels, key = { _, c -> c.id }) { index, channel ->
                             val focusKey = "channel-${channel.id}"
                             ChannelTile(
                                 channel = channel,
@@ -271,7 +307,7 @@ fun TvStartScreen(
                                     showRow("channels")
                                     viewModel.focusChannel(channel)
                                 },
-                                modifier = Modifier.returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
+                                modifier = firstFocus("channels", index).then(Modifier.returnFocus(isLastFocused(focusKey, lastKey), itemFocus)),
                             )
                         }
                     }
@@ -280,7 +316,7 @@ fun TvStartScreen(
             if (added.movies.isNotEmpty()) {
                 item(key = "movies") {
                     StartRow(stringResource(R.string.home_added_movies), edgeSpec) {
-                        items(added.movies, key = { it.id }) { item ->
+                        itemsIndexed(added.movies, key = { _, c -> c.id }) { index, item ->
                             val focusKey = "movies-${item.id}"
                             PosterCard(
                                 name = item.name,
@@ -296,7 +332,7 @@ fun TvStartScreen(
                                 },
                                 favorite = item.id in favoriteMovies,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = false) },
-                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
+                                modifier = firstFocus("movies", index).then(Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus)),
                             )
                         }
                     }
@@ -305,7 +341,7 @@ fun TvStartScreen(
             if (added.series.isNotEmpty()) {
                 item(key = "series") {
                     StartRow(stringResource(R.string.home_added_series), edgeSpec) {
-                        items(added.series, key = { it.id }) { item ->
+                        itemsIndexed(added.series, key = { _, c -> c.id }) { index, item ->
                             val focusKey = "series-${item.id}"
                             PosterCard(
                                 name = item.name,
@@ -321,7 +357,7 @@ fun TvStartScreen(
                                 },
                                 favorite = item.id in favoriteSeries,
                                 onToggleFavorite = { viewModel.toggleFavorite(item, series = true) },
-                                modifier = Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus),
+                                modifier = firstFocus("series", index).then(Modifier.width(POSTER_WIDTH).returnFocus(isLastFocused(focusKey, lastKey), itemFocus)),
                             )
                         }
                     }
@@ -489,6 +525,13 @@ private fun StartRow(
 @Composable
 private fun isLastFocused(key: String, lastKey: () -> String?): Boolean =
     remember(key) { derivedStateOf { lastKey() == key } }.value
+
+/** Red kome pripada stavka sa ključem fokusa [focusKey] (ključevi redova iz `rowKeys`). */
+private fun rowOf(focusKey: String): String =
+    when (val prefix = focusKey.substringBefore('-')) {
+        "channel" -> "channels"
+        else -> prefix
+    }
 
 /** Samo stavka na koju se fokus vraća nosi [requester]. */
 private fun Modifier.returnFocus(isTarget: Boolean, requester: FocusRequester): Modifier =
