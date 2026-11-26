@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -890,10 +893,18 @@ fun TvLiveTvScreen(
                     }
                 }
                 }
+                // Pregled prati kanal tek kad se listanje zaustavi (Bane, 26. 11.): pri brzom koraku kroz kanale
+                // desna kolona se ne slaže iznova na svaki pritisak. Prvi kanal i izlazak sa kanala važe odmah.
+                val previewChannel by produceState<Channel?>(initialValue = null) {
+                    snapshotFlow { focusedChannel?.takeIf { it.id == lastChannelId } }.collectLatest { next ->
+                        if (value != null && next != null) delay(PREVIEW_SETTLE_MS)
+                        value = next
+                    }
+                }
                 ChannelPreviewPane(
                     viewModel = previewViewModel,
                     // Kanal se čita tek u pregledu, da korak kroz kanale ne crta iznova ceo ekran.
-                    channel = { focusedChannel?.takeIf { it.id == lastChannelId } },
+                    channel = { previewChannel },
                     now = now,
                     modifier = Modifier
                         .weight(0.32f)
@@ -1058,6 +1069,7 @@ private const val FOCUS_RESTORE_ATTEMPTS = 10
 private const val FOCUS_RESTORE_STEP_MS = 60L
 private const val REMEMBER_CATEGORY_DELAY_MS = 1500L
 private const val MOVE_SETTLE_MS = 150L
+private const val PREVIEW_SETTLE_MS = 200L
 private val SECTION_ROWS_MAX_HEIGHT = 200.dp
 
 /** Oznaka u `pendingRecent`: briše se cela lista nedavno gledanih, ne jedan kanal. */
