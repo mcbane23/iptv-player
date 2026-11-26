@@ -154,6 +154,8 @@ dependencies {
     // Test build: imena Compose funkcija u Perfetto tragu, da se na TV-u vidi šta se iznova slaže.
     // Radi samo kad se praćenje uključi preko adb-a; u zvaničnom izdanju ga nema.
     add("devImplementation", libs.androidx.compose.runtime.tracing)
+    // Izvorna biblioteka za praćenje (i za armeabi-v7a, kakav je TV); bez nje se praćenje ne uključuje.
+    add("devImplementation", libs.androidx.tracing.perfetto.binary)
 
     implementation(libs.androidx.tv.material)
 
