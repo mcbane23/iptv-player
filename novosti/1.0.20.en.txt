@@ -1,0 +1,3 @@
+TV: on launch, focus lands on Continue watching without jumping through rows
+TV: dim the picture and the whole app, from the player menu and Settings → Appearance
+TV: value lists in Settings open on the selected value
