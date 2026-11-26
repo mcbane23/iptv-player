@@ -191,6 +191,7 @@
     <string name="vod_mark_season_unwatched">Mark season %1$d as unwatched</string>
     <string name="vod_progress">%1$s of %2$s</string>
     <string name="vod_seek_unavailable">Seeking is not available for this video</string>
+    <string name="vod_stall_skipped">The video stalled, skipped 2 seconds</string>
     <string name="vod_fetching_position">Getting the position from your other device…</string>
     <string name="vod_resumed_from_other_device">Continued from %1$s, where you stopped on another device</string>
     <string name="vod_seek_back">−%1$d s</string>
@@ -451,6 +452,7 @@
     <string name="stream_info_keyframe_skips">skips %1$d</string>
     <string name="stream_info_audio_underruns">audio underruns %1$d</string>
     <string name="stream_info_rebuffers">rebuffers %1$d</string>
+    <string name="stream_info_stall_recoveries">recoveries %1$d</string>
     <string name="stream_info_seek_approximate">approximate seeking</string>
     <string name="stream_info_seek_measuring">no seeking yet (measuring)</string>
     <string name="stream_info_seek_no_size">no seeking (size unknown)</string>

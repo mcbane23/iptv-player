@@ -190,6 +190,7 @@
     <string name="vod_mark_season_unwatched">Poništi odgledanu sezonu %1$d</string>
     <string name="vod_progress">%1$s od %2$s</string>
     <string name="vod_seek_unavailable">Ovaj snimak ne može da se premotava</string>
+    <string name="vod_stall_skipped">Snimak je zastao, preskočene su 2 sekunde</string>
     <string name="vod_fetching_position">Preuzimam mesto sa drugog uređaja…</string>
     <string name="vod_resumed_from_other_device">Nastavljeno od %1$s, gde je stalo na drugom uređaju</string>
     <string name="vod_seek_back">−%1$d s</string>
@@ -450,6 +451,7 @@
     <string name="stream_info_keyframe_skips">preskoka %1$d</string>
     <string name="stream_info_audio_underruns">prekida zvuka %1$d</string>
     <string name="stream_info_rebuffers">učitavanja %1$d</string>
+    <string name="stream_info_stall_recoveries">oporavaka %1$d</string>
     <string name="stream_info_seek_approximate">približno premotavanje</string>
     <string name="stream_info_seek_measuring">premotavanje još ne (meri se)</string>
     <string name="stream_info_seek_no_size">bez premotavanja (veličina nepoznata)</string>
