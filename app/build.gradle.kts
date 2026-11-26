@@ -151,6 +151,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Test build: imena Compose funkcija u Perfetto tragu, da se na TV-u vidi šta se iznova slaže.
+    // Radi samo kad se praćenje uključi preko adb-a; u zvaničnom izdanju ga nema.
+    add("devImplementation", libs.androidx.compose.runtime.tracing)
 
     implementation(libs.androidx.tv.material)
 
