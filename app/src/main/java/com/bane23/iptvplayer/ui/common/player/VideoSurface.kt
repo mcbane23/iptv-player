@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.PixelCopy
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import com.bane23.iptvplayer.player.PlaybackStatus
+import com.bane23.iptvplayer.player.SurfaceReset
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
@@ -82,6 +85,17 @@ fun VideoSurface(
     val settings by settingsViewModel.playerSettings.collectAsStateWithLifecycle()
     val fileSubtitle = subtitleText?.collectAsStateWithLifecycle()?.value
     val fileSubtitleView = remember { arrayOfNulls<SubtitleView>(1) }
+    val videoView = remember { arrayOfNulls<View>(1) }
+    LaunchedEffect(player) {
+        // Sakrivanje i ponovno prikazivanje uništava površinu i pravi novu, bez veze sa tunelom.
+        SurfaceReset.requests.collect { target ->
+            val surface = videoView[0]
+            if (target === player && surface != null) {
+                surface.visibility = View.GONE
+                surface.post { surface.visibility = View.VISIBLE }
+            }
+        }
+    }
     Box(modifier) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -95,6 +109,7 @@ fun VideoSurface(
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
                     this.player = player
                     (videoSurfaceView as? SurfaceView)?.let(lastFrame::attach)
+                    videoView[0] = videoSurfaceView
                     // Titl iz fajla dobija svoj sloj na istom mestu gde su i titlovi iz sadržaja.
                     (subtitleView?.parent as? ViewGroup)?.let { frame ->
                         val extra = SubtitleView(context)
@@ -133,6 +148,7 @@ fun VideoSurface(
             },
             onRelease = { view ->
                 view.player = null
+                videoView[0] = null
                 lastFrame.detach()
             },
         )
