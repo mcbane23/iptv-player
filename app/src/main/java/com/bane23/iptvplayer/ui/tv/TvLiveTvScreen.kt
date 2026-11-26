@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -151,13 +150,13 @@ fun TvLiveTvScreen(
     }
     var focusedCategory by remember(state.loading, playlistId) { mutableStateOf(selectedCategory) }
     val firstFocus = remember { FocusRequester() }
-    val channelFocus = remember { FocusRequester() }
-    // Prvi kanal vidljiv na vrhu spiska: Desno sa kategorija ide na njega (Bane), ne na kanal u visini kategorije.
-    val topChannelFocus = remember { FocusRequester() }
+    // Svaki red kanala ima svoj stalni FocusRequester, a fokus se traži po ID-u ili po mestu u spisku. Tako
+    // promena cilja (poslednji kanal, prvi vidljivi, kanal za povratak) ne slaže redove iznova pri svakom koraku.
+    val rowFocus = remember { ChannelRowFocus() }
     // Kanal sa koga se otišlo u kategorije: Desno se vraća na njega dok je ista kategorija izabrana (Bane, 24. 11.).
     var returnChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
     var returnCategory by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
-    val returnChannelFocus = remember { FocusRequester() }
+    val returnChannelFocus = rowFocus.byId { returnChannelId }
     // Red u levoj koloni na kome je fokus bio pre odlaska u bočni meni; Desno iz menija vraća na njega.
     val leftRow = rememberTvLastRow()
     val channelListState = rememberLazyListState()
@@ -166,6 +165,9 @@ fun TvLiveTvScreen(
     var categoryFilter by rememberSaveable(playlistId) { mutableStateOf("") }
     // Kanal na kome je fokus bio poslednji put, da se posle povratka iz plejera nastavi odatle.
     var lastChannelId by rememberSaveable(playlistId) { mutableStateOf<Long?>(null) }
+    val channelFocus = rowFocus.byId { lastChannelId }
+    // Prvi kanal vidljiv na vrhu spiska: Desno sa kategorija ide na njega (Bane), ne na kanal u visini kategorije.
+    val topChannelFocus = rowFocus.byIndex { channelListState.firstVisibleItemIndex }
     // Sa spiska je otvoren plejer: posle povratka fokus ide na kanal koji je gledan poslednji, jer se
     // u plejeru kanal može promeniti.
     var openedPlayer by rememberSaveable { mutableStateOf(false) }
@@ -812,22 +814,7 @@ fun TvLiveTvScreen(
                                     previewViewModel.focus(it.id)
                                 }
                             },
-                            // Red čita samo da li je on poslednji ili prvi vidljivi, ne samu vrednost: tako se
-                            // pri svakom koraku D-pada iznova crtaju samo dva reda, a ne svi na ekranu.
-                            modifier = focusTarget(
-                                remember(channel?.id) { derivedStateOf { channel != null && channel.id == lastChannelId } }.value,
-                                channelFocus,
-                            ).then(
-                                focusTarget(
-                                    remember(index) { derivedStateOf { index == channelListState.firstVisibleItemIndex } }.value,
-                                    topChannelFocus,
-                                ),
-                            ).then(
-                                focusTarget(
-                                    remember(channel?.id) { derivedStateOf { channel != null && channel.id == returnChannelId } }.value,
-                                    returnChannelFocus,
-                                ),
-                            ),
+                            modifier = rowFocus.row(index, channel?.id),
                             container = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                             // Niži red i manji logo, da na ekran stane kanal više.
                             verticalPadding = 6.dp,
@@ -1029,8 +1016,37 @@ private data class ChannelNeighbor(val id: Long, val below: Boolean)
 /** Kanal [channelId] koji izlazi iz otvorene liste omiljenih; [direct] kad izlazi odmah, bez izbora liste. */
 private data class ChannelRemoval(val channelId: Long, val neighbor: ChannelNeighbor?, val direct: Boolean)
 
-private fun focusTarget(isTarget: Boolean, requester: FocusRequester): Modifier =
-    if (isTarget) Modifier.focusRequester(requester) else Modifier
+/**
+ * Fokus redova kanala bez ponovnog slaganja: svaki red stalno nosi svoj [FocusRequester] i prijavljuje ga
+ * pod svojim mestom u spisku i ID-om kanala, a [byId] i [byIndex] traže fokus po trenutnoj vrednosti.
+ */
+private class ChannelRowFocus {
+    private val rowsByIndex = HashMap<Int, FocusRequester>()
+    private val rowsById = HashMap<Long, FocusRequester>()
+
+    /** Cilj fokusa koji se računa tek kad se fokus traži. */
+    fun interface Target {
+        fun tryRequestFocus(): Boolean
+    }
+
+    fun byId(id: () -> Long?): Target = Target { id()?.let { rowsById[it] }?.tryRequestFocus() == true }
+
+    fun byIndex(index: () -> Int): Target = Target { rowsByIndex[index()]?.tryRequestFocus() == true }
+
+    @Composable
+    fun row(index: Int, id: Long?): Modifier {
+        val requester = remember { FocusRequester() }
+        DisposableEffect(index, id) {
+            rowsByIndex[index] = requester
+            if (id != null) rowsById[id] = requester
+            onDispose {
+                if (rowsByIndex[index] === requester) rowsByIndex.remove(index)
+                if (id != null && rowsById[id] === requester) rowsById.remove(id)
+            }
+        }
+        return Modifier.focusRequester(requester)
+    }
+}
 
 private const val SKELETON_ROWS = 8
 private const val ROW_SEARCH = "__search"
@@ -1340,7 +1356,7 @@ internal fun sectionStep(starts: List<Int>, current: Int, forward: Boolean): Int
     if (forward) starts.firstOrNull { it > current } else starts.lastOrNull { it < current }
 
 /** Skroluje spisak tako da je red [index] prvi vidljiv i daje mu fokus (preko [topFocus], koji nosi prvi vidljivi red). */
-private suspend fun jumpToRow(listState: LazyListState, topFocus: FocusRequester, index: Int) {
+private suspend fun jumpToRow(listState: LazyListState, topFocus: ChannelRowFocus.Target, index: Int) {
     runCatching { listState.scrollToItem(index) }
     repeat(FOCUS_RESTORE_ATTEMPTS) {
         if (listState.firstVisibleItemIndex == index && topFocus.tryRequestFocus()) return
