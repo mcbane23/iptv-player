@@ -95,8 +95,11 @@ fun TvStartScreen(
     onAutoFocused: () -> Unit = {},
     viewModel: TvStartViewModel = hiltViewModel(),
 ) {
-    val continueLoaded by viewModel.continueItems.collectAsStateWithLifecycle()
-    val continueItems = continueLoaded.orEmpty()
+    val continueRow by viewModel.continueRow.collectAsStateWithLifecycle()
+    val continueItems = continueRow?.items.orEmpty()
+    // Jezičke verzije se još spajaju: red čeka sa krugom, a fokus čeka da stigne (Bane).
+    val continueWaiting = continueRow?.waiting == true
+    val continueLoaded = continueRow?.takeUnless { it.waiting }
     val channelRow by viewModel.channelRow.collectAsStateWithLifecycle()
     val added by viewModel.added.collectAsStateWithLifecycle()
     val favoriteMovies by viewModel.favoriteMovies.collectAsStateWithLifecycle()
@@ -159,7 +162,7 @@ fun TvStartScreen(
     }
     val holdRows = (channelRow == null || continueLoaded == null) && !channelsWaited
     val nothing = holdRows ||
-        (channels.isEmpty() && continueItems.isEmpty() && added.movies.isEmpty() && added.series.isEmpty())
+        (channels.isEmpty() && continueItems.isEmpty() && !continueWaiting && added.movies.isEmpty() && added.series.isEmpty())
     val empty = channelRow != null && continueLoaded != null && nothing && added.loaded
     // Poruka o učitavanju tek posle kratkog čekanja, da ne zatreperi kad redovi stignu odmah.
     var waited by remember { mutableStateOf(false) }
@@ -169,8 +172,8 @@ fun TvStartScreen(
     }
 
     // Fokus odmah na prvu stavku prvog reda čim redovi stignu (pokretanje aplikacije, povratak sa Nazad).
-    LaunchedEffect(autoFocus, nothing) {
-        if (!autoFocus || nothing) return@LaunchedEffect
+    LaunchedEffect(autoFocus, nothing, continueWaiting) {
+        if (!autoFocus || nothing || continueWaiting) return@LaunchedEffect
         if (cameBack[0]) {
             cameBack[0] = false
             onAutoFocused()
@@ -218,7 +221,7 @@ fun TvStartScreen(
         // na koji fokus pređe strelicom Gore, u tom trenutku još nije među vidljivim redovima.
         val rowKeys by rememberUpdatedState(
             listOfNotNull(
-                "continue".takeIf { continueItems.isNotEmpty() },
+                "continue".takeIf { continueItems.isNotEmpty() || continueWaiting },
                 "channels".takeIf { channels.isNotEmpty() },
                 "movies".takeIf { added.movies.isNotEmpty() },
                 "series".takeIf { added.series.isNotEmpty() },
@@ -267,7 +270,9 @@ fun TvStartScreen(
                 .focusGroup(),
             contentPadding = PaddingValues(bottom = 27.dp),
         ) {
-            if (continueItems.isNotEmpty()) {
+            if (continueWaiting) {
+                item(key = "continue") { WaitingRow(stringResource(R.string.vod_continue_watching)) }
+            } else if (continueItems.isNotEmpty()) {
                 item(key = "continue") {
                     StartRow(stringResource(R.string.vod_continue_watching), edgeSpec) {
                         itemsIndexed(continueItems, key = { _, c -> (if (c.isSeries) "s" else "m") + c.id }) { index, item ->
@@ -492,6 +497,42 @@ private fun LoadingRow(series: Boolean) {
     }
 }
 
+/**
+ * Red koji još nije spreman: naslov i mali krug sa porukom, u visini postera, da redovi ispod ne
+ * skoknu kad stigne. Ne prima fokus.
+ */
+@Composable
+private fun WaitingRow(title: String) {
+    val accent = MaterialTheme.colorScheme.primary
+    Column(modifier = Modifier.padding(top = 10.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 48.dp),
+        )
+        Row(
+            modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp).height(WAITING_ROW_HEIGHT),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(
+                color = accent,
+                trackColor = accent.copy(alpha = 0.18f),
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(22.dp),
+            )
+            Text(
+                text = stringResource(R.string.vod_loading),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+    }
+}
+
 /** Jedan red „Početne”: naslov i vodoravan spisak. Fokus se pri povratku u red vraća na istu stavku. */
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -610,6 +651,8 @@ private fun ChannelTile(
 
 private val POSTER_WIDTH = 132.dp
 private val HERO_HEIGHT = 176.dp
+// Otprilike visina postera sa nazivom u dva reda.
+private val WAITING_ROW_HEIGHT = 220.dp
 private val CHANNEL_WIDTH = 240.dp
 private val CHANNEL_HEIGHT = 68.dp
 private const val REFOCUS_DELAY_MS = 150L

@@ -58,6 +58,16 @@ class VodDiskCache internal constructor(private val root: File) {
     fun writeAdded(playlistId: Long, kind: VodKind, signature: Long, items: List<VodItem>) =
         write(file(playlistId, kind, ADDED), signature) { output -> encodeItems(items, output) }
 
+    /**
+     * Filmovi, odnosno serije, iz reda „Nastavi gledanje” sa TMDB ID-jem i kategorijom, da se jezičke
+     * verzije posle pokretanja spoje bez čitanja celog spiska liste.
+     */
+    fun readVersions(playlistId: Long, kind: VodKind): VodCached<List<VodItem>>? =
+        read(file(playlistId, kind, VERSIONS)) { input -> decodeItems(input) }
+
+    fun writeVersions(playlistId: Long, kind: VodKind, items: List<VodItem>) =
+        write(file(playlistId, kind, VERSIONS), 0L) { output -> encodeItems(items, output) }
+
     /** Briše sačuvane spiskove jedne liste (lista obrisana ili promenjena). */
     fun clear(playlistId: Long) {
         File(root, playlistId.toString()).deleteRecursively()
@@ -114,6 +124,7 @@ class VodDiskCache internal constructor(private val root: File) {
         const val DIR = "vod-cache"
         const val CATEGORIES = "categories"
         const val ADDED = "added"
+        const val VERSIONS = "continue-versions"
 
         /** Menja se kad se promeni zapis, pa se stari fajlovi samo zanemare. */
         const val VERSION = 1

@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/** Red „Nastavi gledanje” na „Početnoj”; [waiting] dok se jezičke verzije još spajaju. */
+data class StartContinue(val items: List<ContinueItem> = emptyList(), val waiting: Boolean = false)
+
 /** Kanali za red na „Početnoj”: [group] je grupa iz [ChannelGroups] (omiljeni ili nedavno gledani). */
 data class StartChannels(val group: Long = ChannelGroups.FAVORITES, val channels: List<Channel> = emptyList())
 
@@ -93,16 +96,22 @@ class TvStartViewModel @Inject constructor(
     private val vod: VodRepository,
 ) : ViewModel() {
 
-    /** Započeti filmovi i serije u jednom redu, poslednje gledano prvo; null dok se još čitaju. */
-    val continueItems: StateFlow<List<ContinueItem>?> = vod.activePlaylistId
+    /**
+     * Započeti filmovi i serije u jednom redu, poslednje gledano prvo; null dok se još čitaju.
+     * [StartContinue.waiting] dok se jezičke verzije spajaju (red tada čeka sa krugom, Bane).
+     */
+    val continueRow: StateFlow<StartContinue?> = vod.activePlaylistId
         .flatMapLatest { playlistId ->
             if (playlistId == null) {
-                flowOf(emptyList())
+                flowOf(StartContinue())
             } else {
                 combine(
-                    vod.observeContinue(playlistId, VodKind.MOVIES),
-                    vod.observeContinue(playlistId, VodKind.SERIES),
-                ) { movies, series -> mergeContinue(movies, series, CONTINUE_LIMIT) }
+                    vod.observeContinueOrWaiting(playlistId, VodKind.MOVIES),
+                    vod.observeContinueOrWaiting(playlistId, VodKind.SERIES),
+                ) { movies, series ->
+                    if (movies == null || series == null) StartContinue(waiting = true)
+                    else StartContinue(mergeContinue(movies, series, CONTINUE_LIMIT))
+                }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
