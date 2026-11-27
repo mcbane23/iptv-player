@@ -1,6 +1,8 @@
 package com.bane23.iptvplayer.ui.common.player
 
+import androidx.annotation.OptIn
 import androidx.media3.common.C
+import androidx.media3.common.util.UnstableApi
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -32,6 +34,7 @@ fun videoInfoLine(
  * Vrsta slike kad nije obična (SDR, BT.709): HDR po prenosnoj funkciji, inače širi opseg boja.
  * Obična slika i nepoznate vrednosti ne daju ništa.
  */
+@OptIn(UnstableApi::class)
 internal fun colorLabel(colorTransfer: Int, colorSpace: Int): String? = when (colorTransfer) {
     C.COLOR_TRANSFER_HLG -> "HDR HLG"
     C.COLOR_TRANSFER_ST2084 -> "HDR10"
