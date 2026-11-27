@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.tv
 
+import com.bane23.iptvplayer.ui.common.blurAndDim
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

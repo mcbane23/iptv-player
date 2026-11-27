@@ -60,6 +60,11 @@ internal fun pauseMeta(rating: String?, releaseDate: String?, genre: String?): L
     genre?.trim()?.takeIf { it.isNotEmpty() },
 )
 
+/** Slike epizode za pozadinu ekrana pauze: njena slika, pa široke slike serije, bez ponavljanja. */
+internal fun episodePauseImages(episode: Episode, details: SeriesDetails): List<String> =
+    (listOfNotNull(episode.image?.trim()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }) + details.backdrops)
+        .distinct()
+
 data class VodPlayerUiState(
     val title: String = "",
     /** Sezona i epizoda (za serije). */
@@ -71,6 +76,13 @@ data class VodPlayerUiState(
     val description: String? = null,
     /** Kratke oznake za ekran pauze (ocena, godina, žanr; za epizodu sezona i broj). */
     val meta: List<String> = emptyList(),
+    /** Poster filma ili serije za ekran pauze; null kad ga nema. */
+    val pausePoster: String? = null,
+    /**
+     * Široke slike baš ovog naslova za pozadinu ekrana pauze: za epizodu prvo njena slika, pa slike
+     * serije. Prazno kad ih panel ne šalje.
+     */
+    val pauseImages: List<String> = emptyList(),
     /** Mesto na koje će se premotati kad se strelica pusti; null kad se ne premotava. */
     val scrubMs: Long? = null,
     /** Pozicija sa koje je premotavanje krenulo, za prikaz pomaka. */
@@ -235,14 +247,16 @@ class VodPlayerViewModel @Inject constructor(
         if (started) return
         started = true
         item = Item(movieId, seriesId = null, title = name, poster = poster, extension = extension)
-        _ui.update { it.copy(title = name, onlineSubtitles = subtitles.isAvailable) }
-        // Opis za ekran pauze; puštanje ga ne čeka i radi i kad se ne učita.
+        _ui.update { it.copy(title = name, pausePoster = poster, onlineSubtitles = subtitles.isAvailable) }
+        // Opis i slike za ekran pauze; puštanje ih ne čeka i radi i kad se ne učitaju.
         viewModelScope.launch {
             runCatching { repository.movie(movieId) }.onSuccess { details ->
                 _ui.update {
                     it.copy(
                         description = details.plot?.takeIf(String::isNotBlank),
                         meta = pauseMeta(details.rating, details.releaseDate, details.genre),
+                        pausePoster = details.poster ?: poster,
+                        pauseImages = details.backdrops,
                     )
                 }
             }
@@ -308,6 +322,7 @@ class VodPlayerViewModel @Inject constructor(
             _ui.update {
                 it.copy(
                     title = listOfNotNull(row.title, row.subtitle).joinToString(" · "),
+                    pausePoster = row.poster,
                     onlineSubtitles = ownList && subtitles.isAvailable,
                 )
             }
@@ -328,6 +343,8 @@ class VodPlayerViewModel @Inject constructor(
                             episode = current.number,
                             description = (current.plot ?: details.plot)?.takeIf(String::isNotBlank),
                             meta = listOf("S${current.season} E${current.number}") + pauseMeta(null, null, details.genre),
+                            pausePoster = details.poster ?: row.poster,
+                            pauseImages = episodePauseImages(current, details),
                             hasNext = details.episodeAfter(current.id) != null,
                         )
                     }
@@ -620,6 +637,8 @@ class VodPlayerViewModel @Inject constructor(
                 episode = episode.number,
                 description = (episode.plot ?: details.plot)?.takeIf(String::isNotBlank),
                 meta = listOf("S${episode.season} E${episode.number}") + pauseMeta(null, null, details.genre),
+                pausePoster = details.poster,
+                pauseImages = episodePauseImages(episode, details),
                 positionMs = 0,
                 durationMs = 0,
                 scrubMs = null,

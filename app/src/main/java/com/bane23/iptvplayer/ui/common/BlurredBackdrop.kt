@@ -1,4 +1,4 @@
-package com.bane23.iptvplayer.ui.tv
+package com.bane23.iptvplayer.ui.common
 
 import android.graphics.Bitmap
 import android.os.Build
@@ -18,8 +18,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -27,91 +25,22 @@ import coil3.request.transformations
 import coil3.size.Size
 import coil3.toBitmap
 import coil3.transform.Transformation
-import com.bane23.iptvplayer.data.repo.VodKind
-import com.bane23.iptvplayer.data.repo.VodRepository
-import com.bane23.iptvplayer.data.weather.WeatherRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlin.math.hypot
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.stateIn
 
 /**
- * Posteri za pozadinu čuvara ekrana: omiljeni filmovi i serije aktivne liste, a ako ih nema,
- * poslednje gledani. Zaključani naslovi (roditeljska zaštita) se ne prikazuju.
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
-class ScreensaverViewModel @Inject constructor(
-    vod: VodRepository,
-    weather: WeatherRepository,
-) : ViewModel() {
-    /**
-     * Trenutna temperatura, ili null dok je nema. Pita se samo dok je čuvar na ekranu, jednom u
-     * minutu; spremište samo ide na internet najviše na pola sata.
-     */
-    val temperature: StateFlow<Int?> = flow {
-        while (true) {
-            emit(weather.currentTemperature())
-            delay(TEMPERATURE_CHECK_MS)
-        }
-    }
-        .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
-    val posters: StateFlow<List<String>> = vod.activePlaylistId
-        .flatMapLatest { playlistId ->
-            if (playlistId == null) {
-                flowOf(emptyList())
-            } else {
-                combine(
-                    vod.observeFavorites(playlistId, VodKind.MOVIES),
-                    vod.observeFavorites(playlistId, VodKind.SERIES),
-                    vod.observeContinue(playlistId, VodKind.MOVIES),
-                    vod.observeContinue(playlistId, VodKind.SERIES),
-                ) { movies, series, continueMovies, continueSeries ->
-                    screensaverPosters(
-                        favorites = movies.map { it.poster } + series.map { it.poster },
-                        recent = (continueMovies + continueSeries).sortedByDescending { it.updatedAt }.map { it.poster },
-                    )
-                }
-            }
-        }
-        // Bez postera čuvar ostaje crn, kao ranije.
-        .catch { if (it is CancellationException) throw it else emit(emptyList()) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-}
-
-private const val TEMPERATURE_CHECK_MS = 60_000L
-
-/** Omiljeni posteri; ako ih nema, poslednje gledani. Bez praznih i ponovljenih adresa. */
-internal fun screensaverPosters(favorites: List<String?>, recent: List<String?>): List<String> {
-    fun List<String?>.usable() = mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }.distinct()
-    return favorites.usable().ifEmpty { recent.usable() }
-}
-
-/**
- * Pozadina čuvara: jedan poster razliven preko celog ekrana i zatamnjen. Na svaki minut se sporo
- * pretopi u sledeći. Razlivanje i zatamnjenje se rade jednom, na maloj slici, pa se na TV-u crta
- * samo jedna slika i to samo dok traje pretapanje.
+ * Razlivena pozadina (čuvar ekrana, ekran pauze): jedna slika razlivena preko celog ekrana i
+ * zatamnjena. Na svaki minut se sporo pretopi u sledeću. Razlivanje i zatamnjenje se rade jednom, na
+ * maloj slici, pa se na TV-u crta samo jedna slika i to samo dok traje pretapanje. Sa [shuffle] se
+ * slike smenjuju nasumično, inače redom. Dok se nijedna ne učita, ne crta se ništa.
  */
 @Composable
-fun ScreensaverBackdrop(posters: List<String>, modifier: Modifier = Modifier) {
+fun BlurredBackdrop(images: List<String>, modifier: Modifier = Modifier, shuffle: Boolean = true) {
     val context = LocalContext.current
     var shown by remember { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(posters) {
-        if (posters.isEmpty()) return@LaunchedEffect
-        val order = posters.shuffled()
+    LaunchedEffect(images) {
+        if (images.isEmpty()) return@LaunchedEffect
+        val order = if (shuffle) images.shuffled() else images
         var index = 0
         var failedInRow = 0
         while (failedInRow < order.size) {
@@ -125,7 +54,7 @@ fun ScreensaverBackdrop(posters: List<String>, modifier: Modifier = Modifier) {
             if (result is SuccessResult) {
                 failedInRow = 0
                 shown = result.image.toBitmap().asImageBitmap()
-                // Sa jednim posterom nema šta da se smenjuje.
+                // Sa jednom slikom nema šta da se smenjuje.
                 if (order.size == 1) return@LaunchedEffect
                 delay(BACKDROP_CHANGE_MS)
             } else {
@@ -133,7 +62,7 @@ fun ScreensaverBackdrop(posters: List<String>, modifier: Modifier = Modifier) {
             }
         }
     }
-    Crossfade(targetState = shown, animationSpec = tween(BACKDROP_FADE_MS), label = "screensaverBackdrop", modifier = modifier) { image ->
+    Crossfade(targetState = shown, animationSpec = tween(BACKDROP_FADE_MS), label = "blurredBackdrop", modifier = modifier) { image ->
         if (image != null) {
             Image(
                 bitmap = image,

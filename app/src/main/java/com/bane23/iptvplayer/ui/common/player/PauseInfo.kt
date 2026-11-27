@@ -99,7 +99,8 @@ object PauseTime {
 private const val MINUTES_IN_HOUR = 60
 
 /**
- * Ekran pauze: sat u uglu, a dole levo naslov, oznake i opis. Crta se preko zatamnjene slike umesto
+ * Ekran pauze za kanal uživo: sat u uglu, a dole levo naslov, oznake i opis (film i epizoda imaju
+ * [PauseScreensaver]). Crta se preko zatamnjene slike umesto
  * kontrola; isti je na telefonu i TV-u, [compact] ga smanjuje za telefon.
  */
 @Composable
@@ -122,59 +123,65 @@ fun BoxScope.PauseInfoScreen(info: PauseInfo, compact: Boolean) {
             .fillMaxWidth(if (compact) 0.92f else 0.62f)
             .padding(start = edge, bottom = if (compact) 28.dp else 54.dp),
     ) {
+        PauseInfoTexts(info, compact)
+    }
+}
+
+/** Tekst ekrana pauze jedan ispod drugog (zove se u koloni): red iznad naslova, naslov, oznake, opis i red na dnu. */
+@Composable
+internal fun PauseInfoTexts(info: PauseInfo, compact: Boolean) {
+    BasicText(
+        text = info.kicker,
+        style = TextStyle(color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 13.sp else 15.sp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    BasicText(
+        text = info.title,
+        style = TextStyle(
+            color = Color.White,
+            fontSize = if (compact) 24.sp else 34.sp,
+            lineHeight = if (compact) 29.sp else 40.sp,
+            fontWeight = FontWeight.SemiBold,
+        ),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    if (info.meta.isNotEmpty()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            info.meta.take(MAX_META).forEach { label ->
+                BasicText(
+                    text = label,
+                    style = TextStyle(color = Color.White.copy(alpha = 0.9f), fontSize = if (compact) 12.sp else 14.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
+        }
+    }
+    info.description?.takeIf { it.isNotBlank() }?.let { text ->
         BasicText(
-            text = info.kicker,
+            text = text.trim(),
+            style = TextStyle(
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = if (compact) 14.sp else 17.sp,
+                lineHeight = if (compact) 19.sp else 24.sp,
+            ),
+            maxLines = if (compact) 3 else 4,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+    info.footer?.let { text ->
+        BasicText(
+            text = text,
             style = TextStyle(color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 13.sp else 15.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        BasicText(
-            text = info.title,
-            style = TextStyle(
-                color = Color.White,
-                fontSize = if (compact) 24.sp else 34.sp,
-                lineHeight = if (compact) 29.sp else 40.sp,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (info.meta.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                info.meta.take(MAX_META).forEach { label ->
-                    BasicText(
-                        text = label,
-                        style = TextStyle(color = Color.White.copy(alpha = 0.9f), fontSize = if (compact) 12.sp else 14.sp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f, fill = false)
-                            .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
-                            .padding(horizontal = 10.dp, vertical = 3.dp),
-                    )
-                }
-            }
-        }
-        info.description?.takeIf { it.isNotBlank() }?.let { text ->
-            BasicText(
-                text = text.trim(),
-                style = TextStyle(
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = if (compact) 14.sp else 17.sp,
-                    lineHeight = if (compact) 19.sp else 24.sp,
-                ),
-                maxLines = if (compact) 3 else 4,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        info.footer?.let { text ->
-            BasicText(
-                text = text,
-                style = TextStyle(color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 13.sp else 15.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
     }
 }
 
