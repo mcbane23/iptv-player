@@ -198,3 +198,27 @@ fun PauseDimLayer(
         }
     }
 }
+
+/**
+ * Kad se gledanje nastavi posle ekrana pauze, kontrole se odmah sklanjaju [hide] (Bane, 27. 11.
+ * 2026), umesto da stoje do isteka vremena. Važi i kad je prvi taster samo vratio kontrole, pa je
+ * puštanje pokrenuto dugmetom.
+ */
+@Composable
+fun HideControlsAfterPauseScreen(state: PauseDimState, status: PlaybackStatus, hide: () -> Unit) {
+    val onHide by rememberUpdatedState(hide)
+    var afterPauseScreen by remember { mutableStateOf(false) }
+    LaunchedEffect(state.info) {
+        if (state.info) afterPauseScreen = true
+    }
+    LaunchedEffect(status) {
+        when (status) {
+            PlaybackStatus.PLAYING -> if (afterPauseScreen) {
+                afterPauseScreen = false
+                onHide()
+            }
+            PlaybackStatus.PAUSED, PlaybackStatus.LOADING, PlaybackStatus.RETRYING -> Unit
+            else -> afterPauseScreen = false
+        }
+    }
+}
