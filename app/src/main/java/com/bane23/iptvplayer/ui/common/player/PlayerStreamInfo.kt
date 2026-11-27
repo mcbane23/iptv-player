@@ -64,6 +64,8 @@ fun PlayerStreamInfo(player: Player, technical: VideoInfo, modifier: Modifier = 
             frameRate = videoFormat?.frameRate?.takeIf { it > 0f } ?: measuredFrameRate,
             mimeType = videoFormat?.sampleMimeType,
             bitrate = videoFormat?.bitrate ?: 0,
+            colorTransfer = videoFormat?.colorInfo?.colorTransfer ?: C.INDEX_UNSET,
+            colorSpace = videoFormat?.colorInfo?.colorSpace ?: C.INDEX_UNSET,
         )
         val audioLine = audioFormat?.let {
             audioInfoLine(it.sampleMimeType, it.channelCount, it.sampleRate, it.bitrate)

@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common.player
 
+import androidx.media3.common.C
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -9,14 +10,33 @@ import kotlin.math.roundToInt
  * Nepoznati podaci (nula, -1, null) se preskaču.
  */
 
-/** Npr. „1920×1080 · 25 fps · H.264 · 4.2 Mb/s”, ili null kad se ništa ne zna. */
-fun videoInfoLine(width: Int, height: Int, frameRate: Float, mimeType: String?, bitrate: Int): String? =
+/** Npr. „3840×2160 · 50 fps · H.265 · HDR HLG · 25.0 Mb/s”, ili null kad se ništa ne zna. */
+fun videoInfoLine(
+    width: Int,
+    height: Int,
+    frameRate: Float,
+    mimeType: String?,
+    bitrate: Int,
+    colorTransfer: Int = C.INDEX_UNSET,
+    colorSpace: Int = C.INDEX_UNSET,
+): String? =
     listOfNotNull(
         if (width > 0 && height > 0) "$width×$height" else null,
         frameRateLabel(frameRate),
         codecLabel(mimeType),
+        colorLabel(colorTransfer, colorSpace),
         bitrateLabel(bitrate),
     ).joinToString("  ·  ").ifEmpty { null }
+
+/**
+ * Vrsta slike kad nije obična (SDR, BT.709): HDR po prenosnoj funkciji, inače širi opseg boja.
+ * Obična slika i nepoznate vrednosti ne daju ništa.
+ */
+internal fun colorLabel(colorTransfer: Int, colorSpace: Int): String? = when (colorTransfer) {
+    C.COLOR_TRANSFER_HLG -> "HDR HLG"
+    C.COLOR_TRANSFER_ST2084 -> "HDR10"
+    else -> if (colorSpace == C.COLOR_SPACE_BT2020) "BT.2020" else null
+}
 
 /** Npr. „AAC · 2.0 · 48 kHz · 128 kb/s”, ili null kad se ništa ne zna. */
 fun audioInfoLine(mimeType: String?, channels: Int, sampleRate: Int, bitrate: Int): String? =
