@@ -192,7 +192,7 @@
     <string name="vod_seek_unavailable">Ovaj snimak ne može da se premotava</string>
     <string name="vod_tunnel_dropped">Direktan dekoder je zapeo, snimak ide hardverskim</string>
     <string name="vod_stall_skipped">Snimak je zastao, preskočene su 2 sekunde</string>
-    <string name="vod_fetching_position">Preuzimam mesto sa drugog uređaja…</string>
+    <string name="vod_fetching_position">Učitavam poziciju…</string>
     <string name="vod_resumed_from_other_device">Nastavljeno od %1$s, gde je stalo na drugom uređaju</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
