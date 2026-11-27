@@ -1,0 +1,5 @@
+Dugme Favoriti u plejeru otvara oblačić sa sekcijama, a nova sekcija se pravi odmah tu
+Na TV-u, izbor boje i teme prikazuje primer boje i ostaje otvoren dok probaš druge
+Pauza: prvi minut ostaje običan ekran pauze, pa se uključuje čuvar ekrana
+Pozadina pauze se pretapa glatko, bez bljeska kadra
+Jednostavnija poruka dok se učitava pozicija
