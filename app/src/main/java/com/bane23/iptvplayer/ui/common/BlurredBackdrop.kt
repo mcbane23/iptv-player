@@ -2,9 +2,10 @@ package com.bane23.iptvplayer.ui.common
 
 import android.graphics.Bitmap
 import android.os.Build
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil3.imageLoader
@@ -33,6 +35,10 @@ import kotlinx.coroutines.delay
  * zatamnjena. Na svaki minut se sporo pretopi u sledeću. Razlivanje i zatamnjenje se rade jednom, na
  * maloj slici, pa se na TV-u crta samo jedna slika i to samo dok traje pretapanje. Sa [shuffle] se
  * slike smenjuju nasumično, inače redom. Dok se nijedna ne učita, ne crta se ništa.
+ *
+ * Pri pretapanju stara slika ostaje potpuno neprovidna, a nova se preko nje pojavljuje. Da obe
+ * istovremeno blede (kao `Crossfade`), na sredini prelaza bi se kroz njih nazirao kadar ispod
+ * (Bane, 27. 11. 2026, ekran pauze).
  */
 @Composable
 fun BlurredBackdrop(images: List<String>, modifier: Modifier = Modifier, shuffle: Boolean = true) {
@@ -62,18 +68,35 @@ fun BlurredBackdrop(images: List<String>, modifier: Modifier = Modifier, shuffle
             }
         }
     }
-    Crossfade(targetState = shown, animationSpec = tween(BACKDROP_FADE_MS), label = "blurredBackdrop", modifier = modifier) { image ->
-        if (image != null) {
-            Image(
-                bitmap = image,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                // Već razlivena mala slika: obično razvlačenje je dovoljno glatko.
-                filterQuality = FilterQuality.Low,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+    // Slika koja je bila pre tekuće; crta se ispod nje samo dok traje pretapanje.
+    var below by remember { mutableStateOf<ImageBitmap?>(null) }
+    var top by remember { mutableStateOf<ImageBitmap?>(null) }
+    val topAlpha = remember { Animatable(1f) }
+    LaunchedEffect(shown) {
+        val next = shown ?: return@LaunchedEffect
+        below = top
+        top = next
+        // Prva slika se pojavljuje preko kadra kao i ranije, svaka sledeća preko prethodne.
+        topAlpha.snapTo(0f)
+        topAlpha.animateTo(1f, tween(BACKDROP_FADE_MS))
+        below = null
     }
+    Box(modifier = modifier) {
+        below?.let { BackdropImage(it, Modifier) }
+        top?.let { BackdropImage(it, Modifier.graphicsLayer { alpha = topAlpha.value }) }
+    }
+}
+
+@Composable
+private fun BackdropImage(image: ImageBitmap, modifier: Modifier) {
+    Image(
+        bitmap = image,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        // Već razlivena mala slika: obično razvlačenje je dovoljno glatko.
+        filterQuality = FilterQuality.Low,
+        modifier = modifier.fillMaxSize(),
+    )
 }
 
 /** Iseca sredinu postera u odnosu 16:9 na maloj slici, razliva je i zatamnjuje (jače ka ivicama). */
