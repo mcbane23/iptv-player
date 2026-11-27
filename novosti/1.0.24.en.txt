@@ -1,0 +1,5 @@
+The Favorites button in the player opens a bubble with sections, and you can create a new section right there
+On TV, picking a color or theme shows a color preview and stays open while you try others
+Pause: the regular pause screen stays for the first minute, then the screensaver starts
+The pause background crossfades smoothly, without a frame flash
+Simpler message while the position is loading
