@@ -175,6 +175,8 @@ fun TvTextRow(
     onLongClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
     card: Boolean = true,
+    /** Krug u ovoj boji pre naziva: primer boje ili teme u spisku vrednosti. */
+    swatch: Color? = null,
 ) {
     TvListRow(
         onClick = onClick,
@@ -200,6 +202,16 @@ fun TvTextRow(
                 modifier = Modifier
                     .padding(end = 12.dp)
                     .size(20.dp),
+            )
+        }
+        if (swatch != null) {
+            // Tanak okvir u boji teksta, da se i tamna boja teme vidi na tamnoj podlozi.
+            Box(
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(20.dp)
+                    .background(swatch, androidx.compose.foundation.shape.CircleShape)
+                    .border(1.5.dp, color.copy(alpha = 0.7f), androidx.compose.foundation.shape.CircleShape),
             )
         }
         Text(

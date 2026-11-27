@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.common
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.bane23.iptvplayer.R
@@ -50,6 +51,13 @@ data class SettingChoice(
     val slots: List<SettingChoice> = emptyList(),
     /** Dugačak spisak vrednosti (npr. zemlje): bira se iz spiska sa pretragom, ne dugmićima ni korakom. */
     val list: Boolean = false,
+    /** Primer boje uz svaku vrednost (boja aplikacije, tema), istim redom kao [options]; prazno = bez primera. */
+    val swatches: List<Color> = emptyList(),
+    /**
+     * Spisak vrednosti ostaje otvoren posle izbora, jer se promena odmah vidi i korisnik možda želi da
+     * proba još neku (Bane). Zatvara se tasterom Nazad ili strelicom levo.
+     */
+    val keepOpen: Boolean = false,
     val onSelect: (Int) -> Unit = {},
 ) {
     /** Trenutna vrednost; za podešavanje sa mestima izabrane vrednosti redom (prva vrednost mesta znači „nije izabrano”). */
@@ -263,6 +271,8 @@ fun themeChoice(current: AppTheme?, onSelect: (AppTheme) -> Unit): SettingChoice
     options = AppTheme.entries.map { it.label() },
     selected = (current ?: AppTheme.DEFAULT).ordinal,
     group = SettingsGroup.LOOK,
+    swatches = AppTheme.entries.map { it.surfaceVariant },
+    keepOpen = true,
     onSelect = { onSelect(AppTheme.entries[it]) },
 )
 
