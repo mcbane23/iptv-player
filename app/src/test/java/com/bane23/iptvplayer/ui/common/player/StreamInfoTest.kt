@@ -1,5 +1,6 @@
 package com.bane23.iptvplayer.ui.common.player
 
+import androidx.media3.common.C
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -17,6 +18,18 @@ class StreamInfoTest {
     fun `video line skips unknown parts`() {
         assertEquals("1280×720  ·  H.265", videoInfoLine(1280, 720, -1f, "video/hevc", -1))
         assertNull(videoInfoLine(0, 0, 0f, null, 0))
+    }
+
+    @Test
+    fun `video line names HDR and wide color`() {
+        assertEquals(
+            "3840×2160  ·  50 fps  ·  H.265  ·  HDR HLG",
+            videoInfoLine(3840, 2160, 50f, "video/hevc", 0, C.COLOR_TRANSFER_HLG, C.COLOR_SPACE_BT2020),
+        )
+        assertEquals("HDR10", colorLabel(C.COLOR_TRANSFER_ST2084, C.COLOR_SPACE_BT2020))
+        assertEquals("BT.2020", colorLabel(C.COLOR_TRANSFER_SDR, C.COLOR_SPACE_BT2020))
+        assertNull(colorLabel(C.COLOR_TRANSFER_SDR, C.COLOR_SPACE_BT709))
+        assertNull(colorLabel(C.INDEX_UNSET, C.INDEX_UNSET))
     }
 
     @Test

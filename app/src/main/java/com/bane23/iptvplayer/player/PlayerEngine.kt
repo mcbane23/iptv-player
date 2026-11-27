@@ -381,6 +381,14 @@ class PlayerEngine(
             decoderReuseEvaluation: DecoderReuseEvaluation?,
         ) {
             if (format.frameRate > 0f) _state.update { it.copy(video = it.video.copy(frameRate = format.frameRate)) }
+            // Kad plejer zadrži postojeći dekoder (npr. posle ponovne pripreme), ne javlja se novo
+            // pokretanje dekodera; naziv se tada uzima odavde, da „Informacije o strimu” ne ostanu bez njega.
+            decoderReuseEvaluation?.decoderName?.let { name ->
+                _state.update {
+                    if (it.video.decoder == name) it
+                    else it.copy(video = it.video.copy(decoder = name, software = isSoftwareDecoder(name)))
+                }
+            }
             // Veličina slike iz samog strima, pre nego što dekoder prikaže prvu sliku: poznata je i kad
             // plejer nema površinu za sliku (merenje kvaliteta kanala).
             if (format.width > 0 && format.height > 0) {
