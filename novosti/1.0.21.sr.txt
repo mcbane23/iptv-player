@@ -1,0 +1,2 @@
+Pauza filma ili epizode posle 10 s izgleda kao čuvar ekrana, sa slikom tog naslova, posterom i satom
+Ekran pauze prikazuje kraći naslov, a kontrole se sklanjaju čim gledanje nastavi
