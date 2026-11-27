@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 /** Meniji koji se otvaraju kao oblačić iznad vremenske trake, poravnati sa svojim dugmetom. */
-enum class PlayerMenu { SUBTITLES, AUDIO, SETTINGS, SOURCES, RECORD }
+enum class PlayerMenu { SUBTITLES, AUDIO, SETTINGS, SOURCES, RECORD, FAVORITE }
 
 /** Slova u menijima plejera: ista kao u dugmadima ispod trake. */
 val PlayerMenuText = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

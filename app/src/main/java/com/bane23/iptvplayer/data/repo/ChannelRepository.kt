@@ -286,6 +286,9 @@ class ChannelRepository @Inject constructor(
 
     suspend fun hasFavoriteLists(): Boolean = favoriteListDao.count() > 0
 
+    /** Sekcija u koju je poslednje dodat neki kanal, ili null kad nijedna sekcija nema kanala. */
+    suspend fun lastUsedFavoriteSection(): Long? = favoriteListDao.lastUsedList()
+
     /** Sekcija u kojoj je kanal, ili null kad je bez sekcije (ili nije među omiljenima). */
     suspend fun favoriteSectionOf(channelId: Long): Long? {
         val channel = channelDao.getById(channelId) ?: return null

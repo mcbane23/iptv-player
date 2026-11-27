@@ -741,6 +741,12 @@
     <string name="favorite_section_none">Bez sekcije</string>
     <string name="favorite_section_empty">Sekcija je još prazna.</string>
     <string name="favorite_list_name_taken">Upiši ime koje još ne postoji.</string>
+    <string name="player_favorite_add_title">Dodaj u favorite</string>
+    <string name="player_favorite_in_title">U favoritima: promeni sekciju ili ukloni</string>
+    <string name="player_favorite_new_section">+ Nova sekcija</string>
+    <string name="player_favorite_remove">Ukloni</string>
+    <string name="player_favorite_new_for">Nova sekcija za %1$s</string>
+    <string name="player_favorite_new_hint">„Gotovo” na tastaturi pravi sekciju i dodaje kanal.</string>
     <string name="pause_paused">Pauzirano</string>
     <string name="pause_left_minutes">Pauzirano · još %1$d min</string>
     <string name="pause_left_hours">Pauzirano · još %1$d h %2$d min</string>

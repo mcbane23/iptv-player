@@ -715,6 +715,10 @@ interface FavoriteListDao {
     @Query("DELETE FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
     suspend fun deleteItems(playlistId: Long, channelKey: String)
 
+    /** Lista u koju je poslednje dodat neki kanal. */
+    @Query("SELECT listId FROM favorite_list_items ORDER BY addedAt DESC LIMIT 1")
+    suspend fun lastUsedList(): Long?
+
     /** Liste u kojima je kanal. */
     @Query("SELECT listId FROM favorite_list_items WHERE playlistId = :playlistId AND channelKey = :channelKey")
     suspend fun listsOf(playlistId: Long, channelKey: String): List<Long>
