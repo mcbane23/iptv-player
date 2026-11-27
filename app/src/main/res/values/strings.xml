@@ -673,6 +673,8 @@
     <string name="search_on_air">on now, until %1$s</string>
     <string name="subtitle_step_size">Size</string>
     <string name="subtitle_step_shift">Timing</string>
+    <string name="subtitle_step_position">Position</string>
+    <string name="subtitle_step_background">Background</string>
     <string name="step_decrease">Decrease: %1$s</string>
     <string name="step_increase">Increase: %1$s</string>
     <string name="subtitle_shift_value">%1$s s</string>

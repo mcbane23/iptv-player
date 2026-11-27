@@ -181,7 +181,7 @@ fun TvTrackPanel(
     modifier: Modifier = Modifier,
     /** Kad je zadato, spisak titlova na dnu ima stavku „Potraži online”. */
     onSearchOnline: (() -> Unit)? = null,
-    /** Redovi ispod spiska titlova čija se vrednost menja strelicama levo i desno (veličina, pomeranje). */
+    /** Redovi ispod spiska titlova čija se vrednost menja strelicama levo i desno (veličina, položaj, pozadina, pomeranje). */
     steps: List<StepChoice> = emptyList(),
 ) {
     val selectedFocus = remember { FocusRequester() }
