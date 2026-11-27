@@ -99,8 +99,8 @@ object PauseTime {
 private const val MINUTES_IN_HOUR = 60
 
 /**
- * Ekran pauze za kanal uživo: sat u uglu, a dole levo naslov, oznake i opis (film i epizoda imaju
- * [PauseScreensaver]). Crta se preko zatamnjene slike umesto
+ * Ekran pauze: sat u uglu, a dole levo naslov, oznake i opis. Za kanal uživo stalno, a za film i
+ * epizodu prvi minut, pa [PauseScreensaver]. Crta se preko zatamnjene slike umesto
  * kontrola; isti je na telefonu i TV-u, [compact] ga smanjuje za telefon.
  */
 @Composable

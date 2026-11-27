@@ -2,6 +2,7 @@ package com.bane23.iptvplayer.ui.common.player
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,9 +48,37 @@ import kotlinx.coroutines.delay
  * skokova se ništa ne pomera (neprekidno klizanje je na TV-u previše koštalo). Dok se nijedna slika
  * ne učita, ili ih naslov nema, ispod se vidi zatamnjen kadar kao ranije. U Staklu je pločica
  * staklena, u klasičnom izgledu neprovidna.
+ *
+ * Prvi minut se vidi stari ekran pauze ([PauseInfoScreen] preko zatamnjenog kadra), pa se tek onda
+ * pretopi u čuvar ekrana (Bane, 27. 11. 2026). Odbrojavanje kreće iz početka svaki put kad se ekran
+ * pauze ponovo pojavi.
  */
 @Composable
 fun BoxScope.PauseScreensaver(info: PauseInfo, poster: String?, images: List<String>, compact: Boolean) {
+    var saver by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(PLAIN_PAUSE_MS)
+        saver = true
+    }
+    val saverShown by animateFloatAsState(
+        targetValue = if (saver) 1f else 0f,
+        animationSpec = tween(SWITCH_FADE_MS, easing = LinearEasing),
+        label = "pauseSaver",
+    )
+    if (saverShown < 1f) {
+        Box(modifier = Modifier.matchParentSize().graphicsLayer { alpha = 1f - saverShown }) {
+            PauseInfoScreen(info, compact)
+        }
+    }
+    if (saver) {
+        Box(modifier = Modifier.matchParentSize().graphicsLayer { alpha = saverShown }) {
+            SaverContent(info, poster, images, compact)
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.SaverContent(info: PauseInfo, poster: String?, images: List<String>, compact: Boolean) {
     val backgrounds = remember(images, poster) {
         (images + listOfNotNull(poster)).map(String::trim).filter(String::isNotEmpty).distinct()
     }
@@ -145,3 +174,5 @@ private fun BoxScope.JumpingBlock(content: @Composable () -> Unit) {
 
 private const val JUMP_EVERY_MS = 60_000L
 private const val JUMP_FADE_MS = 600
+private const val PLAIN_PAUSE_MS = 60_000L
+private const val SWITCH_FADE_MS = 1_000
