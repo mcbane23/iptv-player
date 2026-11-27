@@ -193,7 +193,7 @@
     <string name="vod_seek_unavailable">Seeking is not available for this video</string>
     <string name="vod_tunnel_dropped">Direct decoder got stuck, switched to hardware</string>
     <string name="vod_stall_skipped">The video stalled, skipped 2 seconds</string>
-    <string name="vod_fetching_position">Getting the position from your other device…</string>
+    <string name="vod_fetching_position">Loading position…</string>
     <string name="vod_resumed_from_other_device">Continued from %1$s, where you stopped on another device</string>
     <string name="vod_seek_back">−%1$d s</string>
     <string name="vod_seek_forward">+%1$d s</string>
