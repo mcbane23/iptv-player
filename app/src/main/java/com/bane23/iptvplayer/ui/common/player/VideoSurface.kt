@@ -29,6 +29,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.text.Cue
+import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,11 +61,16 @@ fun VideoSurface(
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val lastFrame = remember { LastFrame() }
+    val embeddedSubtitleView = remember { arrayOfNulls<SubtitleView>(1) }
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onRenderedFirstFrame() = lastFrame.clear()
             override fun onPlayerError(error: PlaybackException) = lastFrame.clear()
+            override fun onCues(cueGroup: CueGroup) {
+                embeddedSubtitleView[0]?.setCues(withUserPosition(cueGroup.cues))
+            }
         }
+        embeddedSubtitleView[0]?.setCues(withUserPosition(player.currentCues.cues))
         player.addListener(listener)
         onDispose {
             player.removeListener(listener)
@@ -110,8 +116,15 @@ fun VideoSurface(
                     this.player = player
                     (videoSurfaceView as? SurfaceView)?.let(lastFrame::attach)
                     videoView[0] = videoSurfaceView
-                    // Titl iz fajla dobija svoj sloj na istom mestu gde su i titlovi iz sadržaja.
+                    // Titlove iz sadržaja crta naš sloj umesto PlayerView-ovog, da bi poslušali
+                    // izabrani položaj (vidi withUserPosition). Titl iz fajla dobija svoj sloj na
+                    // istom mestu.
                     (subtitleView?.parent as? ViewGroup)?.let { frame ->
+                        subtitleView?.visibility = View.GONE
+                        val embedded = SubtitleView(context)
+                        frame.addView(embedded, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        embedded.setCues(withUserPosition(player.currentCues.cues))
+                        embeddedSubtitleView[0] = embedded
                         val extra = SubtitleView(context)
                         frame.addView(extra, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                         fileSubtitleView[0] = extra
@@ -120,7 +133,7 @@ fun VideoSurface(
             },
             update = { view ->
                 view.player = player
-                for (subtitles in listOfNotNull(view.subtitleView, fileSubtitleView[0])) {
+                for (subtitles in listOfNotNull(embeddedSubtitleView[0] ?: view.subtitleView, fileSubtitleView[0])) {
                     subtitles.setStyle(
                         CaptionStyleCompat(
                             android.graphics.Color.WHITE,
@@ -148,6 +161,7 @@ fun VideoSurface(
             },
             onRelease = { view ->
                 view.player = null
+                embeddedSubtitleView[0] = null
                 videoView[0] = null
                 lastFrame.detach()
             },
@@ -166,6 +180,23 @@ fun VideoSurface(
             )
         }
     }
+}
+
+/**
+ * Titlovi iz sadržaja (npr. SRT u filmu) često sami nose mesto pri dnu slike, pa SubtitleView ne bi
+ * primenio izabrani položaj. Tekstu koji stoji u donjoj polovini to mesto se briše, pa ga crta
+ * podešeni razmak od dna. Tekst namerno postavljen gore i titlovi kao slike ostaju gde jesu.
+ */
+@OptIn(UnstableApi::class)
+internal fun withUserPosition(cues: List<Cue>): List<Cue> = cues.map { cue ->
+    val atBottom = when {
+        cue.text == null || cue.bitmap != null || cue.verticalType != Cue.TYPE_UNSET -> false
+        cue.line == Cue.DIMEN_UNSET -> false
+        cue.lineType == Cue.LINE_TYPE_FRACTION -> cue.line >= 0.5f
+        cue.lineType == Cue.LINE_TYPE_NUMBER -> cue.line < 0f
+        else -> false
+    }
+    if (atBottom) cue.buildUpon().setLine(Cue.DIMEN_UNSET, Cue.TYPE_UNSET).setLineAnchor(Cue.TYPE_UNSET).build() else cue
 }
 
 /**
