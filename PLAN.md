@@ -866,6 +866,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       bez podatka se vidi samo datum.
 - [x] Pretapanje razlivenih slika bez bljeska (Bane, 27. 11. 2026): na ekranu pauze i u čuvaru ekrana stara
       slika ostaje neprovidna dok se nova pojavljuje preko nje, pa se kroz prelaz više ne nazire kadar ispod.
+- [x] Pauza filma i epizode u dva koraka (Bane, 27. 11. 2026): prvi minut stari ekran pauze (zatamnjen kadar,
+      sat, naslov i opis), pa se pretopi u čuvar ekrana sa razlivenim slikama naslova.
 - [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
       kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
       od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno
