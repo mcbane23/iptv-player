@@ -1,0 +1,5 @@
+U meniju Titlovi u plejeru mogu da se podese položaj i pozadina titla
+Položaj titla važi i za titlove koji su ugrađeni u film
+Dok su kontrole plejera na ekranu, titl se podiže iznad vremenske trake
+Informacije o strimu prikazuju HDR (HDR10, HLG) i dekoder koji se koristi
+Uživo na TV-u: dok se vide dugmići plejera, strelice se kreću između njih umesto da menjaju kanal

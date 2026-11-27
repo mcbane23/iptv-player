@@ -1,0 +1,5 @@
+Subtitle position and background can be set in the player's Subtitles menu
+Subtitle position also applies to subtitles embedded in the video
+While player controls are shown, subtitles move above the seek bar
+Stream info shows HDR (HDR10, HLG) and the decoder in use
+Live TV: while player buttons are shown, the arrows move between them instead of changing the channel
