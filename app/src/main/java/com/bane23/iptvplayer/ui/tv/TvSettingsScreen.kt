@@ -120,6 +120,8 @@ fun TvSettingsScreen(
         options = AccentColor.entries.map { it.label() },
         selected = (accentColor ?: AccentColor.DEFAULT).ordinal,
         group = SettingsGroup.LOOK,
+        swatches = AccentColor.entries.map { it.color },
+        keepOpen = true,
         onSelect = { viewModel.setAccentColor(AccentColor.entries[it]) },
     )
     val scales = UiScale.choices(isTv = true)
@@ -503,15 +505,20 @@ fun TvSettingsScreen(
                                         text = option,
                                         trailing = if (index == choice.selected) "✓" else null,
                                         selected = index == choice.selected,
+                                        swatch = choice.swatches.getOrNull(index),
                                         onClick = {
                                             choice.onSelect(index)
-                                            if (slot != null) {
+                                            // Kod boje i teme spisak ostaje otvoren i fokus na izabranoj
+                                            // vrednosti, da se odmah proba sledeća; Nazad ili levo zatvara.
+                                            when {
+                                                choice.keepOpen -> Unit
                                                 // Posle izbora se opet vide mesta.
-                                                openSlot = null
-                                            } else {
-                                                // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
-                                                rowFocus[open].tryRequestFocus()
-                                                openChoice = null
+                                                slot != null -> openSlot = null
+                                                else -> {
+                                                    // Fokus se vraća na podešavanje pre nego što spisak vrednosti nestane.
+                                                    rowFocus[open].tryRequestFocus()
+                                                    openChoice = null
+                                                }
                                             }
                                         },
                                         modifier = if (index == focusIndex) Modifier.focusRequester(optionFocus) else Modifier,

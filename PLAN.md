@@ -949,6 +949,9 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       40, 60, 80%), za gledanje uveče bez drugih aplikacija. Menja se u plejeru (meni Podešavanja, odmah
       posle odnosa slike, strelicama levo i desno) i u Podešavanja → Izgled; ista sačuvana vrednost. Pri
       izmeni gore u sredini kratko stoji pločica sa nivoom. Telefon menja pravo osvetljenje prevlačenjem.
+- [x] Primer boje i teme na TV-u (Bane, 27. 11. 2026): u Podešavanja → Izgled spisak za „Boja aplikacije”
+      i „Tema” ima krug u toj boji pre naziva (za temu boja kartica teme, sa tankim okvirom), a posle izbora
+      ostaje otvoren da se odmah proba sledeća; Nazad ili levo ga zatvara.
 
 ## 7. Testiranje
 

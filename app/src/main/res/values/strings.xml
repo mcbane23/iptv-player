@@ -306,7 +306,7 @@
     <string name="settings_language_english" translatable="false">English</string>
     <string name="settings_language_tv_summary">Press OK and pick a language.</string>
     <string name="settings_accent_color">App color</string>
-    <string name="settings_accent_color_tv_summary">Press OK and pick a color. The change shows right away.</string>
+    <string name="settings_accent_color_tv_summary">Press OK and pick a color. The change shows right away and the list stays open until you press Back.</string>
     <string name="settings_ui_scale">Display size</string>
     <string name="settings_ui_scale_summary">Smaller text and items, so more fits on the screen. Tap to switch to the next size.</string>
     <string name="settings_ui_scale_tv_summary">Smaller text and items, so more fits on the screen. Press OK and pick a size. The change shows right away.</string>
