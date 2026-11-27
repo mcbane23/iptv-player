@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bane23.iptvplayer.R
+import com.bane23.iptvplayer.player.SubtitlePosition
 import com.bane23.iptvplayer.player.SubtitleSize
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import java.text.DecimalFormat
@@ -29,7 +30,8 @@ data class StepChoice(
 )
 
 /**
- * Redovi na dnu menija „Titlovi” u plejeru filmova i epizoda: veličina titla i pomeranje titla.
+ * Redovi na dnu menija „Titlovi” u plejeru filmova i epizoda: veličina, položaj i pozadina titla
+ * (ista podešavanja kao u Podešavanjima) i pomeranje titla.
  * [subtitleOffsetMs] je trenutno pomeranje; null kad titl ne može da se pomera (ugrađeni titlovi),
  * i tada tog reda nema.
  */
@@ -58,6 +60,35 @@ fun subtitleStepChoices(
             if (next != sizeIndex) settingsViewModel.setSubtitleSize(sizes[next])
         },
     )
+    val positions = SubtitlePosition.entries
+    val positionLabels = listOf(
+        stringResource(R.string.subtitle_position_low),
+        stringResource(R.string.subtitle_position_middle),
+        stringResource(R.string.subtitle_position_high),
+    )
+    val positionIndex = positions.indexOf(settings.subtitlePosition)
+    val position = StepChoice(
+        title = stringResource(R.string.subtitle_step_position),
+        value = positionLabels.getOrElse(positionIndex) { "" },
+        canDecrease = positionIndex > 0,
+        canIncrease = positionIndex < positions.lastIndex,
+        onStep = { delta ->
+            val next = (positionIndex + delta).coerceIn(0, positions.lastIndex)
+            if (next != positionIndex) settingsViewModel.setSubtitlePosition(positions[next])
+        },
+    )
+    // Isključena je levo, uključena desno.
+    val backgroundOn = settings.subtitleBackground
+    val background = StepChoice(
+        title = stringResource(R.string.subtitle_step_background),
+        value = stringResource(if (backgroundOn) R.string.setting_on else R.string.setting_off),
+        canDecrease = backgroundOn,
+        canIncrease = !backgroundOn,
+        onStep = { delta ->
+            val wanted = delta > 0
+            if (wanted != backgroundOn) settingsViewModel.setSubtitleBackground(wanted)
+        },
+    )
     val shift = subtitleOffsetMs?.let { offset ->
         StepChoice(
             title = stringResource(R.string.subtitle_step_shift),
@@ -67,7 +98,7 @@ fun subtitleStepChoices(
             onStep = { delta -> onShiftSubtitle(delta * SUBTITLE_SHIFT_STEP_MS) },
         )
     }
-    return listOfNotNull(size, shift)
+    return listOfNotNull(size, position, background, shift)
 }
 
 /** Pomeranje kao broj sekundi sa znakom, npr. „+0,5”; nula je bez znaka. */
