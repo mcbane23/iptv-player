@@ -1,0 +1,2 @@
+A movie or episode paused for 10 s looks like a screensaver, with that title's picture, poster and clock
+The pause screen shows a shorter title, and controls hide as soon as playback resumes
