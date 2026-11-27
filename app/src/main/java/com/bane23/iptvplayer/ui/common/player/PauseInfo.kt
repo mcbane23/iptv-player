@@ -127,9 +127,9 @@ fun BoxScope.PauseInfoScreen(info: PauseInfo, compact: Boolean) {
     }
 }
 
-/** Tekst ekrana pauze jedan ispod drugog (zove se u koloni): red iznad naslova, naslov, oznake, opis i red na dnu. */
+/** Tekst ekrana pauze jedan ispod drugog (zove se u koloni); [smallTitle] je za užu pločicu sa posterom: red iznad naslova, naslov, oznake, opis i red na dnu. */
 @Composable
-internal fun PauseInfoTexts(info: PauseInfo, compact: Boolean) {
+internal fun PauseInfoTexts(info: PauseInfo, compact: Boolean, smallTitle: Boolean = false) {
     BasicText(
         text = info.kicker,
         style = TextStyle(color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 13.sp else 15.sp),
@@ -140,8 +140,18 @@ internal fun PauseInfoTexts(info: PauseInfo, compact: Boolean) {
         text = info.title,
         style = TextStyle(
             color = Color.White,
-            fontSize = if (compact) 24.sp else 34.sp,
-            lineHeight = if (compact) 29.sp else 40.sp,
+            fontSize = when {
+                compact && smallTitle -> 20.sp
+                compact -> 24.sp
+                smallTitle -> 27.sp
+                else -> 34.sp
+            },
+            lineHeight = when {
+                compact && smallTitle -> 25.sp
+                compact -> 29.sp
+                smallTitle -> 33.sp
+                else -> 40.sp
+            },
             fontWeight = FontWeight.SemiBold,
         ),
         maxLines = 2,

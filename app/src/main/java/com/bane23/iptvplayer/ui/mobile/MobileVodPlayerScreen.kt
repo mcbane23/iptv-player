@@ -184,7 +184,7 @@ fun MobileVodPlayerScreen(
             info = {
                 if (!inPip) {
                     PauseScreensaver(
-                        vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                        vodPauseInfo(ui.pauseTitle ?: ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
                         poster = ui.pausePoster,
                         images = ui.pauseImages,
                         compact = true,
