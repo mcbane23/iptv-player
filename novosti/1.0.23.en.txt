@@ -1,0 +1,2 @@
+On TV, the Back button on Home opens the side menu
+From the open menu, pressing Back twice exits the app
