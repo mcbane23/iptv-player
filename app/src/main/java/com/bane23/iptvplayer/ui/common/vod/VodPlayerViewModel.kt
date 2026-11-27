@@ -60,6 +60,28 @@ internal fun pauseMeta(rating: String?, releaseDate: String?, genre: String?): L
     genre?.trim()?.takeIf { it.isNotEmpty() },
 )
 
+/**
+ * Naslov za ekran pauze, bez dodataka koje liste stavljaju: oznaka ispred naziva („EN - ”), a kod
+ * epizode ponovljen naziv serije i oznaka „S03E04” (sezona i epizoda su već u oznakama ispod).
+ * Ako od naziva epizode ne ostane ništa osim broja, ostaje samo naziv serije.
+ */
+internal fun pauseTitle(name: String?, episode: String?): String {
+    val main = name?.let(::withoutListPrefix)?.takeIf(String::isNotEmpty)
+    var rest = episode?.let(::withoutListPrefix).orEmpty()
+    if (main != null && rest.startsWith(main, ignoreCase = true)) rest = rest.substring(main.length)
+    rest = EPISODE_MARK.replace(rest, " ").replace(SPACES, " ").trim(' ', '-', '–', '|', ':', '·', '.')
+    if (rest.all { it.isDigit() }) rest = ""
+    return listOfNotNull(main, rest.takeIf(String::isNotEmpty)).joinToString(" · ")
+        .ifEmpty { listOfNotNull(name, episode).joinToString(" · ").trim() }
+}
+
+private fun withoutListPrefix(text: String): String = LIST_PREFIX.replace(text, "").trim()
+
+/** Oznaka na početku naziva kakvu liste dodaju: „EN - ”, „EX-YU | ”, „4K: ”. */
+private val LIST_PREFIX = Regex("""^\s*[A-Z0-9]{2,6}(?:-[A-Z0-9]{2,4})?\s*[-|:]\s+""")
+private val EPISODE_MARK = Regex("""\bS\d{1,2}\s*E\d{1,3}\b""", RegexOption.IGNORE_CASE)
+private val SPACES = Regex("""\s+""")
+
 /** Slike epizode za pozadinu ekrana pauze: njena slika, pa široke slike serije, bez ponavljanja. */
 internal fun episodePauseImages(episode: Episode, details: SeriesDetails): List<String> =
     (listOfNotNull(episode.image?.trim()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }) + details.backdrops)
@@ -76,6 +98,8 @@ data class VodPlayerUiState(
     val description: String? = null,
     /** Kratke oznake za ekran pauze (ocena, godina, žanr; za epizodu sezona i broj). */
     val meta: List<String> = emptyList(),
+    /** Kraći naslov za ekran pauze (vidi [pauseTitle]); null znači isti kao [title]. */
+    val pauseTitle: String? = null,
     /** Poster filma ili serije za ekran pauze; null kad ga nema. */
     val pausePoster: String? = null,
     /**
@@ -247,7 +271,7 @@ class VodPlayerViewModel @Inject constructor(
         if (started) return
         started = true
         item = Item(movieId, seriesId = null, title = name, poster = poster, extension = extension)
-        _ui.update { it.copy(title = name, pausePoster = poster, onlineSubtitles = subtitles.isAvailable) }
+        _ui.update { it.copy(title = name, pauseTitle = pauseTitle(name, null), pausePoster = poster, onlineSubtitles = subtitles.isAvailable) }
         // Opis i slike za ekran pauze; puštanje ih ne čeka i radi i kad se ne učitaju.
         viewModelScope.launch {
             runCatching { repository.movie(movieId) }.onSuccess { details ->
@@ -322,6 +346,7 @@ class VodPlayerViewModel @Inject constructor(
             _ui.update {
                 it.copy(
                     title = listOfNotNull(row.title, row.subtitle).joinToString(" · "),
+                    pauseTitle = pauseTitle(row.title, row.subtitle),
                     pausePoster = row.poster,
                     onlineSubtitles = ownList && subtitles.isAvailable,
                 )
@@ -633,6 +658,7 @@ class VodPlayerViewModel @Inject constructor(
         _ui.update {
             it.copy(
                 title = listOfNotNull(details.name, episode.title).joinToString(" · "),
+                pauseTitle = pauseTitle(details.name, episode.title),
                 season = episode.season,
                 episode = episode.number,
                 description = (episode.plot ?: details.plot)?.takeIf(String::isNotBlank),

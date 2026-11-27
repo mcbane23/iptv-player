@@ -98,7 +98,7 @@ private fun PauseCard(info: PauseInfo, poster: String?, compact: Boolean) {
                 style = TextStyle(color = Color.White, fontSize = if (compact) 26.sp else 44.sp, fontWeight = FontWeight.Light),
                 modifier = Modifier.padding(bottom = if (compact) 2.dp else 6.dp),
             )
-            PauseInfoTexts(info, compact)
+            PauseInfoTexts(info, compact, smallTitle = true)
         }
     }
 }

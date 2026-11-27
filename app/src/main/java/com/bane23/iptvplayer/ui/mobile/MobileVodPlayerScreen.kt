@@ -36,6 +36,7 @@ import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
 import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
+import com.bane23.iptvplayer.ui.common.player.HideControlsAfterPauseScreen
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerMenu
@@ -105,6 +106,7 @@ fun MobileVodPlayerScreen(
         describe = pauseInfoOn,
         onExit = onClose,
     )
+    HideControlsAfterPauseScreen(pauseDim, playback.status) { controlsVisible = false }
     ImmersiveMode()
     PlayerOrientation()
     val inPip = rememberIsInPictureInPicture()
@@ -184,7 +186,7 @@ fun MobileVodPlayerScreen(
             info = {
                 if (!inPip) {
                     PauseScreensaver(
-                        vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                        vodPauseInfo(ui.pauseTitle ?: ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
                         poster = ui.pausePoster,
                         images = ui.pauseImages,
                         compact = true,

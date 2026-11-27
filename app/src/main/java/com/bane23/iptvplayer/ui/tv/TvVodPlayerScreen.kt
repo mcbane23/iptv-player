@@ -48,6 +48,7 @@ import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
 import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
 import com.bane23.iptvplayer.ui.common.player.rememberPauseDim
+import com.bane23.iptvplayer.ui.common.player.HideControlsAfterPauseScreen
 import com.bane23.iptvplayer.ui.common.player.PlayerChip
 import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerSeekBar
@@ -130,6 +131,7 @@ fun TvVodPlayerScreen(
         describe = pauseInfoOn,
         onExit = onClose,
     )
+    HideControlsAfterPauseScreen(pauseDim, playback.status) { controls = false }
     MatchDisplayFrameRate(playback.video.frameRate)
     val backCloses = tracks != null || onlineOpen || settingsOpen || controls
 
@@ -300,7 +302,7 @@ fun TvVodPlayerScreen(
             state = pauseDim,
             info = {
                 PauseScreensaver(
-                    vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                    vodPauseInfo(ui.pauseTitle ?: ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
                     poster = ui.pausePoster,
                     images = ui.pauseImages,
                     compact = false,
