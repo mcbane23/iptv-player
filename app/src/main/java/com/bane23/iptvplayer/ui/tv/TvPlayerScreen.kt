@@ -170,6 +170,7 @@ fun TvPlayerScreen(
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
+    val favoriteFocus = remember { FocusRequester() }
     val panelOpen = channelList || tracks != null || recordPanel || settingsOpen || scheduleOpen || sourcesOpen
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
@@ -206,8 +207,9 @@ fun TvPlayerScreen(
             RemoteAction.SCHEDULE -> scheduleOpen = true
             RemoteAction.FAVORITE -> {
                 ui.channel?.let { favoriteLists.favoriteAction(it.id) }
-                // Zvezdica je među kontrolama, pa se one kratko pokažu da se vidi šta se promenilo.
-                if (overlay == Overlay.HIDDEN) overlay = Overlay.INFO
+                // Zvezdica je među dugmićima, pa se oni pokažu sa fokusom na njoj da se vidi šta se promenilo.
+                if (overlay != Overlay.ACTIVE) returnFocus[0] = favoriteFocus
+                overlay = Overlay.ACTIVE
             }
             RemoteAction.AUDIO -> openMenu(PlayerMenu.AUDIO)
             RemoteAction.SUBTITLES -> openMenu(PlayerMenu.SUBTITLES)
@@ -410,6 +412,10 @@ fun TvPlayerScreen(
                     viewModel = viewModel,
                     isFavorite = isFavorite,
                     firstChipFocus = firstChipFocus,
+                    favoriteFocus = favoriteFocus,
+                    // Posle promene kanala vidi se samo naziv i program, bez dugmića, pa gore/dole i dalje menjaju
+                    // kanal. Kad se vide dugmići, fokus je na njima i strelice se kreću između njih.
+                    buttons = overlay == Overlay.ACTIVE,
                     onChannels = { channelList = true },
                     onSchedule = { scheduleOpen = true },
                     onSources = { openMenu(PlayerMenu.SOURCES) },
@@ -513,6 +519,8 @@ private fun LiveControls(
     viewModel: PlayerViewModel,
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
+    favoriteFocus: FocusRequester,
+    buttons: Boolean,
     onChannels: () -> Unit,
     onSchedule: () -> Unit,
     onSources: () -> Unit,
@@ -569,46 +577,50 @@ private fun LiveControls(
                     startLabel = program?.let { formatTime(it.startMs) },
                     endLabel = program?.let { formatTime(it.stopMs) },
                     leading = {
-                        PlayerIconButton(
-                            icon = AppIcons.Previous,
-                            description = stringResource(R.string.player_previous),
-                            onClick = viewModel::previous,
-                        )
-                        PlayerIconButton(
-                            icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
-                            description = stringResource(
-                                when {
-                                    failed -> R.string.player_retry
-                                    paused -> R.string.player_play
-                                    else -> R.string.player_pause
-                                },
-                            ),
-                            onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
-                            primary = true,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .focusRequester(firstChipFocus),
-                        )
+                        if (buttons) {
+                            PlayerIconButton(
+                                icon = AppIcons.Previous,
+                                description = stringResource(R.string.player_previous),
+                                onClick = viewModel::previous,
+                            )
+                            PlayerIconButton(
+                                icon = if (paused || failed) AppIcons.Play else AppIcons.Pause,
+                                description = stringResource(
+                                    when {
+                                        failed -> R.string.player_retry
+                                        paused -> R.string.player_play
+                                        else -> R.string.player_pause
+                                    },
+                                ),
+                                onClick = { if (failed) viewModel.retry() else viewModel.togglePlayPause() },
+                                primary = true,
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .focusRequester(firstChipFocus),
+                            )
+                        }
                     },
                     trailing = {
                         PlayerResolution(viewModel.player, modifier = Modifier.padding(horizontal = 8.dp))
-                        PlayerIconButton(
-                            icon = AppIcons.Next,
-                            description = stringResource(R.string.player_next),
-                            onClick = viewModel::next,
-                        )
-                        if (ui.lastChannel != null) {
+                        if (buttons) {
                             PlayerIconButton(
-                                icon = AppIcons.Swap,
-                                description = stringResource(R.string.player_last_channel),
-                                onClick = viewModel::playLastChannel,
+                                icon = AppIcons.Next,
+                                description = stringResource(R.string.player_next),
+                                onClick = viewModel::next,
+                            )
+                            if (ui.lastChannel != null) {
+                                PlayerIconButton(
+                                    icon = AppIcons.Swap,
+                                    description = stringResource(R.string.player_last_channel),
+                                    onClick = viewModel::playLastChannel,
+                                )
+                            }
+                            PlayerIconButton(
+                                icon = AppIcons.AspectRatio,
+                                description = ui.aspectMode.label(),
+                                onClick = viewModel::cycleAspectMode,
                             )
                         }
-                        PlayerIconButton(
-                            icon = AppIcons.AspectRatio,
-                            description = ui.aspectMode.label(),
-                            onClick = viewModel::cycleAspectMode,
-                        )
                     },
                 ) { barModifier ->
                     val length = program?.let { (it.stopMs - it.startMs).coerceAtLeast(1) }
@@ -629,7 +641,7 @@ private fun LiveControls(
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (buttons) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PlayerChip(
                         icon = AppIcons.ChannelList,
                         label = stringResource(R.string.player_channels),
@@ -671,6 +683,7 @@ private fun LiveControls(
                         label = stringResource(R.string.category_favorites),
                         active = isFavorite,
                         onClick = onFavorite,
+                        modifier = Modifier.focusRequester(favoriteFocus),
                     )
                     // Isto dugme počinje i zaustavlja snimanje (menja se samo natpis), pa fokus ostaje na njemu.
                     PlayerChip(
