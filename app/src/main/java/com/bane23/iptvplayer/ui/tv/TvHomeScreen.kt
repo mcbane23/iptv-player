@@ -149,7 +149,6 @@ fun TvHomeScreen(
         railHold = true
         tab = startTab
     }
-    ExitOnDoubleBack(enabled = tab == startTab)
     val holder = rememberSaveableStateHolder()
     // Podešavanja se posle povratka otvaraju na celom meniju, a Uživo na nedavno gledanim.
     // Filmovi i serije se otvaraju na poslednjoj izabranoj kategoriji, ne na Favoritima ni „Nastavi gledanje” (Bane).
@@ -198,9 +197,16 @@ fun TvHomeScreen(
             else -> tab = picked
         }
     }
-    // Nazad dok je fokus u meniju prvo sklanja meni.
-    BackHandler(enabled = railFocused) {
-        if (!leaveRail() && tab != startTab) tab = startTab
+    // Na početnoj sekciji Nazad iz sadržaja otvara bočni meni, a tek iz menija se izlazi iz aplikacije
+    // (dva pritiska, prvi prikaže poruku) (Bane).
+    BackHandler(enabled = tab == startTab && !railFocused) {
+        railHold = false
+        selectedFocus.tryRequestFocus()
+    }
+    ExitOnDoubleBack(enabled = tab == startTab && railFocused)
+    // U ostalim sekcijama Nazad dok je fokus u meniju prvo sklanja meni.
+    BackHandler(enabled = railFocused && tab != startTab) {
+        if (!leaveRail()) tab = startTab
     }
     // Stavka „Snima se” ostaje u meniju dok je fokus na njoj i kad se snimanje završi, da fokus ne nestane.
     var recordingFocused by remember { mutableStateOf(false) }
