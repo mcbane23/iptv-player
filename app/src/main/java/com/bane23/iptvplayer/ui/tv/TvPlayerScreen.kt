@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
@@ -642,12 +643,20 @@ private fun LiveControls(
                     )
                 }
                 if (buttons) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Gore iz reda dugmića vodi na Pauzu, ne na dugme koje je slučajno iznad.
+                    val upToPlay = Modifier.focusProperties { up = firstChipFocus }
                     PlayerChip(
                         icon = AppIcons.ChannelList,
                         label = stringResource(R.string.player_channels),
                         onClick = onChannels,
+                        modifier = upToPlay,
                     )
-                    PlayerChip(icon = AppIcons.Guide, label = stringResource(R.string.player_schedule), onClick = onSchedule)
+                    PlayerChip(
+                        icon = AppIcons.Guide,
+                        label = stringResource(R.string.player_schedule),
+                        onClick = onSchedule,
+                        modifier = upToPlay,
+                    )
                     // Isti kanal postoji i u spojenoj listi: može da se izabere odakle se gleda.
                     if (ui.sources.size > 1) {
                         PlayerChip(
@@ -655,7 +664,7 @@ private fun LiveControls(
                             label = stringResource(R.string.player_sources),
                             open = openedMenu == PlayerMenu.SOURCES,
                             onClick = onSources,
-                            modifier = Modifier.menuChip(PlayerMenu.SOURCES),
+                            modifier = upToPlay.menuChip(PlayerMenu.SOURCES),
                         )
                     }
                     PlayerChip(
@@ -663,27 +672,28 @@ private fun LiveControls(
                         label = stringResource(R.string.player_audio),
                         open = openedMenu == PlayerMenu.AUDIO,
                         onClick = onAudio,
-                        modifier = Modifier.menuChip(PlayerMenu.AUDIO),
+                        modifier = upToPlay.menuChip(PlayerMenu.AUDIO),
                     )
                     PlayerChip(
                         icon = AppIcons.Settings,
                         label = stringResource(R.string.settings_title),
                         open = openedMenu == PlayerMenu.SETTINGS,
                         onClick = onSettings,
-                        modifier = Modifier.menuChip(PlayerMenu.SETTINGS),
+                        modifier = upToPlay.menuChip(PlayerMenu.SETTINGS),
                     )
                     PlayerChip(
                         icon = AppIcons.Info,
                         label = stringResource(R.string.player_stream_info),
                         active = infoVisible,
                         onClick = onInfo,
+                        modifier = upToPlay,
                     )
                     PlayerChip(
                         icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                         label = stringResource(R.string.category_favorites),
                         active = isFavorite,
                         onClick = onFavorite,
-                        modifier = Modifier.focusRequester(favoriteFocus),
+                        modifier = upToPlay.focusRequester(favoriteFocus),
                     )
                     // Isto dugme počinje i zaustavlja snimanje (menja se samo natpis), pa fokus ostaje na njemu.
                     PlayerChip(
@@ -692,7 +702,7 @@ private fun LiveControls(
                         active = isRecording,
                         open = openedMenu == PlayerMenu.RECORD,
                         onClick = onRecord,
-                        modifier = Modifier.menuChip(PlayerMenu.RECORD),
+                        modifier = upToPlay.menuChip(PlayerMenu.RECORD),
                     )
                 }
             }
