@@ -42,6 +42,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,6 +85,9 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.MobileFavoriteMenuWidth
+import com.bane23.iptvplayer.ui.common.player.PlayerFavoriteMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerFavoriteNameBox
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
 import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
@@ -104,7 +108,7 @@ import kotlinx.coroutines.delay
 /** Dodir na dugme čiji je meni već otvoren zatvara taj meni, umesto da ga ostavi otvorenim. */
 private fun toggled(current: Panel, menu: Panel): Panel = if (current == menu) Panel.NONE else menu
 
-private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE, SOURCES }
+private enum class Panel { NONE, CHANNELS, AUDIO, RECORD, SETTINGS, SCHEDULE, SOURCES, FAVORITE }
 
 /** Plejer na telefonu: dodir prikazuje kontrole, prevlačenje menja osvetljenje (levo) i jačinu zvuka (desno). */
 @Composable
@@ -122,8 +126,13 @@ fun MobilePlayerScreen(
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
     SourceNotices(viewModel.sourceNotice)
+    // Favoriti su oblačić iznad svog dugmeta: sekcije kao dugmići, a nova sekcija ima svoje polje za ime.
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
-    MobileFavoritePickDialog(favoriteLists)
+    val favoritePick by favoriteLists.pick.collectAsStateWithLifecycle()
+    val favoriteSections by favoriteLists.lists.collectAsStateWithLifecycle()
+    val favoriteNameTaken by favoriteLists.nameTaken.collectAsStateWithLifecycle()
+    // Ime nove sekcije dok se kuca; null dok polje nije otvoreno. Preživi okretanje telefona.
+    var favoriteName by rememberSaveable { mutableStateOf<String?>(null) }
     val nowNext by viewModel.nowNext.collectAsStateWithLifecycle()
     val inPip = rememberIsInPictureInPicture()
     val cast = rememberCastLauncher(media = { viewModel.castMedia() }, onStarted = onCastStarted)
@@ -137,8 +146,19 @@ fun MobilePlayerScreen(
         Panel.SOURCES -> PlayerMenu.SOURCES
         Panel.SETTINGS -> PlayerMenu.SETTINGS
         Panel.RECORD -> PlayerMenu.RECORD
+        Panel.FAVORITE -> PlayerMenu.FAVORITE
         else -> null
     }
+    // Oblačić „Favoriti” je otvoren dok postoji izbor; izbor sekcije ga zatvara.
+    LaunchedEffect(favoritePick == null) {
+        if (favoritePick == null) {
+            favoriteName = null
+            if (panel == Panel.FAVORITE) panel = Panel.NONE
+        } else {
+            panel = Panel.FAVORITE
+        }
+    }
+    LaunchedEffect(panel) { if (panel != Panel.FAVORITE && favoritePick != null) favoriteLists.closePick() }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
     val record = rememberRecordingToggle(isRecording) {
         if (isRecording) viewModel.toggleRecording() else panel = toggled(panel, Panel.RECORD)
@@ -182,7 +202,9 @@ fun MobilePlayerScreen(
             controlsVisible = false
         }
     }
-    BackHandler(enabled = panel != Panel.NONE) { panel = Panel.NONE }
+    BackHandler(enabled = panel != Panel.NONE) {
+        if (favoriteName != null) favoriteName = null else panel = Panel.NONE
+    }
     // Zaključan ekran ne izlazi ni na Nazad, samo pokaže dugme za otključavanje.
     BackHandler(enabled = locked) { unlockVisible = true }
     LaunchedEffect(unlockVisible) {
@@ -286,7 +308,9 @@ fun MobilePlayerScreen(
                         onInfo = { infoVisible = !infoVisible },
                         isFavorite = isFavorite,
                         nowNext = nowNext,
-                        onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
+                        onFavorite = {
+                            if (panel == Panel.FAVORITE) panel = Panel.NONE else ui.channel?.let { favoriteLists.openPick(it.id) }
+                        },
                         isRecording = isRecording,
                         onRecord = record,
                         onPip = rememberEnterPictureInPicture(),
@@ -339,6 +363,41 @@ fun MobilePlayerScreen(
                                 panel = Panel.NONE
                             },
                         )
+                    }
+
+                    Panel.FAVORITE -> favoritePick?.let { pick ->
+                        val naming = favoriteName
+                        if (naming == null) {
+                            PlayerMenuBubble(anchors[PlayerMenu.FAVORITE], MobileFavoriteMenuWidth) {
+                                PlayerFavoriteMenu(
+                                    pick = pick,
+                                    sections = favoriteSections,
+                                    onChoose = favoriteLists::choose,
+                                    onNewSection = {
+                                        favoriteLists.clearNameError()
+                                        favoriteName = ""
+                                    },
+                                    onRemove = favoriteLists::remove,
+                                )
+                            }
+                        } else {
+                            PlayerFavoriteNameBox(
+                                channelName = pick.channelName,
+                                name = naming,
+                                onName = {
+                                    favoriteName = it
+                                    favoriteLists.clearNameError()
+                                },
+                                nameTaken = favoriteNameTaken,
+                                onDone = { favoriteLists.create(naming) },
+                                width = MobileFavoriteMenuWidth,
+                                button = true,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 16.dp)
+                                    .pointerInput(Unit) { detectTapGestures { } },
+                            )
+                        }
                     }
 
                     else -> Unit
@@ -498,7 +557,9 @@ private fun LiveControls(
                     icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                     label = stringResource(R.string.category_favorites),
                     active = isFavorite,
+                    open = openedMenu == PlayerMenu.FAVORITE,
                     onClick = onFavorite,
+                    modifier = Modifier.playerMenuAnchor(anchors, PlayerMenu.FAVORITE),
                 )
                 PlayerChip(
                     icon = AppIcons.Record,

@@ -68,6 +68,9 @@ import com.bane23.iptvplayer.ui.common.player.PlayerIconButton
 import com.bane23.iptvplayer.ui.common.player.PlayerMenu
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuAnchors
 import com.bane23.iptvplayer.ui.common.player.PlayerMenuBubble
+import com.bane23.iptvplayer.ui.common.player.PlayerFavoriteMenu
+import com.bane23.iptvplayer.ui.common.player.PlayerFavoriteNameBox
+import com.bane23.iptvplayer.ui.common.player.TvFavoriteMenuWidth
 import com.bane23.iptvplayer.ui.common.player.playerMenuAnchor
 import com.bane23.iptvplayer.ui.common.player.playerMenuBar
 import com.bane23.iptvplayer.ui.common.player.rememberPlayerMenuAnchors
@@ -120,8 +123,14 @@ fun TvPlayerScreen(
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     RecordingNotices(viewModel.recordingNotice)
     SourceNotices(viewModel.sourceNotice)
+    // Favoriti su oblačić iznad svog dugmeta: sekcije kao dugmići, a nova sekcija ima svoje polje za ime.
     val favoriteLists: FavoriteListsViewModel = hiltViewModel()
-    TvFavoritePickDialog(favoriteLists)
+    val favoritePick by favoriteLists.pick.collectAsStateWithLifecycle()
+    val favoriteSections by favoriteLists.lists.collectAsStateWithLifecycle()
+    val favoriteNameTaken by favoriteLists.nameTaken.collectAsStateWithLifecycle()
+    // Ime nove sekcije dok se kuca; null dok polje nije otvoreno.
+    var favoriteName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(favoritePick == null) { if (favoritePick == null) favoriteName = null }
     var overlay by remember { mutableStateOf(Overlay.INFO) }
     var channelList by remember { mutableStateOf(false) }
     var tracks by remember { mutableStateOf<TvTrackKind?>(null) }
@@ -149,6 +158,7 @@ fun TvPlayerScreen(
             PlayerMenu.SETTINGS -> settingsOpen = true
             PlayerMenu.SOURCES -> sourcesOpen = true
             PlayerMenu.RECORD -> recordPanel = true
+            PlayerMenu.FAVORITE -> ui.channel?.let { favoriteLists.openPick(it.id) }
         }
     }
     val openedMenu = when {
@@ -157,6 +167,7 @@ fun TvPlayerScreen(
         settingsOpen -> PlayerMenu.SETTINGS
         sourcesOpen -> PlayerMenu.SOURCES
         recordPanel -> PlayerMenu.RECORD
+        favoritePick != null -> PlayerMenu.FAVORITE
         else -> null
     }
     // Dugme „Snimaj” zaustavlja snimanje koje traje, a inače prvo pita koliko dugo da snima.
@@ -171,8 +182,8 @@ fun TvPlayerScreen(
     var activity by remember { mutableIntStateOf(0) }
     val rootFocus = remember { FocusRequester() }
     val firstChipFocus = remember { FocusRequester() }
-    val favoriteFocus = remember { FocusRequester() }
-    val panelOpen = channelList || tracks != null || recordPanel || settingsOpen || scheduleOpen || sourcesOpen
+    val panelOpen = channelList || tracks != null || recordPanel || settingsOpen || scheduleOpen || sourcesOpen ||
+        favoritePick != null
 
     LaunchedEffect(channelId) { viewModel.start(channelId, categoryId) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onForeground() }
@@ -187,6 +198,8 @@ fun TvPlayerScreen(
     // Nazad zatvara ono što je na vrhu: prvo otvoren panel, pa kontrole.
     fun closeTop() {
         when {
+            favoriteName != null -> favoriteName = null
+            favoritePick != null -> favoriteLists.closePick()
             tracks != null -> tracks = null
             recordPanel -> recordPanel = false
             settingsOpen -> settingsOpen = false
@@ -206,12 +219,7 @@ fun TvPlayerScreen(
             RemoteAction.PREVIOUS_CHANNEL -> viewModel.previous()
             RemoteAction.CHANNEL_LIST -> channelList = true
             RemoteAction.SCHEDULE -> scheduleOpen = true
-            RemoteAction.FAVORITE -> {
-                ui.channel?.let { favoriteLists.favoriteAction(it.id) }
-                // Zvezdica je među dugmićima, pa se oni pokažu sa fokusom na njoj da se vidi šta se promenilo.
-                if (overlay != Overlay.ACTIVE) returnFocus[0] = favoriteFocus
-                overlay = Overlay.ACTIVE
-            }
+            RemoteAction.FAVORITE -> openMenu(PlayerMenu.FAVORITE)
             RemoteAction.AUDIO -> openMenu(PlayerMenu.AUDIO)
             RemoteAction.SUBTITLES -> openMenu(PlayerMenu.SUBTITLES)
             RemoteAction.QUICK_SETTINGS -> openMenu(PlayerMenu.SETTINGS)
@@ -414,7 +422,6 @@ fun TvPlayerScreen(
                     viewModel = viewModel,
                     isFavorite = isFavorite,
                     firstChipFocus = firstChipFocus,
-                    favoriteFocus = favoriteFocus,
                     // Posle promene kanala vidi se samo naziv i program, bez dugmića, pa gore/dole i dalje menjaju
                     // kanal. Kad se vide dugmići, fokus je na njima i strelice se kreću između njih.
                     buttons = overlay == Overlay.ACTIVE,
@@ -428,7 +435,7 @@ fun TvPlayerScreen(
                     openedMenu = openedMenu,
                     infoVisible = infoVisible,
                     onInfo = { infoVisible = !infoVisible },
-                    onFavorite = { ui.channel?.let { favoriteLists.favoriteAction(it.id) } },
+                    onFavorite = { openMenu(PlayerMenu.FAVORITE) },
                     isRecording = isRecording,
                     onRecord = record,
                 )
@@ -496,6 +503,42 @@ fun TvPlayerScreen(
                 }
             }
 
+            val pick = favoritePick
+            val naming = favoriteName
+            if (pick != null && naming == null) {
+                PlayerMenuBubble(anchor = anchors[PlayerMenu.FAVORITE], width = TvFavoriteMenuWidth) {
+                    PlayerFavoriteMenu(
+                        pick = pick,
+                        sections = favoriteSections,
+                        onChoose = favoriteLists::choose,
+                        onNewSection = {
+                            favoriteLists.clearNameError()
+                            favoriteName = ""
+                        },
+                        onRemove = favoriteLists::remove,
+                        modifier = Modifier.tvKeepFocus(),
+                        focusFirst = true,
+                    )
+                }
+            }
+            if (pick != null && naming != null) {
+                PlayerFavoriteNameBox(
+                    channelName = pick.channelName,
+                    name = naming,
+                    onName = {
+                        favoriteName = it
+                        favoriteLists.clearNameError()
+                    },
+                    nameTaken = favoriteNameTaken,
+                    onDone = { favoriteLists.create(naming) },
+                    width = 420.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 72.dp)
+                        .tvKeepFocus(),
+                )
+            }
+
             if (recordPanel) {
                 val choices = recordingChoices(nowNext.now?.stopMs)
                 PlayerMenuBubble(anchor = anchors[PlayerMenu.RECORD], width = TvTrackMenuWidth) {
@@ -521,7 +564,6 @@ private fun LiveControls(
     viewModel: PlayerViewModel,
     isFavorite: Boolean,
     firstChipFocus: FocusRequester,
-    favoriteFocus: FocusRequester,
     buttons: Boolean,
     onChannels: () -> Unit,
     onSchedule: () -> Unit,
@@ -693,8 +735,9 @@ private fun LiveControls(
                         icon = if (isFavorite) AppIcons.Star else AppIcons.StarOutline,
                         label = stringResource(R.string.category_favorites),
                         active = isFavorite,
+                        open = openedMenu == PlayerMenu.FAVORITE,
                         onClick = onFavorite,
-                        modifier = upToPlay.focusRequester(favoriteFocus),
+                        modifier = upToPlay.menuChip(PlayerMenu.FAVORITE),
                     )
                     // Isto dugme počinje i zaustavlja snimanje (menja se samo natpis), pa fokus ostaje na njemu.
                     PlayerChip(

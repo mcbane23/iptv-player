@@ -24,6 +24,11 @@ data class FavoritePick(
     val favorite: Boolean,
     /** Sekcija u kojoj je kanal, ili null kad je bez sekcije. */
     val sectionId: Long?,
+    /**
+     * Sekcija na kojoj izbor počinje: ona u kojoj je kanal, a za kanal koji još nije među favoritima
+     * poslednja korišćena. Null je „Bez sekcije”.
+     */
+    val suggestedSectionId: Long? = sectionId,
 )
 
 /**
@@ -66,6 +71,17 @@ class FavoriteListsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Otvara izbor sekcije za kanal uvek, i kad sekcija još nema (oblačić u plejeru: tu se pravi i
+     * prva sekcija).
+     */
+    fun openPick(channelId: Long) {
+        viewModelScope.launch {
+            _nameTaken.value = false
+            _pick.value = load(channelId)
+        }
+    }
+
     fun closePick() {
         _pick.value = null
     }
@@ -74,6 +90,7 @@ class FavoriteListsViewModel @Inject constructor(
     fun choose(sectionId: Long?) {
         val pick = _pick.value ?: return
         _pick.value = null
+        rememberChoice(sectionId)
         viewModelScope.launch { repository.setFavoriteSection(pick.channelId, sectionId) }
     }
 
@@ -92,6 +109,7 @@ class FavoriteListsViewModel @Inject constructor(
             val pick = _pick.value
             if (id != null && pick != null) {
                 _pick.value = null
+                rememberChoice(id)
                 repository.setFavoriteSection(pick.channelId, id)
             }
             onDone(id != null)
@@ -122,11 +140,30 @@ class FavoriteListsViewModel @Inject constructor(
 
     private suspend fun load(channelId: Long): FavoritePick? {
         val channel = repository.getChannel(channelId) ?: return null
+        val favorite = repository.isFavorite(channelId)
+        val section = repository.favoriteSectionOf(channelId)
         return FavoritePick(
             channelId = channelId,
             channelName = channel.name,
-            favorite = repository.isFavorite(channelId),
-            sectionId = repository.favoriteSectionOf(channelId),
+            favorite = favorite,
+            sectionId = section,
+            suggestedSectionId = when {
+                favorite -> section
+                lastChoiceKnown -> lastChoice
+                else -> repository.lastUsedFavoriteSection()
+            },
         )
+    }
+
+    private fun rememberChoice(sectionId: Long?) {
+        lastChoice = sectionId
+        lastChoiceKnown = true
+    }
+
+    private companion object {
+        // Poslednja izabrana sekcija dok aplikacija radi (i „Bez sekcije”); posle pokretanja važi
+        // sekcija u koju je poslednje nešto dodato.
+        @Volatile var lastChoice: Long? = null
+        @Volatile var lastChoiceKnown = false
     }
 }

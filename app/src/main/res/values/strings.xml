@@ -740,6 +740,12 @@
     <string name="favorite_section_none">No section</string>
     <string name="favorite_section_empty">This section is still empty.</string>
     <string name="favorite_list_name_taken">Enter a name that is not used yet.</string>
+    <string name="player_favorite_add_title">Add to favorites</string>
+    <string name="player_favorite_in_title">In favorites: change section or remove</string>
+    <string name="player_favorite_new_section">+ New section</string>
+    <string name="player_favorite_remove">Remove</string>
+    <string name="player_favorite_new_for">New section for %1$s</string>
+    <string name="player_favorite_new_hint">Done on the keyboard creates the section and adds the channel.</string>
     <string name="pause_paused">Paused</string>
     <string name="pause_left_minutes">Paused · %1$d min left</string>
     <string name="pause_left_hours">Paused · %1$d h %2$d min left</string>
