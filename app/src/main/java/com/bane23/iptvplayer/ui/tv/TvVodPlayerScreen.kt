@@ -43,7 +43,7 @@ import com.bane23.iptvplayer.ui.common.icons.AppIcons
 import com.bane23.iptvplayer.ui.common.player.NextEpisodeCard
 import com.bane23.iptvplayer.ui.common.player.KeepScreenOn
 import com.bane23.iptvplayer.ui.common.player.PauseDimLayer
-import com.bane23.iptvplayer.ui.common.player.PauseInfoScreen
+import com.bane23.iptvplayer.ui.common.player.PauseScreensaver
 import com.bane23.iptvplayer.ui.common.player.vodPauseInfo
 import com.bane23.iptvplayer.ui.common.player.rememberPauseInfoEnabled
 import com.bane23.iptvplayer.ui.common.player.pauseDimInput
@@ -299,8 +299,10 @@ fun TvVodPlayerScreen(
         PauseDimLayer(
             state = pauseDim,
             info = {
-                PauseInfoScreen(
+                PauseScreensaver(
                     vodPauseInfo(ui.title, ui.positionMs, ui.durationMs, ui.meta, ui.description),
+                    poster = ui.pausePoster,
+                    images = ui.pauseImages,
                     compact = false,
                 )
             },

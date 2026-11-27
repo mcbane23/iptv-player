@@ -59,6 +59,8 @@ data class MovieDetails(
     val tmdbId: Long? = null,
     /** Široka slika iz filma za pozadinu detalja, ako je panel šalje. */
     val backdrop: String? = null,
+    /** Sve široke slike iz filma koje panel šalje (prva je [backdrop]), za ekran pauze. */
+    val backdrops: List<String> = emptyList(),
     /** Link trejlera, vidi [XtreamVodParser.trailerUrl]. */
     val trailer: String? = null,
 )
@@ -89,6 +91,8 @@ data class SeriesDetails(
     val tmdbId: Long? = null,
     /** Široka slika iz serije za pozadinu detalja, ako je panel šalje. */
     val backdrop: String? = null,
+    /** Sve široke slike iz serije koje panel šalje (prva je [backdrop]), za ekran pauze. */
+    val backdrops: List<String> = emptyList(),
     /** Link trejlera, vidi [XtreamVodParser.trailerUrl]. */
     val trailer: String? = null,
 ) {
@@ -128,6 +132,7 @@ object XtreamVodParser {
             tmdbId = listOf(info.text("tmdb_id"), info.text("tmdb"), data.text("tmdb_id"), data.text("tmdb"))
                 .firstNotNullOfOrNull(::tmdbId),
             backdrop = info.image("backdrop_path"),
+            backdrops = info.images("backdrop_path"),
             trailer = trailerUrl(info.text("youtube_trailer") ?: info.text("trailer")),
         )
     }
@@ -158,6 +163,7 @@ object XtreamVodParser {
             seasons = seasons,
             tmdbId = tmdbId(info.text("tmdb")) ?: tmdbId(info.text("tmdb_id")),
             backdrop = info.image("backdrop_path"),
+            backdrops = info.images("backdrop_path"),
             trailer = trailerUrl(info.text("youtube_trailer") ?: info.text("trailer")),
         )
     }
@@ -182,6 +188,16 @@ object XtreamVodParser {
                 ),
             )
         }
+    }
+
+    /** Svi linkovi slika iz polja koje stiže čas kao tekst, čas kao niz linkova; bez ponovljenih. */
+    private fun JsonObject?.images(key: String): List<String> {
+        val value = this?.get(key) ?: return emptyList()
+        val items = if (value is JsonArray) value.toList() else listOf(value)
+        return items.mapNotNull { item ->
+            if (item is JsonNull || item !is JsonPrimitive) return@mapNotNull null
+            item.content.trim().takeIf { it.startsWith("http://") || it.startsWith("https://") }
+        }.distinct()
     }
 
     /** Vrednost polja kao tekst; prazno, `null` i složene vrednosti se računaju kao da polja nema. */

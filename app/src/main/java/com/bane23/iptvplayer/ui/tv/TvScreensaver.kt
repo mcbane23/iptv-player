@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.bane23.iptvplayer.data.weather.temperatureText
+import com.bane23.iptvplayer.ui.common.BlurredBackdrop
 import com.bane23.iptvplayer.ui.common.SettingsViewModel
 import com.bane23.iptvplayer.ui.common.UserActivity
 import com.bane23.iptvplayer.ui.common.rememberClockText
@@ -59,7 +60,7 @@ import kotlinx.coroutines.flow.collectLatest
 /**
  * Čuvar ekrana na TV-u: kad se izabrano vreme ne pritisne nijedan taster, preko svega se prikazuje
  * sat sa datumom (i trenutnom temperaturom, kad je ima) koji se svaki minut premesti, na razlivenom posteru iz omiljenih ili poslednje gledanih
- * (vidi [ScreensaverBackdrop]); bez postera pozadina je crna. Bilo koji taster ga gasi, a fokus ostaje gde je bio,
+ * (vidi [BlurredBackdrop]); bez postera pozadina je crna. Bilo koji taster ga gasi, a fokus ostaje gde je bio,
  * jer je čuvar u svom prozoru.
  *
  * [blocked] je tačno dok je otvoren plejer ili ekran na kome se čeka (npr. uparivanje sa telefonom).
@@ -113,7 +114,7 @@ private fun ScreensaverWindow(viewModel: ScreensaverViewModel, onDismiss: () -> 
                 .focusable(),
         ) {
             // Pozadina ide preko celog ekrana, a sat ostaje unutar margina zbog overscan-a televizora.
-            ScreensaverBackdrop(posters, modifier = Modifier.fillMaxSize())
+            BlurredBackdrop(posters, modifier = Modifier.fillMaxSize())
             Box(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
                 DriftingClock(temperature)
             }

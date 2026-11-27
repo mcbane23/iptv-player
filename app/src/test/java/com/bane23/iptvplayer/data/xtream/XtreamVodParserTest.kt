@@ -178,19 +178,30 @@ class XtreamVodParserTest {
             json("""{"info":{"backdrop_path":["http://slike.invalid/siroka.jpg","http://slike.invalid/druga.jpg"],"youtube_trailer":"AbCdEf12345"},"movie_data":{}}"""),
         )
         assertEquals("http://slike.invalid/siroka.jpg", movie.backdrop)
+        assertEquals(listOf("http://slike.invalid/siroka.jpg", "http://slike.invalid/druga.jpg"), movie.backdrops)
         assertEquals("https://www.youtube.com/watch?v=AbCdEf12345", movie.trailer)
 
         val series = XtreamVodParser.series(
             json("""{"info":{"backdrop_path":"https://slike.invalid/serija.jpg","youtube_trailer":"https://video.invalid/trejler"},"episodes":{}}"""),
         )
         assertEquals("https://slike.invalid/serija.jpg", series.backdrop)
+        assertEquals(listOf("https://slike.invalid/serija.jpg"), series.backdrops)
         assertEquals("https://video.invalid/trejler", series.trailer)
+    }
+
+    @Test
+    fun `all backdrops skip blanks, non links and repeats`() {
+        val movie = XtreamVodParser.movie(
+            json("""{"info":{"backdrop_path":["", null, "nije link", "https://slike.invalid/a.jpg", "https://slike.invalid/a.jpg", "https://slike.invalid/b.jpg"]},"movie_data":{}}"""),
+        )
+        assertEquals(listOf("https://slike.invalid/a.jpg", "https://slike.invalid/b.jpg"), movie.backdrops)
     }
 
     @Test
     fun `missing or odd backdrop and trailer mean none`() {
         val movie = XtreamVodParser.movie(json("""{"info":{"backdrop_path":[],"youtube_trailer":""},"movie_data":{}}"""))
         assertNull(movie.backdrop)
+        assertEquals(emptyList<String>(), movie.backdrops)
         assertNull(movie.trailer)
         assertNull(XtreamVodParser.trailerUrl("nema trejlera"))
         assertNull(XtreamVodParser.trailerUrl(null))
