@@ -864,6 +864,8 @@ Doterivanje lista i kategorija (17. 11. 2026, bez novih funkcija):
       Open-Meteo (besplatno, bez naloga), mesto po IP adresi (ipapi.co, rezervno ipwho.is), a Podešavanja >
       Izgled „Grad za temperaturu” ima prednost. Pita se samo dok je čuvar upaljen, internet najviše na 30 min;
       bez podatka se vidi samo datum.
+- [x] Pretapanje razlivenih slika bez bljeska (Bane, 27. 11. 2026): na ekranu pauze i u čuvaru ekrana stara
+      slika ostaje neprovidna dok se nova pojavljuje preko nje, pa se kroz prelaz više ne nazire kadar ispod.
 - [x] Pretraga oprašta promašeno slovo (Bane, 22. 11. 2026; telefon i TV): zajednička pretraga i pretraga
       kanala, filmova i serija nalaze naziv i kad je u upitu jedno slovo pogrešno, ispušteno ili suvišno (upit
       od bar 5 slova) i kad su izostavljene kvačice. Tačni pogoci idu prvi. Emisije iz vodiča se i dalje traže tačno
