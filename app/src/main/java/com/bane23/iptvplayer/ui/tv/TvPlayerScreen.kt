@@ -363,6 +363,7 @@ fun TvPlayerScreen(
             player = viewModel.player,
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
+            subtitlesAboveY = if (overlay != Overlay.HIDDEN && !channelList) anchors.controlsTopInWindow else null,
         )
 
         PauseDimLayer(

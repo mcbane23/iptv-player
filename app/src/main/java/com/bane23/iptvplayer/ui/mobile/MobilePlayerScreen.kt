@@ -225,6 +225,7 @@ fun MobilePlayerScreen(
             player = viewModel.player,
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
+            subtitlesAboveY = if (!locked && ((controlsVisible && panel == Panel.NONE) || bubbleMenu != null)) anchors.controlsTopInWindow else null,
         )
 
         PauseDimLayer(
