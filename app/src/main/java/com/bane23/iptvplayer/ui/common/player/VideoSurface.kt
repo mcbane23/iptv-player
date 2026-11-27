@@ -58,6 +58,11 @@ fun VideoSurface(
     modifier: Modifier = Modifier,
     subtitleText: StateFlow<String?>? = null,
     holdLastFrame: Boolean = true,
+    /**
+     * Vrh kontrola plejera u koordinatama prozora dok su na ekranu, inače null. Titl se tada
+     * podiže iznad njih, a posle se vraća na izabrani položaj.
+     */
+    subtitlesAboveY: Float? = null,
     settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val lastFrame = remember { LastFrame() }
@@ -148,7 +153,9 @@ fun VideoSurface(
                     subtitles.setApplyEmbeddedStyles(false)
                     subtitles.setApplyEmbeddedFontSizes(false)
                     subtitles.setFractionalTextSize(settings.subtitleSize.fraction)
-                    subtitles.setBottomPaddingFraction(settings.subtitlePosition.bottomFraction)
+                    subtitles.setBottomPaddingFraction(
+                        maxOf(settings.subtitlePosition.bottomFraction, liftAbove(subtitles, subtitlesAboveY)),
+                    )
                 }
                 fileSubtitleView[0]?.setCues(
                     if (fileSubtitle.isNullOrEmpty()) emptyList() else listOf(Cue.Builder().setText(fileSubtitle).build()),
@@ -180,6 +187,16 @@ fun VideoSurface(
             )
         }
     }
+}
+
+/** Razmak od dna (deo visine [view]) koji drži titl iznad tačke [aboveY] u prozoru; 0 bez nje. */
+private fun liftAbove(view: View, aboveY: Float?): Float {
+    if (aboveY == null || view.height <= 0) return 0f
+    val location = IntArray(2)
+    view.getLocationInWindow(location)
+    val overlap = location[1] + view.height - aboveY
+    // Mali dodatni razmak, da titl ne dodiruje traku.
+    return if (overlap <= 0f) 0f else (overlap / view.height + 0.02f).coerceAtMost(0.9f)
 }
 
 /**
