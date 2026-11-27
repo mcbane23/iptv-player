@@ -179,6 +179,7 @@ fun MobileVodPlayerScreen(
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
             subtitleText = viewModel.subtitleText,
+            subtitlesAboveY = if (!locked && (controlsVisible || sidePanel)) anchors.controlsTopInWindow else null,
         )
 
         PauseDimLayer(

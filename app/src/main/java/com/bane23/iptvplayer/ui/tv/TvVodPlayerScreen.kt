@@ -295,6 +295,7 @@ fun TvVodPlayerScreen(
             player = viewModel.player,
             aspectMode = ui.aspectMode,
             modifier = Modifier.fillMaxSize(),
+            subtitlesAboveY = if (controls) anchors.controlsTopInWindow else null,
             subtitleText = viewModel.subtitleText,
         )
 

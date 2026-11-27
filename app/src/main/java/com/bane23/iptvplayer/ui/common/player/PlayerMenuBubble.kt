@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.TextStyle
@@ -53,6 +54,13 @@ class PlayerMenuAnchors {
     private val bounds = mutableStateMapOf<PlayerMenu, Rect>()
     private var bar by mutableStateOf<Rect?>(null)
 
+    /**
+     * Vrh vremenske trake (iznad nje nema drugih donjih kontrola) u koordinatama prozora; null dok
+     * se ne izmeri. Važi samo dok su kontrole na ekranu: posle sklanjanja ostaje poslednja vrednost.
+     */
+    var controlsTopInWindow by mutableStateOf<Float?>(null)
+        private set
+
     /** Mesto iznad kog se otvara [menu]: leva ivica dugmeta, a vrh trake (ili dugmeta, ako trake nema). */
     operator fun get(menu: PlayerMenu): Rect? {
         val chip = bounds[menu] ?: return null
@@ -64,8 +72,9 @@ class PlayerMenuAnchors {
         if (bounds[menu] != rect) bounds[menu] = rect
     }
 
-    internal fun placeBar(rect: Rect) {
+    internal fun placeBar(rect: Rect, windowTop: Float) {
         if (bar != rect) bar = rect
+        if (controlsTopInWindow != windowTop) controlsTopInWindow = windowTop
     }
 }
 
@@ -78,7 +87,7 @@ fun Modifier.playerMenuAnchor(anchors: PlayerMenuAnchors, menu: PlayerMenu): Mod
 
 /** Vremenska traka plejera: meniji se otvaraju iznad nje. */
 fun Modifier.playerMenuBar(anchors: PlayerMenuAnchors): Modifier =
-    onGloballyPositioned { anchors.placeBar(it.boundsInRoot()) }
+    onGloballyPositioned { anchors.placeBar(it.boundsInRoot(), it.boundsInWindow().top) }
 
 /**
  * Meni plejera kao mala pločica („oblačić”) iznad vremenske trake, poravnata sa dugmetom koje je
